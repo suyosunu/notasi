@@ -17,6 +17,7 @@ interface HomeData {
   progress: { index: number; total: number } | null
   doneToday: boolean
   backupDue: boolean
+  hasCompletedSession: boolean
 }
 
 function greetingFor(now: Date): string {
@@ -50,6 +51,7 @@ async function load(): Promise<HomeData | null> {
     progress: state ? { index: state.index, total: state.questions.length } : null,
     doneToday: completed.some((s) => s.kind === 'gunduz' && s.date === today),
     backupDue: needsBackupReminder(settings.lastBackupAt, completed.length > 0, now),
+    hasCompletedSession: completed.length > 0,
   }
 }
 
@@ -98,7 +100,9 @@ export function Home() {
   async function backup() {
     try {
       await shareOrDownloadBackup()
-      setBackupDue(false)
+      // Paylaşım sayfası kapatılırsa çağrı hatasız döner ama yedek alınmamıştır.
+      const { lastBackupAt } = await getSettings()
+      setBackupDue(needsBackupReminder(lastBackupAt, data?.hasCompletedSession ?? false, new Date()))
     } catch {
       // Yedek alınamadı: bant görünür kalır, kullanıcı tekrar deneyebilir.
     }

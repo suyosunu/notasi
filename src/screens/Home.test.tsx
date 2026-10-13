@@ -111,11 +111,24 @@ describe('Home', () => {
   it('shows the backup band when never backed up and a session was completed, then hides it', async () => {
     await saveSettings({ onboarded: true, lastBackupAt: null })
     await saveSession(session({}))
+    vi.mocked(shareOrDownloadBackup).mockImplementationOnce(async () => {
+      await saveSettings({ lastBackupAt: new Date().toISOString() })
+    })
     render(<Home />)
     expect(await screen.findByText(/Yedeğinizi alın, telefon verileri silinirse ilerlemeniz kaybolmasın/)).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Yedekle' }))
     await waitFor(() => expect(screen.queryByText(/Yedeğinizi alın/)).toBeNull())
     expect(shareOrDownloadBackup).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the backup band when the share sheet is dismissed without saving a backup', async () => {
+    await saveSettings({ onboarded: true, lastBackupAt: null })
+    await saveSession(session({}))
+    render(<Home />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Yedekle' }))
+    await waitFor(() => expect(shareOrDownloadBackup).toHaveBeenCalledTimes(1))
+    await new Promise((r) => setTimeout(r, 50))
+    expect(screen.getByText(/Yedeğinizi alın/)).toBeTruthy()
   })
 
   it('keeps the backup band when the backup fails', async () => {
