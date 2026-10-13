@@ -189,3 +189,122 @@ a:focus-visible {
   font-weight: 600;
   text-decoration: none;
 }
+
+/* Ana ekran */
+.home-head p {
+  margin: 0;
+}
+
+.backup-band {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1rem 0 0;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background: #fbeacb;
+  border: 1px solid #e3c476;
+}
+
+.backup-band p {
+  flex: 1;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.card-progress {
+  width: 100%;
+  height: 0.5rem;
+  accent-color: var(--accent);
+}
+
+.card-done {
+  font-size: 0.9rem;
+  color: #2f6b25;
+  font-weight: 600;
+}
+
+.card-disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.chips {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.125rem;
+  min-height: 4rem;
+  padding: 0.5rem;
+  border-radius: 0.75rem;
+  background: #fff;
+  border: 1px solid #d8cfbd;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.chip[data-status="yakinda"] {
+  opacity: 0.5;
+}
+
+.chip[data-status="ileride"] {
+  background: transparent;
+  border: 1px dashed #b9ae98;
+  color: var(--muted);
+}
+
+.chip-soon {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+/* Nota bölümü */
+.topic-list {
+  list-style: none;
+  margin: 1rem 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.topic {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.5rem 1rem;
+  font: inherit;
+  text-align: left;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid #d8cfbd;
+  border-radius: 0.75rem;
+  cursor: pointer;
+}
+
+.topic-kilitli {
+  cursor: default;
+  opacity: 0.55;
+  background: transparent;
+}
+
+.topic-icon {
+  width: 1.5rem;
+  text-align: center;
+}
+
+.topic-ogrenildi .topic-icon {
+  color: #2f6b25;
+}
+
+.score {
+  font-size: 1.25rem;
+}

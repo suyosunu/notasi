@@ -1,6 +1,10 @@
 import type { ComponentChildren } from 'preact'
+import { NOTA_TOPICS } from './content/nota-topics'
 import { useRoute } from './router'
 import { DayPractice } from './screens/DayPractice'
+import { Home } from './screens/Home'
+import { NotaSection } from './screens/NotaSection'
+import { SessionEnd } from './screens/SessionEnd'
 
 function Placeholder({ title }: { title: string }) {
   return (
@@ -14,47 +18,28 @@ function Placeholder({ title }: { title: string }) {
   )
 }
 
-function Home() {
-  return (
-    <main class="screen">
-      <h1>Notası</h1>
-      <p class="muted">Nota okumayı ve ney çalmayı adım adım öğren.</p>
-      <nav class="cards">
-        <a class="card card-day" href="#/gunduz">
-          <strong>Gündüz</strong>
-          <span>Günlük kısa ders</span>
-        </a>
-        <a class="card card-night" href="#/aksam">
-          <strong>Akşam</strong>
-          <span>Ney ile çalışma</span>
-        </a>
-      </nav>
-      <nav class="links">
-        <a href="#/nota">Nota</a>
-        <a href="#/ney">Ney</a>
-        <a href="#/ayarlar">Ayarlar</a>
-        <a href="#/hakkinda">Hakkında</a>
-      </nav>
-    </main>
-  )
-}
-
 const routes: Record<string, () => ComponentChildren> = {
   '/': () => <Home />,
   '/gunduz': () => <DayPractice />,
   '/aksam': () => <Placeholder title="Akşam" />,
-  '/nota': () => <Placeholder title="Nota" />,
+  '/nota': () => <NotaSection />,
   '/ney': () => <Placeholder title="Ney" />,
   '/ayarlar': () => <Placeholder title="Ayarlar" />,
   '/hakkinda': () => <Placeholder title="Hakkında" />,
   '/kalibrasyon': () => <Placeholder title="Kalibrasyon" />,
   '/baslangic': () => <Placeholder title="Başlangıç" />,
   '/yoklama': () => <Placeholder title="Yoklama" />,
-  '/oturum-sonu': () => <Placeholder title="Oturum sonu" />,
+  '/oturum-sonu': () => <SessionEnd />,
 }
+
+const FREE_PREFIX = '/nota/'
 
 export function App() {
   const route = useRoute()
-  const screen = routes[route]
-  return screen ? screen() : <Placeholder title="Sayfa bulunamadı" />
+  if (Object.hasOwn(routes, route)) return routes[route]!()
+  if (route.startsWith(FREE_PREFIX)) {
+    const topicId = route.slice(FREE_PREFIX.length)
+    if (NOTA_TOPICS.some((t) => t.id === topicId)) return <DayPractice topicId={topicId} />
+  }
+  return <Placeholder title="Sayfa bulunamadı" />
 }
