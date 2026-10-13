@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" fill="#c08a2c"/>
+  <g transform="rotate(-38 256 256)">
+    <!-- sazlık kamışı -->
+    <rect x="52" y="233" width="408" height="46" rx="14" fill="#fbf8f2"/>
+    <!-- boğum halkaları -->
+    <rect x="132" y="233" width="9" height="46" fill="#7a5412"/>
+    <rect x="240" y="233" width="9" height="46" fill="#7a5412"/>
+    <rect x="348" y="233" width="9" height="46" fill="#7a5412"/>
+    <!-- üfleme ucu -->
+    <rect x="52" y="233" width="30" height="46" rx="14" fill="#7a5412"/>
+    <!-- perde delikleri -->
+    <circle cx="170" cy="256" r="8" fill="#7a5412"/>
+    <circle cx="205" cy="256" r="8" fill="#7a5412"/>
+    <circle cx="275" cy="256" r="8" fill="#7a5412"/>
+    <circle cx="310" cy="256" r="8" fill="#7a5412"/>
+    <circle cx="385" cy="256" r="8" fill="#7a5412"/>
+    <circle cx="420" cy="256" r="8" fill="#7a5412"/>
+  </g>
+</svg>
