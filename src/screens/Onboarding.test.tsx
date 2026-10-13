@@ -29,6 +29,8 @@ describe('Onboarding', () => {
   it('Başla → ana ekrana ekleme rehberi → Devam → onboarded kaydedilir ve / açılır', async () => {
     render(<Onboarding />)
     expect(screen.getByText('Hoş geldiniz')).toBeTruthy()
+    expect(screen.getByText('Notası ile nota okumayı ve ney çalmayı adım adım öğrenirsiniz.')).toBeTruthy()
+    expect(screen.queryByText(/on dakika yeter/)).toBeNull()
     expect(screen.queryByText('Ana ekrana ekleyin')).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Başla' }))
     expect(unlockAudio).toHaveBeenCalledTimes(1)

@@ -52,7 +52,7 @@ export function Onboarding() {
   return (
     <main class="screen">
       <h1>Hoş geldiniz</h1>
-      <p>Notası ile nota okumayı ve neyi adım adım öğrenirsiniz. Her gün on dakika yeter.</p>
+      <p>Notası ile nota okumayı ve ney çalmayı adım adım öğrenirsiniz.</p>
       <button type="button" class="primary" onClick={start}>
         Başla
       </button>
