@@ -1,7 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { DEFAULT_TUNING } from '../music/ahenk'
 import type { MusicEvent } from '../music/notation'
 import { buildPatternCode, SOUND_CHAIN, toToneEvents } from './pattern'
+
+// Çekirdeğin gerçek (kullanılmayan) kabelsalat bağımlılığı Node'da yüklenmez; yalnızca onu taklit ederiz.
+vi.mock('@kabelsalat/web', () => ({ SalatRepl: class {} }))
 
 describe('buildPatternCode', () => {
   const events = [
@@ -39,5 +42,31 @@ describe('toToneEvents', () => {
   it('sus hz: null olur, noktalı süre vuruşa yansır', () => {
     const written: MusicEvent[] = [{ kind: 'rest', dur: 'half', dotted: true }]
     expect(toToneEvents(written, DEFAULT_TUNING)).toEqual([{ hz: null, beats: 3 }])
+  })
+})
+
+describe('buildPatternCode: tek seferlik çalma (gerçek Strudel çekirdeği)', () => {
+  it('ilk döngüde sesler var, ikinci döngüde ve sonrasında hiç ses yok', async () => {
+    const { evalScope } = await import('@strudel/core')
+    const { evaluate, transpiler } = await import('@strudel/transpiler')
+    await evalScope(import('@strudel/core'), import('@strudel/mini'))
+    const { code } = buildPatternCode(
+      [
+        { hz: 440, beats: 2 },
+        { hz: null, beats: 1 },
+        { hz: 494.957, beats: 1 },
+      ],
+      60,
+    )
+    const { pattern } = await evaluate(code, transpiler)
+    const values = (from: number, to: number) =>
+      pattern
+        .queryArc(from, to)
+        .filter((h) => h.hasOnset())
+        .map((h) => h.value.freq)
+    // Çekirdekteki .cpm(15) = fast(15/60): bir döngü 4 sorgu-döngüsü sürer (REPL'de cps'e bölünür)
+    expect(values(0, 4)).toEqual([440, 494.96])
+    expect(values(4, 8)).toEqual([])
+    expect(values(8, 40)).toEqual([])
   })
 })

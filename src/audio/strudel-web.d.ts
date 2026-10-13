@@ -9,3 +9,23 @@ declare module '@strudel/web' {
   export function hush(): void
   export function getAudioContext(): AudioContext
 }
+
+// Yalnızca pattern.test.ts'in gerçek çekirdekle desen sorgulaması için.
+declare module '@strudel/core' {
+  export function evalScope(...modules: unknown[]): Promise<unknown>
+}
+declare module '@strudel/mini' {}
+declare module '@strudel/transpiler' {
+  export const transpiler: unknown
+  export function evaluate(
+    code: string,
+    transpiler: unknown,
+  ): Promise<{
+    pattern: {
+      queryArc(
+        from: number,
+        to: number,
+      ): { hasOnset(): boolean; value: { freq: number } }[]
+    }
+  }>
+}

@@ -1,22 +1,53 @@
-import { evaluate, getAudioContext, hush, initStrudel } from '@strudel/web'
 import { setPlaybackSession } from './ios'
 import { buildPatternCode, toToneEvents } from './pattern'
 import type { ToneEvent } from './pattern'
 import type { Tuning } from '../music/ahenk'
 import type { MusicEvent } from '../music/notation'
 
+type StrudelWeb = typeof import('@strudel/web')
+
 const TAIL_MS = 150
 
+let strudelModule: StrudelWeb | null = null
+let modulePromise: Promise<StrudelWeb> | null = null
 let initPromise: Promise<unknown> | null = null
 let ready = false
 let timer: ReturnType<typeof setTimeout> | null = null
 let finishCurrent: (() => void) | null = null
+/** Her stopAudio/playTones'ta artar; eski çağrılar bununla bayatlığını anlar. */
 let generation = 0
+/** Şu an çalan (ya da başlatılmakta olan) playTones çağrısının belirteci; durdurulunca null. */
+let active: number | null = null
 
-function ensureInit(): Promise<unknown> {
+/**
+ * Strudel'i (büyük paket) arka planda yükler. Kullanıcı hareketi gerekmez;
+ * uygulama açılışında çağrılır ki dokunuş anında içe aktarma beklenmesin.
+ */
+export function preloadAudio(): Promise<void> {
+  if (!modulePromise) {
+    modulePromise = import('@strudel/web').then(
+      (m) => {
+        strudelModule = m
+        return m
+      },
+      (err: unknown) => {
+        modulePromise = null // sonraki denemede yeniden yüklensin
+        throw err
+      },
+    )
+  }
+  return modulePromise.then(() => undefined)
+}
+
+function loadModule(): Promise<StrudelWeb> {
+  void preloadAudio().catch(() => {})
+  return modulePromise!
+}
+
+function ensureInit(m: StrudelWeb): Promise<unknown> {
   if (!initPromise) {
     // prebake verilmez: ağdan örnek (sample) yüklenmez, uygulama çevrimdışı çalışır.
-    initPromise = Promise.resolve(initStrudel()).then(
+    initPromise = Promise.resolve(m.initStrudel()).then(
       () => {
         ready = true
       },
@@ -29,53 +60,80 @@ function ensureInit(): Promise<unknown> {
   return initPromise
 }
 
-/** Yalnızca dokunuş (kullanıcı hareketi) işleyicilerinden çağrılır. */
-export function unlockAudio(): Promise<void> {
-  setPlaybackSession()
-  const init = ensureInit()
+function startAudio(m: StrudelWeb): Promise<void> {
+  const init = ensureInit(m)
   // iOS, AudioContext'i yalnızca kullanıcı hareketi içinde (eşzamanlı) açar.
   try {
-    void getAudioContext().resume()
+    void m.getAudioContext().resume()
   } catch {
     // ses bağlamı yoksa init hatayı zaten bildirir
   }
   return init.then(() => undefined)
 }
 
+/**
+ * Yalnızca dokunuş (kullanıcı hareketi) işleyicilerinden çağrılır. Strudel önceden
+ * yüklenmişse resume'a kadar hiç await yoktur; değilse içe aktarma beklenir (en iyi çaba).
+ */
+export function unlockAudio(): Promise<void> {
+  setPlaybackSession()
+  if (strudelModule) return startAudio(strudelModule)
+  return loadModule().then(startAudio)
+}
+
+function safeHush(): void {
+  if (!ready || !strudelModule) return
+  try {
+    strudelModule.hush()
+  } catch {
+    // zaten durmuş olabilir
+  }
+}
+
 export function stopAudio(): void {
   generation++
+  active = null
   if (timer !== null) {
     clearTimeout(timer)
     timer = null
   }
   const finish = finishCurrent
   finishCurrent = null
-  if (ready) {
-    try {
-      hush()
-    } catch {
-      // zaten durmuş olabilir
-    }
-  }
+  safeHush()
   finish?.()
 }
 
 export async function playTones(events: ToneEvent[], bpm = 60): Promise<void> {
   stopAudio()
   const mine = generation
-  if (events.length === 0) return
+  active = mine
+  if (events.length === 0) {
+    active = null
+    return
+  }
   const { code, durationMs } = buildPatternCode(events, bpm)
-  await ensureInit()
+  const m = await loadModule()
+  await ensureInit(m)
   if (mine !== generation) return
-  await evaluate(code)
-  if (mine !== generation) return
+  try {
+    await m.evaluate(code)
+  } catch (err) {
+    if (mine !== generation) return // bayat çağrının hatası kimseyi ilgilendirmez
+    throw err
+  }
+  if (mine !== generation) {
+    // evaluate sürerken durduruldu: desen şimdi başlamış olabilir. Başkası devralmadıysa sustur.
+    if (active === null) safeHush()
+    return
+  }
   await new Promise<void>((resolve) => {
     finishCurrent = resolve
     timer = setTimeout(() => {
       timer = null
       finishCurrent = null
+      if (active === mine) active = null
       try {
-        hush()
+        safeHush()
       } finally {
         resolve()
       }
