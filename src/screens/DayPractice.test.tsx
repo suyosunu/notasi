@@ -149,6 +149,24 @@ describe('DayPractice (gündüz oturumu)', () => {
       expect((await getOpenSession('gunduz'))?.elapsedMs).toBe(0)
     })
 
+    it('keeps the last answer feedback visible: a tick after the final answer does not navigate until Devam', async () => {
+      await saveSettings({ dailyQuestionCount: 1 })
+      const callbacks = captureTimer()
+      render(<DayPractice />)
+      const q = await currentQuestion()
+      await waitFor(() => expect(callbacks).toHaveLength(1))
+      fireEvent.click(screen.getByRole('button', { name: q.answer }))
+      expect(await screen.findByText('Doğru 👏')).toBeTruthy()
+      await waitFor(async () => expect(await getOpenSession('gunduz')).toBeUndefined())
+      callbacks[0]!()
+      callbacks[0]!()
+      await new Promise((r) => setTimeout(r, 50))
+      expect(location.hash).not.toBe('#/oturum-sonu')
+      expect(screen.getByText('Doğru 👏')).toBeTruthy()
+      fireEvent.click(screen.getByRole('button', { name: 'Devam' }))
+      await waitFor(() => expect(location.hash).toBe('#/oturum-sonu'))
+    })
+
     it('finishes the session at the cap and goes to #/oturum-sonu', async () => {
       const s = await loadOrStartDaySession(new Date())
       await saveSession({ ...s, elapsedMs: DAY_CAP_MS - 1000 })

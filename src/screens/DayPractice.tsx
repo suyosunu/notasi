@@ -165,7 +165,11 @@ function DaySession() {
     const id = setInterval(() => {
       if (document.visibilityState !== 'visible') return
       enqueue(async (s) => {
+        // Oturum zaten bittiyse (son cevap verildi) zamanlayıcı bir şey yapmaz;
+        // geri bildirim görünür kalır, geçiş "Devam" ile olur.
+        if (s.endedAt) return null
         const next = await tick(s, TICK_MS)
+        // Yalnızca bu tick süre sınırıyla kapattıysa oturum sonuna git.
         if (next.endedAt) navigate('/oturum-sonu')
         return next
       })
