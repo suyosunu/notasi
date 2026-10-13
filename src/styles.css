@@ -308,3 +308,75 @@ a:focus-visible {
 .score {
   font-size: 1.25rem;
 }
+
+/* Ana ekran: ayarlar bağlantısı */
+.home-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.head-link,
+.back-top {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  text-decoration: none;
+}
+
+.back-top {
+  margin-bottom: 0.5rem;
+}
+
+/* Ayarlar */
+.setting {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1.25rem 0;
+}
+
+.setting-label {
+  font-weight: 600;
+}
+
+.select {
+  min-height: 3rem;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid #d8cfbd;
+  border-radius: 0.75rem;
+}
+
+.switch {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 3rem;
+  font-weight: 600;
+}
+
+.switch input {
+  width: 1.5rem;
+  height: 1.5rem;
+  accent-color: var(--accent);
+}
+
+.setting .hint,
+.setting .notice {
+  margin: 0;
+}
+
+.setting .hint a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+}

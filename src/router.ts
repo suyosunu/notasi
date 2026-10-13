@@ -19,3 +19,8 @@ export function useRoute(): string {
 export function navigate(path: string): void {
   location.hash = '#' + path
 }
+
+/** Geçmişe kayıt eklemeden yönlendirir (geri tuşu yönlendirme döngüsüne düşmesin); `hashchange` yine tetiklenir. */
+export function replaceRoute(path: string): void {
+  location.replace('#' + path)
+}

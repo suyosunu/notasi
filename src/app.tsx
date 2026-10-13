@@ -1,10 +1,13 @@
 import type { ComponentChildren } from 'preact'
 import { NOTA_TOPICS } from './content/nota-topics'
 import { useRoute } from './router'
+import { About } from './screens/About'
 import { DayPractice } from './screens/DayPractice'
 import { Home } from './screens/Home'
 import { NotaSection } from './screens/NotaSection'
+import { Onboarding } from './screens/Onboarding'
 import { SessionEnd } from './screens/SessionEnd'
+import { Settings } from './screens/Settings'
 
 function Placeholder({ title }: { title: string }) {
   return (
@@ -24,10 +27,10 @@ const routes: Record<string, () => ComponentChildren> = {
   '/aksam': () => <Placeholder title="Akşam" />,
   '/nota': () => <NotaSection />,
   '/ney': () => <Placeholder title="Ney" />,
-  '/ayarlar': () => <Placeholder title="Ayarlar" />,
-  '/hakkinda': () => <Placeholder title="Hakkında" />,
+  '/ayarlar': () => <Settings />,
+  '/hakkinda': () => <About />,
   '/kalibrasyon': () => <Placeholder title="Kalibrasyon" />,
-  '/baslangic': () => <Placeholder title="Başlangıç" />,
+  '/baslangic': () => <Onboarding />,
   '/yoklama': () => <Placeholder title="Yoklama" />,
   '/oturum-sonu': () => <SessionEnd />,
 }

@@ -13,10 +13,22 @@ afterEach(() => {
 })
 
 describe('App', () => {
-  it('#/hakkinda rotasında "Hakkında" metnini gösterir', () => {
+  it('#/hakkinda rotası Hakkında ekranını gösterir', () => {
     location.hash = '#/hakkinda'
     render(<App />)
-    expect(screen.getAllByText('Hakkında').length).toBeGreaterThan(0)
+    expect(screen.getByText(/AGPL-3.0-or-later lisansıyla\./)).toBeTruthy()
+  })
+
+  it('#/ayarlar rotası Ayarlar ekranını gösterir', async () => {
+    location.hash = '#/ayarlar'
+    render(<App />)
+    expect(await screen.findByLabelText('Ney ahengi')).toBeTruthy()
+  })
+
+  it('#/baslangic rotası başlangıç ekranını gösterir', () => {
+    location.hash = '#/baslangic'
+    render(<App />)
+    expect(screen.getByText('Hoş geldiniz')).toBeTruthy()
   })
 
   it('#/ rotası ana ekranı gösterir', async () => {

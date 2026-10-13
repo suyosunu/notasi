@@ -153,4 +153,18 @@ describe('Home', () => {
     await waitFor(() => expect(location.hash).toBe('#/baslangic'))
     expect(screen.queryByText('☀️ Masa başı · 10 dk')).toBeNull()
   })
+
+  it('redirect does not add a history entry (no back-button trap)', async () => {
+    const before = history.length
+    render(<Home />)
+    await waitFor(() => expect(location.hash).toBe('#/baslangic'))
+    expect(history.length).toBe(before)
+  })
+
+  it('links to the settings screen', async () => {
+    await saveSettings({ onboarded: true })
+    render(<Home />)
+    const link = (await screen.findByText('⚙️ Ayarlar')).closest('a')
+    expect(link?.getAttribute('href')).toBe('#/ayarlar')
+  })
 })

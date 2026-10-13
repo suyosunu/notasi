@@ -3,7 +3,7 @@ import { NOTA_TOPICS } from '../content/nota-topics'
 import type { DayState } from '../learning/day-session'
 import { currentTopic, topicStatuses } from '../learning/mastery'
 import { streakDays } from '../learning/streak'
-import { navigate } from '../router'
+import { replaceRoute } from '../router'
 import { SECTIONS } from '../sections/registry'
 import type { SectionDef } from '../sections/registry'
 import { needsBackupReminder, shareOrDownloadBackup } from '../store/backup'
@@ -86,7 +86,7 @@ export function Home() {
     void load().then((d) => {
       if (!alive) return
       if (!d) {
-        navigate('/baslangic')
+        replaceRoute('/baslangic')
         return
       }
       setData(d)
@@ -113,8 +113,13 @@ export function Home() {
   return (
     <main class="screen">
       <header class="home-head">
-        <h1>{data.greeting}</h1>
-        <p class="muted">{data.streak > 0 ? `${data.streak} gün seri` : 'Bugün başlayalım'}</p>
+        <div>
+          <h1>{data.greeting}</h1>
+          <p class="muted">{data.streak > 0 ? `${data.streak} gün seri` : 'Bugün başlayalım'}</p>
+        </div>
+        <a class="head-link" href="#/ayarlar">
+          ⚙️ Ayarlar
+        </a>
       </header>
 
       {backupDue && (
