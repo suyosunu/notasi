@@ -1,5 +1,6 @@
 import type { ComponentChildren } from 'preact'
 import { useRoute } from './router'
+import { DayPractice } from './screens/DayPractice'
 
 function Placeholder({ title }: { title: string }) {
   return (
@@ -40,7 +41,7 @@ function Home() {
 
 const routes: Record<string, () => ComponentChildren> = {
   '/': () => <Home />,
-  '/gunduz': () => <Placeholder title="Gündüz" />,
+  '/gunduz': () => <DayPractice />,
   '/aksam': () => <Placeholder title="Akşam" />,
   '/nota': () => <Placeholder title="Nota" />,
   '/ney': () => <Placeholder title="Ney" />,

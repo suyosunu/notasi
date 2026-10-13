@@ -69,6 +69,15 @@ describe('attempts', () => {
     expect(Number.isNaN(Date.parse(a.at))).toBe(false)
   })
 
+  it('keeps a strict order for attempts written in a tight loop (monotonic timestamps)', async () => {
+    const written: string[] = []
+    for (let i = 0; i < 20; i++) written.push((await addAttempt({ topicId: 'nota-1', cardId: `c${i}`, correct: true })).id)
+    const list = await listAttempts('nota-1')
+    expect(list.map((x) => x.id)).toEqual(written)
+    const ats = list.map((x) => x.at)
+    expect(new Set(ats).size).toBe(ats.length)
+  })
+
   it('lists only the topic, ordered by at ascending', async () => {
     const a = await addAttempt({ topicId: 'nota-1', cardId: 'c1', correct: true })
     await addAttempt({ topicId: 'nota-2', cardId: 'c2', correct: false })

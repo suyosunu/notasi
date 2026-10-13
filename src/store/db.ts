@@ -127,8 +127,12 @@ function newId(): string {
   return crypto.randomUUID()
 }
 
+let lastMs = 0
+
+/** Tekdüze artan zaman damgası: sıkı döngüde yazılan kayıtların sırası korunur. */
 function nowIso(): string {
-  return new Date().toISOString()
+  lastMs = Math.max(Date.now(), lastMs + 1)
+  return new Date(lastMs).toISOString()
 }
 
 function byAt<T extends { at: string }>(list: T[]): T[] {
