@@ -2,6 +2,7 @@ import type { ComponentChildren } from 'preact'
 import { NOTA_TOPICS } from './content/nota-topics'
 import { useRoute } from './router'
 import { About } from './screens/About'
+import { Calibration } from './screens/Calibration'
 import { DayPractice } from './screens/DayPractice'
 import { Home } from './screens/Home'
 import { NotaSection } from './screens/NotaSection'
@@ -29,7 +30,7 @@ const routes: Record<string, () => ComponentChildren> = {
   '/ney': () => <Placeholder title="Ney" />,
   '/ayarlar': () => <Settings />,
   '/hakkinda': () => <About />,
-  '/kalibrasyon': () => <Placeholder title="Kalibrasyon" />,
+  '/kalibrasyon': () => <Calibration />,
   '/baslangic': () => <Onboarding />,
   '/yoklama': () => <Placeholder title="Yoklama" />,
   '/oturum-sonu': () => <SessionEnd />,
