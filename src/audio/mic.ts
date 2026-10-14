@@ -1,4 +1,5 @@
 import { PitchDetector } from 'pitchy'
+import { audioSessionType } from './ios'
 
 export interface PitchSample {
   t: number
@@ -18,12 +19,15 @@ export function toSample(t: number, hz: number, clarity: number): PitchSample {
 }
 
 export class MicError extends Error {
-  readonly reason: 'izin-yok' | 'desteklenmiyor'
+  readonly reason: 'izin-yok' | 'desteklenmiyor' | 'acilamadi'
+  /** Tanılama metni (hata adı/mesajı vb.); kullanıcıya küçük satırda gösterilir. */
+  readonly detail?: string
 
-  constructor(reason: 'izin-yok' | 'desteklenmiyor') {
+  constructor(reason: 'izin-yok' | 'desteklenmiyor' | 'acilamadi', detail?: string) {
     super(reason)
     this.name = 'MicError'
     this.reason = reason
+    this.detail = detail
   }
 }
 
@@ -38,6 +42,13 @@ function errorName(err: unknown): string {
   return typeof err === 'object' && err !== null && 'name' in err ? String((err as { name: unknown }).name) : ''
 }
 
+function describeError(err: unknown): string {
+  const name = errorName(err) || 'Error'
+  const message =
+    typeof err === 'object' && err !== null && 'message' in err ? String((err as { message: unknown }).message) : ''
+  return `${name}: ${message} (audioSession: ${audioSessionType() ?? 'yok'})`
+}
+
 /**
  * Mikrofonu açar ve her animasyon karesinde perde ölçer. Kullanıcı dokunuşundan
  * (iOS) çağrılmalıdır. Ses cihazdan çıkmaz; yalnızca yerel AnalyserNode'a gider.
@@ -46,10 +57,16 @@ function errorName(err: unknown): string {
 export async function startPitchStream(onSample: (s: PitchSample) => void): Promise<() => void> {
   const getUserMedia = navigator.mediaDevices?.getUserMedia?.bind(navigator.mediaDevices)
   const Ctx = audioContextCtor()
-  if (!getUserMedia || !Ctx) throw new MicError('desteklenmiyor')
+  if (!getUserMedia) throw new MicError('desteklenmiyor', 'getUserMedia yok')
+  if (!Ctx) throw new MicError('desteklenmiyor', 'AudioContext yok')
 
   // Bağlam, dokunuş anında (await'ten önce) oluşturulur; iOS aksi halde askıda bırakabilir.
-  const ctx = new Ctx()
+  let ctx: AudioContext
+  try {
+    ctx = new Ctx()
+  } catch (err) {
+    throw new MicError('acilamadi', describeError(err))
+  }
   const resumed = ctx.resume().catch(() => undefined)
 
   let stream: MediaStream
@@ -61,8 +78,10 @@ export async function startPitchStream(onSample: (s: PitchSample) => void): Prom
   } catch (err) {
     void ctx.close().catch(() => undefined)
     const name = errorName(err)
-    if (name === 'NotAllowedError' || name === 'SecurityError') throw new MicError('izin-yok')
-    throw new MicError('desteklenmiyor')
+    const detail = describeError(err)
+    // Yalnızca açık izin reddi 'izin-yok'; geri kalan her şey 'acilamadi' (destek eksikliği sanılmasın).
+    if (name === 'NotAllowedError' || name === 'SecurityError') throw new MicError('izin-yok', detail)
+    throw new MicError('acilamadi', detail)
   }
 
   let stopped = false
@@ -90,9 +109,9 @@ export async function startPitchStream(onSample: (s: PitchSample) => void): Prom
       rafId = requestAnimationFrame(tick)
     }
     rafId = requestAnimationFrame(tick)
-  } catch {
+  } catch (err) {
     stop()
-    throw new MicError('desteklenmiyor')
+    throw new MicError('acilamadi', describeError(err))
   }
   return stop
 }

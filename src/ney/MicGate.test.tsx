@@ -65,6 +65,43 @@ describe('MicGate', () => {
     expect(await screen.findByText('Bu tarayıcı mikrofonu desteklemiyor.')).toBeTruthy()
   })
 
+  it('acilamadi mesajı tam metindir ve MicError ayrıntısı "Ayrıntı: …" olarak gösterilir', async () => {
+    startPitchStream.mockImplementation(() =>
+      Promise.reject(new MicError('acilamadi', 'NotReadableError: meşgul (audioSession: yok)')),
+    )
+    renderGate()
+    fireEvent.click(screen.getByText('Başlat'))
+    expect(
+      await screen.findByText('Mikrofon açılamadı. Ayarlar › Safari › Mikrofon iznini kontrol edip tekrar deneyin.'),
+    ).toBeTruthy()
+    expect(screen.getByText('Ayrıntı: NotReadableError: meşgul (audioSession: yok)')).toBeTruthy()
+    expect(screen.queryByText('Bu tarayıcı mikrofonu desteklemiyor.')).toBeNull()
+  })
+
+  it('desteklenmiyor mesajı ayrıntısıyla gösterilir', async () => {
+    startPitchStream.mockImplementation(() => Promise.reject(new MicError('desteklenmiyor', 'getUserMedia yok')))
+    renderGate()
+    fireEvent.click(screen.getByText('Başlat'))
+    expect(await screen.findByText('Bu tarayıcı mikrofonu desteklemiyor.')).toBeTruthy()
+    expect(screen.getByText('Ayrıntı: getUserMedia yok')).toBeTruthy()
+  })
+
+  it('ayrıntısız MicError için Ayrıntı satırı yoktur', async () => {
+    startPitchStream.mockImplementation(() => Promise.reject(new MicError('izin-yok')))
+    renderGate()
+    fireEvent.click(screen.getByText('Başlat'))
+    await screen.findByText(/Mikrofon izni verilmedi/)
+    expect(screen.queryByText(/Ayrıntı:/)).toBeNull()
+  })
+
+  it('MicError olmayan hata acilamadi olur; ad ve mesaj ayrıntı olur', async () => {
+    startPitchStream.mockImplementation(() => Promise.reject(new TypeError('tuhaf')))
+    renderGate()
+    fireEvent.click(screen.getByText('Başlat'))
+    expect(await screen.findByText(/Mikrofon açılamadı/)).toBeTruthy()
+    expect(screen.getByText('Ayrıntı: TypeError: tuhaf')).toBeTruthy()
+  })
+
   it('izin-yok mesajı tam metindir', async () => {
     startPitchStream.mockImplementation(() => Promise.reject(new MicError('izin-yok')))
     renderGate()
@@ -76,11 +113,11 @@ describe('MicGate', () => {
     ).toBeTruthy()
   })
 
-  it('bilinmeyen hata desteklenmiyor mesajına düşer', async () => {
+  it('bilinmeyen hata acilamadi mesajına düşer', async () => {
     startPitchStream.mockImplementation(() => Promise.reject(new Error('beklenmedik')))
     renderGate()
     fireEvent.click(screen.getByText('Başlat'))
-    expect(await screen.findByText('Bu tarayıcı mikrofonu desteklemiyor.')).toBeTruthy()
+    expect(await screen.findByText(/Mikrofon açılamadı/)).toBeTruthy()
   })
 
   it('Tekrar dene yeniden başlatır ve başarılıysa hatayı kaldırır', async () => {

@@ -441,3 +441,9 @@ a:focus-visible {
 .tone .result p {
   margin: 0 0 0.5rem;
 }
+
+.mic-error-detail {
+  font-size: 0.8rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}

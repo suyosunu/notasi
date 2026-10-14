@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { isStandalone, setPlaybackSession } from './ios'
+import { audioSessionType, isStandalone, setPlaybackSession } from './ios'
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -16,6 +16,16 @@ describe('setPlaybackSession', () => {
     Object.defineProperty(navigator, 'audioSession', { value: session, configurable: true })
     setPlaybackSession()
     expect(session.type).toBe('playback')
+  })
+})
+
+describe('audioSessionType', () => {
+  it('audioSession yoksa undefined', () => {
+    expect(audioSessionType()).toBeUndefined()
+  })
+  it('mevcut type değerini döndürür', () => {
+    Object.defineProperty(navigator, 'audioSession', { value: { type: 'playback' }, configurable: true })
+    expect(audioSessionType()).toBe('playback')
   })
 })
 

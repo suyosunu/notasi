@@ -78,6 +78,7 @@ describe('startPitchStream', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
     setMediaDevices(undefined)
+    Reflect.deleteProperty(navigator, 'audioSession')
   })
 
   it('mediaDevices yoksa desteklenmiyor fırlatır', async () => {
@@ -95,9 +96,21 @@ describe('startPitchStream', () => {
     await expect(startPitchStream(() => {})).rejects.toMatchObject({ reason: 'izin-yok' })
   })
 
-  it('NotFoundError desteklenmiyor olur', async () => {
+  it('NotFoundError acilamadi olur', async () => {
     setMediaDevices(vi.fn().mockRejectedValue(new DOMException('none', 'NotFoundError')))
-    await expect(startPitchStream(() => {})).rejects.toMatchObject({ reason: 'desteklenmiyor' })
+    await expect(startPitchStream(() => {})).rejects.toMatchObject({ reason: 'acilamadi' })
+  })
+
+  it('AbortError acilamadi olur', async () => {
+    setMediaDevices(vi.fn().mockRejectedValue(new DOMException('iptal', 'AbortError')))
+    await expect(startPitchStream(() => {})).rejects.toMatchObject({ reason: 'acilamadi' })
+  })
+
+  it('bilinmeyen hata (adsız) acilamadi olur, ayrıntı taşır', async () => {
+    setMediaDevices(vi.fn().mockRejectedValue(new Error('garip')))
+    const err = await startPitchStream(() => {}).catch((e: unknown) => e)
+    expect((err as MicError).reason).toBe('acilamadi')
+    expect((err as MicError).detail).toContain('garip')
   })
 
   it('akış açar, örnek üretir ve durdurucu her şeyi kapatır', async () => {
@@ -134,5 +147,53 @@ describe('startPitchStream', () => {
     stop()
     cb?.(1)
     expect(samples).toHaveLength(0)
+  })
+
+  it('NotReadableError acilamadi olur ve ayrıntıda hata adı ile oturum türü bulunur', async () => {
+    Object.defineProperty(navigator, 'audioSession', { value: { type: 'playback' }, configurable: true })
+    setMediaDevices(vi.fn().mockRejectedValue(new DOMException('meşgul', 'NotReadableError')))
+    const err = await startPitchStream(() => {}).catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(MicError)
+    expect((err as MicError).reason).toBe('acilamadi')
+    expect((err as MicError).detail).toContain('NotReadableError')
+    expect((err as MicError).detail).toContain('meşgul')
+    expect((err as MicError).detail).toContain('audioSession: playback')
+  })
+
+  it('audioSession yoksa ayrıntıda yok yazar', async () => {
+    setMediaDevices(vi.fn().mockRejectedValue(new DOMException('no', 'NotAllowedError')))
+    const err = await startPitchStream(() => {}).catch((e: unknown) => e)
+    expect((err as MicError).reason).toBe('izin-yok')
+    expect((err as MicError).detail).toContain('audioSession: yok')
+  })
+
+  it('getUserMedia yoksa sabit ayrıntı verir', async () => {
+    setMediaDevices(undefined)
+    await expect(startPitchStream(() => {})).rejects.toMatchObject({ detail: 'getUserMedia yok' })
+  })
+
+  it('AudioContext yoksa sabit ayrıntı verir', async () => {
+    vi.stubGlobal('AudioContext', undefined)
+    vi.stubGlobal('webkitAudioContext', undefined)
+    setMediaDevices(vi.fn())
+    await expect(startPitchStream(() => {})).rejects.toMatchObject({ detail: 'AudioContext yok' })
+  })
+
+  it('AudioContext kurucusu fırlatırsa MicError olur ve getUserMedia çağrılmaz', async () => {
+    vi.stubGlobal(
+      'AudioContext',
+      class {
+        constructor() {
+          throw new DOMException('kurulamadı', 'NotSupportedError')
+        }
+      },
+    )
+    const gum = vi.fn()
+    setMediaDevices(gum)
+    const err = await startPitchStream(() => {}).catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(MicError)
+    expect((err as MicError).reason).toBe('acilamadi')
+    expect((err as MicError).detail).toContain('NotSupportedError')
+    expect(gum).not.toHaveBeenCalled()
   })
 })

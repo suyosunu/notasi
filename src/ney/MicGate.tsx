@@ -3,11 +3,23 @@ import { useCallback, useEffect, useRef, useState } from 'preact/hooks'
 import { MicError, startPitchStream } from '../audio/mic'
 import type { PitchSample } from '../audio/mic'
 
-type Reason = 'izin-yok' | 'desteklenmiyor'
+type Reason = 'izin-yok' | 'desteklenmiyor' | 'acilamadi'
+
+interface GateError {
+  reason: Reason
+  detail?: string
+}
 
 const MESSAGES: Record<Reason, string> = {
   'izin-yok': "Mikrofon izni verilmedi. Akort göstergesi için Ayarlar › Safari › Mikrofon'dan izin verin.",
   desteklenmiyor: 'Bu tarayıcı mikrofonu desteklemiyor.',
+  acilamadi: 'Mikrofon açılamadı. Ayarlar › Safari › Mikrofon iznini kontrol edip tekrar deneyin.',
+}
+
+function toGateError(err: unknown): GateError {
+  if (err instanceof MicError) return { reason: err.reason, detail: err.detail }
+  if (err instanceof Error) return { reason: 'acilamadi', detail: `${err.name}: ${err.message}` }
+  return { reason: 'acilamadi' }
 }
 
 /**
@@ -18,7 +30,7 @@ export function MicGate(props: {
   onSample: (s: PitchSample) => void
   children: (start: () => Promise<void>, stop: () => void, running: boolean) => JSX.Element
 }): JSX.Element {
-  const [error, setError] = useState<Reason | null>(null)
+  const [error, setError] = useState<GateError | null>(null)
   const [running, setRunning] = useState(false)
   const stopperRef = useRef<(() => void) | null>(null)
   const onSampleRef = useRef(props.onSample)
@@ -51,7 +63,7 @@ export function MicGate(props: {
     } catch (err) {
       if (!mountedRef.current || gen !== generationRef.current) return
       setRunning(false)
-      setError(err instanceof MicError ? err.reason : 'desteklenmiyor')
+      setError(toGateError(err))
     }
   }, [])
 
@@ -70,7 +82,8 @@ export function MicGate(props: {
       {props.children(start, stop, running)}
       {error && (
         <div role="alert" class="mic-error">
-          <p>{MESSAGES[error]}</p>
+          <p>{MESSAGES[error.reason]}</p>
+          {error.detail && <p class="mic-error-detail">Ayrıntı: {error.detail}</p>}
           <button type="button" onClick={() => void start()}>
             Tekrar dene
           </button>

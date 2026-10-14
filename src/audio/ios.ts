@@ -14,6 +14,12 @@ export function setPlaybackSession(): void {
   }
 }
 
+/** Tanılama için: geçerli ses oturumu türü (destek yoksa undefined). */
+export function audioSessionType(): string | undefined {
+  const session = (navigator as Navigator & { audioSession?: AudioSessionLike }).audioSession
+  return session?.type
+}
+
 export function isStandalone(): boolean {
   const mql =
     typeof window.matchMedia === 'function' ? window.matchMedia('(display-mode: standalone)') : null
