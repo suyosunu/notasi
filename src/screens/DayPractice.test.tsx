@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { playWritten, unlockAudio } from '../audio/player'
 import { DAY_CAP_MS, loadOrStartDaySession } from '../learning/day-session'
 import type { DayState } from '../learning/day-session'
-import { getOpenSession, listAttempts, resetDbForTests, saveSession, saveSettings } from '../store/db'
+import { addAttempt, getOpenSession, listAttempts, listCards, resetDbForTests, saveSession, saveSettings } from '../store/db'
 import { DayPractice } from './DayPractice'
 
 vi.mock('../audio/player', () => ({
@@ -12,6 +12,7 @@ vi.mock('../audio/player', () => ({
   stopAudio: vi.fn(),
 }))
 
+const REVIEW_NOTE = 'Biraz önceki konuyu tekrar edelim, sonra devam ederiz.'
 const WARNING = 'Ses çalınamadı. Telefonun sessiz düğmesini kontrol edin.'
 
 beforeEach(async () => {
@@ -113,6 +114,31 @@ describe('DayPractice (gündüz oturumu)', () => {
     expect(await getOpenSession('gunduz')).toBeUndefined()
   })
 
+  it('shows no review note by default', async () => {
+    render(<DayPractice />)
+    await currentQuestion()
+    expect(screen.queryByText(REVIEW_NOTE)).toBeNull()
+  })
+
+  it('shows the soft review note at the top when the session asks to revisit the previous topic', async () => {
+    for (let i = 0; i < 10; i++) await addAttempt({ topicId: 'nota-1', cardId: 'note:D5', correct: true })
+    for (let i = 0; i < 8; i++) await addAttempt({ topicId: 'sure-1', cardId: 'dur:whole', correct: i < 3 })
+    render(<DayPractice />)
+    await currentQuestion()
+    const note = screen.getByText(REVIEW_NOTE)
+    expect(note.getAttribute('role')).toBe('status')
+    expect(note.textContent).not.toMatch(/başarısız|yanlış|hata/i)
+  })
+
+  it('updates the Leitner card of the answered question', async () => {
+    render(<DayPractice />)
+    const q = await currentQuestion()
+    fireEvent.click(screen.getByRole('button', { name: q.answer }))
+    await screen.findByText('Doğru 👏')
+    const cards = await listCards()
+    expect(cards.find((c) => c.id === q.cardId)?.box).toBe(2)
+  })
+
   describe('timer', () => {
     /** 1000 ms'lik aralığı elle sürülebilir yapar; diğer aralıklar (waitFor) gerçek kalır. */
     function captureTimer() {
@@ -198,5 +224,9 @@ describe('DayPractice (serbest tur)', () => {
     expect(attempts).toHaveLength(8)
     expect(attempts.every((a) => a.topicId === 'nota-2')).toBe(true)
     expect(await getOpenSession('gunduz')).toBeUndefined()
+    const cards = await listCards()
+    expect(cards.length).toBeGreaterThan(0)
+    expect(cards.every((c) => ['note:A4', 'note:G4'].includes(c.id))).toBe(true)
+    expect(screen.queryByText(REVIEW_NOTE)).toBeNull()
   })
 })

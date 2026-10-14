@@ -49,3 +49,16 @@ export function topicStatuses(
 export function currentTopic(topics: Topic[], statuses: Record<string, TopicStatus>): Topic | null {
   return topics.find((t) => statuses[t.id] === 'acik') ?? null
 }
+
+export const REVIEW_MIN_ATTEMPTS = 6
+export const REVIEW_MIN_CORRECT = 5
+
+/**
+ * Tek bir konunun denemeleri verilir. Konuda en az 6 deneme varsa ve son 10 denemenin
+ * 5'inden azı doğruysa, öğrenci bir önceki konuya kısa bir dönüşten yarar görür.
+ */
+export function needsReview(attempts: AttemptRec[]): boolean {
+  if (attempts.length < REVIEW_MIN_ATTEMPTS) return false
+  const last = [...attempts].sort((a, b) => a.at.localeCompare(b.at)).slice(-MASTERY_WINDOW)
+  return last.filter((a) => a.correct).length < REVIEW_MIN_CORRECT
+}

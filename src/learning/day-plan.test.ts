@@ -70,4 +70,103 @@ describe('buildDayQuestions', () => {
       buildDayQuestions({ topics: NOTA_TOPICS, statuses: statuses(['nota-1'], 'sure-1'), count: 0, rng: seededRng(8) }),
     ).toEqual([])
   })
+
+  describe('1c kuralı (dueCards verildiğinde)', () => {
+    const nota1 = NOTA_TOPICS.find((t) => t.id === 'nota-1')!
+    const due10 = ['note:A4', 'note:G4', 'note:E5', 'note:F5', 'note:G5', 'note:C4', 'note:D4', 'note:E4', 'note:F4', 'note:A5']
+    const ids = (qs: { cardId: string }[]) => qs.map((q) => q.cardId)
+
+    it('count 12 ve 10 due kart: due kartlardan en fazla 6 soru, sırayla', () => {
+      const qs = buildDayQuestions({
+        topics: NOTA_TOPICS,
+        statuses: statuses([], 'nota-1'),
+        count: 12,
+        rng: seededRng(11),
+        dueCards: due10,
+      })
+      expect(qs).toHaveLength(12)
+      const dueQs = ids(qs).filter((id) => !nota1.cards.includes(id))
+      expect(dueQs.sort()).toEqual(due10.slice(0, 6).sort())
+      expect(qs.filter((q) => q.topicId === 'nota-1')).toHaveLength(6)
+    })
+    it('tek sayıda count: floor(count/2) due kart', () => {
+      const qs = buildDayQuestions({
+        topics: NOTA_TOPICS,
+        statuses: statuses([], 'nota-1'),
+        count: 11,
+        rng: seededRng(12),
+        dueCards: due10,
+      })
+      expect(qs).toHaveLength(11)
+      expect(ids(qs).filter((id) => !nota1.cards.includes(id))).toHaveLength(5)
+    })
+    it('reviewTopic verilince ondan tam 3 soru gelir', () => {
+      const qs = buildDayQuestions({
+        topics: NOTA_TOPICS,
+        statuses: statuses(['nota-1'], 'sure-1'),
+        count: 12,
+        rng: seededRng(13),
+        dueCards: [],
+        reviewTopic: nota1,
+      })
+      expect(qs).toHaveLength(12)
+      expect(qs.filter((q) => q.topicId === 'nota-1')).toHaveLength(3)
+      expect(qs.filter((q) => q.topicId === 'sure-1')).toHaveLength(9)
+    })
+    it('due kartlar + review + güncel konu: 6 + 3 + 3', () => {
+      const qs = buildDayQuestions({
+        topics: NOTA_TOPICS,
+        statuses: statuses(['nota-1'], 'sure-1'),
+        count: 12,
+        rng: seededRng(14),
+        dueCards: due10,
+        reviewTopic: nota1,
+      })
+      expect(qs).toHaveLength(12)
+      expect(qs.filter((q) => q.topicId === 'nota-1')).toHaveLength(3)
+      expect(qs.filter((q) => q.topicId === 'sure-1')).toHaveLength(3)
+      expect(ids(qs).filter((id) => due10.includes(id))).toHaveLength(6)
+    })
+    it('boş dueCards: hepsi güncel konudan (1a değil 1c)', () => {
+      const qs = buildDayQuestions({
+        topics: NOTA_TOPICS,
+        statuses: statuses(['nota-1'], 'sure-1'),
+        count: 12,
+        rng: seededRng(15),
+        dueCards: [],
+      })
+      expect(qs.every((q) => q.topicId === 'sure-1')).toBe(true)
+    })
+    it('güncel konu yoksa kalan sorular öğrenilmiş konulardan', () => {
+      const all = NOTA_TOPICS.map((t) => t.id)
+      const qs = buildDayQuestions({ topics: NOTA_TOPICS, statuses: statuses(all, null), count: 10, rng: seededRng(16), dueCards: [] })
+      expect(qs).toHaveLength(10)
+    })
+    it('hiçbir kaynak yoksa boş liste', () => {
+      expect(
+        buildDayQuestions({ topics: NOTA_TOPICS, statuses: statuses([], null), count: 10, rng: seededRng(17), dueCards: [] }),
+      ).toEqual([])
+    })
+    it('toplam count değerini aşmaz', () => {
+      const qs = buildDayQuestions({
+        topics: NOTA_TOPICS,
+        statuses: statuses(['nota-1'], 'sure-1'),
+        count: 4,
+        rng: seededRng(18),
+        dueCards: due10,
+        reviewTopic: nota1,
+      })
+      expect(qs).toHaveLength(4)
+    })
+    it('aynı seed aynı sonuç', () => {
+      const input = () => ({
+        topics: NOTA_TOPICS,
+        statuses: statuses(['nota-1'], 'sure-1'),
+        count: 12,
+        rng: seededRng(19),
+        dueCards: ['note:D5', 'note:C5'],
+      })
+      expect(buildDayQuestions(input())).toEqual(buildDayQuestions(input()))
+    })
+  })
 })

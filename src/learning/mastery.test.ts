@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { NOTA_TOPICS } from '../content/nota-topics'
 import type { AttemptRec } from '../store/db'
-import { currentTopic, isMastered, MASTERY_THRESHOLD, MASTERY_WINDOW, topicStatuses } from './mastery'
+import { currentTopic, isMastered, MASTERY_THRESHOLD, MASTERY_WINDOW, needsReview, topicStatuses } from './mastery'
 
 function attempts(topicId: string, results: boolean[], startMinute = 0): AttemptRec[] {
   return results.map((correct, i) => ({
@@ -73,5 +73,26 @@ describe('topicStatuses / currentTopic', () => {
   it('hepsi öğrenildiyse currentTopic null', () => {
     const s = topicStatuses(NOTA_TOPICS, [], new Set(NOTA_TOPICS.map((t) => t.id)))
     expect(currentTopic(NOTA_TOPICS, s)).toBeNull()
+  })
+})
+
+describe('needsReview', () => {
+  it('8 denemede 3 doğru: gerekli', () => expect(needsReview(mk(3, 8))).toBe(true))
+  it('4 denemede 0 doğru: gerekli değil (az deneme)', () => expect(needsReview(mk(0, 4))).toBe(false))
+  it('5 denemede 0 doğru: gerekli değil', () => expect(needsReview(mk(0, 5))).toBe(false))
+  it('6 denemede 0 doğru: gerekli', () => expect(needsReview(mk(0, 6))).toBe(true))
+  it('son 10da 5 doğru: gerekli değil', () => expect(needsReview(mk(5, 10))).toBe(false))
+  it('son 10da 4 doğru: gerekli', () => expect(needsReview(mk(4, 10))).toBe(true))
+  it('yalnızca son 10 denemeye bakar, girdi sırasına güvenmez', () => {
+    const old = attempts('nota-1', Array(10).fill(false), 0)
+    const recent = attempts('nota-1', Array(10).fill(true), 10)
+    expect(needsReview([...old, ...recent])).toBe(false)
+    expect(needsReview([...old, ...recent].reverse())).toBe(false)
+  })
+  it('girdiyi değiştirmez', () => {
+    const input = mk(3, 8).reverse()
+    const copy = [...input]
+    needsReview(input)
+    expect(input).toEqual(copy)
   })
 })

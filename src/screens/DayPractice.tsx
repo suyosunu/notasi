@@ -1,18 +1,20 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
 import { playWritten, stopAudio, unlockAudio } from '../audio/player'
 import { NOTA_TOPICS } from '../content/nota-topics'
+import { review } from '../learning/leitner'
 import { answerQuestion, loadOrStartDaySession, tick } from '../learning/day-session'
 import type { DayState } from '../learning/day-session'
 import { makeQuestion } from '../learning/questions'
 import type { Question } from '../learning/questions'
 import { Staff } from '../notation/Staff'
 import { navigate } from '../router'
-import { addAttempt, getSettings } from '../store/db'
+import { addAttempt, getCard, getSettings, putCard } from '../store/db'
 import type { SessionRec, Settings } from '../store/db'
 import { seededRng, shuffle } from '../util/rng'
 
 const TICK_MS = 1000
 const FREE_QUESTION_COUNT = 8
+export const REVIEW_NOTE = 'Biraz önceki konuyu tekrar edelim, sonra devam ederiz.'
 export const SOUND_WARNING = 'Ses çalınamadı. Telefonun sessiz düğmesini kontrol edin.'
 
 interface Feedback {
@@ -27,11 +29,13 @@ interface QuestionCardProps {
   total: number
   settings: Settings
   feedback: Feedback | null
+  /** Ekranın başında gösterilen yumuşak not (örn. önceki konuya dönüş). */
+  note?: string
   onChoose: (choice: string) => void
   onNext: () => void
 }
 
-function QuestionCard({ question, index, total, settings, feedback, onChoose, onNext }: QuestionCardProps) {
+function QuestionCard({ question, index, total, settings, feedback, note, onChoose, onNext }: QuestionCardProps) {
   const [showHint, setShowHint] = useState(false)
   const [soundWarn, setSoundWarn] = useState(false)
 
@@ -62,6 +66,12 @@ function QuestionCard({ question, index, total, settings, feedback, onChoose, on
         </h1>
         <progress max={total} value={index + (answered ? 1 : 0)} aria-label="İlerleme" />
       </header>
+
+      {note && (
+        <p class="notice" role="status">
+          {note}
+        </p>
+      )}
 
       <p class="prompt">{question.prompt}</p>
       <div class="staff-wrap">
@@ -215,6 +225,7 @@ function DaySession() {
       total={state.questions.length}
       settings={settings}
       feedback={feedback}
+      note={state.reviewNote ? REVIEW_NOTE : undefined}
       onChoose={choose}
       onNext={next}
     />
@@ -271,6 +282,7 @@ function FreePractice({ topicId }: { topicId: string }) {
     try {
       const correct = choice === question.answer
       await addAttempt({ topicId: question.topicId, cardId: question.cardId, correct })
+      await putCard(review(await getCard(question.cardId), question.cardId, correct, new Date()))
       if (correct) setScore((n) => n + 1)
       setFeedback({ choice, correct })
     } finally {

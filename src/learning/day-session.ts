@@ -1,10 +1,21 @@
 import { NOTA_TOPICS } from '../content/nota-topics'
-import { addAttempt, getOpenSession, getSettings, listAttempts, listTopics, saveSession } from '../store/db'
+import {
+  addAttempt,
+  getCard,
+  getOpenSession,
+  getSettings,
+  listAttempts,
+  listCards,
+  listTopics,
+  putCard,
+  saveSession,
+} from '../store/db'
 import type { SessionRec } from '../store/db'
 import { todayLocal } from '../util/date'
 import { seededRng } from '../util/rng'
 import { buildDayQuestions } from './day-plan'
-import { topicStatuses } from './mastery'
+import { isDue, review } from './leitner'
+import { currentTopic, needsReview, topicStatuses } from './mastery'
 import type { Question } from './questions'
 
 /** Bir gündüz oturumunun en çok sürebileceği aktif süre. */
@@ -14,6 +25,8 @@ export interface DayState {
   questions: Question[]
   index: number
   answers: { cardId: string; correct: boolean }[]
+  /** Önceki konuya dönüş yapıldıysa ekranın başında yumuşak bir not gösterilir. */
+  reviewNote: boolean
 }
 
 export async function finishSession(s: SessionRec, completed: boolean): Promise<SessionRec> {
@@ -23,16 +36,42 @@ export async function finishSession(s: SessionRec, completed: boolean): Promise<
 }
 
 async function startDaySession(now: Date): Promise<SessionRec> {
-  const [settings, attempts, topics] = await Promise.all([getSettings(), listAttempts(), listTopics()])
+  const [settings, attempts, topics, cards] = await Promise.all([
+    getSettings(),
+    listAttempts(),
+    listTopics(),
+    listCards(),
+  ])
   const placedOut = new Set(topics.filter((t) => t.placedOut).map((t) => t.id))
   const statuses = topicStatuses(NOTA_TOPICS, attempts, placedOut)
+  const today = todayLocal(now)
+
+  // Vadesi gelen, kilitli olmayan konuların kartları; en gecikmiş önce.
+  const dueCards = cards
+    .filter((c) => {
+      const topic = NOTA_TOPICS.find((t) => t.cards.includes(c.id))
+      return topic !== undefined && statuses[topic.id] !== 'kilitli' && isDue(c, today)
+    })
+    .sort((a, b) => a.lastReviewedAt.localeCompare(b.lastReviewedAt))
+    .map((c) => c.id)
+
+  // Güncel konuda zorlanılıyorsa bir önceki konuya yumuşak dönüş.
+  const current = currentTopic(NOTA_TOPICS, statuses)
+  const currentIndex = current ? NOTA_TOPICS.indexOf(current) : -1
+  const reviewTopic =
+    current && currentIndex > 0 && needsReview(attempts.filter((a) => a.topicId === current.id))
+      ? NOTA_TOPICS[currentIndex - 1]!
+      : null
+
   const questions = buildDayQuestions({
     topics: NOTA_TOPICS,
     statuses,
     count: settings.dailyQuestionCount,
     rng: seededRng(now.getTime()),
+    dueCards,
+    reviewTopic,
   })
-  const state: DayState = { questions, index: 0, answers: [] }
+  const state: DayState = { questions, index: 0, answers: [], reviewNote: reviewTopic !== null }
   const session: SessionRec = {
     id: crypto.randomUUID(),
     kind: 'gunduz',
@@ -66,6 +105,7 @@ export async function answerQuestion(
   if (!q) throw new Error('Cevaplanacak soru kalmadı')
   const correct = choice === q.answer
   await addAttempt({ topicId: q.topicId, cardId: q.cardId, correct })
+  await putCard(review(await getCard(q.cardId), q.cardId, correct, new Date()))
   const index = state.index + 1
   const next: SessionRec = {
     ...s,

@@ -1,5 +1,15 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { addAttempt, getOpenSession, listAttempts, listSessions, resetDbForTests, saveSettings, setPlacedOut } from '../store/db'
+import {
+  addAttempt,
+  getCard,
+  getOpenSession,
+  listAttempts,
+  listSessions,
+  putCard,
+  resetDbForTests,
+  saveSettings,
+  setPlacedOut,
+} from '../store/db'
 import { DAY_CAP_MS, answerQuestion, finishSession, loadOrStartDaySession, tick } from './day-session'
 import type { DayState } from './day-session'
 
@@ -132,5 +142,83 @@ describe('tick and finishSession', () => {
     const f = await finishSession(s, false)
     expect(f.completed).toBe(false)
     expect(f.endedAt).toBeTruthy()
+  })
+})
+
+describe('Leitner tekrarı', () => {
+  const LONG_AGO = new Date(2026, 8, 1, 12, 0, 0).toISOString()
+
+  async function masterNota1() {
+    for (let i = 0; i < 10; i++) await addAttempt({ topicId: 'nota-1', cardId: 'note:D5', correct: true })
+  }
+
+  it('answerQuestion kartı günceller: doğru → kutu 2, yanlış → kutu 1', async () => {
+    const s = await loadOrStartDaySession(TODAY)
+    const q = (s.state as DayState).questions[0]!
+    const { session } = await answerQuestion(s, q.answer)
+    expect((await getCard(q.cardId))?.box).toBe(2)
+    const q2 = (session.state as DayState).questions[1]!
+    const wrong = q2.options.find((o) => o !== q2.answer)!
+    await putCard({ id: q2.cardId, box: 4, lastReviewedAt: LONG_AGO })
+    await answerQuestion(session, wrong)
+    expect((await getCard(q2.cardId))?.box).toBe(1)
+  })
+
+  it('vadesi gelen kartlar oturuma girer; kilitli konunun kartı girmez', async () => {
+    await masterNota1()
+    await putCard({ id: 'note:D5', box: 1, lastReviewedAt: LONG_AGO })
+    await putCard({ id: 'note:A4', box: 1, lastReviewedAt: LONG_AGO }) // nota-2: kilitli
+    const s = await loadOrStartDaySession(TODAY)
+    const qs = (s.state as DayState).questions
+    expect(qs).toHaveLength(12)
+    expect(qs.filter((q) => q.cardId === 'note:D5')).toHaveLength(1)
+    expect(qs.some((q) => q.topicId === 'nota-2')).toBe(false)
+  })
+
+  it('vadesi gelmemiş kart oturuma girmez', async () => {
+    await masterNota1()
+    await putCard({ id: 'note:D5', box: 5, lastReviewedAt: new Date(2026, 9, 12, 12).toISOString() })
+    const s = await loadOrStartDaySession(TODAY)
+    expect((s.state as DayState).questions.every((q) => q.topicId === 'sure-1')).toBe(true)
+  })
+
+  it('en çok gecikmiş kartlar önce alınır', async () => {
+    await masterNota1()
+    const ids = ['note:D5', 'note:C5', 'note:B4']
+    await saveSettings({ dailyQuestionCount: 4 }) // floor(4/2) = 2 due kart
+    await putCard({ id: ids[0]!, box: 1, lastReviewedAt: new Date(2026, 9, 1).toISOString() })
+    await putCard({ id: ids[1]!, box: 1, lastReviewedAt: new Date(2026, 8, 1).toISOString() })
+    await putCard({ id: ids[2]!, box: 1, lastReviewedAt: new Date(2026, 9, 5).toISOString() })
+    const s = await loadOrStartDaySession(TODAY)
+    const picked = (s.state as DayState).questions.filter((q) => ids.includes(q.cardId)).map((q) => q.cardId)
+    expect(picked.sort()).toEqual(['note:C5', 'note:D5'])
+  })
+
+  it('güncel konu zorlanıyorsa önceki konudan 3 soru ve not', async () => {
+    await masterNota1()
+    for (let i = 0; i < 8; i++) await addAttempt({ topicId: 'sure-1', cardId: 'dur:whole', correct: i < 3 })
+    const s = await loadOrStartDaySession(TODAY)
+    const st = s.state as DayState
+    expect(st.reviewNote).toBe(true)
+    expect(st.questions.filter((q) => q.topicId === 'nota-1')).toHaveLength(3)
+    expect(st.questions.filter((q) => q.topicId === 'sure-1')).toHaveLength(9)
+    // devam eden oturum notu korur
+    const again = await loadOrStartDaySession(new Date(2026, 9, 13, 18, 0, 0))
+    expect((again.state as DayState).reviewNote).toBe(true)
+  })
+
+  it('zorlanma yoksa not yok ve geri dönüş sorusu yok', async () => {
+    await masterNota1()
+    for (let i = 0; i < 8; i++) await addAttempt({ topicId: 'sure-1', cardId: 'dur:whole', correct: i < 6 })
+    const st = (await loadOrStartDaySession(TODAY)).state as DayState
+    expect(st.reviewNote).toBe(false)
+    expect(st.questions.every((q) => q.topicId === 'sure-1')).toBe(true)
+  })
+
+  it('ilk konuda zorlanma: önceki konu yok, not yok', async () => {
+    for (let i = 0; i < 8; i++) await addAttempt({ topicId: 'nota-1', cardId: 'note:D5', correct: i < 2 })
+    const st = (await loadOrStartDaySession(TODAY)).state as DayState
+    expect(st.reviewNote).toBe(false)
+    expect(st.questions.every((q) => q.topicId === 'nota-1')).toBe(true)
   })
 })
