@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'preact/hooks'
 import { NOTA_TOPICS } from '../content/nota-topics'
 import type { DayState } from '../learning/day-session'
+import { buildEveningPlan } from '../learning/evening-plan'
+import type { EveningStep } from '../learning/evening-plan'
+import { loadEveningInput } from '../learning/evening-session'
 import { currentTopic, topicStatuses } from '../learning/mastery'
 import { streakDays } from '../learning/streak'
 import { replaceRoute } from '../router'
@@ -18,6 +21,7 @@ interface HomeData {
   doneToday: boolean
   backupDue: boolean
   hasCompletedSession: boolean
+  eveningPlan: EveningStep[]
 }
 
 function greetingFor(now: Date): string {
@@ -29,11 +33,12 @@ function greetingFor(now: Date): string {
 async function load(): Promise<HomeData | null> {
   const settings = await getSettings()
   if (!settings.onboarded) return null
-  const [attempts, topics, sessions, open] = await Promise.all([
+  const [attempts, topics, sessions, open, eveningInput] = await Promise.all([
     listAttempts(),
     listTopics(),
     listSessions(),
     getOpenSession('gunduz'),
+    loadEveningInput(),
   ])
   const now = new Date()
   const today = todayLocal(now)
@@ -52,6 +57,7 @@ async function load(): Promise<HomeData | null> {
     doneToday: completed.some((s) => s.kind === 'gunduz' && s.date === today),
     backupDue: needsBackupReminder(settings.lastBackupAt, completed.length > 0, now),
     hasCompletedSession: completed.length > 0,
+    eveningPlan: buildEveningPlan(eveningInput),
   }
 }
 
@@ -138,10 +144,17 @@ export function Home() {
           {data.progress && <progress class="card-progress" value={data.progress.index} max={data.progress.total} />}
           {data.doneToday && <span class="card-done">Bugünkü tur tamam ✓</span>}
         </a>
-        <div class="card card-night card-disabled" aria-disabled="true">
+        <a class="card card-night" href="#/aksam">
           <strong>🌙 Akşam neyle</strong>
-          <span>Yakında: neyle uzun ses</span>
-        </div>
+          <ul class="plan-steps">
+            {data.eveningPlan.map((step, i) => (
+              <li key={i}>
+                <span class="plan-label">{step.label}</span>
+                {step.tries > 1 && <span class="muted"> ×{step.tries}</span>}
+              </li>
+            ))}
+          </ul>
+        </a>
       </nav>
 
       <nav class="chips" aria-label="Bölümler">

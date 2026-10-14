@@ -1,0 +1,73 @@
+import { NEY_PERDELER, visibleFingering } from '../content/ney-perdeler'
+import type { NeyPerde, PerdeId } from '../content/ney-perdeler'
+import type { LongToneRec } from '../store/db'
+import type { TopicStatus } from './mastery'
+
+export type PerdeStatus = 'kilitli' | 'acik' | 'gecildi'
+
+export interface EveningStep {
+  kind: 'ilk-ses' | 'kalibrasyon' | 'uzun-ses'
+  perdeId?: PerdeId
+  label: string
+  tries: number
+}
+
+/** "İlk ses" denemeleri bu kimlikle `LongToneRec` olarak saklanır. */
+export const ILK_SES_ID = 'ilk-ses'
+
+const OTHER_PASSED_MAX = 3
+
+/**
+ * Perde `i` şunların hepsi sağlanınca açılır: ilk perde ya da önceki perde geçilmiş,
+ * nota konusu kilitli değil, parmak şeması doğrulanmış. Geçilmiş (`passed`) kaydı olan
+ * perde geçilmiştir.
+ */
+export function perdeStatuses(
+  longTones: LongToneRec[],
+  notaStatuses: Record<string, TopicStatus>,
+  perdeler: NeyPerde[] = NEY_PERDELER,
+): Record<PerdeId, PerdeStatus> {
+  const passed = new Set(longTones.filter((r) => r.passed).map((r) => r.perdeId))
+  const out = {} as Record<PerdeId, PerdeStatus>
+  let prev: PerdeStatus | null = null
+  for (const p of perdeler) {
+    let status: PerdeStatus
+    if (passed.has(p.id)) {
+      status = 'gecildi'
+    } else {
+      const notaOpen = Object.hasOwn(notaStatuses, p.notaTopicId) && notaStatuses[p.notaTopicId] !== 'kilitli'
+      const prevOk: boolean = prev === null || prev === 'gecildi'
+      status = prevOk && notaOpen && visibleFingering(p) !== null ? 'acik' : 'kilitli'
+    }
+    out[p.id] = status
+    prev = status
+  }
+  return out
+}
+
+function perdeStep(p: NeyPerde, tries: number): EveningStep {
+  return { kind: 'uzun-ses', perdeId: p.id, label: `Uzun ses: ${p.name}`, tries }
+}
+
+export function buildEveningPlan(input: {
+  ilkSesPassed: boolean
+  calibrated: boolean
+  perdeStatus: Record<PerdeId, PerdeStatus>
+}): EveningStep[] {
+  if (!input.ilkSesPassed) return [{ kind: 'ilk-ses', label: 'İlk ses', tries: 3 }]
+  if (!input.calibrated) {
+    return [
+      { kind: 'ilk-ses', label: 'İlk ses', tries: 1 },
+      { kind: 'kalibrasyon', label: 'Kalibrasyon', tries: 1 },
+    ]
+  }
+  const passed = NEY_PERDELER.filter((p) => input.perdeStatus[p.id] === 'gecildi')
+  const current = NEY_PERDELER.find((p) => input.perdeStatus[p.id] === 'acik')
+  const warmup = passed.at(-1)
+  const plan: EveningStep[] = []
+  if (warmup) plan.push(perdeStep(warmup, 1))
+  if (current) plan.push(perdeStep(current, 3))
+  // Diğer geçilenler: güncel perdeye en yakın olandan geriye doğru.
+  for (const p of passed.slice(0, -1).reverse().slice(0, OTHER_PASSED_MAX)) plan.push(perdeStep(p, 1))
+  return plan
+}

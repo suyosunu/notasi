@@ -62,6 +62,35 @@ describe('App', () => {
     expect(screen.getByText('Sayfa bulunamadı')).toBeTruthy()
   })
 
+  it('#/ney rotası Ney bölümünü gösterir', async () => {
+    location.hash = '#/ney'
+    render(<App />)
+    expect(await screen.findByRole('link', { name: 'Yeniden kalibre et' })).toBeTruthy()
+  })
+
+  it('#/ney/<perde> rotası o perdenin uzun sesini açar', async () => {
+    await saveSettings({ calibrated: true })
+    location.hash = '#/ney/neva'
+    render(<App />)
+    expect(await screen.findByRole('heading', { name: /Uzun ses: Nevâ/ })).toBeTruthy()
+  })
+
+  it('bilinmeyen perde için bulunamadı ekranını gösterir', () => {
+    location.hash = '#/ney/yok'
+    render(<App />)
+    expect(screen.getByText('Sayfa bulunamadı')).toBeTruthy()
+    cleanup()
+    location.hash = '#/ney/toString'
+    render(<App />)
+    expect(screen.getByText('Sayfa bulunamadı')).toBeTruthy()
+  })
+
+  it('#/aksam rotası akşam pratiğini açar', async () => {
+    location.hash = '#/aksam'
+    render(<App />)
+    expect(await screen.findByRole('heading', { name: /İlk ses/ })).toBeTruthy()
+  })
+
   it('#/oturum-sonu rotası oturum sonu ekranını gösterir', async () => {
     location.hash = '#/oturum-sonu'
     render(<App />)

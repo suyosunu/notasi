@@ -224,11 +224,6 @@ a:focus-visible {
   font-weight: 600;
 }
 
-.card-disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
 .chips {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -379,4 +374,70 @@ a:focus-visible {
   display: inline-flex;
   align-items: center;
   min-height: 2.75rem;
+}
+
+/* Akşam: plan adımları (ana ekran kartı) */
+.plan-steps {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+/* Uzun ses */
+.step-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.tone {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.tone-guide {
+  margin: 0;
+  padding: 0.75rem 0.75rem 0.75rem 1.75rem;
+  border-radius: 0.75rem;
+  background: #f3ecdc;
+}
+
+.tone-perde {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.tone-perde .fingering {
+  flex: none;
+  width: 4.5rem;
+  height: auto;
+}
+
+.tone-tip {
+  margin: 0;
+}
+
+.tone-time {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.tuner {
+  display: block;
+  max-width: 20rem;
+  margin: 0 auto;
+  color: var(--ink);
+}
+
+.tone .tool {
+  width: 100%;
+}
+
+.tone .result p {
+  margin: 0 0 0.5rem;
 }

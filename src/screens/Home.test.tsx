@@ -1,6 +1,6 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/preact'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/preact'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { saveSession, saveSettings, resetDbForTests } from '../store/db'
+import { addLongTone, saveSession, saveSettings, resetDbForTests } from '../store/db'
 import type { SessionRec } from '../store/db'
 import { shareOrDownloadBackup } from '../store/backup'
 import { todayLocal } from '../util/date'
@@ -57,14 +57,32 @@ describe('Home', () => {
     expect(screen.getByText('Makam').closest('a')).toBeNull()
   })
 
-  it('links the Masa başı card to /gunduz and disables the evening card', async () => {
+  it('links the Masa başı card to /gunduz and the evening card to /aksam', async () => {
     await saveSettings({ onboarded: true })
     render(<Home />)
     const day = (await screen.findByText('☀️ Masa başı · 10 dk')).closest('a')
     expect(day?.getAttribute('href')).toBe('#/gunduz')
-    const night = screen.getByText('🌙 Akşam neyle').closest('[aria-disabled]')
-    expect(night?.getAttribute('aria-disabled')).toBe('true')
-    expect(screen.getByText('Yakında: neyle uzun ses')).toBeTruthy()
+    const night = screen.getByText('🌙 Akşam neyle').closest('a')
+    expect(night?.getAttribute('href')).toBe('#/aksam')
+    expect(night?.getAttribute('aria-disabled')).toBeNull()
+    expect(screen.queryByText('Yakında: neyle uzun ses')).toBeNull()
+  })
+
+  it('lists the evening plan step labels', async () => {
+    await saveSettings({ onboarded: true })
+    render(<Home />)
+    const night = (await screen.findByText('🌙 Akşam neyle')).closest('a') as HTMLElement
+    expect(within(night).getByText('İlk ses')).toBeTruthy()
+    cleanup()
+    await addLongTone({ perdeId: 'ilk-ses', durationMs: 3000, passed: true, toleranceCents: 50 })
+    await addLongTone({ perdeId: 'neva', durationMs: 4000, passed: true, toleranceCents: 25 })
+    await saveSettings({ calibrated: true })
+    render(<Home />)
+    const night2 = (await screen.findByText('🌙 Akşam neyle')).closest('a') as HTMLElement
+    const labels = within(night2)
+      .getAllByRole('listitem')
+      .map((li) => li.querySelector('.plan-label')?.textContent)
+    expect(labels).toEqual(['Uzun ses: Nevâ', 'Uzun ses: Çârgâh'])
   })
 
   it('shows the streak from completed sessions', async () => {
