@@ -33,12 +33,14 @@ export interface NeyPerde {
 // sıralar, ancak parmak pozisyonunu yazılı vermez ("öğretmen uygulamalı gösterir").
 // Şemalar Neyzenim ney derslerinden alınmıştır: sağ el üstte, sağ başparmak aşîrân deliğinde;
 // iki elin orta parmağı (2. ve 5. delik) destek için kapalı tutulur.
-const SRC_TEMEL =
-  'https://www.neyzenim.com/neydersleri_2.html (Ney Dersleri 2 – Temel Sesler); ' +
-  'el ve aşîrân yerleşimi: https://www.neyzenim.com/neydersleri_1.html'
-const SRC_BUSELIK =
-  'https://www.neyzenim.com/neydersleri_10.html (Ney Dersleri 10 – Buselik makamı, "Naturel Si Perdesi"); ' +
-  'el ve aşîrân yerleşimi: https://www.neyzenim.com/neydersleri_1.html'
+// `source`, o perdenin şemasını açıkça yazan tek sayfadır.
+
+/** Parmak→delik eşlemesinin kaynağı: sağ el üstte, sağ başparmak arkadaki aşîrân deliğinde. */
+export const DELIK_YERLESIMI_KAYNAK = 'https://www.neyzenim.com/neydersleri_1.html'
+/** Ney Dersleri 2 – Temel Sesler: Re (Neva), Do (Çargâh), La (Dügâh), Sol (Rast). */
+const SRC_TEMEL = 'https://www.neyzenim.com/neydersleri_2.html'
+/** Ney Dersleri 10 – Buselik makamı, "Naturel Si Perdesi". */
+const SRC_BUSELIK = 'https://www.neyzenim.com/neydersleri_10.html'
 
 /** Sıra MEB Ney Modülü 3. tema (NEY.3.3.1, NEY.3.3.2) sırasıdır. */
 export const NEY_PERDELER: NeyPerde[] = [

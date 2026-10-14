@@ -12,7 +12,7 @@ const INK = 'currentColor'
 
 const STATE_TR: Record<Hole, string> = { kapali: 'kapalı', acik: 'açık', yarim: 'yarım' }
 
-function describe(f: Fingering): string {
+function ariaText(f: Fingering): string {
   const parts = [`Başparmak (arka): ${STATE_TR[f.thumb]}`]
   f.front.forEach((h, i) => parts.push(`${i + 1}. delik: ${STATE_TR[h]}`))
   return `Ney parmak şeması. ${parts.join('; ')}.`
@@ -46,7 +46,10 @@ function HoleMark(props: { state: Hole; name: string; cx: number; cy: number; cl
   )
 }
 
-/** Dikey ney şeması: üstte arkadaki başparmak deliği, altında yukarıdan aşağı 6 ön delik. */
+/**
+ * Dikey ney şeması: üstte arkadaki başparmak deliği, altında yukarıdan aşağı 6 ön delik.
+ * Çağıran yalnızca `visibleFingering(p)` çıktısını vermelidir (null ise şema çizilmez).
+ */
 export function FingeringDiagram(props: { fingering: Fingering }) {
   const { fingering } = props
   const cx = TUBE_X + TUBE_W / 2
@@ -56,7 +59,7 @@ export function FingeringDiagram(props: { fingering: Fingering }) {
     <svg
       class="fingering"
       role="img"
-      aria-label={describe(fingering)}
+      aria-label={ariaText(fingering)}
       viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
       width={WIDTH}
       height={HEIGHT}

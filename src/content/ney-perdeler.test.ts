@@ -24,7 +24,7 @@ describe('NEY_PERDELER', () => {
   it('her doğrulanmış perdenin kaynağı ve şeması doludur', () => {
     for (const p of NEY_PERDELER.filter((x) => x.verified)) {
       expect(p.source, p.id).toBeTruthy()
-      expect(p.source!.trim().length, p.id).toBeGreaterThan(0)
+      expect(p.source, p.id).toMatch(/^https:\/\/\S+$/)
       expect(p.fingering, p.id).not.toBeNull()
       expect(p.fingering!.front, p.id).toHaveLength(6)
     }
