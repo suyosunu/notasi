@@ -19,6 +19,7 @@ describe('About', () => {
   })
 
   it("SOURCE_URL boşken bağlantı yerine '(yakında)' yazar", async () => {
+    vi.doMock('../config', () => ({ SOURCE_URL: '' }))
     const { About } = await import('./About')
     render(<About />)
     expect(
