@@ -63,6 +63,10 @@ function QuestionCard({ question, index, total, settings, feedback, note, onChoo
   return (
     <main class="screen day">
       <header class="day-head">
+        {/* Gündüz oturumu kaydedilidir, sonra kaldığı yerden sürer; serbest tur bırakılır. */}
+        <a class="back-top" href="#/">
+          ← Ara ver
+        </a>
         <h1>
           ☀️ Nota okuma · {index + 1}/{total}
         </h1>

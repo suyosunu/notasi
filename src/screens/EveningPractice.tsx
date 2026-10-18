@@ -73,7 +73,7 @@ export function EveningPractice() {
   if (!settings || !session || !state || !step) return <Loading />
 
   if (step.kind === 'kalibrasyon') {
-    return <Calibration key="kalibrasyon-adimi" onDone={() => void afterCalibration(true)} />
+    return <Calibration key="kalibrasyon-adimi" onDone={() => void afterCalibration(true)} onCancel={() => navigate('/')} />
   }
 
   let target: ToneTarget = { kind: 'ilk-ses' }
@@ -91,7 +91,13 @@ export function EveningPractice() {
     }
     // Perde hedefi ahenge bağlı: kalibrasyon yapılmadıysa önce o.
     if (!settings.calibrated) {
-      return <Calibration key="kalibrasyon-once" onDone={() => void afterCalibration(false)} />
+      return (
+        <Calibration
+          key="kalibrasyon-once"
+          onDone={() => void afterCalibration(false)}
+          onCancel={() => navigate('/')}
+        />
+      )
     }
     target = { kind: 'perde', perde }
   }

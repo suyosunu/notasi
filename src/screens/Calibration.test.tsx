@@ -53,6 +53,38 @@ async function begin(onDone = vi.fn()) {
   return onDone
 }
 
+describe('Calibration çıkış yolları', () => {
+  it('"← Geri" bağlantısı ve "Şimdi değil" varsayılan olarak ana ekrana döner', async () => {
+    location.hash = '#/kalibrasyon'
+    render(<Calibration />)
+    const back = await screen.findByRole('link', { name: '← Geri' })
+    expect(back.getAttribute('href')).toBe('#/')
+    fireEvent.click(screen.getByRole('button', { name: 'Şimdi değil' }))
+    expect(location.hash).toBe('#/')
+  })
+
+  it('onCancel verilince "← Geri" ve "Şimdi değil" onu çağırır', async () => {
+    const onCancel = vi.fn()
+    location.hash = '#/kalibrasyon'
+    render(<Calibration onDone={vi.fn()} onCancel={onCancel} />)
+    fireEvent.click(await screen.findByRole('link', { name: '← Geri' }))
+    expect(onCancel).toHaveBeenCalledTimes(1)
+    fireEvent.click(screen.getByRole('button', { name: 'Şimdi değil' }))
+    expect(onCancel).toHaveBeenCalledTimes(2)
+    expect(location.hash).toBe('#/kalibrasyon')
+  })
+
+  it('dinlerken "Vazgeç" mikrofonu kapatır ve başa döner; geç gelen örnekler sonuç üretmez', async () => {
+    await begin()
+    expect(screen.getByText('Dinleniyor…')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Vazgeç' }))
+    expect(stopper).toHaveBeenCalled()
+    expect(await screen.findByRole('button', { name: 'Başla' })).toBeTruthy()
+    blow(komaToHz(REF_KOMA + 9))
+    expect(screen.queryByText(/Neyiniz/)).toBeNull()
+  })
+})
+
 describe('Calibration', () => {
   it('Nevâ şemasını ve yönergeyi gösterir', async () => {
     render(<Calibration onDone={vi.fn()} />)

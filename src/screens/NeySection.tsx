@@ -128,7 +128,7 @@ export function NeyPerdePractice({ perdeId }: { perdeId: string }) {
     )
   }
   if (!settings.calibrated) {
-    return <Calibration onDone={() => void getSettings().then(setSettings)} />
+    return <Calibration onDone={() => void getSettings().then(setSettings)} onCancel={() => navigate('/ney')} />
   }
 
   return (

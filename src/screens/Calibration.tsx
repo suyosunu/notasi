@@ -36,9 +36,13 @@ function okText(t: Tuning): string {
   return `Neyiniz ${name} ahenginde, ${Math.round(Math.abs(t.tuningCents))} sent ${t.tuningCents > 0 ? 'tiz' : 'pes'}`
 }
 
-/** Nevâ perdesinden ahenk, oktav ve ince ayarı bulur; onaylanınca ayarlara kaydeder. */
-export function Calibration(props: { onDone?: () => void }) {
+/**
+ * Nevâ perdesinden ahenk, oktav ve ince ayarı bulur; onaylanınca ayarlara kaydeder.
+ * `onCancel` verilmezse vazgeçmek ana ekrana döner.
+ */
+export function Calibration(props: { onDone?: () => void; onCancel?: () => void }) {
   const onDone = props.onDone ?? (() => navigate('/'))
+  const onCancel = props.onCancel ?? (() => navigate('/'))
   const [settings, setSettings] = useState<Settings | null>(null)
   const [outcome, setOutcome] = useState<Outcome | null>(null)
   const settingsRef = useRef<Settings | null>(null)
@@ -76,6 +80,20 @@ export function Calibration(props: { onDone?: () => void }) {
     await start()
   }
 
+  /** Dinlemeyi yarıda keser: mikrofon kapanır, toplanan örnekler atılır, başlangıç durumuna dönülür. */
+  function abort() {
+    collectRef.current = null
+    stopRef.current()
+    setOutcome(null)
+  }
+
+  function cancel(e?: Event) {
+    e?.preventDefault()
+    collectRef.current = null
+    stopRef.current()
+    onCancel()
+  }
+
   async function save(tuning: Tuning) {
     await saveSettings({ tuning, calibrated: true })
     onDone()
@@ -86,13 +104,25 @@ export function Calibration(props: { onDone?: () => void }) {
 
   return (
     <main class="screen calibration">
+      <a class="back-top" href="#/" onClick={cancel}>
+        ← Geri
+      </a>
       <h1>Kalibrasyon</h1>
       <p>{INSTRUCTION}</p>
       {fingering && <FingeringDiagram fingering={fingering} />}
       <MicGate onSample={onSample}>
         {(start, stop, running) => {
           stopRef.current = stop
-          if (running) return <p role="status">Dinleniyor…</p>
+          if (running) {
+            return (
+              <div>
+                <p role="status">Dinleniyor…</p>
+                <button type="button" onClick={abort}>
+                  Vazgeç
+                </button>
+              </div>
+            )
+          }
           if (result) {
             return result.matchesSelected ? (
               <div>
@@ -120,6 +150,9 @@ export function Calibration(props: { onDone?: () => void }) {
               {outcome?.kind === 'error' && <p role="status">{outcome.message}</p>}
               <button type="button" disabled={!settings} onClick={() => void begin(start)}>
                 {outcome === null ? 'Başla' : 'Tekrar dene'}
+              </button>
+              <button type="button" onClick={() => cancel()}>
+                Şimdi değil
               </button>
             </div>
           )

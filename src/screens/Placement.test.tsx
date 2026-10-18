@@ -17,6 +17,16 @@ vi.mock('../audio/mic', async (orig) => {
     },
   }
 })
+/** true iken uzun ses kaydı yazılamaz (IndexedDB hatası benzetimi). */
+let failLongTone = false
+vi.mock('../store/db', async (orig) => {
+  const actual = await orig<typeof import('../store/db')>()
+  return {
+    ...actual,
+    addLongTone: (...args: Parameters<typeof actual.addLongTone>) =>
+      failLongTone ? Promise.reject(new Error('yazılamadı')) : actual.addLongTone(...args),
+  }
+})
 vi.mock('../audio/player', () => ({
   unlockAudio: vi.fn(() => Promise.resolve()),
   playWritten: vi.fn(() => Promise.resolve()),
@@ -30,6 +40,7 @@ const SEED = 42
 beforeEach(async () => {
   await resetDbForTests()
   emit = null
+  failLongTone = false
   location.hash = '#/yoklama'
 })
 afterEach(() => {
@@ -152,5 +163,22 @@ describe('Placement', () => {
     const recs = await listLongTones('ilk-ses')
     expect(recs).toHaveLength(1)
     expect(recs[0]!.passed).toBe(false)
+  })
+
+  it('ilk ses denemesinde "Atla" hep görünür; kayıt yazılamasa da yoklama biter', async () => {
+    failLongTone = true
+    render(<Placement seed={SEED} />)
+    await answerAll(() => false)
+    fireEvent.click(await screen.findByRole('button', { name: 'Evet' }))
+    expect(await screen.findByRole('button', { name: 'Atla' })).toBeTruthy()
+    const btn = await screen.findByRole('button', { name: 'Başla' })
+    await waitFor(() => expect((btn as HTMLButtonElement).disabled).toBe(false))
+    fireEvent.click(btn)
+    fireEvent.click(await screen.findByRole('button', { name: 'Bitir' }))
+    await screen.findByText(/Süre dolmadı/)
+    expect(screen.queryByRole('button', { name: 'Devam' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Atla' }))
+    expect(await screen.findByText('Hazırız!')).toBeTruthy()
+    expect((await getSettings()).placementDone).toBe(true)
   })
 })

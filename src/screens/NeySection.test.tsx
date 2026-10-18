@@ -91,6 +91,14 @@ describe('NeyPerdePractice', () => {
     expect(await screen.findByRole('heading', { name: 'Kalibrasyon' })).toBeTruthy()
   })
 
+  it('kalibrasyonda "Şimdi değil" Ney bölümüne döner', async () => {
+    location.hash = '#/ney/neva'
+    render(<NeyPerdePractice perdeId="neva" />)
+    await screen.findByRole('heading', { name: 'Kalibrasyon' })
+    fireEvent.click(screen.getByRole('button', { name: 'Şimdi değil' }))
+    expect(location.hash).toBe('#/ney')
+  })
+
   it('kilitli perde açılmaz', async () => {
     await saveSettings({ calibrated: true })
     render(<NeyPerdePractice perdeId="rast" />)

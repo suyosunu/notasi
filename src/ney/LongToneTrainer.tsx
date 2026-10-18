@@ -101,7 +101,11 @@ export function LongToneTrainer(props: {
     evaluateFingering()
     const tone = toneRef.current
     setResult({ passed: tone.passed, saved: false })
-    await addLongTone({ perdeId, durationMs: tone.bestMs, passed: tone.passed, toleranceCents: cfg.toleranceCents })
+    try {
+      await addLongTone({ perdeId, durationMs: tone.bestMs, passed: tone.passed, toleranceCents: cfg.toleranceCents })
+    } catch {
+      return // kayıt yazılamadı: sonraki adım düğmesi çıkmaz; çağıran ekranın çıkış yolu kalır
+    }
     if (mountedRef.current) setResult({ passed: tone.passed, saved: true })
   }
 

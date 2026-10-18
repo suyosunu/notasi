@@ -225,6 +225,16 @@ describe('EveningPractice', () => {
     expect(await screen.findByRole('heading', { name: 'Kalibrasyon' })).toBeTruthy()
   })
 
+  it('kalibrasyon adımında "Şimdi değil" ana ekrana döner', async () => {
+    await addLongTone({ perdeId: 'ilk-ses', durationMs: 3000, passed: true, toleranceCents: 50 })
+    location.hash = '#/aksam'
+    render(<EveningPractice />)
+    await finishTry()
+    await screen.findByRole('heading', { name: 'Kalibrasyon' })
+    fireEvent.click(screen.getByRole('button', { name: 'Şimdi değil' }))
+    expect(location.hash).toBe('#/')
+  })
+
   it('perde adımına kalibrasyonsuz gelinirse önce kalibrasyon gösterilir', async () => {
     await addLongTone({ perdeId: 'ilk-ses', durationMs: 3000, passed: true, toleranceCents: 50 })
     await saveSession({

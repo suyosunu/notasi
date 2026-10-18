@@ -40,6 +40,15 @@ async function currentQuestion() {
 }
 
 describe('DayPractice (gündüz oturumu)', () => {
+  it('soru kartının başında ana ekrana dönen "← Ara ver" bağlantısı vardır; oturum açık kalır', async () => {
+    render(<DayPractice />)
+    await currentQuestion()
+    const link = screen.getByRole('link', { name: '← Ara ver' })
+    expect(link.getAttribute('href')).toBe('#/')
+    expect(link.closest('header')).toBeTruthy()
+    expect(await getOpenSession('gunduz')).toBeTruthy()
+  })
+
   it('shows the header and shows "Doğru" after clicking the right option', async () => {
     render(<DayPractice />)
     const q = await currentQuestion()
@@ -301,6 +310,12 @@ describe('DayPractice (dizi ve eski oturumlar)', () => {
 })
 
 describe('DayPractice (serbest tur)', () => {
+  it('serbest turda da "← Ara ver" bağlantısı ana ekrana döner', async () => {
+    render(<DayPractice topicId="nota-2" />)
+    await screen.findByText('☀️ Nota okuma · 1/8')
+    expect(screen.getByRole('link', { name: '← Ara ver' }).getAttribute('href')).toBe('#/')
+  })
+
   it('asks 8 questions of the topic, writes attempts, no session record, and ends with the score', async () => {
     render(<DayPractice topicId="nota-2" />)
     for (let i = 1; i <= 8; i++) {

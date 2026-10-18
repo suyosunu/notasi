@@ -104,6 +104,10 @@ export function Placement({ seed }: { seed?: number }) {
           nextLabel="Devam"
           onNext={() => void finish()}
         />
+        {/* Deneme kaydı yazılamasa da (Devam çıkmaz) yoklamadan çıkılabilsin. */}
+        <button type="button" class="back" onClick={() => void finish()}>
+          Atla
+        </button>
       </main>
     )
   }
