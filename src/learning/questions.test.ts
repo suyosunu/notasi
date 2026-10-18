@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { MAKAM_TOPICS } from '../content/makam-topics'
 import { NOTA_TOPICS } from '../content/nota-topics'
+import { PERDE_ADLARI } from '../content/perde-adlari'
 import { seededRng } from '../util/rng'
 import { makeQuestion, SEQ_SEP } from './questions'
 
@@ -223,5 +225,83 @@ describe('perde isimleri (perde: / perde-ters:)', () => {
     for (let s = 1; s <= 30; s++) {
       for (const o of makeQuestion('perde-ters:D5', seededRng(s)).options) expect(o).not.toMatch(/tiz/)
     }
+  })
+})
+
+describe('perde-3 / perde-4 ipuçları ve Irak', () => {
+  const OLD = 'Sırayla: Rast (Sol), Dügâh, Bûselik, Çârgâh, Nevâ, Hüseynî, Acem, Gerdâniye, Muhayyer (tiz La).'
+  const H3 = 'Si üzerindeki işaretler: Segâh koma bemolü, Dik Kürdî bakiye bemolü, Kürdî küçük mücenneb bemolü.'
+  const H4 = 'Do üzerinde: Nim Hicaz bakiye diyezi, Hicaz küçük mücenneb diyezi; Fa üzerinde: Eviç bakiye diyezi.'
+
+  it('perde-3 ve perde-4 kendi ipucunu kullanır; perde-1/2 eskisini korur', () => {
+    for (const c of ['perde:B4b1', 'perde-ters:B4b5']) expect(makeQuestion(c, seededRng(1)).hint).toBe(H3)
+    for (const c of ['perde:C5#4', 'perde-ters:F5#4']) expect(makeQuestion(c, seededRng(1)).hint).toBe(H4)
+    for (const c of ['perde:G4', 'perde-ters:D5', 'perde:E5', 'perde-ters:A5']) {
+      expect(makeQuestion(c, seededRng(1)).hint).toBe(OLD)
+    }
+  })
+
+  it('hiçbir perde sorusunda Irak adı seçenek olmaz (ters sorularda etiketi Eviç ile aynı olduğundan yalnızca ad denetlenir)', () => {
+    for (const topic of NOTA_TOPICS.filter((t) => t.kind === 'perde-name')) {
+      for (const card of topic.cards) {
+        for (let seed = 1; seed <= 40; seed++) {
+          for (const o of makeQuestion(card, seededRng(seed)).options) {
+            expect(o).not.toBe('Irak')
+          }
+        }
+      }
+    }
+  })
+})
+
+describe('makam soruları', () => {
+  const MAKAM_CARDS = MAKAM_TOPICS.flatMap((t) => t.cards)
+
+  for (const card of MAKAM_CARDS) {
+    it(`${card}: 4 farklı seçenek, cevap içinde, aynı seed aynı soru`, () => {
+      for (let seed = 1; seed <= 20; seed++) {
+        const q = makeQuestion(card, seededRng(seed))
+        expect(q.options).toHaveLength(4)
+        expect(new Set(q.options).size).toBe(4)
+        expect(q.options).toContain(q.answer)
+        expect(q.cardId).toBe(card)
+        expect(q.topicId).toBe('makam')
+        expect(q.hint.length).toBeGreaterThan(0)
+        expect(makeQuestion(card, seededRng(seed))).toEqual(q)
+      }
+    })
+  }
+
+  it('makam-dizi: porte gösterilir, cevap makam adı, seçenekler üç makam + Hüseynî', () => {
+    const q = makeQuestion('makam-dizi:hicaz', seededRng(3))
+    expect(q.prompt).toBe('Bu dizi hangi makamın?')
+    expect(q.answer).toBe('Hicaz')
+    expect(q.events).toHaveLength(8)
+    expect([...q.options].sort()).toEqual(['Hicaz', 'Hüseynî', 'Rast', 'Uşşak'].sort())
+  })
+
+  it('makam-durak / makam-guclu: soru metni, cevap ve Irak içermeyen perde adı seçenekleri', () => {
+    const d = makeQuestion('makam-durak:ussak', seededRng(2))
+    expect(d.prompt).toBe('Uşşak makamının durağı hangi perde?')
+    expect(d.answer).toBe('Dügâh')
+    expect(d.events).toEqual([])
+    const g = makeQuestion('makam-guclu:rast', seededRng(2))
+    expect(g.prompt).toBe('Rast makamının güçlüsü hangi perde?')
+    expect(g.answer).toBe('Nevâ')
+    const names = Object.values(PERDE_ADLARI)
+    for (let seed = 1; seed <= 40; seed++) {
+      for (const card of ['makam-durak:rast', 'makam-durak:hicaz', 'makam-guclu:ussak']) {
+        for (const o of makeQuestion(card, seededRng(seed)).options) {
+          expect(names).toContain(o)
+          expect(o).not.toBe('Irak')
+        }
+      }
+    }
+  })
+
+  it('geçersiz makam kartı hata verir', () => {
+    expect(() => makeQuestion('makam-dizi:yok', seededRng(1))).toThrow('Geçersiz kart kimliği')
+    expect(() => makeQuestion('makam-dizi:toString', seededRng(1))).toThrow('Geçersiz kart kimliği')
+    expect(() => makeQuestion('makam-x:rast', seededRng(1))).toThrow('Geçersiz kart kimliği')
   })
 })

@@ -291,8 +291,8 @@ export function FreeRound({
         <p>
           Skor: {score}/{questions.length}
         </p>
-        <a class="primary" href="#/nota">
-          Notalara dön
+        <a class="primary" href={back?.href ?? '#/nota'}>
+          {back?.label ?? 'Notalara dön'}
         </a>
       </main>
     )

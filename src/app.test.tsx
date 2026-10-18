@@ -117,4 +117,33 @@ describe('App', () => {
     render(<App />)
     expect(await screen.findByText('Oturum sonu')).toBeTruthy()
   })
+
+  it('#/makam rotası Makam bölümünü gösterir', () => {
+    location.hash = '#/makam'
+    render(<App />)
+    expect(screen.getByRole('link', { name: /Uşşak/ })).toBeTruthy()
+  })
+
+  it('#/makam/<id> rotası makam sayfasını açar', () => {
+    location.hash = '#/makam/hicaz'
+    render(<App />)
+    expect(screen.getByRole('heading', { name: /Hicaz/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: '🔊 Diziyi dinle' })).toBeTruthy()
+  })
+
+  it('#/makam/sorular rotası makam sorularını açar, makam sayfası sanılmaz', async () => {
+    location.hash = '#/makam/sorular'
+    render(<App />)
+    expect(await screen.findByText(/Makam · 1\/8/)).toBeTruthy()
+    expect(screen.queryByText('Sayfa bulunamadı')).toBeNull()
+  })
+
+  it('bilinmeyen makam için bulunamadı ekranını gösterir', () => {
+    for (const hash of ['#/makam/yok', '#/makam/toString', '#/makam/']) {
+      location.hash = hash
+      render(<App />)
+      expect(screen.getByText('Sayfa bulunamadı')).toBeTruthy()
+      cleanup()
+    }
+  })
 })

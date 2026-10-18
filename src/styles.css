@@ -478,3 +478,35 @@ a:focus-visible {
   color: var(--muted);
   overflow-wrap: anywhere;
 }
+
+/* Makam bölümü */
+.link-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  margin-top: 1rem;
+  text-decoration: none;
+}
+
+.makam-info {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.makam-info div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+}
+
+.makam-info dt {
+  min-width: 5rem;
+  color: var(--muted);
+}
+
+.makam-info dd {
+  margin: 0;
+  font-weight: 600;
+}

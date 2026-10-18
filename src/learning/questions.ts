@@ -1,6 +1,9 @@
+import { MAKAMLAR } from '../content/makamlar'
+import type { Makam } from '../content/makamlar'
 import { NOTA_TOPICS } from '../content/nota-topics'
 import { ACCIDENTAL_NAMES } from '../music/accidentals'
 import { notaEtiketi, PERDE_ADLARI } from '../content/perde-adlari'
+import { diziEvents } from '../music/makam'
 import { durationName } from '../music/notation'
 import type { MusicEvent } from '../music/notation'
 import { SOLFEJ } from '../music/pitch'
@@ -103,7 +106,19 @@ function sequenceOptions(answerIdx: number[], answer: string, rng: () => number)
 }
 
 const ACCIDENTAL_HINT = 'Bemol sesi pesleştirir, diyez tizleştirir; çizgi ve gövde sayısı koma miktarını gösterir.'
-const PERDE_HINT ='Sırayla: Rast (Sol), Dügâh, Bûselik, Çârgâh, Nevâ, Hüseynî, Acem, Gerdâniye, Muhayyer (tiz La).'
+const PERDE_HINT = 'Sırayla: Rast (Sol), Dügâh, Bûselik, Çârgâh, Nevâ, Hüseynî, Acem, Gerdâniye, Muhayyer (tiz La).'
+const PERDE_3_HINT = 'Si üzerindeki işaretler: Segâh koma bemolü, Dik Kürdî bakiye bemolü, Kürdî küçük mücenneb bemolü.'
+const PERDE_4_HINT = 'Do üzerinde: Nim Hicaz bakiye diyezi, Hicaz küçük mücenneb diyezi; Fa üzerinde: Eviç bakiye diyezi.'
+
+function perdeHint(topicId: string): string {
+  if (topicId === 'perde-3') return PERDE_3_HINT
+  if (topicId === 'perde-4') return PERDE_4_HINT
+  return PERDE_HINT
+}
+
+/** Irak için kart ya da soru üretilmez; hiçbir çeldirici havuzunda yer almaz. */
+const IRAK_KEY = 'F4#4'
+const IRAK_NAME = 'Irak'
 
 const PERDE_TOPICS = NOTA_TOPICS.filter((t) => t.kind === 'perde-name')
 
@@ -129,7 +144,7 @@ function reverseOptions(topicId: string, topicCards: string[], key: string, answ
     const earlier = PERDE_TOPICS.slice(0, PERDE_TOPICS.findIndex((t) => t.id === topicId)).flatMap((t) =>
       t.cards.map((c) => notaEtiketi(perdeKey(c))),
     )
-    const all = Object.keys(PERDE_ADLARI).map(notaEtiketi)
+    const all = Object.keys(PERDE_ADLARI).filter((k) => k !== IRAK_KEY).map(notaEtiketi)
     for (const pool of [earlier, all]) {
       if (distractors.length >= 3) break
       distractors.push(...shuffle([...new Set(pool)].filter((l) => l !== answer && !distractors.includes(l)), rng))
@@ -152,7 +167,7 @@ function perdeNamesUpTo(topicId: string): string[] {
   return [...new Set(upTo.flatMap((t) => t.cards.map((c) => PERDE_ADLARI[perdeKey(c)]!)))]
 }
 
-/** İleri soru çeldiricileri: bu ve önceki perde konularının adları; 3'ten azsa dokuz addan tamamlanır. */
+/** İleri soru çeldiricileri: bu ve önceki perde konularının adları; 3'ten azsa Irak hariç tüm perde adlarından tamamlanır. */
 function forwardPerdeOptions(topicId: string, perde: string, rng: () => number): string[] {
   const distractors = shuffle(
     perdeNamesUpTo(topicId).filter((n) => n !== perde),
@@ -161,7 +176,7 @@ function forwardPerdeOptions(topicId: string, perde: string, rng: () => number):
   if (distractors.length < 3) {
     distractors.push(
       ...shuffle(
-        Object.values(PERDE_ADLARI).filter((n) => n !== perde && !distractors.includes(n)),
+        Object.values(PERDE_ADLARI).filter((n) => n !== perde && n !== IRAK_NAME && !distractors.includes(n)),
         rng,
       ),
     )
@@ -169,7 +184,58 @@ function forwardPerdeOptions(topicId: string, perde: string, rng: () => number):
   return shuffle([perde, ...distractors.slice(0, 3)], rng)
 }
 
+const MAKAM_DIZI_HINT =
+  'Işaretli notalara bak. Rast: Si koma bemolü, Fa bakiye diyezi. Uşşak: yalnızca Si koma bemolü. Hicaz: Si bakiye bemolü, Fa ve Do bakiye diyezi.'
+const MAKAM_DURAK_HINT = 'Durak, makamın bittiği (karar verdiği) perdedir.'
+const MAKAM_GUCLU_HINT = 'Güçlü, makamda yarım karar yapılan perdedir.'
+/** Üç makamın dışında, çeldirici olarak kullanılan tanınmış bir makam adı. */
+const MAKAM_DISTRACTOR = 'Hüseynî'
+
+function makamOf(cardId: string, id: string): Makam {
+  const makam = MAKAMLAR.find((m) => m.id === id)
+  if (!makam) throw new Error(`Geçersiz kart kimliği: ${cardId}`)
+  return makam
+}
+
+/** Cevap + Irak hariç üç farklı perde adı. */
+function makamPerdeOptions(answer: string, rng: () => number): string[] {
+  const pool = [...new Set(Object.values(PERDE_ADLARI))].filter((n) => n !== answer && n !== IRAK_NAME)
+  return shuffle([answer, ...shuffle(pool, rng).slice(0, 3)], rng)
+}
+
+/** 'makam-dizi:rast' / 'makam-durak:ussak' / 'makam-guclu:hicaz' */
+function makeMakamQuestion(cardId: string, id: string, rng: () => number): Question {
+  const m = /^makam-(dizi|durak|guclu):(.+)$/.exec(cardId)
+  if (!m) throw new Error(`Geçersiz kart kimliği: ${cardId}`)
+  const makam = makamOf(cardId, m[2]!)
+  const base = { id, cardId, topicId: 'makam' }
+  if (m[1] === 'dizi') {
+    return {
+      ...base,
+      prompt: 'Bu dizi hangi makamın?',
+      events: diziEvents(makam.dizi, 'quarter'),
+      options: shuffle([...MAKAMLAR.map((x) => x.name), MAKAM_DISTRACTOR], rng),
+      answer: makam.name,
+      hint: MAKAM_DIZI_HINT,
+    }
+  }
+  const durak = m[1] === 'durak'
+  const answer = durak ? makam.durak : makam.guclu
+  return {
+    ...base,
+    prompt: `${makam.name} makamının ${durak ? 'durağı' : 'güçlüsü'} hangi perde?`,
+    events: [],
+    options: makamPerdeOptions(answer, rng),
+    answer,
+    hint: durak ? MAKAM_DURAK_HINT : MAKAM_GUCLU_HINT,
+  }
+}
+
 export function makeQuestion(cardId: string, rng: () => number): Question {
+  if (cardId.startsWith('makam-')) {
+    const id = `${cardId}#${Math.floor(rng() * 0x100000000).toString(36)}`
+    return makeMakamQuestion(cardId, id, rng)
+  }
   const topic = topicOfCard(cardId)
   const events = cardToEvents(cardId)
   // Kimlik: kart + rng'den bir çekiliş; aynı (kart, rng durumu) için aynıdır.
@@ -206,7 +272,7 @@ export function makeQuestion(cardId: string, rng: () => number): Question {
         events,
         options: reverseOptions(topic.id, topic.cards, key, answer, rng),
         answer,
-        hint: PERDE_HINT,
+        hint: perdeHint(topic.id),
       }
     }
     return {
@@ -217,7 +283,7 @@ export function makeQuestion(cardId: string, rng: () => number): Question {
       events,
       options: forwardPerdeOptions(topic.id, perde, rng),
       answer: perde,
-      hint: PERDE_HINT,
+      hint: perdeHint(topic.id),
     }
   }
 
