@@ -21,8 +21,19 @@ const CURRENT_SHARE = 0.7
 const LEARNED_SHARE = 0.3
 export const REVIEW_TOPIC_QUESTIONS = 3
 
-function cycle(topic: Topic, n: number): string[] {
-  return Array.from({ length: n }, (_, i) => topic.cards[i % topic.cards.length]!)
+/**
+ * Konu kartlarının karıştırılmış bir kopyasında sırayla döner; böylece kartı çok olan konuda
+ * (az soru yuvasıyla bile) kuyruktaki kartlar da zamanla sorulur.
+ */
+function cycle(topic: Topic, n: number, rng: () => number): string[] {
+  const cards = shuffle(topic.cards, rng)
+  return Array.from({ length: n }, (_, i) => cards[i % cards.length]!)
+}
+
+/** Tek konudan `count` soruluk serbest tur: kartlar karıştırılıp dönülür, sonuç yine karıştırılır. */
+export function buildFreeQuestions(topic: Topic, count: number, rng: () => number): Question[] {
+  if (topic.cards.length === 0) return []
+  return shuffle(cycle(topic, Math.max(0, Math.floor(count)), rng), rng).map((id) => makeQuestion(id, rng))
 }
 
 /**
@@ -45,7 +56,7 @@ export function buildDayQuestions(input: DayPlanInput): Question[] {
     const cardIds = input.dueCards.slice(0, Math.floor(count / 2))
     const review = input.reviewTopic
     if (review && review.cards.length > 0) {
-      cardIds.push(...cycle(review, Math.min(REVIEW_TOPIC_QUESTIONS, count - cardIds.length)))
+      cardIds.push(...cycle(review, Math.min(REVIEW_TOPIC_QUESTIONS, count - cardIds.length), rng))
     }
     const dueTaken = Math.min(input.dueCards.length, Math.floor(count / 2))
     const learnedQuota =
@@ -54,7 +65,7 @@ export function buildDayQuestions(input: DayPlanInput): Question[] {
         : 0
     for (let i = 0; i < learnedQuota; i++) cardIds.push(learnedCards[Math.floor(rng() * learnedCards.length)]!)
     const rest = count - cardIds.length
-    if (current) cardIds.push(...cycle(current, rest))
+    if (current) cardIds.push(...cycle(current, rest, rng))
     else for (let i = 0; i < rest; i++) cardIds.push(learnedCards[Math.floor(rng() * learnedCards.length)]!)
     return shuffle(
       cardIds.map((id) => makeQuestion(id, rng)),
@@ -65,7 +76,7 @@ export function buildDayQuestions(input: DayPlanInput): Question[] {
   const currentCount = current ? (learnedCards.length > 0 ? Math.round(count * CURRENT_SHARE) : count) : 0
   const cardIds: string[] = []
   if (current) {
-    for (let i = 0; i < currentCount; i++) cardIds.push(current.cards[i % current.cards.length])
+    cardIds.push(...cycle(current, currentCount, rng))
   }
   for (let i = cardIds.length; i < count; i++) {
     cardIds.push(learnedCards[Math.floor(rng() * learnedCards.length)])

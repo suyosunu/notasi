@@ -184,10 +184,12 @@ describe('Leitner tekrarı', () => {
     await putCard({ id: 'dur:whole', box: 5, lastReviewedAt: new Date(2026, 9, 12, 12).toISOString() })
     const s = await loadOrStartDaySession(TODAY)
     const qs = (s.state as DayState).questions
-    // due kart yok: öğrenilmiş konu payı 4, güncel konu 8 (dur:whole döngüde 3 kez, fazlası yok)
+    // due kart yok: öğrenilmiş konu payı 4, güncel konu 8 (dur:whole yalnızca döngüde, en çok 3 kez)
     expect(qs.filter((q) => q.topicId === 'nota-1')).toHaveLength(4)
     expect(qs.filter((q) => q.topicId === 'sure-1')).toHaveLength(8)
-    expect(qs.filter((q) => q.cardId === 'dur:whole')).toHaveLength(3)
+    const whole = qs.filter((q) => q.cardId === 'dur:whole').length
+    expect(whole).toBeGreaterThanOrEqual(2)
+    expect(whole).toBeLessThanOrEqual(3)
   })
 
   it('en çok gecikmiş kartlar önce alınır', async () => {

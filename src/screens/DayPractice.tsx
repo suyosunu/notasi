@@ -1,17 +1,17 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
 import { playWritten, stopAudio, unlockAudio } from '../audio/player'
 import { NOTA_TOPICS } from '../content/nota-topics'
+import { buildFreeQuestions } from '../learning/day-plan'
 import { review } from '../learning/leitner'
 import { answerQuestion, loadOrStartDaySession, tick } from '../learning/day-session'
 import type { DayState } from '../learning/day-session'
-import { makeQuestion } from '../learning/questions'
 import type { Question } from '../learning/questions'
 import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
 import { Staff } from '../notation/Staff'
 import { navigate } from '../router'
 import { addAttempt, getCard, getSettings, putCard } from '../store/db'
 import type { SessionRec, Settings } from '../store/db'
-import { seededRng, shuffle } from '../util/rng'
+import { seededRng } from '../util/rng'
 
 const TICK_MS = 1000
 const FREE_QUESTION_COUNT = 8
@@ -342,8 +342,7 @@ function FreePractice({ topicId }: { topicId: string }) {
     const topic = NOTA_TOPICS.find((t) => t.id === topicId)
     if (!topic) return []
     const rng = seededRng(Date.now())
-    const cards = Array.from({ length: FREE_QUESTION_COUNT }, (_, i) => topic.cards[i % topic.cards.length]!)
-    return shuffle(cards, rng).map((id) => makeQuestion(id, rng))
+    return buildFreeQuestions(topic, FREE_QUESTION_COUNT, rng)
   })
   return <FreeRound questions={questions} emptyMessage="Konu bulunamadı." />
 }

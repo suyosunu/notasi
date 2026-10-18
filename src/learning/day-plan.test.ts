@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { NOTA_TOPICS } from '../content/nota-topics'
 import { seededRng } from '../util/rng'
-import { buildDayQuestions } from './day-plan'
+import { buildDayQuestions, buildFreeQuestions } from './day-plan'
 import type { TopicStatus } from './mastery'
 
 function statuses(learned: string[], open: string | null): Record<string, TopicStatus> {
@@ -27,14 +27,13 @@ describe('buildDayQuestions', () => {
     expect(qs).toHaveLength(12)
     expect(qs.every((q) => q.topicId === 'nota-1')).toBe(true)
   })
-  it('güncel konu kartları sırayla döner', () => {
+  it('güncel konu kartları dengeli döner', () => {
     const qs = buildDayQuestions({ topics: NOTA_TOPICS, statuses: statuses([], 'nota-1'), count: 7, rng: seededRng(3) })
     const counts = new Map<string, number>()
     for (const q of qs) counts.set(q.cardId, (counts.get(q.cardId) ?? 0) + 1)
-    // 3 kart, 7 soru: kart 0 üç kez, diğerleri ikişer kez
-    expect(counts.get('note:D5')).toBe(3)
-    expect(counts.get('note:C5')).toBe(2)
-    expect(counts.get('note:B4')).toBe(2)
+    // 3 kart, 7 soru: karıştırılmış sıranın ilk kartı üç kez, diğerleri ikişer kez
+    expect([...counts.keys()].sort()).toEqual(['note:B4', 'note:C5', 'note:D5'])
+    expect([...counts.values()].sort()).toEqual([2, 2, 3])
   })
   it('güncel konu yoksa tümü öğrenilmiş konulardan', () => {
     const all = NOTA_TOPICS.map((t) => t.id)
@@ -207,6 +206,62 @@ describe('buildDayQuestions', () => {
         dueCards: ['note:D5', 'note:C5'],
       })
       expect(buildDayQuestions(input())).toEqual(buildDayQuestions(input()))
+    })
+  })
+
+  describe('büyük konuda kuyruk kartları da sorulur', () => {
+    const perde1 = NOTA_TOPICS.find((t) => t.id === 'perde-1')!
+    const learned = ['nota-1', 'sure-1', 'nota-2', 'sure-2', 'nota-3', 'sure-3', 'nota-4', 'nota-5', 'dizi-1']
+    const seen = (make: (seed: number) => { cardId: string }[]) => {
+      const out = new Set<string>()
+      for (let seed = 1; seed <= 50; seed++) for (const q of make(seed)) out.add(q.cardId)
+      return out
+    }
+    it('güncel konu perde-1, dueCards yok: 10 kartın hepsi görülür', () => {
+      const got = seen((seed) =>
+        buildDayQuestions({ topics: NOTA_TOPICS, statuses: statuses(learned, 'perde-1'), count: 12, rng: seededRng(seed) }),
+      )
+      for (const c of perde1.cards) expect(got.has(c)).toBe(true)
+    })
+    it('güncel konu perde-1, dueCards boş: 10 kartın hepsi görülür', () => {
+      const got = seen((seed) =>
+        buildDayQuestions({
+          topics: NOTA_TOPICS,
+          statuses: statuses(learned, 'perde-1'),
+          count: 12,
+          rng: seededRng(seed),
+          dueCards: [],
+        }),
+      )
+      for (const c of perde1.cards) expect(got.has(c)).toBe(true)
+    })
+    it('review konusu perde-1: kuyruk kartları da gelir', () => {
+      const got = seen((seed) =>
+        buildDayQuestions({
+          topics: NOTA_TOPICS,
+          // perde-1 öğrenilmiş sayılmaz: kartlar yalnızca review kotasından gelebilir
+          statuses: statuses(learned, 'dizi-2'),
+          count: 12,
+          rng: seededRng(seed),
+          dueCards: [],
+          reviewTopic: perde1,
+        }),
+      )
+      for (const c of perde1.cards) expect(got.has(c)).toBe(true)
+    })
+    it('buildFreeQuestions: 8 soruluk turda perde-1 kartlarının hepsi görülür, her tur 8 soru', () => {
+      const got = seen((seed) => {
+        const qs = buildFreeQuestions(perde1, 8, seededRng(seed))
+        expect(qs).toHaveLength(8)
+        return qs
+      })
+      for (const c of perde1.cards) expect(got.has(c)).toBe(true)
+    })
+    it('buildFreeQuestions: küçük konuda kartlar dengeli dönerken sayı kadar soru üretir', () => {
+      const nota1 = NOTA_TOPICS.find((t) => t.id === 'nota-1')!
+      const counts = new Map<string, number>()
+      for (const q of buildFreeQuestions(nota1, 8, seededRng(3))) counts.set(q.cardId, (counts.get(q.cardId) ?? 0) + 1)
+      expect([...counts.values()].sort()).toEqual([2, 3, 3])
     })
   })
 })
