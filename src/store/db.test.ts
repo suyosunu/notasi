@@ -14,6 +14,8 @@ import {
   listSessions,
   listTopics,
   putCard,
+  readAllStores,
+  replaceAllStores,
   resetDbForTests,
   saveSession,
   saveSettings,
@@ -157,6 +159,33 @@ describe('long tones, flags, topics', () => {
     expect(topics).toHaveLength(1)
     expect(topics[0]?.placedOut).toBe(true)
     expect(topics[0]?.id).toBe('nota-1')
+  })
+})
+
+describe('replaceAllStores', () => {
+  function emptyData(): Parameters<typeof replaceAllStores>[0] {
+    return { attempts: [], cards: [], sessions: [], longTones: [], fingeringFlags: [], topics: [], settings: [] }
+  }
+
+  it('bir put eşzamanlı fırlatırsa (anahtarsız kayıt) işlem iptal edilir ve mevcut veri korunur', async () => {
+    await addAttempt({ topicId: 'nota-1', cardId: 'note:D5', correct: true })
+    await putCard({ id: 'note:D5', box: 3, lastReviewedAt: '2026-10-01T00:00:00.000Z' })
+    const data = emptyData()
+    data.attempts = [{ topicId: 'nota-1' }] // keyPath 'id' yok → put eşzamanlı DataError
+    await expect(replaceAllStores(data)).rejects.toThrow()
+    const after = await readAllStores()
+    expect(after.attempts).toHaveLength(1)
+    expect(after.cards).toHaveLength(1)
+  })
+
+  it('geçerli veriyle depoları değiştirir', async () => {
+    await addAttempt({ topicId: 'nota-1', cardId: 'note:D5', correct: true })
+    const data = emptyData()
+    data.cards = [{ id: 'note:C5', box: 2, lastReviewedAt: '2026-10-01T00:00:00.000Z' }]
+    await replaceAllStores(data)
+    const after = await readAllStores()
+    expect(after.attempts).toHaveLength(0)
+    expect(after.cards).toHaveLength(1)
   })
 })
 

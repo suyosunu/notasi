@@ -284,14 +284,16 @@ export async function replaceAllStores(data: Record<StoreName, unknown[]>): Prom
   const db = await getDb()
   const tx = db.transaction([...STORE_NAMES], 'readwrite')
   const ops: Promise<unknown>[] = [tx.done]
-  for (const name of STORE_NAMES) {
-    const store = tx.objectStore(name as 'attempts')
-    ops.push(store.clear())
-    for (const rec of data[name]) ops.push(store.put(rec as AttemptRec))
-  }
   try {
+    // put eşzamanlı da fırlatabilir (ör. anahtarsız kayıt): döngü de try içinde, işlem iptal edilsin.
+    for (const name of STORE_NAMES) {
+      const store = tx.objectStore(name as 'attempts')
+      ops.push(store.clear())
+      for (const rec of data[name]) ops.push(store.put(rec as AttemptRec))
+    }
     await Promise.all(ops)
   } catch (err) {
+    for (const op of ops) op.catch(() => undefined) // iptalle reddedilen istekler yakalanmamış kalmasın
     try {
       tx.abort()
     } catch {
