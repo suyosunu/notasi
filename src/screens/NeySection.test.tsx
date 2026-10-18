@@ -61,30 +61,30 @@ describe('NeySection', () => {
     expect(screen.queryByRole('button', { name: /Bûselik/ })).toBeNull()
   })
 
-  it('yeni perdeler listelenir; Rast geçilse de nota konusu kilitliyse Segâh kilitli kalır', async () => {
+  it('yeni perdeler listelenir; Rast geçilse de nota konusu kilitliyse Hüseynî kilitli kalır', async () => {
     for (const id of ['neva', 'cargah', 'buselik', 'dugah', 'rast']) {
       await addLongTone({ perdeId: id, durationMs: 4000, passed: true, toleranceCents: 25 })
     }
     render(<NeySection />)
-    await screen.findByText('Segâh')
-    for (const name of ['Segâh', 'Hüseynî', 'Acem', 'Eviç', 'Kürdî', 'Dik Kürdî', 'Nim Hicaz', 'Gerdâniye (açık)', 'Muhayyer (açık)']) {
+    await screen.findByText('Hüseynî')
+    for (const name of ['Hüseynî', 'Acem', 'Gerdâniye (açık)', 'Muhayyer (açık)', 'Segâh', 'Kürdî', 'Dik Kürdî', 'Nim Hicaz', 'Eviç']) {
       expect(screen.getByText(name)).toBeTruthy()
     }
     expect(screen.queryByText(/Irak/)).toBeNull()
-    expect(within(row('Segâh')).getByText('🔒')).toBeTruthy()
+    expect(within(row('Hüseynî')).getByText('🔒')).toBeTruthy()
   })
 
-  it('perde-3 açılınca Segâh açılır ve /ney/segah yönlenir', async () => {
+  it('perde-2 açılınca Rast’tan hemen sonra Hüseynî açılır ve /ney/huseyni yönlenir', async () => {
     for (const id of ['neva', 'cargah', 'buselik', 'dugah', 'rast']) {
       await addLongTone({ perdeId: id, durationMs: 4000, passed: true, toleranceCents: 25 })
     }
-    for (const id of NOTA_TOPICS.map((t) => t.id)) if (id !== 'perde-3' && id !== 'perde-4') await setPlacedOut(id)
+    for (const id of NOTA_TOPICS.map((t) => t.id)) if (id !== 'koma-1' && id !== 'koma-2' && id !== 'perde-3' && id !== 'perde-4') await setPlacedOut(id)
     render(<NeySection />)
-    await screen.findByText('Segâh')
-    expect(within(row('Segâh')).getByText('▶')).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: /Segâh/ }))
-    await waitFor(() => expect(location.hash).toBe('#/ney/segah'))
-    expect(screen.queryByRole('button', { name: /Hüseynî/ })).toBeNull()
+    await screen.findByText('Hüseynî')
+    expect(within(row('Hüseynî')).getByText('▶')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /Hüseynî/ }))
+    await waitFor(() => expect(location.hash).toBe('#/ney/huseyni'))
+    expect(screen.queryByRole('button', { name: /Acem/ })).toBeNull()
   })
 
   it('altta "Yeniden kalibre et" bağlantısı vardır', async () => {
@@ -134,7 +134,7 @@ describe('NeyPerdePractice', () => {
 
   it('işaretli yeni perde (Segâh) kendi koma konumuna göre geçilir ve kaydı yazılır', async () => {
     await saveSettings({ calibrated: true })
-    for (const id of ['neva', 'cargah', 'buselik', 'dugah', 'rast']) {
+    for (const id of ['neva', 'cargah', 'buselik', 'dugah', 'rast', 'huseyni', 'acem', 'gerdaniye', 'muhayyer']) {
       await addLongTone({ perdeId: id, durationMs: 4000, passed: true, toleranceCents: 25 })
     }
     for (const id of NOTA_TOPICS.map((t) => t.id)) if (id !== 'perde-3' && id !== 'perde-4') await setPlacedOut(id)

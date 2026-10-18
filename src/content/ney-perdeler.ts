@@ -45,8 +45,10 @@ export interface NeyPerde {
 }
 
 // Kaynaklar (ayrıntı: .superpowers/sdd/2026-10-13-notasi-surum-1/task-12-report.md).
-// MEB Ney Modülü (tymm.meb.gov.tr ünite 1216) bu perdeleri ikinci kademe ana sesleri olarak
+// MEB Ney Modülü (tymm.meb.gov.tr ünite 1216) ilk beş perdeyi ikinci kademe ana sesleri olarak
 // sıralar, ancak parmak pozisyonunu yazılı vermez ("öğretmen uygulamalı gösterir").
+// Sonraki perdeler (ikinci kademe Segâh, Kürdî, Dik Kürdî, Nim Hicaz ve üçüncü kademe Hüseynî, Acem,
+// Eviç, açık Gerdâniye, açık Muhayyer; MEB ünite 1217) açılma sırasını nota konularından alır.
 // Şemalar Neyzenim ney derslerinden alınmıştır: sağ el üstte, sağ başparmak aşîrân deliğinde;
 // iki elin orta parmağı (2. ve 5. delik) destek için kapalı tutulur.
 // `source`, o perdenin şemasını açıkça yazan tek sayfadır.
@@ -68,7 +70,12 @@ const SRC_ORTA = 'https://www.neyzenim.com/neydersleri_6.html'
 const SERT = 'Daha sert üfle: '
 const KOMA_FARKI = 'aradaki koma farkını dudak ve baş açısıyla verirsin.'
 
-/** Sıra MEB Ney Modülü 3. tema (NEY.3.3.1, NEY.3.3.2) sırasıdır. */
+/**
+ * İlk beş perde MEB Ney Modülü 3. tema (NEY.3.3.1, NEY.3.3.2) sırasıdır (2. kademe).
+ * Sonrası nota konularının açılma sırasını izler: perde-2 (Hüseynî, Acem, Gerdâniye, Muhayyer;
+ * 3. kademe), perde-3 (Segâh, Kürdî, Dik Kürdî), perde-4 (Nim Hicaz, Eviç). Böylece her perde,
+ * kendi nota konusu açılınca önceki perde geçilir geçilmez açılır.
+ */
 export const NEY_PERDELER: NeyPerde[] = [
   {
     id: 'neva',
@@ -126,17 +133,6 @@ export const NEY_PERDELER: NeyPerde[] = [
     notaTopicId: 'nota-2',
   },
   {
-    id: 'segah',
-    name: 'Segâh',
-    kademe: 2,
-    written: { step: 'B', octave: 4, acc: -1 },
-    fingering: { thumb: 'kapali', front: ['kapali', 'kapali', 'kapali', 'acik', 'kapali', 'acik'] },
-    verified: true,
-    source: SRC_TEMEL,
-    tip: 'Bûselik duruşundan üçüncü delik tam kapalı, dördüncü delik açık; alttaki elin orta parmağı kapalı. Ses Bûselik’ten bir koma pest çıkar.',
-    notaTopicId: 'perde-3',
-  },
-  {
     id: 'huseyni',
     name: 'Hüseynî',
     kademe: 3,
@@ -159,15 +155,37 @@ export const NEY_PERDELER: NeyPerde[] = [
     notaTopicId: 'perde-2',
   },
   {
-    id: 'evic',
-    name: 'Eviç',
+    id: 'gerdaniye',
+    name: 'Gerdâniye (açık)',
     kademe: 3,
-    written: { step: 'F', octave: 5, acc: 4 },
-    fingering: { thumb: 'kapali', front: ['kapali', 'kapali', 'kapali', 'acik', 'kapali', 'acik'] },
+    written: { step: 'G', octave: 5, acc: 0 },
+    fingering: { thumb: 'kapali', front: ['kapali', 'kapali', 'acik', 'acik', 'kapali', 'acik'] },
     verified: true,
     source: SRC_ORTA,
-    tip: SERT + 'Segâh parmağıyla çalınır (dördüncü ve altıncı delik açık); nefesi güçlendirerek sesi yukarı taşı.',
-    notaTopicId: 'perde-4',
+    tip: SERT + 'Çârgâh parmağıyla çalınır (üstten ilk iki delik ve alttaki elin orta parmağı kapalı); nefesi güçlendirerek sesi yukarı taşı.',
+    notaTopicId: 'perde-2',
+  },
+  {
+    id: 'muhayyer',
+    name: 'Muhayyer (açık)',
+    kademe: 3,
+    written: { step: 'A', octave: 5, acc: 0 },
+    fingering: { thumb: 'kapali', front: ['acik', 'kapali', 'acik', 'acik', 'kapali', 'acik'] },
+    verified: true,
+    source: SRC_ORTA,
+    tip: SERT + 'Nevâ parmağıyla çalınır (iki elin orta parmağı kapalı, diğer ön delikler açık); nefesi güçlendirerek sesi yukarı taşı.',
+    notaTopicId: 'perde-2',
+  },
+  {
+    id: 'segah',
+    name: 'Segâh',
+    kademe: 2,
+    written: { step: 'B', octave: 4, acc: -1 },
+    fingering: { thumb: 'kapali', front: ['kapali', 'kapali', 'kapali', 'acik', 'kapali', 'acik'] },
+    verified: true,
+    source: SRC_TEMEL,
+    tip: 'Bûselik duruşundan üçüncü delik tam kapalı, dördüncü delik açık; alttaki elin orta parmağı kapalı. Ses Bûselik’ten bir koma pest çıkar.',
+    notaTopicId: 'perde-3',
   },
   {
     id: 'kurdi',
@@ -199,30 +217,19 @@ export const NEY_PERDELER: NeyPerde[] = [
     fingering: { thumb: 'kapali', front: ['kapali', 'acik', 'acik', 'acik', 'kapali', 'acik'] },
     verified: true,
     source: SRC_KOMA,
-    tip: 'Yalnızca ilk delik ve alttaki elin orta parmağı kapalı; Çârgâh’tan bir bakiye (4 koma) yüksek çıkar.',
+    tip: 'Başparmak arkada kapalı; yalnızca ilk delik ve alttaki elin orta parmağı kapalı; Çârgâh’tan bir bakiye (4 koma) yüksek çıkar.',
     notaTopicId: 'perde-4',
   },
   {
-    id: 'gerdaniye',
-    name: 'Gerdâniye (açık)',
+    id: 'evic',
+    name: 'Eviç',
     kademe: 3,
-    written: { step: 'G', octave: 5, acc: 0 },
-    fingering: { thumb: 'kapali', front: ['kapali', 'kapali', 'acik', 'acik', 'kapali', 'acik'] },
+    written: { step: 'F', octave: 5, acc: 4 },
+    fingering: { thumb: 'kapali', front: ['kapali', 'kapali', 'kapali', 'acik', 'kapali', 'acik'] },
     verified: true,
     source: SRC_ORTA,
-    tip: SERT + 'Çârgâh parmağıyla çalınır (üstten ilk iki delik ve alttaki elin orta parmağı kapalı); nefesi güçlendirerek sesi yukarı taşı.',
-    notaTopicId: 'perde-2',
-  },
-  {
-    id: 'muhayyer',
-    name: 'Muhayyer (açık)',
-    kademe: 3,
-    written: { step: 'A', octave: 5, acc: 0 },
-    fingering: { thumb: 'kapali', front: ['acik', 'kapali', 'acik', 'acik', 'kapali', 'acik'] },
-    verified: true,
-    source: SRC_ORTA,
-    tip: SERT + 'Nevâ parmağıyla çalınır (iki elin orta parmağı kapalı, diğer ön delikler açık); nefesi güçlendirerek sesi yukarı taşı.',
-    notaTopicId: 'perde-2',
+    tip: SERT + 'Segâh parmağıyla çalınır (dördüncü ve altıncı delik açık); nefesi güçlendirerek sesi yukarı taşı.',
+    notaTopicId: 'perde-4',
   },
 ]
 

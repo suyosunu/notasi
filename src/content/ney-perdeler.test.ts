@@ -6,11 +6,11 @@ describe('NEY_PERDELER', () => {
   it('MEB sırasıyla gelir: Nevâ, Çârgâh, Bûselik, Dügâh, Rast; ardından yeni perdeler', () => {
     expect(NEY_PERDELER.map((p) => p.id)).toEqual([
       'neva', 'cargah', 'buselik', 'dugah', 'rast',
-      'segah', 'huseyni', 'acem', 'evic', 'kurdi', 'dik-kurdi', 'nim-hicaz', 'gerdaniye', 'muhayyer',
+      'huseyni', 'acem', 'gerdaniye', 'muhayyer', 'segah', 'kurdi', 'dik-kurdi', 'nim-hicaz', 'evic',
     ])
     expect(NEY_PERDELER.map((p) => p.name)).toEqual([
       'Nevâ', 'Çârgâh', 'Bûselik', 'Dügâh', 'Rast',
-      'Segâh', 'Hüseynî', 'Acem', 'Eviç', 'Kürdî', 'Dik Kürdî', 'Nim Hicaz', 'Gerdâniye (açık)', 'Muhayyer (açık)',
+      'Hüseynî', 'Acem', 'Gerdâniye (açık)', 'Muhayyer (açık)', 'Segâh', 'Kürdî', 'Dik Kürdî', 'Nim Hicaz', 'Eviç',
     ])
   })
 
@@ -29,15 +29,15 @@ describe('NEY_PERDELER', () => {
       ['buselik', 'B', 4, 0, 'nota-1'],
       ['dugah', 'A', 4, 0, 'nota-2'],
       ['rast', 'G', 4, 0, 'nota-2'],
-      ['segah', 'B', 4, -1, 'perde-3'],
       ['huseyni', 'E', 5, 0, 'perde-2'],
       ['acem', 'F', 5, 0, 'perde-2'],
-      ['evic', 'F', 5, 4, 'perde-4'],
+      ['gerdaniye', 'G', 5, 0, 'perde-2'],
+      ['muhayyer', 'A', 5, 0, 'perde-2'],
+      ['segah', 'B', 4, -1, 'perde-3'],
       ['kurdi', 'B', 4, -5, 'perde-3'],
       ['dik-kurdi', 'B', 4, -4, 'perde-3'],
       ['nim-hicaz', 'C', 5, 4, 'perde-4'],
-      ['gerdaniye', 'G', 5, 0, 'perde-2'],
-      ['muhayyer', 'A', 5, 0, 'perde-2'],
+      ['evic', 'F', 5, 4, 'perde-4'],
     ])
     const topicIds = NOTA_TOPICS.map((t) => t.id)
     for (const p of NEY_PERDELER) expect(topicIds).toContain(p.notaTopicId)
@@ -123,6 +123,10 @@ describe('NEY_PERDELER', () => {
       'Parmak konumu Kürdî ile aynı; aradaki koma farkını dudak ve baş açısıyla verirsin.',
     )
     expect(byId.kurdi.fingering).toEqual(byId['dik-kurdi'].fingering)
+  })
+
+  it('Nim Hicaz tarifi kapalı başparmağı anar', () => {
+    expect(NEY_PERDELER.find((p) => p.id === 'nim-hicaz')!.tip.toLowerCase()).toContain('başparmak arkada kapalı')
   })
 
   it('listedeki her perdenin şeması gösterilebilir (doğrulanmış)', () => {
