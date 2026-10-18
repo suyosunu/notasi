@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from '@testing-library/preact'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { App } from './app'
-import { resetDbForTests, saveSettings } from './store/db'
+import { resetDbForTests, saveSettings, setPlacedOut } from './store/db'
 
 beforeEach(async () => {
   await resetDbForTests()
@@ -54,6 +54,21 @@ describe('App', () => {
     location.hash = '#/nota/nota-1'
     render(<App />)
     expect(await screen.findByText(/Nota okuma · 1\/8/)).toBeTruthy()
+  })
+
+  it('#/nota/karisik rotası karışık antrenmanı açar, bulunamadı göstermez', async () => {
+    await setPlacedOut('nota-1')
+    location.hash = '#/nota/karisik'
+    render(<App />)
+    expect(await screen.findByText(/Karışık antrenman · 1\/12/)).toBeTruthy()
+    expect(screen.queryByText('Sayfa bulunamadı')).toBeNull()
+  })
+
+  it('#/nota/karisik havuz boşken açıklama gösterir', async () => {
+    location.hash = '#/nota/karisik'
+    render(<App />)
+    expect(await screen.findByText('Henüz öğrenilmiş konu yok.')).toBeTruthy()
+    expect(screen.queryByText('Sayfa bulunamadı')).toBeNull()
   })
 
   it('bilinmeyen konu için bulunamadı ekranını gösterir', () => {

@@ -1,12 +1,34 @@
 import { useEffect, useState } from 'preact/hooks'
 import { NOTA_TOPICS } from '../content/nota-topics'
 import { topicStatuses } from '../learning/mastery'
+import { mixedPool } from '../learning/mixed'
 import type { TopicStatus } from '../learning/mastery'
 import { navigate } from '../router'
 import { listAttempts, listTopics } from '../store/db'
 
 const ICONS: Record<TopicStatus, string> = { kilitli: '🔒', acik: '▶', ogrenildi: '✓' }
 const LABELS: Record<TopicStatus, string> = { kilitli: 'kilitli', acik: 'açık', ogrenildi: 'öğrenildi' }
+
+const MIXED_LABEL = '🔀 Karışık antrenman'
+
+/** Öğrenilmiş konulardan karışık tur; henüz öğrenilmiş konu yoksa devre dışı ve açıklamalıdır. */
+function MixedCard({ enabled }: { enabled: boolean }) {
+  if (enabled) {
+    return (
+      <a class="topic topic-mixed" href="#/nota/karisik">
+        <span class="topic-title">{MIXED_LABEL}</span>
+      </a>
+    )
+  }
+  return (
+    <div class="mixed-disabled">
+      <div class="topic topic-kilitli topic-mixed" aria-disabled="true">
+        <span class="topic-title">{MIXED_LABEL}</span>
+      </div>
+      <p class="muted">İlk konuyu öğrenince açılır.</p>
+    </div>
+  )
+}
 
 export function NotaSection() {
   const [statuses, setStatuses] = useState<Record<string, TopicStatus> | null>(null)
@@ -27,6 +49,7 @@ export function NotaSection() {
     <main class="screen">
       <h1>🎼 Nota</h1>
       <p class="muted">Bir konuya dokunarak 8 soruluk serbest tur başlat.</p>
+      {statuses && <MixedCard enabled={mixedPool(NOTA_TOPICS, statuses).length > 0} />}
       {statuses && (
         <ul class="topic-list">
           {NOTA_TOPICS.map((t) => {

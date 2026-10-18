@@ -8,6 +8,7 @@ import { DayPractice } from './screens/DayPractice'
 import { EveningPractice } from './screens/EveningPractice'
 import { Home } from './screens/Home'
 import { NeyPerdePractice, NeySection } from './screens/NeySection'
+import { MixedPractice } from './screens/MixedPractice'
 import { NotaSection } from './screens/NotaSection'
 import { Onboarding } from './screens/Onboarding'
 import { Placement } from './screens/Placement'
@@ -41,11 +42,14 @@ const routes: Record<string, () => ComponentChildren> = {
 }
 
 const FREE_PREFIX = '/nota/'
+const MIXED_ROUTE = '/nota/karisik'
 const PERDE_PREFIX = '/ney/'
 
 export function App() {
   const route = useRoute()
   if (Object.hasOwn(routes, route)) return routes[route]!()
+  // Karışık antrenman, konu eşlemesinden önce gelir.
+  if (route === MIXED_ROUTE) return <MixedPractice />
   if (route.startsWith(FREE_PREFIX)) {
     const topicId = route.slice(FREE_PREFIX.length)
     if (NOTA_TOPICS.some((t) => t.id === topicId)) return <DayPractice topicId={topicId} />

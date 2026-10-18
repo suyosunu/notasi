@@ -52,4 +52,25 @@ describe('NotaSection', () => {
     await screen.findByText('Re, Do, Si')
     expect(within(row('Re, Do, Si')).getByText('✓')).toBeTruthy()
   })
+
+  it('disables the mixed card and explains why while no topic is learned', async () => {
+    render(<NotaSection />)
+    await screen.findByText('Re, Do, Si')
+    const card = screen.getByText('🔀 Karışık antrenman').closest('[aria-disabled]') as HTMLElement
+    expect(card.getAttribute('aria-disabled')).toBe('true')
+    expect(screen.getByText('İlk konuyu öğrenince açılır.')).toBeTruthy()
+    expect(screen.queryByRole('link', { name: /Karışık antrenman/ })).toBeNull()
+    fireEvent.click(screen.getByText('🔀 Karışık antrenman'))
+    expect(location.hash).toBe('')
+  })
+
+  it('links the mixed card to #/nota/karisik once a topic is learned, above the topic list', async () => {
+    await setPlacedOut('nota-1')
+    render(<NotaSection />)
+    const link = await screen.findByRole('link', { name: /Karışık antrenman/ })
+    expect(link.getAttribute('href')).toBe('#/nota/karisik')
+    expect(screen.queryByText('İlk konuyu öğrenince açılır.')).toBeNull()
+    const list = screen.getAllByRole('listitem')[0]!.closest('ul') as HTMLElement
+    expect(link.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
 })

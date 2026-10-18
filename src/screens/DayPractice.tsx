@@ -15,6 +15,7 @@ import { seededRng, shuffle } from '../util/rng'
 
 const TICK_MS = 1000
 const FREE_QUESTION_COUNT = 8
+const DAY_TITLE = '☀️ Nota okuma'
 export const REVIEW_NOTE = 'Biraz önceki konuyu tekrar edelim, sonra devam ederiz.'
 
 interface Feedback {
@@ -31,11 +32,13 @@ interface QuestionCardProps {
   feedback: Feedback | null
   /** Ekranın başında gösterilen yumuşak not (örn. önceki konuya dönüş). */
   note?: string
+  /** Başlık metni (soru sırası sonuna eklenir). */
+  title?: string
   onChoose: (choice: string) => void
   onNext: () => void
 }
 
-function QuestionCard({ question, index, total, settings, feedback, note, onChoose, onNext }: QuestionCardProps) {
+function QuestionCard({ question, index, total, settings, feedback, note, title = DAY_TITLE, onChoose, onNext }: QuestionCardProps) {
   const [showHint, setShowHint] = useState(false)
   /** Dinle'ye dokununca gösterilen ses uyarısı (yoksa null). */
   const [soundWarn, setSoundWarn] = useState<string | null>(null)
@@ -71,7 +74,7 @@ function QuestionCard({ question, index, total, settings, feedback, note, onChoo
           ← Ara ver
         </a>
         <h1>
-          ☀️ Nota okuma · {index + 1}/{total}
+          {title} · {index + 1}/{total}
         </h1>
         <progress max={total} value={index + (answered ? 1 : 0)} aria-label="İlerleme" />
       </header>
@@ -131,12 +134,12 @@ function QuestionCard({ question, index, total, settings, feedback, note, onChoo
   )
 }
 
-function Message({ children }: { children: string }) {
+export function Message({ children, back }: { children: string; back?: { href: string; label: string } }) {
   return (
     <main class="screen">
       <p class="muted">{children}</p>
-      <a class="back" href="#/">
-        Ana ekrana dön
+      <a class="back" href={back?.href ?? '#/'}>
+        {back?.label ?? 'Ana ekrana dön'}
       </a>
     </main>
   )
@@ -245,16 +248,22 @@ function DaySession() {
   )
 }
 
-/** Tek bir konudan 8 soruluk serbest tur: oturum kaydı ve süre sınırı yok. */
-function FreePractice({ topicId }: { topicId: string }) {
+/**
+ * Hazır soru listesiyle serbest tur: oturum kaydı ve süre sınırı yok. Her cevap, sorunun kendi
+ * konusuyla bir deneme yazar ve kartın Leitner kutusunu günceller. Konu turu ve karışık antrenman paylaşır.
+ */
+export function FreeRound({
+  questions,
+  title,
+  emptyMessage,
+  back,
+}: {
+  questions: Question[]
+  title?: string
+  emptyMessage: string
+  back?: { href: string; label: string }
+}) {
   const [settings, setSettings] = useState<Settings | null>(null)
-  const [questions] = useState<Question[]>(() => {
-    const topic = NOTA_TOPICS.find((t) => t.id === topicId)
-    if (!topic) return []
-    const rng = seededRng(Date.now())
-    const cards = Array.from({ length: FREE_QUESTION_COUNT }, (_, i) => topic.cards[i % topic.cards.length]!)
-    return shuffle(cards, rng).map((id) => makeQuestion(id, rng))
-  })
   const [index, setIndex] = useState(0)
   const [feedback, setFeedback] = useState<Feedback | null>(null)
   const [score, setScore] = useState(0)
@@ -272,8 +281,8 @@ function FreePractice({ topicId }: { topicId: string }) {
   }, [])
 
   const question = questions[index]
-  if (!question) return <Message>Konu bulunamadı.</Message>
-  if (!settings) return <Message>Yükleniyor…</Message>
+  if (!question) return <Message back={back}>{emptyMessage}</Message>
+  if (!settings) return <Message back={back}>Yükleniyor…</Message>
 
   if (done) {
     return (
@@ -320,10 +329,23 @@ function FreePractice({ topicId }: { topicId: string }) {
       total={questions.length}
       settings={settings}
       feedback={feedback}
+      title={title}
       onChoose={(c) => void choose(c)}
       onNext={next}
     />
   )
+}
+
+/** Tek bir konudan 8 soruluk serbest tur. */
+function FreePractice({ topicId }: { topicId: string }) {
+  const [questions] = useState<Question[]>(() => {
+    const topic = NOTA_TOPICS.find((t) => t.id === topicId)
+    if (!topic) return []
+    const rng = seededRng(Date.now())
+    const cards = Array.from({ length: FREE_QUESTION_COUNT }, (_, i) => topic.cards[i % topic.cards.length]!)
+    return shuffle(cards, rng).map((id) => makeQuestion(id, rng))
+  })
+  return <FreeRound questions={questions} emptyMessage="Konu bulunamadı." />
 }
 
 export function DayPractice({ topicId }: { topicId?: string }) {
