@@ -74,20 +74,52 @@ describe('Staff', () => {
     expect(container.querySelectorAll('[data-dot]')).toHaveLength(1)
   })
 
-  it('susları glif olarak çizer', () => {
-    const { container } = render(
-      <Staff
-        events={[
-          { kind: 'rest', dur: 'whole' },
-          { kind: 'rest', dur: 'half' },
-          { kind: 'rest', dur: 'quarter' },
-          { kind: 'rest', dur: 'eighth' },
-        ]}
-      />,
-    )
-    expect(screen.queryAllByTestId('notehead')).toHaveLength(0)
-    const text = container.textContent ?? ''
-    for (const g of ['𝄻', '𝄼', '𝄽', '𝄾']) expect(text).toContain(g)
+  describe('sus işaretleri (SVG şekil, yazı tipi gerektirmez)', () => {
+    const rests = () => {
+      render(
+        <Staff
+          events={[
+            { kind: 'rest', dur: 'whole' },
+            { kind: 'rest', dur: 'half' },
+            { kind: 'rest', dur: 'quarter' },
+            { kind: 'rest', dur: 'eighth' },
+          ]}
+        />,
+      )
+      expect(screen.queryAllByTestId('notehead')).toHaveLength(0)
+      return screen.getAllByTestId('rest')
+    }
+
+    it('hiçbir sus Unicode sus glifi içermez', () => {
+      const all = rests()
+      expect(all).toHaveLength(4)
+      for (const r of all) {
+        expect(r.textContent ?? '').not.toMatch(/[\u{1D13B}-\u{1D13E}]/u)
+        expect(r.querySelector('text')).toBeNull()
+      }
+    })
+
+    it('birlik ve ikilik sus dikdörtgen, dörtlük path, sekizlik path + nokta', () => {
+      const [whole, half, quarter, eighth] = rests()
+      expect(whole!.querySelector('rect')).not.toBeNull()
+      expect(half!.querySelector('rect')).not.toBeNull()
+      expect(quarter!.querySelector('path')).not.toBeNull()
+      expect(eighth!.querySelector('path')).not.toBeNull()
+      expect(eighth!.querySelector('circle')).not.toBeNull()
+    })
+
+    it('birlik sus 4. çizgiden asılır, ikilik sus 3. çizgiye oturur', () => {
+      const [whole, half] = rests()
+      const w = whole!.querySelector('rect')!
+      expect(Number(w.getAttribute('y'))).toBe(40)
+      const h = half!.querySelector('rect')!
+      expect(Number(h.getAttribute('y')) + Number(h.getAttribute('height'))).toBe(50)
+    })
+
+    it('noktalı susta nokta çizilir', () => {
+      const { container } = render(<Staff events={[{ kind: 'rest', dur: 'quarter', dotted: true }]} />)
+      expect(container.querySelectorAll('[data-dot]')).toHaveLength(1)
+    })
   })
 
   it('highlightIndex vurgulanan olayı işaretler', () => {

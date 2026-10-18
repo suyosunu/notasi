@@ -1,5 +1,5 @@
 import type { DurationKind, MusicEvent, NoteEvent, RestEvent } from '../music/notation'
-import { AccidentalGlyph, CLEF_GLYPH, MUSIC_FONT, REST_GLYPHS } from './glyphs'
+import { AccidentalGlyph, CLEF_GLYPH, MUSIC_FONT } from './glyphs'
 import { indexY, ledgerLineYs, LINE_GAP, noteY, staffIndex, STAFF_TOP } from './geometry'
 
 const HEIGHT = 110
@@ -10,6 +10,8 @@ const HEAD_RX = 6.5
 const HEAD_RY = 5
 const STEM_LEN = 33
 const INK = 'currentColor'
+const REST_BAR_W = 12
+const REST_BAR_H = 5
 
 function isHollow(dur: DurationKind): boolean {
   return dur === 'whole' || dur === 'half'
@@ -84,22 +86,43 @@ function NoteShape(props: { event: NoteEvent; x: number; index: number }) {
 
 function RestShape(props: { event: RestEvent; x: number }) {
   const { event, x } = props
-  const fontSize = 4 * LINE_GAP
-  // Birlik sus 4. çizgiden asılır, ikilik sus 3. çizgiye oturur.
-  const y = event.dur === 'whole' ? STAFF_TOP + LINE_GAP : STAFF_TOP + 2 * LINE_GAP
+  const { dur } = event
+  // Sus işaretleri yazı tipi gerektirmeyen SVG şekillerdir (iOS'ta sus glifleri yok).
+  const line2 = STAFF_TOP + LINE_GAP // 4. çizgi (alttan)
+  const line3 = STAFF_TOP + 2 * LINE_GAP // orta çizgi
   return (
-    <g>
-      <text
-        data-testid="rest"
-        x={x}
-        y={y}
-        font-size={fontSize}
-        text-anchor="middle"
-        font-family={MUSIC_FONT}
-        fill={INK}
-      >
-        {REST_GLYPHS[event.dur]}
-      </text>
+    <g data-testid="rest" data-dur={dur}>
+      {dur === 'whole' && (
+        // Birlik sus 4. çizgiden asılır.
+        <rect x={x - REST_BAR_W / 2} y={line2} width={REST_BAR_W} height={REST_BAR_H} fill={INK} />
+      )}
+      {dur === 'half' && (
+        // İkilik sus orta çizgiye oturur.
+        <rect x={x - REST_BAR_W / 2} y={line3 - REST_BAR_H} width={REST_BAR_W} height={REST_BAR_H} fill={INK} />
+      )}
+      {dur === 'quarter' && (
+        <path
+          d={`M ${x - 2} 35 L ${x + 3} 44 L ${x - 3} 52 L ${x + 2} 59 C ${x - 5} 57 ${x - 5} 66 ${x + 2} 65`}
+          fill="none"
+          stroke={INK}
+          stroke-width={2.4}
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      )}
+      {dur === 'eighth' && (
+        <>
+          <circle cx={x - 3} cy={45} r={2.5} fill={INK} />
+          <path
+            d={`M ${x - 3} 46 Q ${x + 1} 47 ${x + 3.5} 41 L ${x - 2} 62`}
+            fill="none"
+            stroke={INK}
+            stroke-width={1.8}
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </>
+      )}
       {event.dotted && <circle data-dot cx={x + 10} cy={indexY(5)} r={1.8} fill={INK} />}
     </g>
   )

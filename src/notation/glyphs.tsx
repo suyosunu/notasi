@@ -1,16 +1,8 @@
 import type { Accidental } from '../music/pitch'
-import type { DurationKind } from '../music/notation'
 
 export const MUSIC_FONT = "'Noto Music', 'Bravura Text', 'Apple Symbols', 'Segoe UI Symbol', serif"
 
 export const CLEF_GLYPH = '𝄞'
-
-export const REST_GLYPHS: Record<DurationKind, string> = {
-  whole: '𝄻',
-  half: '𝄼',
-  quarter: '𝄽',
-  eighth: '𝄾',
-}
 
 /**
  * Değiştirgeç işareti. Sürüm 1'de yalnızca altyapı: ♯/♭ ve küçük koma sayısı.
