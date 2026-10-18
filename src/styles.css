@@ -304,6 +304,23 @@ a:focus-visible {
   font-size: 1.25rem;
 }
 
+/* Oturum sonu geri bildirimi */
+.feedback-options {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.option-chosen {
+  background: #f6e7c4;
+  border-color: #c08a2c;
+}
+
+/* Yoklama */
+.placement-count {
+  margin: 0 0 0.5rem;
+}
+
 /* Ana ekran: ayarlar bağlantısı */
 .home-head {
   display: flex;

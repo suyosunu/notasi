@@ -26,7 +26,7 @@ afterEach(() => {
 })
 
 describe('Onboarding', () => {
-  it('Başla → ana ekrana ekleme rehberi → Devam → onboarded kaydedilir ve / açılır', async () => {
+  it('Başla → ana ekrana ekleme rehberi → Devam → onboarded kaydedilir ve /yoklama açılır', async () => {
     render(<Onboarding />)
     expect(screen.getByText('Hoş geldiniz')).toBeTruthy()
     expect(screen.getByText('Notası ile nota okumayı ve ney çalmayı adım adım öğrenirsiniz.')).toBeTruthy()
@@ -43,7 +43,7 @@ describe('Onboarding', () => {
     expect((await getSettings()).onboarded).toBe(false)
     fireEvent.click(screen.getByRole('button', { name: 'Devam' }))
     await waitFor(async () => expect((await getSettings()).onboarded).toBe(true))
-    await waitFor(() => expect(location.hash).toBe('#/'))
+    await waitFor(() => expect(location.hash).toBe('#/yoklama'))
   })
 
   it('uygulama ana ekrandaysa rehber atlanır ve doğrudan bitirir', async () => {
@@ -52,7 +52,7 @@ describe('Onboarding', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Başla' }))
     await waitFor(async () => expect((await getSettings()).onboarded).toBe(true))
     expect(screen.queryByText('Ana ekrana ekleyin')).toBeNull()
-    await waitFor(() => expect(location.hash).toBe('#/'))
+    await waitFor(() => expect(location.hash).toBe('#/yoklama'))
   })
 
   it('unlockAudio hata verirse yutulur ve akış devam eder', async () => {
@@ -76,7 +76,7 @@ describe('Onboarding', () => {
     render(<Onboarding />)
     const before = history.length
     fireEvent.click(screen.getByRole('button', { name: 'Başla' }))
-    await waitFor(() => expect(location.hash).toBe('#/'))
+    await waitFor(() => expect(location.hash).toBe('#/yoklama'))
     expect(history.length).toBe(before)
   })
 })

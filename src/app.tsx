@@ -10,6 +10,7 @@ import { Home } from './screens/Home'
 import { NeyPerdePractice, NeySection } from './screens/NeySection'
 import { NotaSection } from './screens/NotaSection'
 import { Onboarding } from './screens/Onboarding'
+import { Placement } from './screens/Placement'
 import { SessionEnd } from './screens/SessionEnd'
 import { Settings } from './screens/Settings'
 
@@ -35,7 +36,7 @@ const routes: Record<string, () => ComponentChildren> = {
   '/hakkinda': () => <About />,
   '/kalibrasyon': () => <Calibration />,
   '/baslangic': () => <Onboarding />,
-  '/yoklama': () => <Placeholder title="Yoklama" />,
+  '/yoklama': () => <Placement />,
   '/oturum-sonu': () => <SessionEnd />,
 }
 

@@ -29,10 +29,12 @@ function greetingFor(now: Date): string {
   return h < 12 ? 'Günaydın' : h < 18 ? 'İyi günler' : 'İyi akşamlar'
 }
 
-/** `null`: henüz onboard olunmamış. */
-async function load(): Promise<HomeData | null> {
+/** `redirect`: onboard olunmamışsa başlangıç, yoklama yapılmamışsa yoklama ekranı. */
+async function load(): Promise<HomeData | { redirect: string }> {
   const settings = await getSettings()
-  if (!settings.onboarded) return null
+  if (!settings.onboarded) return { redirect: '/baslangic' }
+  // Yoklama bir kez yapılır; bitince `placementDone` kaydedilir, döngü olmaz.
+  if (!settings.placementDone) return { redirect: '/yoklama' }
   const [attempts, topics, sessions, open, eveningInput] = await Promise.all([
     listAttempts(),
     listTopics(),
@@ -91,8 +93,8 @@ export function Home() {
     let alive = true
     void load().then((d) => {
       if (!alive) return
-      if (!d) {
-        replaceRoute('/baslangic')
+      if ('redirect' in d) {
+        replaceRoute(d.redirect)
         return
       }
       setData(d)

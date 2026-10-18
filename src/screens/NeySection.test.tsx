@@ -98,4 +98,34 @@ describe('NeyPerdePractice', () => {
     expect(screen.queryByRole('button', { name: 'Başla' })).toBeNull()
     expect(screen.queryByRole('img', { name: /parmak şeması/ })).toBeNull()
   })
+
+  it('her geçişte tolerans daralır: geçilmiş kayıt sayısı sonraki denemenin düzeyini belirler', async () => {
+    await saveSettings({ calibrated: true })
+    await addLongTone({ perdeId: 'neva', durationMs: 4000, passed: true, toleranceCents: 25 })
+    await addLongTone({ perdeId: 'neva', durationMs: 900, passed: false, toleranceCents: 20 })
+    render(<NeyPerdePractice perdeId="neva" />)
+    const start = async () => {
+      const btn = await screen.findByRole('button', { name: 'Başla' })
+      await waitFor(() => expect((btn as HTMLButtonElement).disabled).toBe(false))
+      emit = null
+      fireEvent.click(btn)
+      await waitFor(() => expect(emit).not.toBeNull())
+    }
+    // Bir geçiş var: tolerans 20, süre 5 sn.
+    await start()
+    const hz = soundingHz(NEY_PERDELER[0]!.written, DEFAULT_TUNING)
+    act(() => {
+      for (let t = 0; t <= 5200; t += 50) emit!({ t, hz, clarity: 0.99 })
+    })
+    expect(await screen.findByText(/Geçtin/)).toBeTruthy()
+    await waitFor(async () => expect((await listLongTones('neva')).filter((r) => r.passed)).toHaveLength(2))
+    // Şimdi iki geçiş var: yeni deneme tolerans 15.
+    fireEvent.click(await screen.findByRole('button', { name: 'Tekrar dene' }))
+    await start()
+    fireEvent.click(screen.getByRole('button', { name: 'Bitir' }))
+    await screen.findByRole('button', { name: 'Tekrar dene' })
+    const recs = await listLongTones('neva')
+    expect(recs.filter((r) => r.passed)[1]!.toleranceCents).toBe(20)
+    expect(recs.at(-1)!.toleranceCents).toBe(15)
+  })
 })

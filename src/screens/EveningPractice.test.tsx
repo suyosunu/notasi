@@ -268,4 +268,32 @@ describe('EveningPractice', () => {
     fireEvent.click(await screen.findByRole('button', { name: '🔊 Doğru sesi dinle' }))
     expect(await screen.findByText(SOUND_WARNING)).toBeTruthy()
   })
+
+  it('perdenin geçilmiş kayıt sayısı toleransı daraltır (ilk geçişte 25, ikincide 20, üçüncüde 15)', async () => {
+    await readyForPerde()
+    await addLongTone({ perdeId: 'neva', durationMs: 4000, passed: true, toleranceCents: 25 })
+    await addLongTone({ perdeId: 'neva', durationMs: 5000, passed: true, toleranceCents: 20 })
+    await addLongTone({ perdeId: 'neva', durationMs: 900, passed: false, toleranceCents: 20 })
+    render(<EveningPractice />)
+    await begin()
+    // 18 sent sapma: 15 sent toleransın dışında, 20'nin içinde. Tolerans 15 ise tutuş hiç başlamaz.
+    blow(NEVA_HZ * 2 ** (18 / 1200), 1500)
+    expect(await screen.findByText('Süre: 0,0 sn (en iyi 0,0 sn)')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Bitir' }))
+    await screen.findByRole('button', { name: 'Devam' })
+    const last = (await listLongTones('neva')).filter((r) => !r.passed).at(-1)!
+    expect(last.toleranceCents).toBe(15)
+  })
+
+  it('ilk ses geçilmiş sayısından etkilenmez: tolerans 50 kalır', async () => {
+    await addLongTone({ perdeId: 'ilk-ses', durationMs: 3000, passed: true, toleranceCents: 50 })
+    await addLongTone({ perdeId: 'ilk-ses', durationMs: 3000, passed: true, toleranceCents: 50 })
+    await saveSettings({ calibrated: true })
+    render(<EveningPractice />)
+    await begin()
+    fireEvent.click(screen.getByRole('button', { name: 'Bitir' }))
+    await screen.findByRole('button', { name: 'Devam' })
+    const recs = await listLongTones('ilk-ses')
+    expect(recs.at(-1)!.toleranceCents).toBe(50)
+  })
 })

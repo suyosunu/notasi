@@ -5,6 +5,7 @@ import type { EveningState } from '../learning/evening-session'
 import { ILK_SES_CONFIG, neyLevelConfig } from '../learning/long-tone'
 import { LongToneTrainer } from '../ney/LongToneTrainer'
 import type { ToneTarget } from '../ney/LongToneTrainer'
+import { usePassCount } from '../ney/usePassCount'
 import { navigate } from '../router'
 import { getSettings } from '../store/db'
 import type { SessionRec, Settings } from '../store/db'
@@ -63,10 +64,13 @@ export function EveningPractice() {
     if (isStep) await advance()
   }
 
-  if (!settings || !session) return <Loading />
-  const state = session.state as EveningState
-  const step = state.steps[state.stepIndex]
-  if (!step) return <Loading />
+  // Kancalar erken dönüşlerden önce çağrılır.
+  const state = session ? (session.state as EveningState) : null
+  const step = state ? state.steps[state.stepIndex] : undefined
+  const levelPerdeId = step?.kind === 'uzun-ses' ? (step.perdeId ?? null) : null
+  const passCount = usePassCount(levelPerdeId, state ? `${state.stepIndex}-${state.tryIndex}` : '')
+
+  if (!settings || !session || !state || !step) return <Loading />
 
   if (step.kind === 'kalibrasyon') {
     return <Calibration key="kalibrasyon-adimi" onDone={() => void afterCalibration(true)} />
@@ -92,8 +96,9 @@ export function EveningPractice() {
     target = { kind: 'perde', perde }
   }
 
-  // Task 17 perde başına geçiş sayısını bağlayana dek başlangıç düzeyi kullanılır.
-  const cfg = step.kind === 'ilk-ses' ? ILK_SES_CONFIG : neyLevelConfig(0)
+  // Perde düzeyi: o perdede daha önce geçilen deneme sayısına göre; ilk ses sabittir.
+  if (passCount === null) return <Loading />
+  const cfg = step.kind === 'ilk-ses' ? ILK_SES_CONFIG : neyLevelConfig(passCount)
 
   return (
     <main class="screen evening">

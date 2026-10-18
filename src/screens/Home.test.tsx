@@ -45,7 +45,7 @@ afterEach(() => {
 
 describe('Home', () => {
   it('shows the Masa başı card and six section chips, Piyano being ileride', async () => {
-    await saveSettings({ onboarded: true })
+    await saveSettings({ onboarded: true, placementDone: true })
     render(<Home />)
     expect(await screen.findByText('☀️ Masa başı · 10 dk')).toBeTruthy()
     expect(screen.getByText('Re, Do, Si')).toBeTruthy()
@@ -58,7 +58,7 @@ describe('Home', () => {
   })
 
   it('links the Masa başı card to /gunduz and the evening card to /aksam', async () => {
-    await saveSettings({ onboarded: true })
+    await saveSettings({ onboarded: true, placementDone: true })
     render(<Home />)
     const day = (await screen.findByText('☀️ Masa başı · 10 dk')).closest('a')
     expect(day?.getAttribute('href')).toBe('#/gunduz')
@@ -69,7 +69,7 @@ describe('Home', () => {
   })
 
   it('lists the evening plan step labels', async () => {
-    await saveSettings({ onboarded: true })
+    await saveSettings({ onboarded: true, placementDone: true })
     render(<Home />)
     const night = (await screen.findByText('🌙 Akşam neyle')).closest('a') as HTMLElement
     expect(within(night).getByText('İlk ses')).toBeTruthy()
@@ -86,7 +86,7 @@ describe('Home', () => {
   })
 
   it('shows the streak from completed sessions', async () => {
-    await saveSettings({ onboarded: true, lastBackupAt: new Date().toISOString() })
+    await saveSettings({ onboarded: true, placementDone: true, lastBackupAt: new Date().toISOString() })
     await saveSession(session({ date: todayLocal() }))
     await saveSession(session({ date: daysAgo(1) }))
     await saveSession(session({ date: daysAgo(2), completed: false }))
@@ -97,14 +97,14 @@ describe('Home', () => {
   it('shows "Bugün başlayalım" with no streak and picks the greeting by hour', async () => {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date(2026, 9, 13, 20, 0, 0))
-    await saveSettings({ onboarded: true })
+    await saveSettings({ onboarded: true, placementDone: true })
     render(<Home />)
     expect(await screen.findByText('Bugün başlayalım')).toBeTruthy()
     expect(screen.getByText('İyi akşamlar')).toBeTruthy()
   })
 
   it('shows progress for an open day session', async () => {
-    await saveSettings({ onboarded: true })
+    await saveSettings({ onboarded: true, placementDone: true })
     await saveSession(
       session({
         completed: false,
@@ -120,14 +120,14 @@ describe('Home', () => {
   })
 
   it('shows "Bugünkü tur tamam ✓" when a day session completed today', async () => {
-    await saveSettings({ onboarded: true, lastBackupAt: new Date().toISOString() })
+    await saveSettings({ onboarded: true, placementDone: true, lastBackupAt: new Date().toISOString() })
     await saveSession(session({}))
     render(<Home />)
     expect(await screen.findByText('Bugünkü tur tamam ✓')).toBeTruthy()
   })
 
   it('shows the backup band when never backed up and a session was completed, then hides it', async () => {
-    await saveSettings({ onboarded: true, lastBackupAt: null })
+    await saveSettings({ onboarded: true, placementDone: true, lastBackupAt: null })
     await saveSession(session({}))
     vi.mocked(shareOrDownloadBackup).mockImplementationOnce(async () => {
       await saveSettings({ lastBackupAt: new Date().toISOString() })
@@ -140,7 +140,7 @@ describe('Home', () => {
   })
 
   it('keeps the backup band when the share sheet is dismissed without saving a backup', async () => {
-    await saveSettings({ onboarded: true, lastBackupAt: null })
+    await saveSettings({ onboarded: true, placementDone: true, lastBackupAt: null })
     await saveSession(session({}))
     render(<Home />)
     fireEvent.click(await screen.findByRole('button', { name: 'Yedekle' }))
@@ -151,7 +151,7 @@ describe('Home', () => {
 
   it('keeps the backup band when the backup fails', async () => {
     vi.mocked(shareOrDownloadBackup).mockRejectedValueOnce(new Error('x'))
-    await saveSettings({ onboarded: true })
+    await saveSettings({ onboarded: true, placementDone: true })
     await saveSession(session({}))
     render(<Home />)
     fireEvent.click(await screen.findByRole('button', { name: 'Yedekle' }))
@@ -160,7 +160,7 @@ describe('Home', () => {
   })
 
   it('shows no backup band without a completed session', async () => {
-    await saveSettings({ onboarded: true, lastBackupAt: null })
+    await saveSettings({ onboarded: true, placementDone: true, lastBackupAt: null })
     render(<Home />)
     await screen.findByText('☀️ Masa başı · 10 dk')
     expect(screen.queryByText(/Yedeğinizi alın/)).toBeNull()
@@ -179,8 +179,24 @@ describe('Home', () => {
     expect(history.length).toBe(before)
   })
 
-  it('links to the settings screen', async () => {
+  it('redirects onboarded users without a placement to /yoklama (no history entry, no loop)', async () => {
     await saveSettings({ onboarded: true })
+    const before = history.length
+    render(<Home />)
+    await waitFor(() => expect(location.hash).toBe('#/yoklama'))
+    expect(history.length).toBe(before)
+    expect(screen.queryByText('☀️ Masa başı · 10 dk')).toBeNull()
+  })
+
+  it('does not redirect once the placement is done', async () => {
+    await saveSettings({ onboarded: true, placementDone: true })
+    render(<Home />)
+    await screen.findByText('☀️ Masa başı · 10 dk')
+    expect(location.hash).toBe('')
+  })
+
+  it('links to the settings screen', async () => {
+    await saveSettings({ onboarded: true, placementDone: true })
     render(<Home />)
     const link = (await screen.findByText('⚙️ Ayarlar')).closest('a')
     expect(link?.getAttribute('href')).toBe('#/ayarlar')

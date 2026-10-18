@@ -19,8 +19,8 @@ export function Onboarding() {
       setBusy(false)
       return
     }
-    // Geri tuşu yeniden başlangıç ekranına düşmesin.
-    replaceRoute('/')
+    // Geri tuşu yeniden başlangıç ekranına düşmesin; önce yoklama, sonra ana ekran.
+    replaceRoute('/yoklama')
   }
 
   function start() {

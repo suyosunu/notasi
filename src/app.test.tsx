@@ -32,10 +32,16 @@ describe('App', () => {
   })
 
   it('#/ rotası ana ekranı gösterir', async () => {
-    await saveSettings({ onboarded: true })
+    await saveSettings({ onboarded: true, placementDone: true })
     location.hash = '#/'
     render(<App />)
     expect(await screen.findByText('☀️ Masa başı · 10 dk')).toBeTruthy()
+  })
+
+  it('#/yoklama rotası başlangıç yoklamasını gösterir', async () => {
+    location.hash = '#/yoklama'
+    render(<App />)
+    expect(await screen.findByText('Önce ne hatırladığınıza bakalım')).toBeTruthy()
   })
 
   it('#/nota rotası Nota bölümünü gösterir', async () => {
