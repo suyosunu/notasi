@@ -310,7 +310,7 @@ describe('DayPractice (dizi ve eski oturumlar)', () => {
     await seedSession([q])
     render(<DayPractice />)
     await screen.findByText('Bu dizi nasıl okunur?')
-    fireEvent.click(screen.getByRole('button', { name: 'Re – Do – Si – La' }))
+    fireEvent.click(screen.getByRole('button', { name: q.answer }))
     expect(await screen.findByText('Doğru 👏')).toBeTruthy()
   })
 

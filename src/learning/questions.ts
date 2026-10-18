@@ -54,7 +54,8 @@ function durationOptions(topicId: string, answer: string, rng: () => number): st
   return shuffle([answer, ...distractors.slice(0, 3)], rng)
 }
 
-const SEQ_SEP = ' – '
+/** Dizi adlarının ayracı: kopmaz boşluk + en tire + boşluk; satır sonunda kırılsa da "–" ile başlamaz. */
+export const SEQ_SEP = ' – '
 const SEQ_HINT = 'Soldan sağa tek tek oku: önce çizgi mi aralık mı olduğuna bak.'
 /** Çeldirici dizilerde izin verilen aralık: C4 (28) .. A5 (40), diyatonik sıra numarasıyla. */
 const SEQ_MIN = 4 * 7
@@ -102,15 +103,53 @@ function sequenceOptions(answerIdx: number[], answer: string, rng: () => number)
 
 const PERDE_HINT = 'Sırayla: Rast (Sol), Dügâh, Bûselik, Çârgâh, Nevâ, Hüseynî, Acem, Gerdâniye, Muhayyer (tiz La).'
 
-/** Konudaki notaların etiketleri çeldirici olur; yetmezse dokuz notanın tamamından tamamlanır. */
-function reverseOptions(topicCards: string[], answer: string, rng: () => number): string[] {
-  const own = [...new Set(topicCards.map((c) => notaEtiketi(perdeKey(c))))].filter((l) => l !== answer)
-  const distractors = shuffle(own, rng)
+/** Aynı harfin öbür oktavdaki perdesi (Sol4 ↔ Sol5, La4 ↔ La5); yalnızca Sol ve La için vardır. */
+function octaveCounterpart(key: string): string | null {
+  if (key.charAt(0) !== 'G' && key.charAt(0) !== 'A') return null
+  const other = `${key.charAt(0)}${key.charAt(1) === '4' ? '5' : '4'}`
+  return other in PERDE_ADLARI ? notaEtiketi(other) : null
+}
+
+/**
+ * Konudaki notaların etiketleri çeldirici olur; yetmezse dokuz notanın tamamından tamamlanır.
+ * Cevap Sol ya da La ise oktav karşılığı ("tiz Sol" ↔ "Sol", "tiz La" ↔ "La") bir çeldirici olarak
+ * her zaman bulunur: öğrenen oktavı ayırt etmelidir.
+ */
+function reverseOptions(topicCards: string[], key: string, answer: string, rng: () => number): string[] {
+  const counterpart = octaveCounterpart(key)
+  const fixed = counterpart && counterpart !== answer ? [counterpart] : []
+  const own = [...new Set(topicCards.map((c) => notaEtiketi(perdeKey(c))))].filter((l) => l !== answer && !fixed.includes(l))
+  const distractors = [...fixed, ...shuffle(own, rng)]
   if (distractors.length < 3) {
     const all = Object.keys(PERDE_ADLARI).map(notaEtiketi)
     distractors.push(...shuffle([...new Set(all)].filter((l) => l !== answer && !distractors.includes(l)), rng))
   }
   return shuffle([answer, ...distractors.slice(0, 3)], rng)
+}
+
+const PERDE_TOPICS = NOTA_TOPICS.filter((t) => t.kind === 'perde-name')
+
+/** Bu perde konusunun ve önceki perde konularının perde adları, konu sırasıyla. */
+function perdeNamesUpTo(topicId: string): string[] {
+  const upTo = PERDE_TOPICS.slice(0, PERDE_TOPICS.findIndex((t) => t.id === topicId) + 1)
+  return [...new Set(upTo.flatMap((t) => t.cards.map((c) => PERDE_ADLARI[perdeKey(c)]!)))]
+}
+
+/** İleri soru çeldiricileri: bu ve önceki perde konularının adları; 3'ten azsa dokuz addan tamamlanır. */
+function forwardPerdeOptions(topicId: string, perde: string, rng: () => number): string[] {
+  const distractors = shuffle(
+    perdeNamesUpTo(topicId).filter((n) => n !== perde),
+    rng,
+  )
+  if (distractors.length < 3) {
+    distractors.push(
+      ...shuffle(
+        Object.values(PERDE_ADLARI).filter((n) => n !== perde && !distractors.includes(n)),
+        rng,
+      ),
+    )
+  }
+  return shuffle([perde, ...distractors.slice(0, 3)], rng)
 }
 
 export function makeQuestion(cardId: string, rng: () => number): Question {
@@ -148,22 +187,18 @@ export function makeQuestion(cardId: string, rng: () => number): Question {
         topicId: topic.id,
         prompt: `${perde} hangi nota?`,
         events,
-        options: reverseOptions(topic.cards, answer, rng),
+        options: reverseOptions(topic.cards, key, answer, rng),
         answer,
         hint: PERDE_HINT,
       }
     }
-    const distractors = shuffle(
-      Object.values(PERDE_ADLARI).filter((n) => n !== perde),
-      rng,
-    ).slice(0, 3)
     return {
       id,
       cardId,
       topicId: topic.id,
       prompt: 'Bu notanın perde adı ne?',
       events,
-      options: shuffle([perde, ...distractors], rng),
+      options: forwardPerdeOptions(topic.id, perde, rng),
       answer: perde,
       hint: PERDE_HINT,
     }
