@@ -33,6 +33,20 @@ export function cardToEvent(cardId: string): MusicEvent {
   return { kind: 'note', pitch: { step: 'B', octave: 4, acc: 0 }, ...base }
 }
 
+/**
+ * Tüm kart türleri için olay listesi. 'seq:G4-A4-B4-C5' → dört dörtlük nota;
+ * diğer kartlar tek olaylıdır (cardToEvent).
+ */
+export function cardToEvents(cardId: string): MusicEvent[] {
+  if (!cardId.startsWith('seq:')) return [cardToEvent(cardId)]
+  const parts = cardId.slice(4).split('-')
+  return parts.map((p) => {
+    const n = /^([A-G])(\d)$/.exec(p)
+    if (!n || !STEPS.includes(n[1]!)) return invalid(cardId)
+    return { kind: 'note', pitch: { step: n[1] as Step, octave: Number(n[2]), acc: 0 }, dur: 'quarter' } as const
+  })
+}
+
 export function topicOfCard(cardId: string): Topic {
   const t = NOTA_TOPICS.find((x) => x.cards.includes(cardId))
   if (!t) return invalid(cardId)

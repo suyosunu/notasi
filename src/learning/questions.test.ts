@@ -64,6 +64,54 @@ describe('makeQuestion', () => {
     }
   })
 
+  describe('dizi okuma (seq:)', () => {
+    it('soru metni, cevap, ipucu ve olaylar', () => {
+      const q = makeQuestion('seq:D5-C5-B4-A4', seededRng(1))
+      expect(q.prompt).toBe('Bu dizi nasıl okunur?')
+      expect(q.answer).toBe('Re – Do – Si – La')
+      expect(q.hint).toBe('Soldan sağa tek tek oku: önce çizgi mi aralık mı olduğuna bak.')
+      expect(q.events).toHaveLength(4)
+      expect(q.topicId).toBe('dizi-1')
+      expect(q.options).toHaveLength(4)
+      expect(new Set(q.options).size).toBe(4)
+      expect(q.options).toContain(q.answer)
+    })
+
+    it('seçenekler düz solfejdir (tiz yok), EN DASH ile birleşir', () => {
+      const q = makeQuestion('seq:C5-E5-G5-E5', seededRng(2))
+      expect(q.answer).toBe('Do – Mi – Sol – Mi')
+      for (const o of q.options) {
+        expect(o).not.toMatch(/tiz/)
+        expect(o.split(' – ')).toHaveLength(4)
+      }
+    })
+
+    it('çeldiriciler C4..A5 aralığında kalır (sınır dizilerde de 3 çeldirici)', () => {
+      const RANGE = ['Do', 'Re', 'Mi', 'Fa', 'Sol', 'La', 'Si']
+      for (const card of ['seq:A4-C5-E5-A5', 'seq:G4-A4-B4-C5', 'seq:G5-F5-E5-D5']) {
+        for (let seed = 1; seed <= 20; seed++) {
+          const q = makeQuestion(card, seededRng(seed))
+          expect(new Set(q.options).size).toBe(4)
+          for (const o of q.options) for (const n of o.split(' – ')) expect(RANGE).toContain(n)
+        }
+      }
+    })
+
+    it('A5 ile biten dizide yukarı kaydırma aday olmaz (aralık dışı)', () => {
+      // A4-C5-E5-A5 bir adım yukarı → B5 üstü aralık dışı; yine de 4 farklı seçenek vardır.
+      const q = makeQuestion('seq:A4-C5-E5-A5', seededRng(5))
+      expect(q.options).not.toContain('Si – Re – Fa – Si')
+      expect(q.options).toHaveLength(4)
+    })
+
+    it('bir adım aşağı kaydırılmış dizi bir çeldiricidir', () => {
+      const seen = new Set<string>()
+      for (let s = 1; s <= 30; s++) makeQuestion('seq:D5-C5-B4-A4', seededRng(s)).options.forEach((o) => seen.add(o))
+      expect(seen.has('Do – Si – La – Sol')).toBe(true)
+      expect(seen.has('Mi – Re – Do – Si')).toBe(true)
+    })
+  })
+
   it('id deterministik, farklı rng durumunda farklı', () => {
     const a = makeQuestion('note:C5', seededRng(7))
     expect(makeQuestion('note:C5', seededRng(7)).id).toBe(a.id)

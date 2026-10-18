@@ -2,7 +2,7 @@ export interface Topic {
   id: string
   section: 'nota'
   title: string
-  kind: 'note-name' | 'duration'
+  kind: 'note-name' | 'duration' | 'sequence' | 'perde-name'
   cards: string[]
 }
 
@@ -16,4 +16,19 @@ export const NOTA_TOPICS: Topic[] = [
   { id: 'sure-3', section: 'nota', title: 'Sus işaretleri', kind: 'duration', cards: ['rest:whole', 'rest:half', 'rest:quarter', 'rest:eighth'] },
   { id: 'nota-4', section: 'nota', title: 'Alt notalar: Do, Re, Mi, Fa', kind: 'note-name', cards: ['note:C4', 'note:D4', 'note:E4', 'note:F4'] },
   { id: 'nota-5', section: 'nota', title: 'La (üst ek çizgi)', kind: 'note-name', cards: ['note:A5'] },
+  // Task 19 perde-1'i dizi-1'in, perde-2'yi dizi-2'nin arkasına ekler.
+  {
+    id: 'dizi-1',
+    section: 'nota',
+    title: 'Dizi okuma: adım adım',
+    kind: 'sequence',
+    cards: ['seq:G4-A4-B4-C5', 'seq:D5-C5-B4-A4', 'seq:E5-D5-C5-D5', 'seq:A4-B4-C5-B4', 'seq:C5-D5-E5-F5', 'seq:G5-F5-E5-D5'],
+  },
+  {
+    id: 'dizi-2',
+    section: 'nota',
+    title: 'Dizi okuma: atlamalı',
+    kind: 'sequence',
+    cards: ['seq:G4-B4-D5-G5', 'seq:D5-B4-G4-B4', 'seq:C5-E5-G5-E5', 'seq:A4-C5-E5-A5', 'seq:F5-D5-B4-G4', 'seq:E5-C5-A4-C5'],
+  },
 ]

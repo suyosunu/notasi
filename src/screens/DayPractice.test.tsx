@@ -1,8 +1,11 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/preact'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { playWritten, unlockAudio } from '../audio/player'
 import { DAY_CAP_MS, loadOrStartDaySession } from '../learning/day-session'
 import type { DayState } from '../learning/day-session'
+import { makeQuestion, seededRng } from '../learning/questions'
 import { addAttempt, getOpenSession, listAttempts, listCards, resetDbForTests, saveSession, saveSettings } from '../store/db'
 import { DayPractice } from './DayPractice'
 
@@ -204,6 +207,70 @@ describe('DayPractice (gündüz oturumu)', () => {
       await waitFor(() => expect(location.hash).toBe('#/oturum-sonu'))
       expect(await getOpenSession('gunduz')).toBeUndefined()
     })
+  })
+})
+
+describe('DayPractice (dizi ve eski oturumlar)', () => {
+  async function seedSession(questions: ReturnType<typeof makeQuestion>[]) {
+    const s = await loadOrStartDaySession(new Date())
+    const state: DayState = { questions, index: 0, answers: [], reviewNote: false }
+    await saveSession({ ...s, state })
+  }
+
+  it('Review Focus 1: dizi sorusunda 4 nota başı çizilir, seçenek metni tam görünür ve düğmeler satır kaydırır', async () => {
+    const q = makeQuestion('seq:D5-C5-B4-A4', seededRng(3))
+    await seedSession([q])
+    render(<DayPractice />)
+    await screen.findByText('Bu dizi nasıl okunur?')
+    expect(screen.getAllByTestId('notehead')).toHaveLength(4)
+    for (const o of q.options) {
+      const btn = screen.getByRole('button', { name: o })
+      expect(btn.textContent).toBe(o)
+    }
+    // CSS kuralı: uzun seçenekler satır kaydırır, en az 44 px yüksekliktedir.
+    const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8')
+    const rule = /\.option\s*\{([^}]*)\}/.exec(css)![1]!
+    expect(rule).toMatch(/white-space:\s*normal/)
+    const base = /\.option,\s*\.tool,\s*\.primary\s*\{([^}]*)\}/.exec(css)![1]!
+    expect(base).toMatch(/min-height:\s*(3rem|44px)/)
+  })
+
+  it('Dinle dizinin tamamını çalar', async () => {
+    const q = makeQuestion('seq:D5-C5-B4-A4', seededRng(3))
+    await seedSession([q])
+    render(<DayPractice />)
+    await screen.findByText('Bu dizi nasıl okunur?')
+    fireEvent.click(screen.getByRole('button', { name: '🔊 Dinle' }))
+    await waitFor(() => expect(playWritten).toHaveBeenCalledTimes(1))
+    expect(vi.mocked(playWritten).mock.calls[0]![0]).toHaveLength(4)
+  })
+
+  it('dizi cevabı doğru işaretlenir', async () => {
+    const q = makeQuestion('seq:D5-C5-B4-A4', seededRng(3))
+    await seedSession([q])
+    render(<DayPractice />)
+    await screen.findByText('Bu dizi nasıl okunur?')
+    fireEvent.click(screen.getByRole('button', { name: 'Re – Do – Si – La' }))
+    expect(await screen.findByText('Doğru 👏')).toBeTruthy()
+  })
+
+  it('Review Focus 4: eski note: sorularını içeren kayıtlı oturum yeni kodla açılır ve çizilir', async () => {
+    const old = {
+      id: 'note:D5#abc',
+      cardId: 'note:D5',
+      topicId: 'nota-1',
+      prompt: 'Bu notanın adı ne?',
+      events: [{ kind: 'note', pitch: { step: 'D', octave: 5, acc: 0 }, dur: 'quarter' }],
+      options: ['Re', 'Do', 'Mi', 'Fa'],
+      answer: 'Re',
+      hint: 'Çizgiler alttan: Mi, Sol, Si, Re, Fa',
+    } as ReturnType<typeof makeQuestion>
+    await seedSession([old])
+    render(<DayPractice />)
+    await screen.findByText('Bu notanın adı ne?')
+    expect(screen.getAllByTestId('notehead')).toHaveLength(1)
+    fireEvent.click(screen.getByRole('button', { name: 'Re' }))
+    expect(await screen.findByText('Doğru 👏')).toBeTruthy()
   })
 })
 

@@ -129,8 +129,13 @@ a:focus-visible {
 }
 
 .option {
+  min-height: 44px;
   font-size: 1.25rem;
   font-weight: 600;
+  line-height: 1.3;
+  /* Dizi cevapları uzundur ("Re – Do – Si – La"): satır kaydırır, taşmaz. */
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .option:disabled {
