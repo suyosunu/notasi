@@ -168,18 +168,26 @@ describe('Leitner tekrarı', () => {
     await masterNota1()
     await putCard({ id: 'note:D5', box: 1, lastReviewedAt: LONG_AGO })
     await putCard({ id: 'note:A4', box: 1, lastReviewedAt: LONG_AGO }) // nota-2: kilitli
+    await putCard({ id: 'dur:half', box: 1, lastReviewedAt: LONG_AGO }) // güncel konu (sure-1)
     const s = await loadOrStartDaySession(TODAY)
     const qs = (s.state as DayState).questions
     expect(qs).toHaveLength(12)
-    expect(qs.filter((q) => q.cardId === 'note:D5')).toHaveLength(1)
+    expect(qs.some((q) => q.cardId === 'note:D5')).toBe(true)
     expect(qs.some((q) => q.topicId === 'nota-2')).toBe(false)
+    // 2 due + öğrenilmiş konu payı (4 − 2 = 2) + 8 güncel konu (dur:half döngüde 3 kez) → dur:half 4 kez
+    expect(qs.filter((q) => q.cardId === 'dur:half')).toHaveLength(4)
+    expect(qs.filter((q) => q.topicId === 'nota-1')).toHaveLength(3)
   })
 
   it('vadesi gelmemiş kart oturuma girmez', async () => {
     await masterNota1()
-    await putCard({ id: 'note:D5', box: 5, lastReviewedAt: new Date(2026, 9, 12, 12).toISOString() })
+    await putCard({ id: 'dur:whole', box: 5, lastReviewedAt: new Date(2026, 9, 12, 12).toISOString() })
     const s = await loadOrStartDaySession(TODAY)
-    expect((s.state as DayState).questions.every((q) => q.topicId === 'sure-1')).toBe(true)
+    const qs = (s.state as DayState).questions
+    // due kart yok: öğrenilmiş konu payı 4, güncel konu 8 (dur:whole döngüde 3 kez, fazlası yok)
+    expect(qs.filter((q) => q.topicId === 'nota-1')).toHaveLength(4)
+    expect(qs.filter((q) => q.topicId === 'sure-1')).toHaveLength(8)
+    expect(qs.filter((q) => q.cardId === 'dur:whole')).toHaveLength(3)
   })
 
   it('en çok gecikmiş kartlar önce alınır', async () => {
@@ -200,8 +208,9 @@ describe('Leitner tekrarı', () => {
     const s = await loadOrStartDaySession(TODAY)
     const st = s.state as DayState
     expect(st.reviewNote).toBe(true)
-    expect(st.questions.filter((q) => q.topicId === 'nota-1')).toHaveLength(3)
-    expect(st.questions.filter((q) => q.topicId === 'sure-1')).toHaveLength(9)
+    // 3 geri dönüş + 4 öğrenilmiş konu payı (nota-1 tek öğrenilmiş konu) = 7; kalan 5 güncel konudan
+    expect(st.questions.filter((q) => q.topicId === 'nota-1')).toHaveLength(7)
+    expect(st.questions.filter((q) => q.topicId === 'sure-1')).toHaveLength(5)
     // devam eden oturum notu korur
     const again = await loadOrStartDaySession(new Date(2026, 9, 13, 18, 0, 0))
     expect((again.state as DayState).reviewNote).toBe(true)
@@ -212,7 +221,9 @@ describe('Leitner tekrarı', () => {
     for (let i = 0; i < 8; i++) await addAttempt({ topicId: 'sure-1', cardId: 'dur:whole', correct: i < 6 })
     const st = (await loadOrStartDaySession(TODAY)).state as DayState
     expect(st.reviewNote).toBe(false)
-    expect(st.questions.every((q) => q.topicId === 'sure-1')).toBe(true)
+    // geri dönüş sorusu yok: yalnızca öğrenilmiş konu payı (4) ve güncel konu (8)
+    expect(st.questions.filter((q) => q.topicId === 'nota-1')).toHaveLength(4)
+    expect(st.questions.filter((q) => q.topicId === 'sure-1')).toHaveLength(8)
   })
 
   it('ilk konuda zorlanma: önceki konu yok, not yok', async () => {

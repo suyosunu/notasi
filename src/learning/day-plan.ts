@@ -17,6 +17,8 @@ export interface DayPlanInput {
 }
 
 const CURRENT_SHARE = 0.7
+/** 1c: öğrenilmiş konulara ayrılan pay (vadesi gelen kartlar bu paydan düşülür). */
+const LEARNED_SHARE = 0.3
 export const REVIEW_TOPIC_QUESTIONS = 3
 
 function cycle(topic: Topic, n: number): string[] {
@@ -25,7 +27,8 @@ function cycle(topic: Topic, n: number): string[] {
 
 /**
  * 1c: dueCards verildiyse (1) en çok floor(count/2) vadesi gelen kart, (2) varsa reviewTopic'ten 3 soru,
- * (3) kalanı güncel konudan (güncel konu yoksa öğrenilmişlerden); sonuç karıştırılır.
+ * (3) öğrenilmiş konu varsa round(count*0,3) − alınan due kart sayısı (en az 0) kadar öğrenilmiş konulardan
+ * rastgele kart, (4) kalanı güncel konudan (güncel konu yoksa öğrenilmişlerden); sonuç karıştırılır.
  * dueCards yoksa 1a kuralı:
  * Güncel konudan ~%70, kalanı öğrenilmiş konulardan rastgele; sonuç karıştırılır.
  * Öğrenilmiş konu yoksa hepsi güncel konudan, güncel konu yoksa hepsi öğrenilmişlerden gelir.
@@ -44,6 +47,12 @@ export function buildDayQuestions(input: DayPlanInput): Question[] {
     if (review && review.cards.length > 0) {
       cardIds.push(...cycle(review, Math.min(REVIEW_TOPIC_QUESTIONS, count - cardIds.length)))
     }
+    const dueTaken = Math.min(input.dueCards.length, Math.floor(count / 2))
+    const learnedQuota =
+      current && learnedCards.length > 0
+        ? Math.min(count - cardIds.length, Math.max(0, Math.round(count * LEARNED_SHARE) - dueTaken))
+        : 0
+    for (let i = 0; i < learnedQuota; i++) cardIds.push(learnedCards[Math.floor(rng() * learnedCards.length)]!)
     const rest = count - cardIds.length
     if (current) cardIds.push(...cycle(current, rest))
     else for (let i = 0; i < rest; i++) cardIds.push(learnedCards[Math.floor(rng() * learnedCards.length)]!)

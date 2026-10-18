@@ -110,8 +110,9 @@ describe('buildDayQuestions', () => {
         reviewTopic: nota1,
       })
       expect(qs).toHaveLength(12)
-      expect(qs.filter((q) => q.topicId === 'nota-1')).toHaveLength(3)
-      expect(qs.filter((q) => q.topicId === 'sure-1')).toHaveLength(9)
+      // 3 review + round(12*0,3)=4 öğrenilmiş konu payı (yalnızca nota-1 öğrenilmiş) = 7; kalan 5 güncel konudan
+      expect(qs.filter((q) => q.topicId === 'nota-1')).toHaveLength(7)
+      expect(qs.filter((q) => q.topicId === 'sure-1')).toHaveLength(5)
     })
     it('due kartlar + review + güncel konu: 6 + 3 + 3', () => {
       const qs = buildDayQuestions({
@@ -127,15 +128,54 @@ describe('buildDayQuestions', () => {
       expect(qs.filter((q) => q.topicId === 'sure-1')).toHaveLength(3)
       expect(ids(qs).filter((id) => due10.includes(id))).toHaveLength(6)
     })
-    it('boş dueCards: hepsi güncel konudan (1a değil 1c)', () => {
+    it('boş dueCards, öğrenilmiş konu yok: hepsi güncel konudan', () => {
       const qs = buildDayQuestions({
         topics: NOTA_TOPICS,
-        statuses: statuses(['nota-1'], 'sure-1'),
+        statuses: statuses([], 'nota-1'),
         count: 12,
         rng: seededRng(15),
         dueCards: [],
       })
-      expect(qs.every((q) => q.topicId === 'sure-1')).toBe(true)
+      expect(qs).toHaveLength(12)
+      expect(qs.every((q) => q.topicId === 'nota-1')).toBe(true)
+    })
+    it('boş dueCards, öğrenilmiş konu var: round(count*0,3) soru öğrenilmiş konulardan, kalanı güncel konudan', () => {
+      const qs = buildDayQuestions({
+        topics: NOTA_TOPICS,
+        statuses: statuses(['nota-1', 'nota-2'], 'sure-1'),
+        count: 12,
+        rng: seededRng(15),
+        dueCards: [],
+      })
+      expect(qs).toHaveLength(12)
+      expect(qs.filter((q) => q.topicId === 'sure-1')).toHaveLength(8)
+      expect(qs.filter((q) => q.topicId === 'nota-1' || q.topicId === 'nota-2')).toHaveLength(4)
+    })
+    it('öğrenilmiş konu payından alınan due kartlar düşülür', () => {
+      const qs = buildDayQuestions({
+        topics: NOTA_TOPICS,
+        statuses: statuses(['nota-1'], 'sure-1'),
+        count: 12,
+        rng: seededRng(20),
+        dueCards: ['note:A4', 'note:G4'],
+      })
+      expect(qs).toHaveLength(12)
+      expect(ids(qs).filter((id) => id === 'note:A4' || id === 'note:G4')).toHaveLength(2)
+      // pay 4 − 2 due = 2 öğrenilmiş konu sorusu; kalan 8 güncel konudan
+      expect(qs.filter((q) => q.topicId === 'nota-1')).toHaveLength(2)
+      expect(qs.filter((q) => q.topicId === 'sure-1')).toHaveLength(8)
+    })
+    it('due kartlar payı aşarsa öğrenilmiş konu payı sıfır olur (negatif değil)', () => {
+      const qs = buildDayQuestions({
+        topics: NOTA_TOPICS,
+        statuses: statuses(['nota-1'], 'sure-1'),
+        count: 12,
+        rng: seededRng(21),
+        dueCards: due10,
+      })
+      expect(qs).toHaveLength(12)
+      expect(ids(qs).filter((id) => due10.includes(id))).toHaveLength(6)
+      expect(qs.filter((q) => q.topicId === 'sure-1')).toHaveLength(6)
     })
     it('güncel konu yoksa kalan sorular öğrenilmiş konulardan', () => {
       const all = NOTA_TOPICS.map((t) => t.id)

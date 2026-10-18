@@ -29,6 +29,17 @@ describe('review', () => {
   it('yanlış cevap kutu 1e düşürür', () => {
     expect(review(card(4, OLD), 'note:D5', false, NOW).box).toBe(1)
   })
+  it('aynı gün art arda doğru cevaplar kutuyu yükseltmez; ertesi gün doğru cevap yükseltir', () => {
+    let c = review(undefined, 'note:D5', true, NOW)
+    for (let i = 0; i < 3; i++) c = review(c, 'note:D5', true, new Date(2026, 9, 13, 9, 5 + i, 0))
+    expect(c.box).toBe(2)
+    const next = review(c, 'note:D5', true, new Date(2026, 9, 14, 9, 0, 0))
+    expect(next.box).toBe(3)
+  })
+  it('aynı gün yanlış cevap yine kutu 1e düşürür', () => {
+    const c = review(card(4, NOW.toISOString()), 'note:D5', false, new Date(2026, 9, 13, 10, 0, 0))
+    expect(c.box).toBe(1)
+  })
   it('lastReviewedAt = now ve girdi kartı değişmez', () => {
     const c = card(3, OLD)
     const out = review(c, 'note:D5', true, NOW)

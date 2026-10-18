@@ -6,9 +6,14 @@ export const BOX_INTERVAL_DAYS = [0, 1, 3, 7, 14]
 
 const MAX_BOX = 5
 
-/** Doğru cevap kartı bir kutu yukarı taşır (en fazla 5); yanlış cevap 1. kutuya indirir. Yeni kart 1. kutudan başlar. */
+/**
+ * Doğru cevap kartı bir kutu yukarı taşır (en fazla 5); yanlış cevap 1. kutuya indirir. Yeni kart 1. kutudan başlar.
+ * Kart bugün (yerel gün) zaten tekrarlandıysa doğru cevap kutuyu değiştirmez: aynı gün art arda doğrular
+ * kartı birkaç kutu birden yukarı taşımasın.
+ */
 export function review(card: CardRec | undefined, cardId: string, correct: boolean, now: Date): CardRec {
-  const box = correct ? Math.min(MAX_BOX, (card?.box ?? 1) + 1) : 1
+  const sameDay = card !== undefined && todayLocal(new Date(card.lastReviewedAt)) === todayLocal(now)
+  const box = !correct ? 1 : sameDay ? card.box : Math.min(MAX_BOX, (card?.box ?? 1) + 1)
   return { id: cardId, box: box as CardRec['box'], lastReviewedAt: now.toISOString() }
 }
 
