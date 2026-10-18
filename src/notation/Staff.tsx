@@ -12,6 +12,8 @@ const STEM_LEN = 33
 const INK = 'currentColor'
 /** İşaret ile nota başı arasındaki boşluk (px); en az 2 olmalı. */
 const ACC_GAP = 3
+/** Yuva içinde işaret ile önceki notanın arasında bırakılan en az boşluk (px). */
+const MIN_GAP = 4
 const REST_BAR_W = 12
 const REST_BAR_H = 5
 
@@ -130,16 +132,29 @@ function RestShape(props: { event: RestEvent; x: number }) {
   )
 }
 
+/**
+ * Her olay kendi yuvasını alır. Yuva en az `baseSlot` kadardır; işaretli notada solundaki işarete,
+ * işaret ile nota başı arasındaki boşluğa ve başın kendisine yetecek kadar genişler. İşaretsiz
+ * notalar yalnızca kendi yuvalarının gerektirdiği kadar yer değiştirir. Toplam genişlik `width`'i
+ * aşarsa görünüm kutusu genişler (SVG %100 genişlikte ölçeklenir, kırpılmaz).
+ */
+export function layoutEvents(events: MusicEvent[], width: number): { xs: number[]; viewWidth: number } {
+  const baseSlot = (width - FIRST_X - RIGHT_MARGIN) / Math.max(events.length, 1)
+  const xs: number[] = []
+  let start = FIRST_X
+  for (const e of events) {
+    const accW = e.kind === 'note' ? accidentalWidth(e.pitch.acc) : 0
+    const slot = accW > 0 ? Math.max(baseSlot, accW + ACC_GAP + 2 * HEAD_RX + MIN_GAP) : baseSlot
+    const headFromStart = accW > 0 ? Math.max(slot / 2, accW + ACC_GAP + HEAD_RX + MIN_GAP / 2) : slot / 2
+    xs.push(start + headFromStart)
+    start += slot
+  }
+  return { xs, viewWidth: Math.max(width, start + RIGHT_MARGIN) }
+}
+
 export function Staff(props: { events: MusicEvent[]; width?: number; highlightIndex?: number }) {
-  const { events, width = DEFAULT_WIDTH, highlightIndex } = props
-  const slot = (width - FIRST_X - RIGHT_MARGIN) / Math.max(events.length, 1)
-  // Nota başı yuvanın ortasındadır. Solundaki işarete yer yoksa tüm başlar aynı miktarda sağa
-  // kayar; böylece aralık eşit kalır ve işaret bir önceki notaya taşmaz.
-  const accNeed = Math.max(
-    0,
-    ...events.map((e) => (e.kind === 'note' ? accidentalWidth(e.pitch.acc) + ACC_GAP + HEAD_RX : 0)),
-  )
-  const headOffset = Math.max(slot / 2, accNeed)
+  const { events, width: baseWidth = DEFAULT_WIDTH, highlightIndex } = props
+  const { xs, viewWidth: width } = layoutEvents(events, baseWidth)
 
   return (
     <svg
@@ -171,7 +186,7 @@ export function Staff(props: { events: MusicEvent[]; width?: number; highlightIn
         {CLEF_GLYPH}
       </text>
       {events.map((e, i) => {
-        const x = FIRST_X + slot * i + headOffset
+        const x = xs[i]!
         const highlighted = i === highlightIndex
         return (
           <g

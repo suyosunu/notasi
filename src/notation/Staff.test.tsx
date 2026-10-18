@@ -242,9 +242,48 @@ describe('Staff: değiştirgeç yerleşimi', () => {
       if (i === 0) return
       expect(Number(g.getAttribute('data-x'))).toBeGreaterThan(cx[i - 1]! + 6.5)
     })
-    // Aralık eşit kalır.
-    const gaps = cx.slice(1).map((v, i) => v - cx[i]!)
-    for (const gap of gaps) expect(gap).toBeCloseTo(gaps[0]!, 5)
+  })
+
+  it('yoğun porte (240 px, 8 sekizlik, +5 ve +8 dahil): işaret önceki başa binmez, hiçbir şey kırpılmaz', () => {
+    const eighth = (step: 'B' | 'C', octave: number, acc: Accidental): MusicEvent => ({
+      kind: 'note',
+      pitch: { step, octave, acc },
+      dur: 'eighth',
+    })
+    const accs: Accidental[] = [0, 5, 0, 8, -8, 0, 5, 8]
+    const events = accs.map((a) => eighth('C', 5, a))
+    const { container } = render(<Staff events={events} width={240} />)
+    const viewWidth = Number(container.querySelector('svg')!.getAttribute('viewBox')!.split(' ')[2])
+    const heads = [...container.querySelectorAll('[data-testid="notehead"]')].map((h) => Number(h.getAttribute('cx')))
+    const eventGroups = [...container.querySelectorAll('g[data-event]')]
+    eventGroups.forEach((grp, i) => {
+      const acc = grp.querySelector('g[data-acc]')
+      if (acc && i > 0) {
+        expect(Number(acc.getAttribute('data-x')), `olay ${i}`).toBeGreaterThanOrEqual(heads[i - 1]! + 6.5 + 1)
+      }
+      const stem = grp.querySelector('line[data-stem]')
+      expect(Math.max(heads[i]! + 6.5, Number(stem!.getAttribute('x1')))).toBeLessThanOrEqual(viewWidth)
+      // Bayrak ve sağ kenar payı da sığmalı.
+      expect(heads[i]! + 6.5 + 8).toBeLessThanOrEqual(viewWidth)
+    })
+    // Sığmadığı için görünüm kutusu genişlemiş, SVG hâlâ %100 genişliktedir.
+    expect(viewWidth).toBeGreaterThan(240)
+    expect(container.querySelector('svg')!.getAttribute('width')).toBe('100%')
+  })
+
+  it('işaretsiz porte yerleşimi değişmez (yuva ortası) ve bir notanın işareti ötekileri kaydırmaz', () => {
+    const plain = [note('G', 4, 'quarter'), note('A', 4, 'quarter'), note('B', 4, 'quarter'), note('C', 5, 'quarter')]
+    const slot = (240 - 52 - 8) / 4
+    const a = render(<Staff events={plain} />)
+    const cxs = [...a.container.querySelectorAll('[data-testid="notehead"]')].map((h) => Number(h.getAttribute('cx')))
+    cxs.forEach((cx, i) => expect(cx).toBeCloseTo(52 + slot * (i + 0.5), 5))
+    expect(a.container.querySelector('svg')!.getAttribute('viewBox')).toBe('0 0 240 110')
+    a.unmount()
+    // 1. nota (i=0) işaretli olsa da, yuvası zaten yetiyorsa 2.-4. notalar yerinde kalır.
+    const withAcc = [accNote('B', 4, -1), ...plain.slice(1)]
+    const b = render(<Staff events={withAcc} />)
+    const cxs2 = [...b.container.querySelectorAll('[data-testid="notehead"]')].map((h) => Number(h.getAttribute('cx')))
+    expect(cxs2.slice(1)).toEqual(cxs.slice(1))
   })
 
   it('işaret, nota ile aynı yükseklikte ortalanır (Si4 = 3. çizgi)', () => {
