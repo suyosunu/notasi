@@ -86,6 +86,32 @@ describe('NeyPerdePractice', () => {
     expect(await screen.findByRole('button', { name: 'Başla' })).toBeTruthy()
   })
 
+  it('son 5 deneme en yeniden eskiye "Son denemeler" olarak gösterilir ve her denemeden sonra güncellenir', async () => {
+    await saveSettings({ calibrated: true })
+    vi.useFakeTimers({ toFake: ['Date'] })
+    for (const [i, ms] of [1000, 3200, 4000, 1500, 2600, 900].entries()) {
+      vi.setSystemTime(new Date(2026, 9, 13, 20, i))
+      await addLongTone({ perdeId: 'neva', durationMs: ms, passed: false, toleranceCents: 25 })
+    }
+    vi.useRealTimers()
+    await addLongTone({ perdeId: 'dugah', durationMs: 9900, passed: true, toleranceCents: 25 })
+    render(<NeyPerdePractice perdeId="neva" />)
+    expect(await screen.findByText('Son denemeler: 0,9 · 2,6 · 1,5 · 4,0 · 3,2 sn')).toBeTruthy()
+    const btn = await screen.findByRole('button', { name: 'Başla' })
+    await waitFor(() => expect((btn as HTMLButtonElement).disabled).toBe(false))
+    fireEvent.click(btn)
+    await waitFor(() => expect(emit).not.toBeNull())
+    fireEvent.click(screen.getByRole('button', { name: 'Bitir' }))
+    expect(await screen.findByText('Son denemeler: 0,0 · 0,9 · 2,6 · 1,5 · 4,0 sn')).toBeTruthy()
+  })
+
+  it('hiç deneme yoksa "Son denemeler" satırı yoktur', async () => {
+    await saveSettings({ calibrated: true })
+    render(<NeyPerdePractice perdeId="neva" />)
+    await screen.findByRole('button', { name: 'Başla' })
+    expect(screen.queryByText(/Son denemeler/)).toBeNull()
+  })
+
   it('kalibre değilse önce kalibrasyon gösterilir', async () => {
     render(<NeyPerdePractice perdeId="neva" />)
     expect(await screen.findByRole('heading', { name: 'Kalibrasyon' })).toBeTruthy()

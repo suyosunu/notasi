@@ -30,7 +30,8 @@ interface View {
   bestMs: number
 }
 
-function seconds(ms: number): string {
+/** Saniye, bir ondalık, Türkçe ondalık virgülüyle: 3200 → "3,2". */
+export function seconds(ms: number): string {
   return (ms / 1000).toFixed(1).replace('.', ',')
 }
 
@@ -45,6 +46,8 @@ export function LongToneTrainer(props: {
   cfg: LongToneConfig
   nextLabel: string
   onNext: () => void
+  /** Deneme kaydı yazılınca çağrılır (örn. geçmiş listesini yenilemek için). */
+  onSaved?: () => void
 }) {
   const { target, settings, cfg } = props
   const perde = target.kind === 'perde' ? target.perde : null
@@ -58,6 +61,8 @@ export function LongToneTrainer(props: {
   const [checkFingering, setCheckFingering] = useState<boolean | null>(perde ? null : false)
   const [fingeringNote, setFingeringNote] = useState(false)
   const [soundWarn, setSoundWarn] = useState(false)
+  /** Bu perdenin önceki denemelerindeki en uzun süre. */
+  const [historyBestMs, setHistoryBestMs] = useState(0)
 
   const phaseRef = useRef<Phase>('hazir')
   const stopRef = useRef<() => void>(() => undefined)
@@ -71,11 +76,11 @@ export function LongToneTrainer(props: {
   useEffect(() => {
     mountedRef.current = true
     let alive = true
-    if (perde) {
-      void listLongTones(perde.id).then((list) => {
-        if (alive) setCheckFingering(list.length === 0)
-      })
-    }
+    void listLongTones(perdeId).then((list) => {
+      if (!alive) return
+      setHistoryBestMs(list.reduce((m, r) => Math.max(m, r.durationMs), 0))
+      if (perde) setCheckFingering(list.length === 0)
+    })
     return () => {
       alive = false
       mountedRef.current = false
@@ -106,7 +111,9 @@ export function LongToneTrainer(props: {
     } catch {
       return // kayıt yazılamadı: sonraki adım düğmesi çıkmaz; çağıran ekranın çıkış yolu kalır
     }
-    if (mountedRef.current) setResult({ passed: tone.passed, saved: true })
+    if (!mountedRef.current) return
+    setResult({ passed: tone.passed, saved: true })
+    props.onSaved?.()
   }
 
   function onSample(s: PitchSample) {
@@ -192,7 +199,7 @@ export function LongToneTrainer(props: {
       )}
 
       <p class="tone-time">
-        Süre: {seconds(view.holdingMs)} sn (en iyi {seconds(view.bestMs)} sn)
+        Süre: {seconds(view.holdingMs)} sn (en iyi {seconds(Math.max(historyBestMs, view.bestMs))} sn)
       </p>
       <TunerGauge cents={view.cents} toleranceCents={cfg.toleranceCents} />
 

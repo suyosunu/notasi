@@ -5,15 +5,17 @@ import type { PerdeStatus } from '../learning/evening-plan'
 import { loadEveningInput } from '../learning/evening-session'
 import { neyLevelConfig } from '../learning/long-tone'
 import { SOLFEJ } from '../music/pitch'
-import { LongToneTrainer } from '../ney/LongToneTrainer'
+import { LongToneTrainer, seconds } from '../ney/LongToneTrainer'
 import { useNeyLevel } from '../ney/useNeyLevel'
 import { navigate } from '../router'
-import { getSettings } from '../store/db'
+import { getSettings, listLongTones } from '../store/db'
 import type { Settings } from '../store/db'
 import { Calibration } from './Calibration'
 
 const ICONS: Record<PerdeStatus, string> = { kilitli: '🔒', acik: '▶', gecildi: '✓' }
 const LABELS: Record<PerdeStatus, string> = { kilitli: 'kilitli', acik: 'açık', gecildi: 'geçildi' }
+/** Tek perde sayfasında gösterilen son deneme sayısı. */
+const HISTORY_SIZE = 5
 
 /** Ney bölümü: perdeler durumlarıyla; açık ya da geçilmiş perde tek başına çalışılabilir. */
 export function NeySection() {
@@ -86,6 +88,20 @@ export function NeyPerdePractice({ perdeId }: { perdeId: string }) {
   const [status, setStatus] = useState<PerdeStatus | null>(null)
   const [round, setRound] = useState(0)
   const level = useNeyLevel(perde?.id ?? null, round)
+  /** Son denemelerin süreleri (ms), en yeniden eskiye. */
+  const [history, setHistory] = useState<number[]>([])
+  const [savedCount, setSavedCount] = useState(0)
+
+  useEffect(() => {
+    if (!perde) return
+    let alive = true
+    void listLongTones(perde.id).then((list) => {
+      if (alive) setHistory(list.slice(-HISTORY_SIZE).reverse().map((r) => r.durationMs))
+    })
+    return () => {
+      alive = false
+    }
+  }, [perdeId, savedCount])
 
   useEffect(() => {
     let alive = true
@@ -143,7 +159,11 @@ export function NeyPerdePractice({ perdeId }: { perdeId: string }) {
         cfg={neyLevelConfig(level)}
         nextLabel="Tekrar dene"
         onNext={() => setRound((n) => n + 1)}
+        onSaved={() => setSavedCount((n) => n + 1)}
       />
+      {history.length > 0 && (
+        <p class="muted tone-history">{`Son denemeler: ${history.map(seconds).join(' · ')} sn`}</p>
+      )}
       <a class="back" href="#/ney">
         Ney bölümüne dön
       </a>

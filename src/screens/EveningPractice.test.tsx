@@ -112,6 +112,27 @@ describe('EveningPractice', () => {
     expect(await screen.findByText('Süre: 2,0 sn (en iyi 2,0 sn)')).toBeTruthy()
   })
 
+  it('en iyi süre perdenin tüm geçmişindeki en uzun süredir', async () => {
+    await readyForPerde()
+    await addLongTone({ perdeId: 'neva', durationMs: 4300, passed: true, toleranceCents: 25 })
+    await addLongTone({ perdeId: 'neva', durationMs: 1500, passed: false, toleranceCents: 20 })
+    render(<EveningPractice />)
+    expect(await screen.findByText('Süre: 0,0 sn (en iyi 4,3 sn)')).toBeTruthy()
+    await begin()
+    blow(NEVA_HZ, 2000)
+    expect(await screen.findByText('Süre: 2,0 sn (en iyi 4,3 sn)')).toBeTruthy()
+  })
+
+  it('bu deneme geçmişi aşarsa en iyi süre bu denemedir', async () => {
+    await readyForPerde()
+    await addLongTone({ perdeId: 'neva', durationMs: 1200, passed: false, toleranceCents: 25 })
+    render(<EveningPractice />)
+    expect(await screen.findByText('Süre: 0,0 sn (en iyi 1,2 sn)')).toBeTruthy()
+    await begin()
+    blow(NEVA_HZ, 2000)
+    expect(await screen.findByText('Süre: 2,0 sn (en iyi 2,0 sn)')).toBeTruthy()
+  })
+
   it('Review Focus 5: sessizlik ve oktav sıçramaları geçilmiş sayılmaz; Bitir başarısız kaydı yazar', async () => {
     await readyForPerde()
     render(<EveningPractice />)
@@ -289,7 +310,7 @@ describe('EveningPractice', () => {
     await begin()
     // 18 sent sapma: 15 sent toleransın dışında, 20'nin içinde. Tolerans 15 ise tutuş hiç başlamaz.
     blow(NEVA_HZ * 2 ** (18 / 1200), 1500)
-    expect(await screen.findByText('Süre: 0,0 sn (en iyi 0,0 sn)')).toBeTruthy()
+    expect(await screen.findByText('Süre: 0,0 sn (en iyi 6,0 sn)')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Bitir' }))
     await screen.findByRole('button', { name: 'Devam' })
     const last = (await listLongTones('neva')).filter((r) => !r.passed).at(-1)!
