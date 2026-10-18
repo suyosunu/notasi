@@ -279,11 +279,12 @@ describe('EveningPractice', () => {
     expect(await screen.findByText(SOUND_WARNING)).toBeTruthy()
   })
 
-  it('perdenin geçilmiş kayıt sayısı toleransı daraltır (ilk geçişte 25, ikincide 20, üçüncüde 15)', async () => {
+  it('düzey son denemelere göre belirlenir: 3 geçiş + 1 başarısız → düzey 2, tolerans 15', async () => {
     await readyForPerde()
     await addLongTone({ perdeId: 'neva', durationMs: 4000, passed: true, toleranceCents: 25 })
     await addLongTone({ perdeId: 'neva', durationMs: 5000, passed: true, toleranceCents: 20 })
-    await addLongTone({ perdeId: 'neva', durationMs: 900, passed: false, toleranceCents: 20 })
+    await addLongTone({ perdeId: 'neva', durationMs: 6000, passed: true, toleranceCents: 15 })
+    await addLongTone({ perdeId: 'neva', durationMs: 900, passed: false, toleranceCents: 10 })
     render(<EveningPractice />)
     await begin()
     // 18 sent sapma: 15 sent toleransın dışında, 20'nin içinde. Tolerans 15 ise tutuş hiç başlamaz.

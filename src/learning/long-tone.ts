@@ -18,9 +18,22 @@ export interface LongToneState {
 
 const GRACE_MS = 250
 
-/** `passCount`: o perdede daha önce geçilen uzun ses sayısı. */
-export function neyLevelConfig(passCount: number): LongToneConfig {
-  const k = Math.max(0, Math.floor(Number.isFinite(passCount) ? passCount : 0))
+/** Düzeyi belirleyen son deneme sayısı. */
+export const NEY_LEVEL_WINDOW = 6
+
+/**
+ * Perde düzeyi son denemeleri izler (zorluk yalnızca artmasın): o perdenin en yeni
+ * `NEY_LEVEL_WINDOW` denemesinde geçiş − başarısız, en az 0. Girdi sırası önemsizdir.
+ */
+export function neyLevel(recs: readonly { passed: boolean; at: string }[]): number {
+  const recent = [...recs].sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0)).slice(0, NEY_LEVEL_WINDOW)
+  const passes = recent.filter((r) => r.passed).length
+  return Math.max(0, passes - (recent.length - passes))
+}
+
+/** `level`: `neyLevel` ile bulunan perde düzeyi. */
+export function neyLevelConfig(level: number): LongToneConfig {
+  const k = Math.max(0, Math.floor(Number.isFinite(level) ? level : 0))
   return {
     toleranceCents: Math.max(10, 25 - 5 * k),
     requiredMs: Math.min(10000, 4000 + 1000 * k),

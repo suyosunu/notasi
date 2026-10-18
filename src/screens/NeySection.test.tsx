@@ -107,7 +107,7 @@ describe('NeyPerdePractice', () => {
     expect(screen.queryByRole('img', { name: /parmak şeması/ })).toBeNull()
   })
 
-  it('her geçişte tolerans daralır: geçilmiş kayıt sayısı sonraki denemenin düzeyini belirler', async () => {
+  it('düzey son denemeleri izler: geçiş daraltır, başarısız deneme geri gevşetir', async () => {
     await saveSettings({ calibrated: true })
     await addLongTone({ perdeId: 'neva', durationMs: 4000, passed: true, toleranceCents: 25 })
     await addLongTone({ perdeId: 'neva', durationMs: 900, passed: false, toleranceCents: 20 })
@@ -119,7 +119,7 @@ describe('NeyPerdePractice', () => {
       fireEvent.click(btn)
       await waitFor(() => expect(emit).not.toBeNull())
     }
-    // Bir geçiş var: tolerans 20, süre 5 sn.
+    // 1 geçiş − 1 başarısız = düzey 0: tolerans 25, süre 4 sn.
     await start()
     const hz = soundingHz(NEY_PERDELER[0]!.written, DEFAULT_TUNING)
     act(() => {
@@ -127,13 +127,18 @@ describe('NeyPerdePractice', () => {
     })
     expect(await screen.findByText(/Geçtin/)).toBeTruthy()
     await waitFor(async () => expect((await listLongTones('neva')).filter((r) => r.passed)).toHaveLength(2))
-    // Şimdi iki geçiş var: yeni deneme tolerans 15.
+    // 2 geçiş − 1 başarısız = düzey 1: yeni deneme tolerans 20.
     fireEvent.click(await screen.findByRole('button', { name: 'Tekrar dene' }))
     await start()
     fireEvent.click(screen.getByRole('button', { name: 'Bitir' }))
-    await screen.findByRole('button', { name: 'Tekrar dene' })
+    await waitFor(async () => expect(await listLongTones('neva')).toHaveLength(4))
+    // Bu başarısız deneme düzeyi 0'a indirir: sonraki deneme yine tolerans 25.
+    fireEvent.click(await screen.findByRole('button', { name: 'Tekrar dene' }))
+    await start()
+    fireEvent.click(screen.getByRole('button', { name: 'Bitir' }))
+    await waitFor(async () => expect(await listLongTones('neva')).toHaveLength(5))
     const recs = await listLongTones('neva')
-    expect(recs.filter((r) => r.passed)[1]!.toleranceCents).toBe(20)
-    expect(recs.at(-1)!.toleranceCents).toBe(15)
+    expect(recs.filter((r) => r.passed)[1]!.toleranceCents).toBe(25)
+    expect(recs.slice(-2).map((r) => r.toleranceCents)).toEqual([20, 25])
   })
 })

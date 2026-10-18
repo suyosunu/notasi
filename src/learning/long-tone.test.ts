@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fingeringCheck, ILK_SES_CONFIG, initialLongTone, neyLevelConfig, stepLongTone } from './long-tone'
+import { fingeringCheck, ILK_SES_CONFIG, initialLongTone, NEY_LEVEL_WINDOW, neyLevel, neyLevelConfig, stepLongTone } from './long-tone'
 import type { LongToneState } from './long-tone'
 
 const CFG = neyLevelConfig(0)
@@ -31,6 +31,29 @@ describe('neyLevelConfig', () => {
 
   it('ilk ses yapılandırması', () => {
     expect(ILK_SES_CONFIG).toEqual({ toleranceCents: 50, requiredMs: 3000, graceMs: 250 })
+  })
+})
+
+describe('neyLevel (son denemelere göre düzey)', () => {
+  /** Sırayla (eskiden yeniye) deneme sonuçları; her biri bir dakika arayla. */
+  function recs(results: boolean[]) {
+    return results.map((passed, i) => ({ passed, at: new Date(Date.UTC(2026, 9, 13, 9, i)).toISOString() }))
+  }
+  it('pencere 6 deneme', () => expect(NEY_LEVEL_WINDOW).toBe(6))
+  it('kayıt yoksa 0', () => expect(neyLevel([])).toBe(0))
+  it('3 geçiş → 3; ardından 2 başarısız → 1; 6 başarısız → 0', () => {
+    const three = [true, true, true]
+    expect(neyLevel(recs(three))).toBe(3)
+    expect(neyLevel(recs([...three, false, false]))).toBe(1)
+    expect(neyLevel(recs([...three, false, false, false, false, false, false]))).toBe(0)
+  })
+  it('yalnızca son 6 deneme sayılır; düzey negatif olmaz', () => {
+    expect(neyLevel(recs([true, true, true, true, true, true, true, true, false]))).toBe(4)
+    expect(neyLevel(recs([false, false, false, false, true]))).toBe(0)
+  })
+  it('girdi sırasından bağımsız: en yeni kayıtlar zaman damgasıyla bulunur', () => {
+    const list = recs([true, true, true, true, true, true, false, false, false, false, false, false])
+    expect(neyLevel([...list].reverse())).toBe(0)
   })
 })
 

@@ -5,7 +5,7 @@ import type { EveningState } from '../learning/evening-session'
 import { ILK_SES_CONFIG, neyLevelConfig } from '../learning/long-tone'
 import { LongToneTrainer } from '../ney/LongToneTrainer'
 import type { ToneTarget } from '../ney/LongToneTrainer'
-import { usePassCount } from '../ney/usePassCount'
+import { useNeyLevel } from '../ney/useNeyLevel'
 import { navigate } from '../router'
 import { getSettings } from '../store/db'
 import type { SessionRec, Settings } from '../store/db'
@@ -68,7 +68,7 @@ export function EveningPractice() {
   const state = session ? (session.state as EveningState) : null
   const step = state ? state.steps[state.stepIndex] : undefined
   const levelPerdeId = step?.kind === 'uzun-ses' ? (step.perdeId ?? null) : null
-  const passCount = usePassCount(levelPerdeId, state ? `${state.stepIndex}-${state.tryIndex}` : '')
+  const level = useNeyLevel(levelPerdeId, state ? `${state.stepIndex}-${state.tryIndex}` : '')
 
   if (!settings || !session || !state || !step) return <Loading />
 
@@ -102,9 +102,9 @@ export function EveningPractice() {
     target = { kind: 'perde', perde }
   }
 
-  // Perde düzeyi: o perdede daha önce geçilen deneme sayısına göre; ilk ses sabittir.
-  if (passCount === null) return <Loading />
-  const cfg = step.kind === 'ilk-ses' ? ILK_SES_CONFIG : neyLevelConfig(passCount)
+  // Perde düzeyi: o perdenin son denemelerine göre (geçiş − başarısız); ilk ses sabittir.
+  if (level === null) return <Loading />
+  const cfg = step.kind === 'ilk-ses' ? ILK_SES_CONFIG : neyLevelConfig(level)
 
   return (
     <main class="screen evening">

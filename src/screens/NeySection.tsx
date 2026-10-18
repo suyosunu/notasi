@@ -6,7 +6,7 @@ import { loadEveningInput } from '../learning/evening-session'
 import { neyLevelConfig } from '../learning/long-tone'
 import { SOLFEJ } from '../music/pitch'
 import { LongToneTrainer } from '../ney/LongToneTrainer'
-import { usePassCount } from '../ney/usePassCount'
+import { useNeyLevel } from '../ney/useNeyLevel'
 import { navigate } from '../router'
 import { getSettings } from '../store/db'
 import type { Settings } from '../store/db'
@@ -85,7 +85,7 @@ export function NeyPerdePractice({ perdeId }: { perdeId: string }) {
   const [settings, setSettings] = useState<Settings | null>(null)
   const [status, setStatus] = useState<PerdeStatus | null>(null)
   const [round, setRound] = useState(0)
-  const passCount = usePassCount(perde?.id ?? null, round)
+  const level = useNeyLevel(perde?.id ?? null, round)
 
   useEffect(() => {
     let alive = true
@@ -109,7 +109,7 @@ export function NeyPerdePractice({ perdeId }: { perdeId: string }) {
       </main>
     )
   }
-  if (!settings || !status || passCount === null) {
+  if (!settings || !status || level === null) {
     return (
       <main class="screen">
         <p class="muted">Yükleniyor…</p>
@@ -140,7 +140,7 @@ export function NeyPerdePractice({ perdeId }: { perdeId: string }) {
         key={round}
         target={{ kind: 'perde', perde }}
         settings={settings}
-        cfg={neyLevelConfig(passCount)}
+        cfg={neyLevelConfig(level)}
         nextLabel="Tekrar dene"
         onNext={() => setRound((n) => n + 1)}
       />
