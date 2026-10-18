@@ -299,6 +299,10 @@ describe('makam soruları', () => {
     }
   })
 
+  it('makam-dizi ipucu "İşaretli" (noktalı İ) ile başlar', () => {
+    expect(makeQuestion('makam-dizi:rast', seededRng(1)).hint.startsWith('İşaretli notalara bak.')).toBe(true)
+  })
+
   it('geçersiz makam kartı hata verir', () => {
     expect(() => makeQuestion('makam-dizi:yok', seededRng(1))).toThrow('Geçersiz kart kimliği')
     expect(() => makeQuestion('makam-dizi:toString', seededRng(1))).toThrow('Geçersiz kart kimliği')

@@ -22,4 +22,20 @@ describe('makam olayları', () => {
       expect(pitches[pitches.length - 1]).toEqual(m.dizi[0])
     }
   })
+
+  it('Rast: inişte Eviç yerine Acem (F5 doğal) kullanılır, çıkışta Eviç kalır', () => {
+    const rast = MAKAMLAR.find((m) => m.id === 'rast')!
+    const ev = cikisInisEvents(rast.dizi, rast.inis)
+    const pitches = ev.map((e) => (e.kind === 'note' ? e.pitch : null))
+    expect(pitches[6]).toEqual({ step: 'F', octave: 5, acc: 4 }) // çıkışta Eviç
+    expect(pitches[8]).toEqual({ step: 'F', octave: 5, acc: 0 }) // inişte Acem
+    expect(pitches).toHaveLength(15)
+    expect(pitches[14]).toEqual(rast.dizi[0])
+  })
+
+  it('inis verilmezse iniş dizinin tersidir; yalnızca Rast inis tanımlar', () => {
+    for (const m of MAKAMLAR) expect(m.inis !== undefined).toBe(m.id === 'rast')
+    const ussak = MAKAMLAR.find((m) => m.id === 'ussak')!
+    expect(cikisInisEvents(ussak.dizi, undefined)).toEqual(cikisInisEvents(ussak.dizi))
+  })
 })

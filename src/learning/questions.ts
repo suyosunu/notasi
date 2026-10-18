@@ -185,7 +185,7 @@ function forwardPerdeOptions(topicId: string, perde: string, rng: () => number):
 }
 
 const MAKAM_DIZI_HINT =
-  'Işaretli notalara bak. Rast: Si koma bemolü, Fa bakiye diyezi. Uşşak: yalnızca Si koma bemolü. Hicaz: Si bakiye bemolü, Fa ve Do bakiye diyezi.'
+  'İşaretli notalara bak. Rast: Si koma bemolü, Fa bakiye diyezi. Uşşak: yalnızca Si koma bemolü. Hicaz: Si bakiye bemolü, Fa ve Do bakiye diyezi.'
 const MAKAM_DURAK_HINT = 'Durak, makamın bittiği (karar verdiği) perdedir.'
 const MAKAM_GUCLU_HINT = 'Güçlü, makamda yarım karar yapılan perdedir.'
 /** Üç makamın dışında, çeldirici olarak kullanılan tanınmış bir makam adı. */

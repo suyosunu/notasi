@@ -46,7 +46,7 @@ export function MakamDetail({ makamId }: { makamId: string }) {
       </main>
     )
   }
-  const dizi = makam.dizi
+  const { dizi, inis } = makam
 
   async function listen() {
     if (!settings) return
@@ -58,7 +58,7 @@ export function MakamDetail({ makamId }: { makamId: string }) {
     try {
       // unlockAudio dokunuş işleyicisinde, ilk iş olarak çağrılmalıdır (iOS).
       await unlockAudio()
-      await playWritten(cikisInisEvents(dizi), settings.tuning, LISTEN_BPM)
+      await playWritten(cikisInisEvents(dizi, inis), settings.tuning, LISTEN_BPM)
     } catch {
       setSoundWarn(SOUND_WARNING)
     }

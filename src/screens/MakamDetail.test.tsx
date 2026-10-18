@@ -87,6 +87,14 @@ describe('MakamDetail', () => {
     expect(screen.queryByText(SOUND_WARNING)).toBeNull()
   })
 
+  it('Rast "Diziyi dinle": inişte Acem çalınır (makam.inis)', async () => {
+    render(<MakamDetail makamId="rast" />)
+    await tapListen()
+    await waitFor(() => expect(playWritten).toHaveBeenCalledTimes(1))
+    const rast = byId('rast')
+    expect(vi.mocked(playWritten).mock.calls[0]![0]).toEqual(cikisInisEvents(rast.dizi, rast.inis))
+  })
+
   it('ses kapalıyken uyarır, çalmaz', async () => {
     await saveSettings({ soundOn: false })
     render(<MakamDetail makamId="rast" />)

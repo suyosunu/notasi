@@ -11,12 +11,16 @@ export interface Makam {
   /** Makamın donanımı: dizide işaretle yazılan notalar (TDV'deki sırayla). */
   donanim: WrittenPitch[]
   seyir: string
+  /** Pesten tize iniş dizisi; yoksa iniş, dizinin tersidir. Yalnızca Rast'ta farklıdır (Eviç yerine Acem). */
+  inis?: WrittenPitch[]
 }
 
 const segah: WrittenPitch = { step: 'B', octave: 4, acc: -1 }
 const dikKurdi: WrittenPitch = { step: 'B', octave: 4, acc: -4 }
 const nimHicaz: WrittenPitch = { step: 'C', octave: 5, acc: 4 }
 const evic: WrittenPitch = { step: 'F', octave: 5, acc: 4 }
+
+const acem: WrittenPitch = { step: 'F', octave: 5, acc: 0 }
 
 const n = (step: WrittenPitch['step'], octave: number): WrittenPitch => ({ step, octave, acc: 0 })
 
@@ -32,6 +36,8 @@ export const MAKAMLAR: Makam[] = [
     durak: 'Rast',
     guclu: 'Nevâ',
     yeden: 'Irak',
+    // İnişte Eviç yerine Acem (F5, araştırma §2.1): "acemli rast dizisi".
+    inis: [n('G', 4), n('A', 4), segah, n('C', 5), n('D', 5), n('E', 5), acem, n('G', 5)],
     donanim: [segah, evic],
     seyir:
       'Çıkıcı bir makamdır. Durak civarından ya da pest bölgeden başlanır, orta bölgede dolaşılır. ' +
