@@ -38,9 +38,17 @@ export function MicGate(props: {
   const mountedRef = useRef(true)
   /** Her start/stop'ta artar; bayat (geç dönen) başlatmalar bununla ayıklanır. */
   const generationRef = useRef(0)
+  /** Süren başlatmanın iptal anahtarı: izler gelir gelmez mic.ts tarafında durdurulur. */
+  const abortRef = useRef<AbortController | null>(null)
+
+  const cancelPending = () => {
+    abortRef.current?.abort()
+    abortRef.current = null
+  }
 
   const stop = useCallback(() => {
     generationRef.current++
+    cancelPending()
     const stopper = stopperRef.current
     stopperRef.current = null
     stopper?.()
@@ -50,10 +58,14 @@ export function MicGate(props: {
   const start = useCallback(async () => {
     stopperRef.current?.()
     stopperRef.current = null
+    cancelPending()
+    const controller = new AbortController()
+    abortRef.current = controller
     const gen = ++generationRef.current
     setError(null)
     try {
-      const stopper = await startPitchStream((s) => onSampleRef.current(s))
+      const stopper = await startPitchStream((s) => onSampleRef.current(s), controller.signal)
+      if (abortRef.current === controller) abortRef.current = null
       if (!mountedRef.current || gen !== generationRef.current) {
         stopper() // başlatma sürerken kaldırıldı ya da durduruldu
         return
@@ -61,6 +73,7 @@ export function MicGate(props: {
       stopperRef.current = stopper
       setRunning(true)
     } catch (err) {
+      if (abortRef.current === controller) abortRef.current = null
       if (!mountedRef.current || gen !== generationRef.current) return
       setRunning(false)
       setError(toGateError(err))
@@ -72,6 +85,7 @@ export function MicGate(props: {
     return () => {
       mountedRef.current = false
       generationRef.current++
+      cancelPending()
       stopperRef.current?.()
       stopperRef.current = null
     }

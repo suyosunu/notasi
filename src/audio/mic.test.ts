@@ -7,7 +7,7 @@ vi.mock('pitchy', () => ({
   },
 }))
 
-import { FFT_SIZE, MicError, startPitchStream, toSample } from './mic'
+import { FFT_SIZE, MicError, RESUME_TIMEOUT_MS, startPitchStream, toSample } from './mic'
 import type { PitchSample } from './mic'
 
 describe('toSample', () => {
@@ -48,7 +48,11 @@ describe('MicError', () => {
 describe('startPitchStream', () => {
   const trackStop = vi.fn()
   const close = vi.fn(() => Promise.resolve())
-  const resume = vi.fn(() => Promise.resolve())
+  /** Varsayılan: resume bağlamı 'running' yapar. */
+  let resumeImpl: (ctx: { state: string }) => Promise<void>
+  const resume = vi.fn(function (this: { state: string }) {
+    return resumeImpl(this)
+  })
   let analyser: { fftSize: number; getFloatTimeDomainData: ReturnType<typeof vi.fn> }
   let rafCb: FrameRequestCallback | null
   let cancelRaf: ReturnType<typeof vi.fn>
@@ -57,9 +61,13 @@ describe('startPitchStream', () => {
     trackStop.mockClear()
     close.mockClear()
     resume.mockClear()
+    resumeImpl = async (ctx) => {
+      ctx.state = 'running'
+    }
     nextResult = [440, 0.95]
     analyser = { fftSize: 0, getFloatTimeDomainData: vi.fn() }
     class FakeCtx {
+      state = 'suspended'
       sampleRate = 44100
       createMediaStreamSource = vi.fn(() => ({ connect: vi.fn() }))
       createAnalyser = vi.fn(() => analyser)
@@ -76,6 +84,7 @@ describe('startPitchStream', () => {
     vi.stubGlobal('cancelAnimationFrame', cancelRaf)
   })
   afterEach(() => {
+    vi.useRealTimers()
     vi.unstubAllGlobals()
     setMediaDevices(undefined)
     Reflect.deleteProperty(navigator, 'audioSession')
@@ -195,5 +204,88 @@ describe('startPitchStream', () => {
     expect((err as MicError).reason).toBe('acilamadi')
     expect((err as MicError).detail).toContain('NotSupportedError')
     expect(gum).not.toHaveBeenCalled()
+  })
+
+  it('resume 2 sn içinde bağlamı başlatamazsa izler durur, bağlam kapanır ve acilamadi fırlatılır', async () => {
+    vi.useFakeTimers()
+    resumeImpl = () => new Promise(() => {}) // hiç dönmez
+    setMediaDevices(vi.fn().mockResolvedValue({ getTracks: () => [{ stop: trackStop }] }))
+    const p = startPitchStream(() => {}).catch((e: unknown) => e)
+    await vi.advanceTimersByTimeAsync(RESUME_TIMEOUT_MS)
+    const err = await p
+    expect(RESUME_TIMEOUT_MS).toBe(2000)
+    expect(err).toBeInstanceOf(MicError)
+    expect((err as MicError).reason).toBe('acilamadi')
+    expect((err as MicError).detail).toBe('AudioContext başlatılamadı')
+    expect(trackStop).toHaveBeenCalledTimes(1)
+    expect(close).toHaveBeenCalledTimes(1)
+  })
+
+  it('resume döner ama bağlam çalışmıyorsa (askıda) acilamadi fırlatılır ve izler durur', async () => {
+    resumeImpl = async () => undefined // state 'suspended' kalır
+    setMediaDevices(vi.fn().mockResolvedValue({ getTracks: () => [{ stop: trackStop }] }))
+    const err = await startPitchStream(() => {}).catch((e: unknown) => e)
+    expect((err as MicError).detail).toBe('AudioContext başlatılamadı')
+    expect(trackStop).toHaveBeenCalledTimes(1)
+    expect(close).toHaveBeenCalledTimes(1)
+  })
+
+  it('başlatma sürerken iptal edilirse gelen izler hemen durdurulur', async () => {
+    let resolveGum!: (s: unknown) => void
+    setMediaDevices(vi.fn(() => new Promise((r) => (resolveGum = r))))
+    const ac = new AbortController()
+    const samples: PitchSample[] = []
+    const p = startPitchStream((s) => samples.push(s), ac.signal).catch((e: unknown) => e)
+    ac.abort()
+    resolveGum({ getTracks: () => [{ stop: trackStop }] })
+    const err = await p
+    expect(err).toBeInstanceOf(MicError)
+    expect(trackStop).toHaveBeenCalledTimes(1)
+    expect(close).toHaveBeenCalledTimes(1)
+    expect(rafCb).toBeNull()
+    expect(samples).toHaveLength(0)
+  })
+
+  it('bağlam başlatılmayı beklerken iptal edilirse izler beklemeden durdurulur', async () => {
+    let resolveResume!: () => void
+    resumeImpl = (ctx) =>
+      new Promise<void>((r) => {
+        resolveResume = () => {
+          ctx.state = 'running'
+          r()
+        }
+      })
+    setMediaDevices(vi.fn().mockResolvedValue({ getTracks: () => [{ stop: trackStop }] }))
+    const ac = new AbortController()
+    const p = startPitchStream(() => {}, ac.signal).catch((e: unknown) => e)
+    await vi.waitFor(() => expect(resume).toHaveBeenCalled())
+    await Promise.resolve()
+    ac.abort()
+    await vi.waitFor(() => expect(trackStop).toHaveBeenCalledTimes(1))
+    resolveResume()
+    expect(await p).toBeInstanceOf(MicError)
+    expect(rafCb).toBeNull()
+  })
+
+  it('onSample ya da findPitch fırlatsa da döngü sürer; kare atlanır', async () => {
+    setMediaDevices(vi.fn().mockResolvedValue({ getTracks: () => [{ stop: trackStop }] }))
+    const samples: PitchSample[] = []
+    let throwNext = true
+    const stop = await startPitchStream((s) => {
+      if (throwNext) {
+        throwNext = false
+        throw new Error('ekran hatası')
+      }
+      samples.push(s)
+    })
+    expect(() => rafCb?.(1)).not.toThrow()
+    rafCb?.(2)
+    expect(samples).toHaveLength(1)
+    nextResult = undefined as unknown as [number, number] // findPitch bozuk sonuç → yapı bozma hatası
+    expect(() => rafCb?.(3)).not.toThrow()
+    nextResult = [440, 0.95]
+    rafCb?.(4)
+    expect(samples).toHaveLength(2)
+    stop()
   })
 })

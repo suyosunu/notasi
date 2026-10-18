@@ -33,6 +33,23 @@ export class MicError extends Error {
 
 type AudioContextCtor = typeof AudioContext
 
+/** Mikrofon izni geldikten sonra ses bağlamının çalışmaya başlaması için beklenen en uzun süre. */
+export const RESUME_TIMEOUT_MS = 2000
+
+/** `p` dönünce, `ms` dolunca ya da `signal` iptal edilince (hangisi önceyse) sonuçlanır; asla reddetmez. */
+function settleWithin(p: Promise<unknown>, ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    const done = () => {
+      clearTimeout(id)
+      signal?.removeEventListener('abort', done)
+      resolve()
+    }
+    const id = setTimeout(done, ms)
+    signal?.addEventListener('abort', done, { once: true })
+    void p.then(done, done)
+  })
+}
+
 function audioContextCtor(): AudioContextCtor | undefined {
   const w = globalThis as { AudioContext?: AudioContextCtor; webkitAudioContext?: AudioContextCtor }
   return w.AudioContext ?? w.webkitAudioContext
@@ -53,8 +70,12 @@ function describeError(err: unknown): string {
  * Mikrofonu açar ve her animasyon karesinde perde ölçer. Kullanıcı dokunuşundan
  * (iOS) çağrılmalıdır. Ses cihazdan çıkmaz; yalnızca yerel AnalyserNode'a gider.
  * Dönen fonksiyon akışı, döngüyü ve ses bağlamını kapatır (iki kez çağrılabilir).
+ * `signal` başlatma sürerken iptal edilirse gelen izler hemen durdurulur ve `MicError` fırlatılır.
  */
-export async function startPitchStream(onSample: (s: PitchSample) => void): Promise<() => void> {
+export async function startPitchStream(
+  onSample: (s: PitchSample) => void,
+  signal?: AbortSignal,
+): Promise<() => void> {
   const getUserMedia = navigator.mediaDevices?.getUserMedia?.bind(navigator.mediaDevices)
   const Ctx = audioContextCtor()
   if (!getUserMedia) throw new MicError('desteklenmiyor', 'getUserMedia yok')
@@ -74,7 +95,6 @@ export async function startPitchStream(onSample: (s: PitchSample) => void): Prom
     stream = await getUserMedia({
       audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
     })
-    await resumed
   } catch (err) {
     void ctx.close().catch(() => undefined)
     const name = errorName(err)
@@ -84,14 +104,32 @@ export async function startPitchStream(onSample: (s: PitchSample) => void): Prom
     throw new MicError('acilamadi', detail)
   }
 
+  const release = () => {
+    for (const track of stream.getTracks()) track.stop()
+    void ctx.close().catch(() => undefined)
+  }
+  if (signal?.aborted) {
+    release()
+    throw new MicError('acilamadi', 'iptal edildi')
+  }
+  // iOS bağlamı askıda bırakabilir: resume'u sınırlı bekle, çalışmıyorsa mikrofonu bırak.
+  await settleWithin(resumed, RESUME_TIMEOUT_MS, signal)
+  if (signal?.aborted) {
+    release()
+    throw new MicError('acilamadi', 'iptal edildi')
+  }
+  if (ctx.state !== 'running') {
+    release()
+    throw new MicError('acilamadi', 'AudioContext başlatılamadı')
+  }
+
   let stopped = false
   let rafId = 0
   const stop = () => {
     if (stopped) return
     stopped = true
     cancelAnimationFrame(rafId)
-    for (const track of stream.getTracks()) track.stop()
-    void ctx.close().catch(() => undefined)
+    release()
   }
 
   try {
@@ -103,10 +141,15 @@ export async function startPitchStream(onSample: (s: PitchSample) => void): Prom
 
     const tick = () => {
       if (stopped) return
-      analyser.getFloatTimeDomainData(buffer)
-      const [hz, clarity] = detector.findPitch(buffer, ctx.sampleRate)
-      onSample(toSample(performance.now(), hz, clarity))
+      // Sonraki kare önce istenir: işleme sırasında bir hata döngüyü sessizce öldürmesin.
       rafId = requestAnimationFrame(tick)
+      try {
+        analyser.getFloatTimeDomainData(buffer)
+        const [hz, clarity] = detector.findPitch(buffer, ctx.sampleRate)
+        onSample(toSample(performance.now(), hz, clarity))
+      } catch {
+        // bu kare atlanır
+      }
     }
     rafId = requestAnimationFrame(tick)
   } catch (err) {

@@ -177,4 +177,49 @@ describe('MicGate', () => {
     resolve(stopper)
     await waitFor(() => expect(stopper).toHaveBeenCalledTimes(1))
   })
+
+  it('başlatma sürerken Durdur: mikrofon izinleri gelir gelmez izler durdurulur (gerçek mic.ts)', async () => {
+    const trackStop = vi.fn()
+    vi.stubGlobal(
+      'AudioContext',
+      class {
+        state = 'suspended'
+        resume() {
+          this.state = 'running'
+          return Promise.resolve()
+        }
+        close = () => Promise.resolve()
+      },
+    )
+    let resolveGum!: (s: unknown) => void
+    Object.defineProperty(navigator, 'mediaDevices', {
+      value: { getUserMedia: vi.fn(() => new Promise((r) => (resolveGum = r))) },
+      configurable: true,
+    })
+    const actual = await vi.importActual<typeof import('../audio/mic')>('../audio/mic')
+    startPitchStream.mockImplementation(actual.startPitchStream)
+
+    renderGate()
+    fireEvent.click(screen.getByText('Başlat'))
+    fireEvent.click(screen.getByText('Durdur'))
+    resolveGum({ getTracks: () => [{ stop: trackStop }] })
+    await waitFor(() => expect(trackStop).toHaveBeenCalledTimes(1))
+    expect(screen.getByTestId('state').textContent).toBe('kapalı')
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('her başlatmaya iptal sinyali verilir; Durdur ve yeni başlatma öncekini iptal eder', async () => {
+    startPitchStream.mockReturnValue(new Promise(() => {}))
+    renderGate()
+    fireEvent.click(screen.getByText('Başlat'))
+    const first = startPitchStream.mock.calls[0]![1] as AbortSignal
+    expect(first).toBeInstanceOf(AbortSignal)
+    expect(first.aborted).toBe(false)
+    fireEvent.click(screen.getByText('Başlat'))
+    expect(first.aborted).toBe(true)
+    const second = startPitchStream.mock.calls[1]![1] as AbortSignal
+    expect(second.aborted).toBe(false)
+    fireEvent.click(screen.getByText('Durdur'))
+    expect(second.aborted).toBe(true)
+  })
 })
