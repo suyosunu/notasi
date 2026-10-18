@@ -9,6 +9,7 @@ import {
   getSettings,
   listAttempts,
   listCards,
+  listFingeringFlags,
   listLongTones,
   listSessions,
   listTopics,
@@ -138,6 +139,14 @@ describe('long tones, flags, topics', () => {
     const f = await addFingeringFlag({ perdeId: 'rast', medianCents: 60 })
     expect(f.id).toBeTruthy()
     expect(f.at).toBeTruthy()
+  })
+
+  it('lists fingering flags, filtered by perde', async () => {
+    await addFingeringFlag({ perdeId: 'rast', medianCents: 60 })
+    await addFingeringFlag({ perdeId: 'neva', medianCents: -55 })
+    expect(await listFingeringFlags('rast')).toHaveLength(1)
+    expect((await listFingeringFlags('neva'))[0]!.medianCents).toBe(-55)
+    expect(await listFingeringFlags()).toHaveLength(2)
   })
 
   it('setPlacedOut creates and updates topic records', async () => {

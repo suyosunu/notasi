@@ -10,7 +10,7 @@ import { Smoother } from '../learning/smoothing'
 import { soundingHz } from '../music/ahenk'
 import { centsBetween } from '../music/pitch'
 import { SOUND_WARNING } from '../screens/DayPractice'
-import { addFingeringFlag, addLongTone, listLongTones } from '../store/db'
+import { addFingeringFlag, addLongTone, listFingeringFlags, listLongTones } from '../store/db'
 import type { Settings } from '../store/db'
 import { FingeringDiagram } from './Fingering'
 import { MicGate } from './MicGate'
@@ -76,10 +76,11 @@ export function LongToneTrainer(props: {
   useEffect(() => {
     mountedRef.current = true
     let alive = true
-    void listLongTones(perdeId).then((list) => {
+    void Promise.all([listLongTones(perdeId), perde ? listFingeringFlags(perde.id) : []]).then(([list, flags]) => {
       if (!alive) return
       setHistoryBestMs(list.reduce((m, r) => Math.max(m, r.durationMs), 0))
-      if (perde) setCheckFingering(list.length === 0)
+      // Şema denetimi yapılmış sayılır: şema kaydı ya da süresi olan (ses gelmiş) bir deneme varsa.
+      if (perde) setCheckFingering(flags.length === 0 && !list.some((r) => r.durationMs > 0))
     })
     return () => {
       alive = false

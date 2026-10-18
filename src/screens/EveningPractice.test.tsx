@@ -5,6 +5,7 @@ import { playWritten, unlockAudio } from '../audio/player'
 import { ILK_SES_REHBER, NEY_PERDELER } from '../content/ney-perdeler'
 import { DEFAULT_TUNING, soundingHz } from '../music/ahenk'
 import {
+  addFingeringFlag,
   addLongTone,
   getOpenSession,
   listLongTones,
@@ -174,6 +175,32 @@ describe('EveningPractice', () => {
     await screen.findByRole('button', { name: 'Devam' })
     expect(screen.queryByText(FINGERING_NOTE)).toBeNull()
     expect((await readAllStores()).fingeringFlags).toHaveLength(0)
+  })
+
+  it('ilk deneme ses gelmeden bitirilirse (süre 0) sonraki denemede şema denetimi yine yapılır', async () => {
+    await readyForPerde()
+    render(<EveningPractice />)
+    await begin()
+    fireEvent.click(screen.getByRole('button', { name: 'Bitir' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Devam' }))
+    expect(await screen.findByText('Deneme 2/3')).toBeTruthy()
+    expect((await listLongTones('neva'))[0]!.durationMs).toBe(0)
+    await begin()
+    blow(NEVA_HZ * 2 ** (70 / 1200), 2500)
+    expect(await screen.findByText(FINGERING_NOTE)).toBeTruthy()
+    await waitFor(async () => expect((await readAllStores()).fingeringFlags).toHaveLength(1))
+  })
+
+  it('perde için şema kaydı varsa (süreli deneme olmasa da) denetim tekrarlanmaz', async () => {
+    await readyForPerde()
+    await addFingeringFlag({ perdeId: 'neva', medianCents: 70 })
+    render(<EveningPractice />)
+    await begin()
+    blow(NEVA_HZ * 2 ** (70 / 1200), 2500)
+    fireEvent.click(screen.getByRole('button', { name: 'Bitir' }))
+    await screen.findByRole('button', { name: 'Devam' })
+    expect(screen.queryByText(FINGERING_NOTE)).toBeNull()
+    expect((await readAllStores()).fingeringFlags).toHaveLength(1)
   })
 
   it('ilk ses: rehber gösterilir, hedef tutuşun başındaki perdedir', async () => {

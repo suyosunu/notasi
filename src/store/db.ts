@@ -242,6 +242,11 @@ export async function addFingeringFlag(r: Omit<FingeringFlagRec, 'id' | 'at'>): 
   return rec
 }
 
+export async function listFingeringFlags(perdeId?: string): Promise<FingeringFlagRec[]> {
+  const all = await (await getDb()).getAll('fingeringFlags')
+  return byAt(perdeId === undefined ? all : all.filter((r) => r.perdeId === perdeId))
+}
+
 // --- topics -----------------------------------------------------------
 
 export async function listTopics(): Promise<TopicRec[]> {
