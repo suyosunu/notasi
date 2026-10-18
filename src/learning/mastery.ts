@@ -7,15 +7,21 @@ export const MASTERY_THRESHOLD = 0.8
 export type TopicStatus = 'kilitli' | 'acik' | 'ogrenildi'
 
 /**
- * Tek bir konunun denemeleri verilir. Konu, seviye atlama (`placedOut`) ile ya da
- * son 10 denemenin en az %80'i doğruysa (en az 10 deneme gerekir) ustalaşılmış sayılır.
+ * Tek bir konunun denemeleri verilir. Ustalık yapışkandır: konu, seviye atlama (`placedOut`) ile ya da
+ * zaman sıralı geçmişinde art arda 10 denemelik herhangi bir pencere en az %80 doğruysa öğrenilmiş sayılır.
+ * Sonradan gelen yanlışlar konuyu yeniden kilitlemez; zayıflık `needsReview` ve Leitner ile ele alınır.
  */
 export function isMastered(attempts: AttemptRec[], placedOut: boolean): boolean {
   if (placedOut) return true
   if (attempts.length < MASTERY_WINDOW) return false
-  const last = [...attempts].sort((a, b) => a.at.localeCompare(b.at)).slice(-MASTERY_WINDOW)
-  const correct = last.filter((a) => a.correct).length
-  return correct / MASTERY_WINDOW >= MASTERY_THRESHOLD
+  const ordered = [...attempts].sort((a, b) => a.at.localeCompare(b.at))
+  let correct = 0
+  for (let i = 0; i < ordered.length; i++) {
+    if (ordered[i]!.correct) correct++
+    if (i >= MASTERY_WINDOW && ordered[i - MASTERY_WINDOW]!.correct) correct--
+    if (i >= MASTERY_WINDOW - 1 && correct / MASTERY_WINDOW >= MASTERY_THRESHOLD) return true
+  }
+  return false
 }
 
 /** Tüm denemeler verilir. İlk konu her zaman açık; sonrakiler önceki öğrenilince açılır. */

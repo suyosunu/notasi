@@ -3,6 +3,7 @@ import { NOTA_TOPICS } from '../content/nota-topics'
 import type { AttemptRec } from '../store/db'
 import { seededRng } from '../util/rng'
 import { buildMixedQuestions, MIXED_COUNT, mixedPool } from './mixed'
+import { topicStatuses } from './mastery'
 import type { TopicStatus } from './mastery'
 
 function statuses(learned: string[]): Record<string, TopicStatus> {
@@ -34,6 +35,19 @@ describe('mixedPool', () => {
 
   it('is empty when no topic is learned', () => {
     expect(mixedPool(NOTA_TOPICS, statuses([]))).toEqual([])
+  })
+
+  it('stays non-empty when a mastered topic is later answered wrong (sticky mastery)', () => {
+    const results = [...Array(8).fill(true), false, false, false, false, false]
+    const history: AttemptRec[] = results.map((correct, i) => ({
+      id: `h${i}`,
+      topicId: 'nota-1',
+      cardId: 'note:D5',
+      correct,
+      at: new Date(2026, 0, 1, 0, i).toISOString(),
+    }))
+    const pool = mixedPool(NOTA_TOPICS, topicStatuses(NOTA_TOPICS, history, new Set()))
+    expect(pool).toEqual(NOTA_TOPICS[0]!.cards)
   })
 })
 

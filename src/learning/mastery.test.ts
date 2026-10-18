@@ -36,6 +36,18 @@ describe('isMastered', () => {
     expect(isMastered([...recent, ...old].reverse(), false)).toBe(true)
     expect(isMastered([...old, ...recent].reverse(), false)).toBe(true)
   })
+  it('yapışkan: bir kez 8/10 görülünce sonradan gelen yanlışlar ustalığı geri almaz', () => {
+    const results = [...Array(8).fill(true), false, false, false, false, false]
+    expect(isMastered(attempts('nota-1', results), false)).toBe(true)
+  })
+  it('yapışkan: ustalık penceresi geçmişin ortasında da olabilir (girdi sırasından bağımsız)', () => {
+    const results = [false, false, ...Array(8).fill(true), false, false, false, false, false, false]
+    expect(isMastered(attempts('nota-1', results).reverse(), false)).toBe(true)
+  })
+  it('hiçbir 10 denemelik pencere %80 e varmıyorsa yok', () => {
+    const results = [true, false, true, false, true, false, true, false, true, false, true, false, true, false]
+    expect(isMastered(attempts('nota-1', results), false)).toBe(false)
+  })
   it('girdiyi değiştirmez', () => {
     const input = mk(8, 10).reverse()
     const copy = [...input]
@@ -69,6 +81,18 @@ describe('topicStatuses / currentTopic', () => {
     const s = topicStatuses(NOTA_TOPICS, mixed, new Set())
     expect(s['nota-1']).toBe('ogrenildi')
     expect(s['sure-1']).toBe('acik')
+  })
+  it('yapışkan: öğrenilmiş konu sonradan yanlış yapılsa da öğrenildi kalır, sonraki konular kilitlenmez', () => {
+    const results = [...Array(8).fill(true), false, false, false, false, false]
+    const s = topicStatuses(NOTA_TOPICS, attempts('nota-1', results), new Set())
+    expect(s['nota-1']).toBe('ogrenildi')
+    expect(s['sure-1']).toBe('acik')
+    expect(currentTopic(NOTA_TOPICS, s)?.id).toBe('sure-1')
+    const later = [...attempts('nota-1', results), ...attempts('sure-1', Array(10).fill(true), 30)]
+    const s2 = topicStatuses(NOTA_TOPICS, later, new Set())
+    expect(s2['nota-1']).toBe('ogrenildi')
+    expect(s2['sure-1']).toBe('ogrenildi')
+    expect(s2['nota-2']).toBe('acik')
   })
   it('hepsi öğrenildiyse currentTopic null', () => {
     const s = topicStatuses(NOTA_TOPICS, [], new Set(NOTA_TOPICS.map((t) => t.id)))
