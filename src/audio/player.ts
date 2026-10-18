@@ -141,6 +141,27 @@ export async function playTones(events: ToneEvent[], bpm = 60): Promise<void> {
   })
 }
 
+/**
+ * Süresiz döngü: kodu maskesiz ve zamanlayıcısız çalar; `stopAudio()` ya da yeni bir çalma durdurana kadar sürer.
+ * Önce çalan her şeyi durdurur (aynı anda yalnızca bir ses). Kod, döngüyü kendi `.cpm()` ile kurar.
+ */
+export async function playLoop(code: string): Promise<void> {
+  stopAudio()
+  const mine = generation
+  active = mine
+  const m = await loadModule()
+  await ensureInit(m)
+  if (mine !== generation) return
+  try {
+    await m.evaluate(code)
+  } catch (err) {
+    if (mine !== generation) return
+    active = null
+    throw err
+  }
+  if (mine !== generation && active === null) safeHush() // evaluate sürerken durduruldu; başkası devralmadıysa sustur
+}
+
 export function playWritten(events: MusicEvent[], t: Tuning, bpm = 60): Promise<void> {
   return playTones(toToneEvents(events, t), bpm)
 }

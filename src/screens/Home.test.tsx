@@ -52,6 +52,8 @@ describe('Home', () => {
     expect(document.querySelectorAll('[data-status]')).toHaveLength(6)
     expect(screen.getByText('Piyano').closest('[data-status]')?.getAttribute('data-status')).toBe('ileride')
     expect(screen.getByText('Makam').closest('[data-status]')?.getAttribute('data-status')).toBe('aktif')
+    expect(screen.getByText('Usul').closest('[data-status]')?.getAttribute('data-status')).toBe('aktif')
+    expect(screen.getByText('Usul').closest('a')?.getAttribute('href')).toBe('#/usul')
     expect(screen.getByText('Nota').closest('a')?.getAttribute('href')).toBe('#/nota')
     expect(screen.getByText('Piyano').closest('a')).toBeNull()
     expect(screen.getByText('Makam').closest('a')?.getAttribute('href')).toBe('#/makam')

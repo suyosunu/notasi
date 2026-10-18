@@ -510,3 +510,67 @@ a:focus-visible {
   margin: 0;
   font-weight: 600;
 }
+
+/* Usul bölümü */
+.usul-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.usul-pick {
+  flex: 1 1 40%;
+}
+
+.usul-pick-on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.usul-pick-on small {
+  color: inherit;
+}
+
+.vurus-row {
+  display: flex;
+  width: 100%;
+  gap: 0;
+  margin: 0.5rem 0 1rem;
+}
+
+.vurus {
+  box-sizing: border-box;
+  min-height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 2px solid #fff;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.vurus-dum {
+  background: #6b4a1e;
+  color: #fff;
+}
+
+.vurus-tek {
+  background: #e9c98a;
+  color: var(--ink);
+}
+
+.usul-speed {
+  display: block;
+  margin: 1rem 0;
+}
+
+.usul-speed input {
+  display: block;
+  width: 100%;
+  margin-top: 0.5rem;
+  accent-color: var(--accent);
+}

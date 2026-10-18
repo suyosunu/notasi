@@ -17,6 +17,7 @@ import { Onboarding } from './screens/Onboarding'
 import { Placement } from './screens/Placement'
 import { SessionEnd } from './screens/SessionEnd'
 import { Settings } from './screens/Settings'
+import { UsulSection } from './screens/UsulSection'
 
 function Placeholder({ title }: { title: string }) {
   return (
@@ -38,6 +39,7 @@ const routes: Record<string, () => ComponentChildren> = {
   '/ney': () => <NeySection />,
   '/makam': () => <MakamSection />,
   '/makam/sorular': () => <MakamQuiz />,
+  '/usul': () => <UsulSection />,
   '/ayarlar': () => <Settings />,
   '/hakkinda': () => <About />,
   '/kalibrasyon': () => <Calibration />,

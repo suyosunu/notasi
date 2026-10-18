@@ -160,3 +160,79 @@ describe('playTones', () => {
     await second
   })
 })
+
+describe('playLoop', () => {
+  it('kodu maskesiz ve zamanlayıcısız evaluate eder; süre dolsa da hush çağrılmaz', async () => {
+    const { playLoop } = await freshPlayer()
+    await playLoop('s("white").cpm(10)')
+    expect(strudel.evaluate).toHaveBeenCalledWith('s("white").cpm(10)')
+    strudel.hush.mockClear()
+    await vi.advanceTimersByTimeAsync(600_000)
+    expect(strudel.hush).not.toHaveBeenCalled()
+  })
+
+  it('stopAudio döngüyü durdurur (hush)', async () => {
+    const { playLoop, stopAudio } = await freshPlayer()
+    await playLoop('x')
+    strudel.hush.mockClear()
+    stopAudio()
+    expect(strudel.hush).toHaveBeenCalledTimes(1)
+  })
+
+  it('ikinci playLoop öncekini durdurur: önce hush, sonra yeni evaluate', async () => {
+    const { playLoop } = await freshPlayer()
+    await playLoop('birinci')
+    strudel.hush.mockClear()
+    await playLoop('ikinci')
+    expect(strudel.evaluate).toHaveBeenLastCalledWith('ikinci')
+    expect(strudel.hush).toHaveBeenCalledTimes(1)
+    expect(strudel.hush.mock.invocationCallOrder[0]!).toBeLessThan(
+      strudel.evaluate.mock.invocationCallOrder[1]!,
+    )
+  })
+
+  it('çalan playTones varsa playLoop onu durdurur ve eski söz çözülür', async () => {
+    const { playLoop, playTones } = await freshPlayer()
+    let toneDone = false
+    const tone = playTones(events).then(() => {
+      toneDone = true
+    })
+    await vi.advanceTimersByTimeAsync(0)
+    await playLoop('döngü')
+    await tone
+    expect(toneDone).toBe(true)
+  })
+
+  it('evaluate sürerken stopAudio çağrılırsa döngü yine de susturulur', async () => {
+    const { playLoop, stopAudio } = await freshPlayer()
+    let finishEvaluate: () => void = () => {}
+    strudel.evaluate.mockImplementation(() => new Promise<void>((resolve) => (finishEvaluate = resolve)))
+    const p = playLoop('x')
+    await vi.advanceTimersByTimeAsync(0)
+    stopAudio()
+    strudel.hush.mockClear()
+    finishEvaluate()
+    await p
+    expect(strudel.hush).toHaveBeenCalledTimes(1)
+  })
+
+  it('başka bir playLoop devraldıysa eski çağrı hush çağırmaz', async () => {
+    const { playLoop } = await freshPlayer()
+    let finishFirst: () => void = () => {}
+    strudel.evaluate.mockImplementationOnce(() => new Promise<void>((resolve) => (finishFirst = resolve)))
+    const first = playLoop('birinci')
+    await vi.advanceTimersByTimeAsync(0)
+    const second = playLoop('ikinci')
+    await vi.advanceTimersByTimeAsync(0)
+    strudel.hush.mockClear()
+    finishFirst()
+    await Promise.all([first, second])
+    expect(strudel.hush).not.toHaveBeenCalled()
+  })
+
+  it('evaluate hata fırlatırsa reject olur', async () => {
+    const { playLoop } = await freshPlayer()
+    strudel.evaluate.mockRejectedValue(new Error('ses yok'))
+    await expect(playLoop('x')).rejects.toThrow('ses yok')
+  })
+})

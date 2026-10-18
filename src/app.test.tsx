@@ -118,6 +118,13 @@ describe('App', () => {
     expect(await screen.findByText('Oturum sonu')).toBeTruthy()
   })
 
+  it('#/usul rotası Usul bölümünü gösterir', () => {
+    location.hash = '#/usul'
+    render(<App />)
+    expect(screen.getByRole('heading', { name: /Usuller/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: '▶ Çal' })).toBeTruthy()
+  })
+
   it('#/makam rotası Makam bölümünü gösterir', () => {
     location.hash = '#/makam'
     render(<App />)

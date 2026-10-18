@@ -25,7 +25,11 @@ declare module '@strudel/transpiler' {
       queryArc(
         from: number,
         to: number,
-      ): { hasOnset(): boolean; value: { freq: number } }[]
+      ): {
+        hasOnset(): boolean
+        whole: { begin: { valueOf(): number } }
+        value: { freq: number; s?: string; gain?: number }
+      }[]
     }
   }>
 }
