@@ -17,6 +17,13 @@ const MIN_GAP = 4
 const REST_BAR_W = 12
 const REST_BAR_H = 5
 
+/** Onaltılıkta iki bayrak arasındaki uzaklık (px). */
+const FLAG_STEP = 7
+
+function flagCount(dur: DurationKind): number {
+  return dur === 'eighth' ? 1 : dur === 'sixteenth' ? 2 : 0
+}
+
 function isHollow(dur: DurationKind): boolean {
   return dur === 'whole' || dur === 'half'
 }
@@ -70,19 +77,20 @@ function NoteShape(props: { event: NoteEvent; x: number; index: number }) {
           stroke-width={1.5}
         />
       )}
-      {dur === 'eighth' && (
-        <path
-          data-flag
-          d={
-            down
-              ? `M ${stemX} ${stemEnd} q 9 -6 7 -16`
-              : `M ${stemX} ${stemEnd} q 9 6 7 16`
-          }
-          fill="none"
-          stroke={INK}
-          stroke-width={1.8}
-        />
-      )}
+      {Array.from({ length: flagCount(dur) }, (_, i) => {
+        // İkinci bayrak sap boyunca nota başına doğru kaydırılır.
+        const fy = down ? stemEnd - i * FLAG_STEP : stemEnd + i * FLAG_STEP
+        return (
+          <path
+            key={i}
+            data-flag
+            d={down ? `M ${stemX} ${fy} q 9 -6 7 -16` : `M ${stemX} ${fy} q 9 6 7 16`}
+            fill="none"
+            stroke={INK}
+            stroke-width={1.8}
+          />
+        )
+      })}
       {event.dotted && <circle data-dot cx={x + HEAD_RX + 5} cy={dotY} r={1.8} fill={INK} />}
     </g>
   )
@@ -119,6 +127,20 @@ function RestShape(props: { event: RestEvent; x: number }) {
           <circle cx={x - 3} cy={45} r={2.5} fill={INK} />
           <path
             d={`M ${x - 3} 46 Q ${x + 1} 47 ${x + 3.5} 41 L ${x - 2} 62`}
+            fill="none"
+            stroke={INK}
+            stroke-width={1.8}
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </>
+      )}
+      {dur === 'sixteenth' && (
+        <>
+          <circle cx={x - 2} cy={41} r={2.5} fill={INK} />
+          <circle cx={x - 4} cy={49} r={2.5} fill={INK} />
+          <path
+            d={`M ${x - 2} 42 Q ${x + 2} 43 ${x + 4.5} 37 L ${x - 3} 66 M ${x - 4} 50 Q ${x} 51 ${x + 2.6} 45`}
             fill="none"
             stroke={INK}
             stroke-width={1.8}

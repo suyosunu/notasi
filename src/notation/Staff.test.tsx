@@ -10,7 +10,7 @@ afterEach(cleanup)
 const note = (
   step: 'C' | 'D' | 'E' | 'F' | 'G' | 'A' | 'B',
   octave: number,
-  dur: 'whole' | 'half' | 'quarter' | 'eighth',
+  dur: 'whole' | 'half' | 'quarter' | 'eighth' | 'sixteenth',
 ): MusicEvent => ({ kind: 'note', pitch: { step, octave, acc: 0 }, dur })
 
 describe('Staff', () => {
@@ -73,6 +73,24 @@ describe('Staff', () => {
     const { container } = render(<Staff events={events} />)
     expect(container.querySelectorAll('[data-flag]')).toHaveLength(1)
     expect(container.querySelectorAll('[data-dot]')).toHaveLength(1)
+  })
+
+  it('onaltılık notada iki bayrak çizer (sap aşağıyken de)', () => {
+    const { container } = render(<Staff events={[note('G', 4, 'sixteenth'), note('D', 5, 'sixteenth')]} />)
+    const flags = container.querySelectorAll('[data-flag]')
+    expect(flags).toHaveLength(4)
+    expect(container.querySelectorAll('g[data-event="0"] [data-flag]')).toHaveLength(2)
+    expect(container.querySelectorAll('g[data-event="1"] [data-flag]')).toHaveLength(2)
+    // Onaltılık dolu başlıdır ve sapı vardır.
+    expect(screen.getAllByTestId('notehead')[0]!.getAttribute('fill')).not.toBe('none')
+    expect(container.querySelectorAll('line[data-stem]')).toHaveLength(2)
+  })
+
+  it('onaltılık sus çizilir', () => {
+    const { container } = render(<Staff events={[{ kind: 'rest', dur: 'sixteenth' }]} />)
+    const rest = container.querySelector('[data-testid="rest"][data-dur="sixteenth"]')
+    expect(rest).not.toBeNull()
+    expect(rest!.querySelectorAll('circle')).toHaveLength(2)
   })
 
   describe('sus işaretleri (SVG şekil, yazı tipi gerektirmez)', () => {

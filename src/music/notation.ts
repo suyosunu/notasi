@@ -1,6 +1,6 @@
 import type { WrittenPitch } from './pitch'
 
-export type DurationKind = 'whole' | 'half' | 'quarter' | 'eighth'
+export type DurationKind = 'whole' | 'half' | 'quarter' | 'eighth' | 'sixteenth'
 export interface NoteEvent {
   kind: 'note'
   pitch: WrittenPitch
@@ -14,12 +14,13 @@ export interface RestEvent {
 }
 export type MusicEvent = NoteEvent | RestEvent
 
-const BEATS: Record<DurationKind, number> = { whole: 4, half: 2, quarter: 1, eighth: 0.5 }
+const BEATS: Record<DurationKind, number> = { whole: 4, half: 2, quarter: 1, eighth: 0.5, sixteenth: 0.25 }
 const NAMES: Record<DurationKind, string> = {
   whole: 'Birlik',
   half: 'İkilik',
   quarter: 'Dörtlük',
   eighth: 'Sekizlik',
+  sixteenth: 'Onaltılık',
 }
 
 export function beats(e: MusicEvent): number {
