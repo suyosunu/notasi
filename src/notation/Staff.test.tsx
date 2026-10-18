@@ -1,6 +1,7 @@
 import { cleanup, render, screen } from '@testing-library/preact'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { MusicEvent } from '../music/notation'
+import type { Accidental } from '../music/pitch'
 import { AccidentalGlyph } from './glyphs'
 import { Staff } from './Staff'
 
@@ -130,27 +131,130 @@ describe('Staff', () => {
   })
 })
 
+const ALL_ACC = [-1, -4, -5, -8, 1, 4, 5, 8] as const
+
+function glyph(acc: number) {
+  const { container } = render(
+    <svg>
+      <AccidentalGlyph acc={acc as Accidental} x={10} y={30} />
+    </svg>,
+  )
+  return container.querySelector(`g[data-acc="${acc}"]`) as SVGGElement | null
+}
+const count = (g: Element, part: string) => g.querySelectorAll(`[data-part="${part}"]`).length
+
 describe('AccidentalGlyph', () => {
-  it('acc === 0 ise hiçbir şey çizmez', () => {
-    const { container } = render(
-      <svg>
-        <AccidentalGlyph acc={0} x={10} y={10} />
-      </svg>,
-    )
-    expect(container.querySelector('svg')!.childNodes).toHaveLength(0)
+  it('acc === 0 ve tam ses işaretleri (±9) için hiçbir şey çizmez', () => {
+    for (const acc of [0, 9, -9]) {
+      const { container, unmount } = render(
+        <svg>
+          <AccidentalGlyph acc={acc as Accidental} x={10} y={10} />
+        </svg>,
+      )
+      expect(container.querySelector('svg')!.childNodes).toHaveLength(0)
+      unmount()
+    }
   })
 
-  it('diyez ve bemol için sembol ve koma sayısı gösterir', () => {
-    const { container } = render(
-      <svg>
-        <AccidentalGlyph acc={4} x={10} y={10} />
-        <AccidentalGlyph acc={-1} x={30} y={10} />
-      </svg>,
-    )
-    const text = container.textContent ?? ''
-    expect(text).toContain('♯')
-    expect(text).toContain('4')
-    expect(text).toContain('♭')
-    expect(text).toContain('1')
+  it('sekiz işaretin her biri kendi koma sayısını data-acc olarak taşır ve metin içermez', () => {
+    for (const acc of ALL_ACC) {
+      const g = glyph(acc)
+      expect(g, `acc ${acc}`).not.toBeNull()
+      expect(g!.querySelector('text')).toBeNull()
+      expect(g!.textContent).toBe('')
+      cleanup()
+    }
+  })
+
+  it('koma bemolü, bemolün yatay aynasıdır; diğer bemoller aynalanmaz', () => {
+    const koma = glyph(-1)!
+    const mirrored = koma.querySelector('[data-mirrored="true"]')
+    expect(mirrored).not.toBeNull()
+    expect(mirrored!.getAttribute('transform')).toMatch(/scale\(-1/)
+    // Aynalanan şekil standart bemolün (küçük mücenneb) şekliyle aynıdır.
+    const bowl = mirrored!.querySelector('[data-part="bowl"]')!.getAttribute('d')
+    cleanup()
+    const flat = glyph(-5)!
+    expect(flat.querySelector('[data-mirrored]')).toBeNull()
+    expect(flat.querySelector('[data-part="bowl"]')!.getAttribute('d')).toBe(bowl)
+    expect(count(koma, 'slash')).toBe(0)
+  })
+
+  it('bemollerde eğik çizgi sayısı: koma 0, bakiye 1, küçük mücenneb 0, büyük mücenneb 2', () => {
+    const expected: Record<number, number> = { [-1]: 0, [-4]: 1, [-5]: 0, [-8]: 2 }
+    for (const [acc, slashes] of Object.entries(expected)) {
+      const g = glyph(Number(acc))!
+      expect(count(g, 'slash'), `acc ${acc}`).toBe(slashes)
+      expect(count(g, 'stem'), `acc ${acc}`).toBe(1)
+      expect(count(g, 'bowl'), `acc ${acc}`).toBe(1)
+      cleanup()
+    }
+  })
+
+  it('diyezlerde gövde ve çubuk sayısı: koma 1+2, bakiye 2+2, küçük mücenneb 1+3, büyük mücenneb 2+3', () => {
+    const expected: Record<number, [number, number]> = { 1: [1, 2], 4: [2, 2], 5: [1, 3], 8: [2, 3] }
+    for (const [acc, [stems, bars]] of Object.entries(expected)) {
+      const g = glyph(Number(acc))!
+      expect(count(g, 'stem'), `acc ${acc} stem`).toBe(stems)
+      expect(count(g, 'bar'), `acc ${acc} bar`).toBe(bars)
+      expect(g.querySelector('[data-mirrored]')).toBeNull()
+      cleanup()
+    }
+  })
+
+  it('genişlik araştırma tablosuyla uyumlu (1 sp = 10 px) ve sağ kenar x + genişliktir', () => {
+    const widths: Record<number, number> = { [-1]: 9.2, [-4]: 11.5, [-5]: 9.1, [-8]: 11.5, 1: 9.2, 4: 10, 5: 13.6, 8: 13.7 }
+    for (const [acc, w] of Object.entries(widths)) {
+      const g = glyph(Number(acc))!
+      expect(Number(g.getAttribute('data-width'))).toBeCloseTo(w, 5)
+      expect(Number(g.getAttribute('data-right'))).toBeCloseTo(10 + w, 5)
+      cleanup()
+    }
+  })
+})
+
+describe('Staff: değiştirgeç yerleşimi', () => {
+  const accNote = (step: 'B' | 'C', octave: number, acc: Accidental): MusicEvent => ({
+    kind: 'note',
+    pitch: { step, octave, acc },
+    dur: 'quarter',
+  })
+
+  it('işaretin sağ kenarı nota başının sol kenarından en az 2 px solda kalır', () => {
+    for (const acc of ALL_ACC) {
+      const { container, unmount } = render(<Staff events={[accNote('B', 4, acc)]} />)
+      const g = container.querySelector(`g[data-acc="${acc}"]`)!
+      const head = container.querySelector('[data-testid="notehead"]')!
+      const headLeft = Number(head.getAttribute('cx')) - Number(head.getAttribute('rx'))
+      expect(Number(g.getAttribute('data-right')), `acc ${acc}`).toBeLessThanOrEqual(headLeft - 2)
+      unmount()
+    }
+  })
+
+  it('işaret komşu notayla çakışmaz: sekiz işaretli nota art arda dizilse de', () => {
+    const events = ALL_ACC.map((acc) => accNote(acc < 0 ? 'B' : 'C', acc < 0 ? 4 : 5, acc))
+    const { container } = render(<Staff events={events} width={420} />)
+    const heads = [...container.querySelectorAll('[data-testid="notehead"]')]
+    const cx = heads.map((h) => Number(h.getAttribute('cx')))
+    const glyphs = [...container.querySelectorAll('g[data-acc]')]
+    expect(glyphs).toHaveLength(8)
+    glyphs.forEach((g, i) => {
+      if (i === 0) return
+      expect(Number(g.getAttribute('data-x'))).toBeGreaterThan(cx[i - 1]! + 6.5)
+    })
+    // Aralık eşit kalır.
+    const gaps = cx.slice(1).map((v, i) => v - cx[i]!)
+    for (const gap of gaps) expect(gap).toBeCloseTo(gaps[0]!, 5)
+  })
+
+  it('işaret, nota ile aynı yükseklikte ortalanır (Si4 = 3. çizgi)', () => {
+    const { container } = render(<Staff events={[accNote('B', 4, -1)]} />)
+    const g = container.querySelector('g[data-acc="-1"]')!
+    expect(g.getAttribute('transform')).toMatch(/translate\([\d.]+[ ,]50\)/)
+  })
+
+  it('acc 0 olan notada işaret çizilmez', () => {
+    const { container } = render(<Staff events={[accNote('B', 4, 0)]} />)
+    expect(container.querySelectorAll('g[data-acc]')).toHaveLength(0)
   })
 })

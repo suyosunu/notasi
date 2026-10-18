@@ -1,5 +1,5 @@
 import type { DurationKind, MusicEvent, NoteEvent, RestEvent } from '../music/notation'
-import { AccidentalGlyph, CLEF_GLYPH, MUSIC_FONT } from './glyphs'
+import { accidentalWidth, AccidentalGlyph, CLEF_GLYPH, MUSIC_FONT } from './glyphs'
 import { indexY, ledgerLineYs, LINE_GAP, noteY, staffIndex, STAFF_TOP } from './geometry'
 
 const HEIGHT = 110
@@ -10,6 +10,8 @@ const HEAD_RX = 6.5
 const HEAD_RY = 5
 const STEM_LEN = 33
 const INK = 'currentColor'
+/** İşaret ile nota başı arasındaki boşluk (px); en az 2 olmalı. */
+const ACC_GAP = 3
 const REST_BAR_W = 12
 const REST_BAR_H = 5
 
@@ -42,7 +44,7 @@ function NoteShape(props: { event: NoteEvent; x: number; index: number }) {
           stroke-width={1.2}
         />
       ))}
-      <AccidentalGlyph acc={pitch.acc} x={x - HEAD_RX - 9} y={y} />
+      <AccidentalGlyph acc={pitch.acc} x={x - HEAD_RX - ACC_GAP - accidentalWidth(pitch.acc)} y={y} />
       <ellipse
         data-testid="notehead"
         data-index={index}
@@ -131,6 +133,13 @@ function RestShape(props: { event: RestEvent; x: number }) {
 export function Staff(props: { events: MusicEvent[]; width?: number; highlightIndex?: number }) {
   const { events, width = DEFAULT_WIDTH, highlightIndex } = props
   const slot = (width - FIRST_X - RIGHT_MARGIN) / Math.max(events.length, 1)
+  // Nota başı yuvanın ortasındadır. Solundaki işarete yer yoksa tüm başlar aynı miktarda sağa
+  // kayar; böylece aralık eşit kalır ve işaret bir önceki notaya taşmaz.
+  const accNeed = Math.max(
+    0,
+    ...events.map((e) => (e.kind === 'note' ? accidentalWidth(e.pitch.acc) + ACC_GAP + HEAD_RX : 0)),
+  )
+  const headOffset = Math.max(slot / 2, accNeed)
 
   return (
     <svg
@@ -162,7 +171,7 @@ export function Staff(props: { events: MusicEvent[]; width?: number; highlightIn
         {CLEF_GLYPH}
       </text>
       {events.map((e, i) => {
-        const x = FIRST_X + slot * (i + 0.5)
+        const x = FIRST_X + slot * i + headOffset
         const highlighted = i === highlightIndex
         return (
           <g
