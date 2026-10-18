@@ -1,4 +1,5 @@
 import { NOTA_TOPICS, type Topic } from '../content/nota-topics'
+import { PERDE_ADLARI } from '../content/perde-adlari'
 import type { DurationKind, MusicEvent } from '../music/notation'
 import type { Step } from '../music/pitch'
 
@@ -33,11 +34,24 @@ export function cardToEvent(cardId: string): MusicEvent {
   return { kind: 'note', pitch: { step: 'B', octave: 4, acc: 0 }, ...base }
 }
 
+/** 'perde:D5' / 'perde-ters:D5' içindeki nota anahtarı; dokuz perdeden biri olmalıdır. */
+export function perdeKey(cardId: string): string {
+  const m = /^perde(?:-ters)?:(.+)$/.exec(cardId)
+  if (!m || !Object.hasOwn(PERDE_ADLARI, m[1]!)) return invalid(cardId)
+  return m[1]!
+}
+
 /**
  * Tüm kart türleri için olay listesi. 'seq:G4-A4-B4-C5' → dört dörtlük nota;
+ * 'perde:D5' → tek dörtlük nota; 'perde-ters:D5' → porte çizilmez (boş liste);
  * diğer kartlar tek olaylıdır (cardToEvent).
  */
 export function cardToEvents(cardId: string): MusicEvent[] {
+  if (cardId.startsWith('perde')) {
+    const key = perdeKey(cardId)
+    if (cardId.startsWith('perde-ters:')) return []
+    return [{ kind: 'note', pitch: { step: key.charAt(0) as Step, octave: Number(key.slice(1)), acc: 0 }, dur: 'quarter' }]
+  }
   if (!cardId.startsWith('seq:')) return [cardToEvent(cardId)]
   const parts = cardId.slice(4).split('-')
   return parts.map((p) => {

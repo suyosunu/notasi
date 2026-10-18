@@ -58,6 +58,8 @@ function QuestionCard({ question, index, total, settings, feedback, note, onChoo
   }
 
   const answered = feedback !== null
+  /** Portesiz sorularda (perde-ters) nota çizilmez ve çalınacak bir şey yoktur. */
+  const hasStaff = question.events.length > 0
   return (
     <main class="screen day">
       <header class="day-head">
@@ -74,9 +76,11 @@ function QuestionCard({ question, index, total, settings, feedback, note, onChoo
       )}
 
       <p class="prompt">{question.prompt}</p>
-      <div class="staff-wrap">
-        <Staff events={question.events} />
-      </div>
+      {hasStaff && (
+        <div class="staff-wrap">
+          <Staff events={question.events} />
+        </div>
+      )}
 
       <div class="options">
         {question.options.map((o) => {
@@ -90,9 +94,11 @@ function QuestionCard({ question, index, total, settings, feedback, note, onChoo
       </div>
 
       <div class="tools">
-        <button type="button" class="tool" onClick={() => void listen()}>
-          🔊 Dinle
-        </button>
+        {hasStaff && (
+          <button type="button" class="tool" onClick={() => void listen()}>
+            🔊 Dinle
+          </button>
+        )}
         <button type="button" class="tool" onClick={() => setShowHint(true)}>
           💡 İpucu
         </button>

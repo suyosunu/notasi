@@ -129,7 +129,6 @@ a:focus-visible {
 }
 
 .option {
-  min-height: 44px;
   font-size: 1.25rem;
   font-weight: 600;
   line-height: 1.3;

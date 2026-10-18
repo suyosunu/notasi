@@ -119,3 +119,53 @@ describe('makeQuestion', () => {
     expect(a.id.startsWith('note:C5')).toBe(true)
   })
 })
+
+describe('perde isimleri (perde: / perde-ters:)', () => {
+  const NINE = ['Rast', 'Dügâh', 'Bûselik', 'Çârgâh', 'Nevâ', 'Hüseynî', 'Acem', 'Gerdâniye', 'Muhayyer']
+
+  it('perde:D5 → nota göster, perde adı sor', () => {
+    const q = makeQuestion('perde:D5', seededRng(1))
+    expect(q.prompt).toBe('Bu notanın perde adı ne?')
+    expect(q.answer).toBe('Nevâ')
+    expect(q.events).toEqual([expect.objectContaining({ kind: 'note', dur: 'quarter', pitch: { step: 'D', octave: 5, acc: 0 } })])
+    expect(q.hint).toBe(
+      'Sırayla: Rast (Sol), Dügâh, Bûselik, Çârgâh, Nevâ, Hüseynî, Acem, Gerdâniye, Muhayyer (tiz La).',
+    )
+  })
+
+  it('perde: çeldiricileri dokuz perde adından gelir', () => {
+    for (let s = 1; s <= 30; s++) {
+      for (const card of ['perde:G4', 'perde:A5']) {
+        for (const o of makeQuestion(card, seededRng(s)).options) expect(NINE).toContain(o)
+      }
+    }
+  })
+
+  it('perde-ters:D5 → porte yok, perde adından nota sor', () => {
+    const q = makeQuestion('perde-ters:D5', seededRng(1))
+    expect(q.prompt).toBe('Nevâ hangi nota?')
+    expect(q.answer).toBe('Re')
+    expect(q.events).toEqual([])
+    expect(q.hint).toBe(
+      'Sırayla: Rast (Sol), Dügâh, Bûselik, Çârgâh, Nevâ, Hüseynî, Acem, Gerdâniye, Muhayyer (tiz La).',
+    )
+  })
+
+  it('perde-ters çeldiricileri konunun notalarındandır', () => {
+    for (let s = 1; s <= 30; s++) {
+      const opts = makeQuestion('perde-ters:G4', seededRng(s)).options
+      for (const o of opts) expect(['Sol', 'La', 'Si', 'Do', 'Re']).toContain(o)
+    }
+  })
+
+  it('perde-ters:A5 → "tiz La"; seçeneklerde düz "La" ile karışmaz', () => {
+    for (let s = 1; s <= 30; s++) {
+      const q = makeQuestion('perde-ters:A5', seededRng(s))
+      expect(q.prompt).toBe('Muhayyer hangi nota?')
+      expect(q.answer).toBe('tiz La')
+      expect(q.options).not.toContain('La')
+      expect(q.options).not.toContain('Sol')
+      expect(new Set(q.options).size).toBe(4)
+    }
+  })
+})

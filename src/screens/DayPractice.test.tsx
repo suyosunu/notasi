@@ -227,12 +227,38 @@ describe('DayPractice (dizi ve eski oturumlar)', () => {
       const btn = screen.getByRole('button', { name: o })
       expect(btn.textContent).toBe(o)
     }
-    // CSS kuralı: uzun seçenekler satır kaydırır, en az 44 px yüksekliktedir.
+    // CSS kuralı: uzun seçenekler satır kaydırır; ortak kural düğmeleri en az 44 px yapar.
     const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8')
     const rule = /\.option\s*\{([^}]*)\}/.exec(css)![1]!
     expect(rule).toMatch(/white-space:\s*normal/)
+    expect(rule).not.toMatch(/min-height/)
     const base = /\.option,\s*\.tool,\s*\.primary\s*\{([^}]*)\}/.exec(css)![1]!
-    expect(base).toMatch(/min-height:\s*(3rem|44px)/)
+    const minHeight = /min-height:\s*([\d.]+)(rem|px)/.exec(base)!
+    const px = Number(minHeight[1]) * (minHeight[2] === 'rem' ? 16 : 1)
+    expect(px).toBeGreaterThanOrEqual(44)
+  })
+
+  it('Review Focus 2: perde-ters sorusunda porte ve nota başı çizilmez, "🔊 Dinle" gizlenir', async () => {
+    const q = makeQuestion('perde-ters:D5', seededRng(3))
+    await seedSession([q])
+    render(<DayPractice />)
+    await screen.findByText('Nevâ hangi nota?')
+    expect(screen.queryAllByTestId('notehead')).toHaveLength(0)
+    expect(document.querySelector('.staff-wrap')).toBeNull()
+    expect(screen.queryByRole('button', { name: '🔊 Dinle' })).toBeNull()
+    // ipucu ve cevap yine çalışır
+    expect(screen.getByRole('button', { name: '💡 İpucu' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Re' }))
+    expect(await screen.findByText('Doğru 👏')).toBeTruthy()
+  })
+
+  it('perde: sorusunda nota başı çizilir ve "🔊 Dinle" görünür', async () => {
+    const q = makeQuestion('perde:D5', seededRng(3))
+    await seedSession([q])
+    render(<DayPractice />)
+    await screen.findByText('Bu notanın perde adı ne?')
+    expect(screen.getAllByTestId('notehead')).toHaveLength(1)
+    expect(screen.getByRole('button', { name: '🔊 Dinle' })).toBeTruthy()
   })
 
   it('Dinle dizinin tamamını çalar', async () => {

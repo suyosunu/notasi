@@ -1,11 +1,12 @@
 import { NOTA_TOPICS } from '../content/nota-topics'
+import { notaEtiketi, PERDE_ADLARI } from '../content/perde-adlari'
 import { durationName } from '../music/notation'
 import type { MusicEvent } from '../music/notation'
 import { SOLFEJ } from '../music/pitch'
 import type { Step } from '../music/pitch'
 import { staffIndex } from '../notation/geometry'
 import { shuffle } from '../util/rng'
-import { cardToEvent, cardToEvents, topicOfCard } from './cards'
+import { cardToEvent, cardToEvents, perdeKey, topicOfCard } from './cards'
 
 export { seededRng } from '../util/rng'
 
@@ -99,6 +100,19 @@ function sequenceOptions(answerIdx: number[], answer: string, rng: () => number)
   return found
 }
 
+const PERDE_HINT = 'Sırayla: Rast (Sol), Dügâh, Bûselik, Çârgâh, Nevâ, Hüseynî, Acem, Gerdâniye, Muhayyer (tiz La).'
+
+/** Konudaki notaların etiketleri çeldirici olur; yetmezse dokuz notanın tamamından tamamlanır. */
+function reverseOptions(topicCards: string[], answer: string, rng: () => number): string[] {
+  const own = [...new Set(topicCards.map((c) => notaEtiketi(perdeKey(c))))].filter((l) => l !== answer)
+  const distractors = shuffle(own, rng)
+  if (distractors.length < 3) {
+    const all = Object.keys(PERDE_ADLARI).map(notaEtiketi)
+    distractors.push(...shuffle([...new Set(all)].filter((l) => l !== answer && !distractors.includes(l)), rng))
+  }
+  return shuffle([answer, ...distractors.slice(0, 3)], rng)
+}
+
 export function makeQuestion(cardId: string, rng: () => number): Question {
   const topic = topicOfCard(cardId)
   const events = cardToEvents(cardId)
@@ -120,6 +134,38 @@ export function makeQuestion(cardId: string, rng: () => number): Question {
       options: shuffle([answer, ...sequenceOptions(idx, answer, rng)], rng),
       answer,
       hint: SEQ_HINT,
+    }
+  }
+
+  if (topic.kind === 'perde-name') {
+    const key = perdeKey(cardId)
+    const perde = PERDE_ADLARI[key]!
+    if (cardId.startsWith('perde-ters:')) {
+      const answer = notaEtiketi(key)
+      return {
+        id,
+        cardId,
+        topicId: topic.id,
+        prompt: `${perde} hangi nota?`,
+        events,
+        options: reverseOptions(topic.cards, answer, rng),
+        answer,
+        hint: PERDE_HINT,
+      }
+    }
+    const distractors = shuffle(
+      Object.values(PERDE_ADLARI).filter((n) => n !== perde),
+      rng,
+    ).slice(0, 3)
+    return {
+      id,
+      cardId,
+      topicId: topic.id,
+      prompt: 'Bu notanın perde adı ne?',
+      events,
+      options: shuffle([perde, ...distractors], rng),
+      answer: perde,
+      hint: PERDE_HINT,
     }
   }
 

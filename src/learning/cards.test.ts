@@ -35,7 +35,7 @@ describe('cardToEvent', () => {
   )
   it('müfredattaki her kart geçerlidir', () => {
     for (const t of NOTA_TOPICS) {
-      for (const c of t.cards) if (!c.startsWith('seq:')) expect(() => cardToEvent(c)).not.toThrow()
+      for (const c of t.cards) if (!c.startsWith('seq:') && !c.startsWith('perde')) expect(() => cardToEvent(c)).not.toThrow()
     }
   })
 })
@@ -64,8 +64,14 @@ describe('cardToEvents', () => {
   it('cardToEvent seq kimliğinde hata verir (tek olaylı kartlar için)', () => {
     expect(() => cardToEvent('seq:C5-D5-E5-F5')).toThrow(Error)
   })
-  it('müfredattaki her kart geçerlidir', () => {
-    for (const t of NOTA_TOPICS) for (const c of t.cards) expect(cardToEvents(c).length).toBeGreaterThan(0)
+  it('müfredattaki her kart geçerlidir (perde-ters hariç hepsi porte çizer)', () => {
+    for (const t of NOTA_TOPICS) {
+      for (const c of t.cards) {
+        const n = cardToEvents(c).length
+        if (c.startsWith('perde-ters:')) expect(n).toBe(0)
+        else expect(n).toBeGreaterThan(0)
+      }
+    }
   })
 })
 
@@ -81,9 +87,9 @@ describe('topicOfCard', () => {
     const all = NOTA_TOPICS.flatMap((t) => t.cards)
     expect(new Set(all).size).toBe(all.length)
     const ids = NOTA_TOPICS.map((t) => t.id)
-    // Task 19 perde-* konularını dizi-1 ile dizi-2 arasına ve sonrasına ekler; burada yalnızca göreli sıra.
-    expect(ids.filter((id) => !id.startsWith('perde-'))).toEqual([
-      'nota-1', 'sure-1', 'nota-2', 'sure-2', 'nota-3', 'sure-3', 'nota-4', 'nota-5', 'dizi-1', 'dizi-2',
+    expect(ids).toEqual([
+      'nota-1', 'sure-1', 'nota-2', 'sure-2', 'nota-3', 'sure-3', 'nota-4', 'nota-5',
+      'dizi-1', 'perde-1', 'dizi-2', 'perde-2',
     ])
   })
   it('dizi konuları sequence türünde ve 6 karttan oluşur', () => {
@@ -95,5 +101,37 @@ describe('topicOfCard', () => {
     expect(NOTA_TOPICS.find((x) => x.id === 'dizi-1')!.title).toBe('Dizi okuma: adım adım')
     expect(NOTA_TOPICS.find((x) => x.id === 'dizi-2')!.title).toBe('Dizi okuma: atlamalı')
     expect(topicOfCard('seq:D5-C5-B4-A4').id).toBe('dizi-1')
+  })
+})
+
+describe('perde kartları', () => {
+  it('perde:D5 → tek dörtlük Re5; perde-ters:D5 → olay yok', () => {
+    expect(cardToEvents('perde:D5')).toEqual([
+      { kind: 'note', pitch: { step: 'D', octave: 5, acc: 0 }, dur: 'quarter' },
+    ])
+    expect(cardToEvents('perde-ters:D5')).toEqual([])
+  })
+  it.each(['perde:', 'perde:H4', 'perde:C4', 'perde-ters:C6', 'perde-ters:', 'perde:D'])(
+    'geçersiz perde kimliği %j hata verir',
+    (id) => {
+      expect(() => cardToEvents(id)).toThrow(Error)
+    },
+  )
+  it('perde konuları perde-name türünde ve kartları doğru', () => {
+    const p1 = NOTA_TOPICS.find((t) => t.id === 'perde-1')!
+    const p2 = NOTA_TOPICS.find((t) => t.id === 'perde-2')!
+    expect(p1.kind).toBe('perde-name')
+    expect(p1.title).toBe("Perde adları: Rast'tan Nevâ'ya")
+    expect(p1.cards).toEqual([
+      'perde:G4', 'perde:A4', 'perde:B4', 'perde:C5', 'perde:D5',
+      'perde-ters:G4', 'perde-ters:A4', 'perde-ters:B4', 'perde-ters:C5', 'perde-ters:D5',
+    ])
+    expect(p2.kind).toBe('perde-name')
+    expect(p2.title).toBe("Perde adları: Hüseynî'den Muhayyer'e")
+    expect(p2.cards).toEqual([
+      'perde:E5', 'perde:F5', 'perde:G5', 'perde:A5',
+      'perde-ters:E5', 'perde-ters:F5', 'perde-ters:G5', 'perde-ters:A5',
+    ])
+    expect(topicOfCard('perde-ters:A5').id).toBe('perde-2')
   })
 })
