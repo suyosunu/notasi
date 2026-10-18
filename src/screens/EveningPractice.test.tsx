@@ -315,7 +315,8 @@ describe('EveningPractice', () => {
     await saveSettings({ soundOn: false })
     render(<EveningPractice />)
     fireEvent.click(await screen.findByRole('button', { name: '🔊 Doğru sesi dinle' }))
-    expect(await screen.findByText(SOUND_WARNING)).toBeTruthy()
+    expect(await screen.findByText("Sesler Ayarlar'dan kapalı.")).toBeTruthy()
+    expect(screen.queryByText(SOUND_WARNING)).toBeNull()
     expect(playWritten).not.toHaveBeenCalled()
   })
 

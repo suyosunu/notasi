@@ -7,6 +7,7 @@ import { DAY_CAP_MS, loadOrStartDaySession } from '../learning/day-session'
 import type { DayState } from '../learning/day-session'
 import { makeQuestion, seededRng } from '../learning/questions'
 import { addAttempt, getOpenSession, listAttempts, listCards, resetDbForTests, saveSession, saveSettings } from '../store/db'
+import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
 import { DayPractice } from './DayPractice'
 
 vi.mock('../audio/player', () => ({
@@ -111,7 +112,8 @@ describe('DayPractice (gündüz oturumu)', () => {
     render(<DayPractice />)
     await currentQuestion()
     fireEvent.click(screen.getByRole('button', { name: '🔊 Dinle' }))
-    expect(await screen.findByText(WARNING)).toBeTruthy()
+    expect(await screen.findByText("Sesler Ayarlar'dan kapalı.")).toBeTruthy()
+    expect(screen.queryByText(WARNING)).toBeNull()
     expect(unlockAudio).not.toHaveBeenCalled()
     expect(playWritten).not.toHaveBeenCalled()
   })
@@ -259,6 +261,29 @@ describe('DayPractice (dizi ve eski oturumlar)', () => {
     expect(screen.getByRole('button', { name: '💡 İpucu' })).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Re' }))
     expect(await screen.findByText('Doğru 👏')).toBeTruthy()
+  })
+
+  it('ses metinleri ortak içerik dosyasındadır', () => {
+    expect(SOUND_WARNING).toBe(WARNING)
+    expect(SOUND_OFF).toBe("Sesler Ayarlar'dan kapalı.")
+  })
+
+  it('sus işareti sorusunda "🔊 Dinle" gizlenir (sessizlik çalınmaz); porte çizilir', async () => {
+    const q = makeQuestion('rest:quarter', seededRng(3))
+    await seedSession([q])
+    render(<DayPractice />)
+    await screen.findByText('Bu hangi süre?')
+    expect(document.querySelector('.staff-wrap')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: '🔊 Dinle' })).toBeNull()
+    expect(screen.getByRole('button', { name: '💡 İpucu' })).toBeTruthy()
+  })
+
+  it('nota süresi sorusunda "🔊 Dinle" görünür', async () => {
+    const q = makeQuestion('dur:half', seededRng(3))
+    await seedSession([q])
+    render(<DayPractice />)
+    await screen.findByText('Bu hangi süre?')
+    expect(screen.getByRole('button', { name: '🔊 Dinle' })).toBeTruthy()
   })
 
   it('perde: sorusunda nota başı çizilir ve "🔊 Dinle" görünür', async () => {

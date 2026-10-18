@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'preact/hooks'
 import type { PitchSample } from '../audio/mic'
 import { playWritten, stopAudio, unlockAudio } from '../audio/player'
 import { ILK_SES_REHBER, visibleFingering } from '../content/ney-perdeler'
+import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
 import type { NeyPerde } from '../content/ney-perdeler'
 import { ILK_SES_ID } from '../learning/evening-plan'
 import { fingeringCheck, initialLongTone, stepLongTone } from '../learning/long-tone'
@@ -9,7 +10,6 @@ import type { LongToneConfig, LongToneState } from '../learning/long-tone'
 import { Smoother } from '../learning/smoothing'
 import { soundingHz } from '../music/ahenk'
 import { centsBetween } from '../music/pitch'
-import { SOUND_WARNING } from '../screens/DayPractice'
 import { addFingeringFlag, addLongTone, listFingeringFlags, listLongTones } from '../store/db'
 import type { Settings } from '../store/db'
 import { FingeringDiagram } from './Fingering'
@@ -60,7 +60,8 @@ export function LongToneTrainer(props: {
   /** `null`: perdenin önceki kayıtları henüz okunmadı. */
   const [checkFingering, setCheckFingering] = useState<boolean | null>(perde ? null : false)
   const [fingeringNote, setFingeringNote] = useState(false)
-  const [soundWarn, setSoundWarn] = useState(false)
+  /** Dinle'ye dokununca gösterilen ses uyarısı (yoksa null). */
+  const [soundWarn, setSoundWarn] = useState<string | null>(null)
   /** Bu perdenin önceki denemelerindeki en uzun süre. */
   const [historyBestMs, setHistoryBestMs] = useState(0)
 
@@ -162,9 +163,9 @@ export function LongToneTrainer(props: {
 
   async function listen() {
     if (!perde) return
-    setSoundWarn(false)
+    setSoundWarn(null)
     if (!settings.soundOn) {
-      setSoundWarn(true)
+      setSoundWarn(SOUND_OFF)
       return
     }
     try {
@@ -172,7 +173,7 @@ export function LongToneTrainer(props: {
       await unlockAudio()
       await playWritten([{ kind: 'note', pitch: perde.written, dur: 'half' }], settings.tuning)
     } catch {
-      setSoundWarn(true)
+      setSoundWarn(SOUND_WARNING)
     }
   }
 
@@ -251,7 +252,7 @@ export function LongToneTrainer(props: {
       )}
       {soundWarn && (
         <p class="notice" role="status">
-          {SOUND_WARNING}
+          {soundWarn}
         </p>
       )}
     </section>

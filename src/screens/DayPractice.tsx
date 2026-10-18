@@ -6,6 +6,7 @@ import { answerQuestion, loadOrStartDaySession, tick } from '../learning/day-ses
 import type { DayState } from '../learning/day-session'
 import { makeQuestion } from '../learning/questions'
 import type { Question } from '../learning/questions'
+import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
 import { Staff } from '../notation/Staff'
 import { navigate } from '../router'
 import { addAttempt, getCard, getSettings, putCard } from '../store/db'
@@ -15,7 +16,6 @@ import { seededRng, shuffle } from '../util/rng'
 const TICK_MS = 1000
 const FREE_QUESTION_COUNT = 8
 export const REVIEW_NOTE = 'Biraz önceki konuyu tekrar edelim, sonra devam ederiz.'
-export const SOUND_WARNING = 'Ses çalınamadı. Telefonun sessiz düğmesini kontrol edin.'
 
 interface Feedback {
   choice: string
@@ -37,15 +37,16 @@ interface QuestionCardProps {
 
 function QuestionCard({ question, index, total, settings, feedback, note, onChoose, onNext }: QuestionCardProps) {
   const [showHint, setShowHint] = useState(false)
-  const [soundWarn, setSoundWarn] = useState(false)
+  /** Dinle'ye dokununca gösterilen ses uyarısı (yoksa null). */
+  const [soundWarn, setSoundWarn] = useState<string | null>(null)
 
   // Soru değişince (ya da ekran kapanınca) çalan ses susar.
   useEffect(() => () => stopAudio(), [question.id])
 
   async function listen() {
-    setSoundWarn(false)
+    setSoundWarn(null)
     if (!settings.soundOn) {
-      setSoundWarn(true)
+      setSoundWarn(SOUND_OFF)
       return
     }
     try {
@@ -53,13 +54,15 @@ function QuestionCard({ question, index, total, settings, feedback, note, onChoo
       await unlockAudio()
       await playWritten(question.events, settings.tuning)
     } catch {
-      setSoundWarn(true)
+      setSoundWarn(SOUND_WARNING)
     }
   }
 
   const answered = feedback !== null
   /** Portesiz sorularda (perde-ters) nota çizilmez ve çalınacak bir şey yoktur. */
   const hasStaff = question.events.length > 0
+  /** Yalnızca sus işaretinden oluşan soruda çalınacak ses yoktur (sessizlik çalınmaz). */
+  const canListen = question.events.some((e) => e.kind === 'note')
   return (
     <main class="screen day">
       <header class="day-head">
@@ -98,7 +101,7 @@ function QuestionCard({ question, index, total, settings, feedback, note, onChoo
       </div>
 
       <div class="tools">
-        {hasStaff && (
+        {canListen && (
           <button type="button" class="tool" onClick={() => void listen()}>
             🔊 Dinle
           </button>
@@ -110,7 +113,7 @@ function QuestionCard({ question, index, total, settings, feedback, note, onChoo
       {showHint && <p class="hint">{question.hint}</p>}
       {soundWarn && (
         <p class="notice" role="status">
-          {SOUND_WARNING}
+          {soundWarn}
         </p>
       )}
 
