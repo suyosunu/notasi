@@ -14,11 +14,27 @@ export interface Fingering {
   front: [Hole, Hole, Hole, Hole, Hole, Hole]
 }
 
-export type PerdeId = 'neva' | 'cargah' | 'buselik' | 'dugah' | 'rast'
+export type PerdeId =
+  | 'neva'
+  | 'cargah'
+  | 'buselik'
+  | 'dugah'
+  | 'rast'
+  | 'segah'
+  | 'huseyni'
+  | 'acem'
+  | 'evic'
+  | 'kurdi'
+  | 'dik-kurdi'
+  | 'nim-hicaz'
+  | 'gerdaniye'
+  | 'muhayyer'
 
 export interface NeyPerde {
   id: PerdeId
   name: string
+  /** MEB kademesi: 2 = ana sesler, 3 = daha sert üflenen sesler. */
+  kademe: 2 | 3
   written: WrittenPitch
   fingering: Fingering | null
   /** Yalnızca bir kaynak şemayı (başparmak + 6 ön delik) açıkça gösteriyorsa true. */
@@ -37,16 +53,27 @@ export interface NeyPerde {
 
 /** Parmak→delik eşlemesinin kaynağı: sağ el üstte, sağ başparmak arkadaki aşîrân deliğinde. */
 export const DELIK_YERLESIMI_KAYNAK = 'https://www.neyzenim.com/neydersleri_1.html'
-/** Ney Dersleri 2 – Temel Sesler: Re (Neva), Do (Çargâh), La (Dügâh), Sol (Rast). */
+/** Ney Dersleri 2 – Temel Sesler: Re (Neva), Do (Çargâh), La (Dügâh), Sol (Rast), Si (Segâh). */
 const SRC_TEMEL = 'https://www.neyzenim.com/neydersleri_2.html'
 /** Ney Dersleri 10 – Buselik makamı, "Naturel Si Perdesi". */
 const SRC_BUSELIK = 'https://www.neyzenim.com/neydersleri_10.html'
+
+/** Ney Dersleri 5 – Do diyez (Nim Hicaz) ve La diyez (Kürdî). */
+const SRC_KOMA = 'https://www.neyzenim.com/neydersleri_5.html'
+/** Ney Dersleri 10 – Hicaz bölümü: Nim Hicaz ve Dik Kürdî. */
+const SRC_HICAZ = 'https://www.neyzenim.com/neydersleri_10.html'
+/** Ney Dersleri 6 – orta perdeler: Hüseynî, Acem, Eviç, açık Gerdâniye, açık Muhayyer. */
+const SRC_ORTA = 'https://www.neyzenim.com/neydersleri_6.html'
+
+const SERT = 'Daha sert üfle: '
+const KOMA_FARKI = 'aradaki koma farkını dudak ve baş açısıyla verirsin.'
 
 /** Sıra MEB Ney Modülü 3. tema (NEY.3.3.1, NEY.3.3.2) sırasıdır. */
 export const NEY_PERDELER: NeyPerde[] = [
   {
     id: 'neva',
     name: 'Nevâ',
+    kademe: 2,
     written: { step: 'D', octave: 5, acc: 0 },
     fingering: { thumb: 'kapali', front: ['acik', 'kapali', 'acik', 'acik', 'kapali', 'acik'] },
     verified: true,
@@ -57,6 +84,7 @@ export const NEY_PERDELER: NeyPerde[] = [
   {
     id: 'cargah',
     name: 'Çârgâh',
+    kademe: 2,
     written: { step: 'C', octave: 5, acc: 0 },
     fingering: { thumb: 'kapali', front: ['kapali', 'kapali', 'acik', 'acik', 'kapali', 'acik'] },
     verified: true,
@@ -67,6 +95,7 @@ export const NEY_PERDELER: NeyPerde[] = [
   {
     id: 'buselik',
     name: 'Bûselik',
+    kademe: 2,
     written: { step: 'B', octave: 4, acc: 0 },
     fingering: { thumb: 'kapali', front: ['kapali', 'kapali', 'yarim', 'acik', 'kapali', 'acik'] },
     verified: true,
@@ -77,6 +106,7 @@ export const NEY_PERDELER: NeyPerde[] = [
   {
     id: 'dugah',
     name: 'Dügâh',
+    kademe: 2,
     written: { step: 'A', octave: 4, acc: 0 },
     fingering: { thumb: 'kapali', front: ['kapali', 'kapali', 'kapali', 'kapali', 'kapali', 'acik'] },
     verified: true,
@@ -87,12 +117,112 @@ export const NEY_PERDELER: NeyPerde[] = [
   {
     id: 'rast',
     name: 'Rast',
+    kademe: 2,
     written: { step: 'G', octave: 4, acc: 0 },
     fingering: { thumb: 'kapali', front: ['kapali', 'kapali', 'kapali', 'kapali', 'kapali', 'kapali'] },
     verified: true,
     source: SRC_TEMEL,
     tip: 'Bütün delikler kapalı. Parmak yastıklarıyla delikleri tam kapat; hava kaçarsa ses çıkmaz.',
     notaTopicId: 'nota-2',
+  },
+  {
+    id: 'segah',
+    name: 'Segâh',
+    kademe: 2,
+    written: { step: 'B', octave: 4, acc: -1 },
+    fingering: { thumb: 'kapali', front: ['kapali', 'kapali', 'kapali', 'acik', 'kapali', 'acik'] },
+    verified: true,
+    source: SRC_TEMEL,
+    tip: 'Bûselik duruşundan üçüncü delik tam kapalı, dördüncü delik açık; alttaki elin orta parmağı kapalı. Ses Bûselik’ten bir koma pest çıkar.',
+    notaTopicId: 'perde-3',
+  },
+  {
+    id: 'huseyni',
+    name: 'Hüseynî',
+    kademe: 3,
+    written: { step: 'E', octave: 5, acc: 0 },
+    fingering: { thumb: 'kapali', front: ['kapali', 'kapali', 'kapali', 'kapali', 'kapali', 'acik'] },
+    verified: true,
+    source: SRC_ORTA,
+    tip: SERT + 'Dügâh parmağıyla çalınır (yalnızca en alt delik açık); sesi bir beşli yukarı çıkarmak için nefesi güçlendir.',
+    notaTopicId: 'perde-2',
+  },
+  {
+    id: 'acem',
+    name: 'Acem',
+    kademe: 3,
+    written: { step: 'F', octave: 5, acc: 0 },
+    fingering: { thumb: 'kapali', front: ['kapali', 'kapali', 'kapali', 'kapali', 'acik', 'acik'] },
+    verified: true,
+    source: SRC_ORTA,
+    tip: SERT + 'Kürdî parmağıyla çalınır (alttaki iki delik açık); nefesi güçlendirerek sesi yukarı taşı.',
+    notaTopicId: 'perde-2',
+  },
+  {
+    id: 'evic',
+    name: 'Eviç',
+    kademe: 3,
+    written: { step: 'F', octave: 5, acc: 4 },
+    fingering: { thumb: 'kapali', front: ['kapali', 'kapali', 'kapali', 'acik', 'kapali', 'acik'] },
+    verified: true,
+    source: SRC_ORTA,
+    tip: SERT + 'Segâh parmağıyla çalınır (dördüncü ve altıncı delik açık); nefesi güçlendirerek sesi yukarı taşı.',
+    notaTopicId: 'perde-4',
+  },
+  {
+    id: 'kurdi',
+    name: 'Kürdî',
+    kademe: 2,
+    written: { step: 'B', octave: 4, acc: -5 },
+    fingering: { thumb: 'kapali', front: ['kapali', 'kapali', 'kapali', 'kapali', 'acik', 'acik'] },
+    verified: true,
+    source: SRC_KOMA,
+    tip: 'Alttaki iki delik açık, diğerleri kapalı. Parmak konumu Dik Kürdî ile aynı; ' + KOMA_FARKI,
+    notaTopicId: 'perde-3',
+  },
+  {
+    id: 'dik-kurdi',
+    name: 'Dik Kürdî',
+    kademe: 2,
+    written: { step: 'B', octave: 4, acc: -4 },
+    fingering: { thumb: 'kapali', front: ['kapali', 'kapali', 'kapali', 'kapali', 'acik', 'acik'] },
+    verified: true,
+    source: SRC_HICAZ,
+    tip: 'Alttaki iki delik açık, diğerleri kapalı. Parmak konumu Kürdî ile aynı; ' + KOMA_FARKI,
+    notaTopicId: 'perde-3',
+  },
+  {
+    id: 'nim-hicaz',
+    name: 'Nim Hicaz',
+    kademe: 2,
+    written: { step: 'C', octave: 5, acc: 4 },
+    fingering: { thumb: 'kapali', front: ['kapali', 'acik', 'acik', 'acik', 'kapali', 'acik'] },
+    verified: true,
+    source: SRC_KOMA,
+    tip: 'Yalnızca ilk delik ve alttaki elin orta parmağı kapalı; Çârgâh’tan bir bakiye (4 koma) yüksek çıkar.',
+    notaTopicId: 'perde-4',
+  },
+  {
+    id: 'gerdaniye',
+    name: 'Gerdâniye (açık)',
+    kademe: 3,
+    written: { step: 'G', octave: 5, acc: 0 },
+    fingering: { thumb: 'kapali', front: ['kapali', 'kapali', 'acik', 'acik', 'kapali', 'acik'] },
+    verified: true,
+    source: SRC_ORTA,
+    tip: SERT + 'Çârgâh parmağıyla çalınır (üstten ilk iki delik ve alttaki elin orta parmağı kapalı); nefesi güçlendirerek sesi yukarı taşı.',
+    notaTopicId: 'perde-2',
+  },
+  {
+    id: 'muhayyer',
+    name: 'Muhayyer (açık)',
+    kademe: 3,
+    written: { step: 'A', octave: 5, acc: 0 },
+    fingering: { thumb: 'kapali', front: ['acik', 'kapali', 'acik', 'acik', 'kapali', 'acik'] },
+    verified: true,
+    source: SRC_ORTA,
+    tip: SERT + 'Nevâ parmağıyla çalınır (iki elin orta parmağı kapalı, diğer ön delikler açık); nefesi güçlendirerek sesi yukarı taşı.',
+    notaTopicId: 'perde-2',
   },
 ]
 

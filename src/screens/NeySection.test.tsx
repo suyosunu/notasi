@@ -2,8 +2,9 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testi
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PitchSample } from '../audio/mic'
 import { NEY_PERDELER } from '../content/ney-perdeler'
+import { NOTA_TOPICS } from '../content/nota-topics'
 import { DEFAULT_TUNING, soundingHz } from '../music/ahenk'
-import { addLongTone, listLongTones, listSessions, resetDbForTests, saveSettings } from '../store/db'
+import { addLongTone, listLongTones, listSessions, resetDbForTests, saveSettings, setPlacedOut } from '../store/db'
 
 let emit: ((s: PitchSample) => void) | null = null
 vi.mock('../audio/mic', async (orig) => {
@@ -60,6 +61,32 @@ describe('NeySection', () => {
     expect(screen.queryByRole('button', { name: /Bûselik/ })).toBeNull()
   })
 
+  it('yeni perdeler listelenir; Rast geçilse de nota konusu kilitliyse Segâh kilitli kalır', async () => {
+    for (const id of ['neva', 'cargah', 'buselik', 'dugah', 'rast']) {
+      await addLongTone({ perdeId: id, durationMs: 4000, passed: true, toleranceCents: 25 })
+    }
+    render(<NeySection />)
+    await screen.findByText('Segâh')
+    for (const name of ['Segâh', 'Hüseynî', 'Acem', 'Eviç', 'Kürdî', 'Dik Kürdî', 'Nim Hicaz', 'Gerdâniye (açık)', 'Muhayyer (açık)']) {
+      expect(screen.getByText(name)).toBeTruthy()
+    }
+    expect(screen.queryByText(/Irak/)).toBeNull()
+    expect(within(row('Segâh')).getByText('🔒')).toBeTruthy()
+  })
+
+  it('perde-3 açılınca Segâh açılır ve /ney/segah yönlenir', async () => {
+    for (const id of ['neva', 'cargah', 'buselik', 'dugah', 'rast']) {
+      await addLongTone({ perdeId: id, durationMs: 4000, passed: true, toleranceCents: 25 })
+    }
+    for (const id of NOTA_TOPICS.map((t) => t.id)) if (id !== 'perde-3' && id !== 'perde-4') await setPlacedOut(id)
+    render(<NeySection />)
+    await screen.findByText('Segâh')
+    expect(within(row('Segâh')).getByText('▶')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /Segâh/ }))
+    await waitFor(() => expect(location.hash).toBe('#/ney/segah'))
+    expect(screen.queryByRole('button', { name: /Hüseynî/ })).toBeNull()
+  })
+
   it('altta "Yeniden kalibre et" bağlantısı vardır', async () => {
     render(<NeySection />)
     const link = await screen.findByRole('link', { name: 'Yeniden kalibre et' })
@@ -103,6 +130,27 @@ describe('NeyPerdePractice', () => {
     await waitFor(() => expect(emit).not.toBeNull())
     fireEvent.click(screen.getByRole('button', { name: 'Bitir' }))
     expect(await screen.findByText('Son denemeler: 0,0 · 0,9 · 2,6 · 1,5 · 4,0 sn')).toBeTruthy()
+  })
+
+  it('işaretli yeni perde (Segâh) kendi koma konumuna göre geçilir ve kaydı yazılır', async () => {
+    await saveSettings({ calibrated: true })
+    for (const id of ['neva', 'cargah', 'buselik', 'dugah', 'rast']) {
+      await addLongTone({ perdeId: id, durationMs: 4000, passed: true, toleranceCents: 25 })
+    }
+    for (const id of NOTA_TOPICS.map((t) => t.id)) if (id !== 'perde-3' && id !== 'perde-4') await setPlacedOut(id)
+    render(<NeyPerdePractice perdeId="segah" />)
+    const btn = await screen.findByRole('button', { name: 'Başla' })
+    await waitFor(() => expect((btn as HTMLButtonElement).disabled).toBe(false))
+    fireEvent.click(btn)
+    await waitFor(() => expect(emit).not.toBeNull())
+    const segah = NEY_PERDELER.find((p) => p.id === 'segah')!
+    const hz = soundingHz(segah.written, DEFAULT_TUNING)
+    expect(hz).not.toBeCloseTo(soundingHz({ step: 'B', octave: 4, acc: 0 }, DEFAULT_TUNING), 0)
+    act(() => {
+      for (let t = 0; t <= 4500; t += 50) emit!({ t, hz, clarity: 0.99 })
+    })
+    expect(await screen.findByText(/Geçtin/)).toBeTruthy()
+    await waitFor(async () => expect((await listLongTones('segah')).some((r) => r.passed)).toBe(true))
   })
 
   it('hiç deneme yoksa "Son denemeler" satırı yoktur', async () => {

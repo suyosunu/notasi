@@ -14,7 +14,15 @@ const NOTA_1_OPEN: Record<string, TopicStatus> = { 'nota-1': 'acik', 'sure-1': '
 const NOTA_2_OPEN: Record<string, TopicStatus> = { 'nota-1': 'ogrenildi', 'sure-1': 'ogrenildi', 'nota-2': 'acik' }
 
 function statuses(over: Partial<Record<PerdeId, PerdeStatus>>): Record<PerdeId, PerdeStatus> {
-  return { neva: 'kilitli', cargah: 'kilitli', buselik: 'kilitli', dugah: 'kilitli', rast: 'kilitli', ...over }
+  const all = Object.fromEntries(NEY_PERDELER.map((p) => [p.id, 'kilitli'])) as Record<PerdeId, PerdeStatus>
+  return { ...all, ...over }
+}
+
+/** Her nota konusu açık, `kilitli` verilenler dışında. */
+function topics(locked: string[] = []): Record<string, TopicStatus> {
+  const out: Record<string, TopicStatus> = {}
+  for (const id of ['nota-1', 'nota-2', 'perde-2', 'perde-3', 'perde-4']) out[id] = locked.includes(id) ? 'kilitli' : 'acik'
+  return out
 }
 
 describe('perdeStatuses', () => {
@@ -50,6 +58,31 @@ describe('perdeStatuses', () => {
     const s = perdeStatuses([tone('neva', true)], NOTA_1_OPEN, perdeler)
     expect(s.cargah).toBe('kilitli')
     expect(s.buselik).toBe('kilitli')
+  })
+
+  it('Rast geçilince Segâh, perde-3 kilitliyse kilitli kalır; açıksa açılır', () => {
+    const passed = ['neva', 'cargah', 'buselik', 'dugah', 'rast'].map((id) => tone(id, true))
+    expect(perdeStatuses(passed, topics(['perde-3'])).segah).toBe('kilitli')
+    expect(perdeStatuses(passed, topics()).segah).toBe('acik')
+  })
+
+  it('yeni perdeler sırayla ve kendi nota konusuna bağlı açılır', () => {
+    const upTo = (ids: string[]) => ids.map((id) => tone(id, true))
+    const base = ['neva', 'cargah', 'buselik', 'dugah', 'rast']
+    // Segâh geçildi; Hüseynî perde-2'ye bağlı.
+    expect(perdeStatuses(upTo([...base, 'segah']), topics(['perde-2'])).huseyni).toBe('kilitli')
+    expect(perdeStatuses(upTo([...base, 'segah']), topics()).huseyni).toBe('acik')
+    // Acem de perde-2; Eviç perde-4.
+    const h = [...base, 'segah', 'huseyni', 'acem']
+    expect(perdeStatuses(upTo(h), topics(['perde-4'])).evic).toBe('kilitli')
+    expect(perdeStatuses(upTo(h), topics()).evic).toBe('acik')
+    // Kürdî / Dik Kürdî perde-3, Nim Hicaz perde-4.
+    const k = [...h, 'evic', 'kurdi']
+    expect(perdeStatuses(upTo(k), topics())['dik-kurdi']).toBe('acik')
+    expect(perdeStatuses(upTo([...k, 'dik-kurdi']), topics(['perde-4']))['nim-hicaz']).toBe('kilitli')
+    expect(perdeStatuses(upTo([...k, 'dik-kurdi']), topics())['nim-hicaz']).toBe('acik')
+    // Önceki geçilmeden sonraki açılmaz.
+    expect(perdeStatuses(upTo(base), topics()).huseyni).toBe('kilitli')
   })
 
   it('ilk-ses kayıtları perde durumunu etkilemez', () => {
