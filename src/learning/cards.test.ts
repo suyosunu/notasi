@@ -89,7 +89,7 @@ describe('topicOfCard', () => {
     const ids = NOTA_TOPICS.map((t) => t.id)
     expect(ids).toEqual([
       'nota-1', 'sure-1', 'nota-2', 'sure-2', 'nota-3', 'sure-3', 'nota-4', 'nota-5',
-      'dizi-1', 'perde-1', 'dizi-2', 'perde-2',
+      'dizi-1', 'perde-1', 'dizi-2', 'perde-2', 'koma-1', 'koma-2', 'perde-3', 'perde-4',
     ])
   })
   it('dizi konuları sequence türünde ve 6 karttan oluşur', () => {

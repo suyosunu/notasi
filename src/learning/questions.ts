@@ -1,4 +1,5 @@
 import { NOTA_TOPICS } from '../content/nota-topics'
+import { ACCIDENTAL_NAMES } from '../music/accidentals'
 import { notaEtiketi, PERDE_ADLARI } from '../content/perde-adlari'
 import { durationName } from '../music/notation'
 import type { MusicEvent } from '../music/notation'
@@ -101,7 +102,10 @@ function sequenceOptions(answerIdx: number[], answer: string, rng: () => number)
   return found
 }
 
-const PERDE_HINT = 'Sırayla: Rast (Sol), Dügâh, Bûselik, Çârgâh, Nevâ, Hüseynî, Acem, Gerdâniye, Muhayyer (tiz La).'
+const ACCIDENTAL_HINT = 'Bemol sesi pesleştirir, diyez tizleştirir; çizgi ve gövde sayısı koma miktarını gösterir.'
+const PERDE_HINT ='Sırayla: Rast (Sol), Dügâh, Bûselik, Çârgâh, Nevâ, Hüseynî, Acem, Gerdâniye, Muhayyer (tiz La).'
+
+const PERDE_TOPICS = NOTA_TOPICS.filter((t) => t.kind === 'perde-name')
 
 /** Aynı harfin öbür oktavdaki perdesi (Sol4 ↔ Sol5, La4 ↔ La5); yalnızca Sol ve La için vardır. */
 function octaveCounterpart(key: string): string | null {
@@ -115,19 +119,32 @@ function octaveCounterpart(key: string): string | null {
  * Cevap Sol ya da La ise oktav karşılığı ("tiz Sol" ↔ "Sol", "tiz La" ↔ "La") bir çeldirici olarak
  * her zaman bulunur: öğrenen oktavı ayırt etmelidir.
  */
-function reverseOptions(topicCards: string[], key: string, answer: string, rng: () => number): string[] {
+function reverseOptions(topicId: string, topicCards: string[], key: string, answer: string, rng: () => number): string[] {
   const counterpart = octaveCounterpart(key)
   const fixed = counterpart && counterpart !== answer ? [counterpart] : []
   const own = [...new Set(topicCards.map((c) => notaEtiketi(perdeKey(c))))].filter((l) => l !== answer && !fixed.includes(l))
   const distractors = [...fixed, ...shuffle(own, rng)]
   if (distractors.length < 3) {
+    // Önce önceki perde konularının etiketleri, yetmezse Irak hariç tüm perdelerin etiketleri.
+    const earlier = PERDE_TOPICS.slice(0, PERDE_TOPICS.findIndex((t) => t.id === topicId)).flatMap((t) =>
+      t.cards.map((c) => notaEtiketi(perdeKey(c))),
+    )
     const all = Object.keys(PERDE_ADLARI).map(notaEtiketi)
-    distractors.push(...shuffle([...new Set(all)].filter((l) => l !== answer && !distractors.includes(l)), rng))
+    for (const pool of [earlier, all]) {
+      if (distractors.length >= 3) break
+      distractors.push(...shuffle([...new Set(pool)].filter((l) => l !== answer && !distractors.includes(l)), rng))
+    }
   }
   return shuffle([answer, ...distractors.slice(0, 3)], rng)
 }
 
-const PERDE_TOPICS = NOTA_TOPICS.filter((t) => t.kind === 'perde-name')
+/** Aynı işaret ailesinin (bemol ya da diyez) dört işareti; cevap bunlardan biridir. */
+function accidentalOptions(acc: number, rng: () => number): string[] {
+  const family = Object.entries(ACCIDENTAL_NAMES)
+    .filter(([k]) => (Number(k) < 0) === (acc < 0))
+    .map(([, name]) => name)
+  return shuffle(family, rng)
+}
 
 /** Bu perde konusunun ve önceki perde konularının perde adları, konu sırasıyla. */
 function perdeNamesUpTo(topicId: string): string[] {
@@ -187,7 +204,7 @@ export function makeQuestion(cardId: string, rng: () => number): Question {
         topicId: topic.id,
         prompt: `${perde} hangi nota?`,
         events,
-        options: reverseOptions(topic.cards, key, answer, rng),
+        options: reverseOptions(topic.id, topic.cards, key, answer, rng),
         answer,
         hint: PERDE_HINT,
       }
@@ -205,6 +222,20 @@ export function makeQuestion(cardId: string, rng: () => number): Question {
   }
 
   const event = events[0]!
+  if (topic.kind === 'accidental-name') {
+    if (event.kind !== 'note' || event.pitch.acc === 0) throw new Error(`Geçersiz kart kimliği: ${cardId}`)
+    const acc = event.pitch.acc
+    return {
+      id,
+      cardId,
+      topicId: topic.id,
+      prompt: 'Bu işaretin adı ne?',
+      events: [event],
+      options: accidentalOptions(acc, rng),
+      answer: ACCIDENTAL_NAMES[acc as Exclude<typeof acc, 0 | 9 | -9>],
+      hint: ACCIDENTAL_HINT,
+    }
+  }
   if (topic.kind === 'note-name') {
     if (event.kind !== 'note') throw new Error(`Geçersiz kart kimliği: ${cardId}`)
     const answer = SOLFEJ[event.pitch.step]

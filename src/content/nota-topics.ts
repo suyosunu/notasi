@@ -2,7 +2,7 @@ export interface Topic {
   id: string
   section: 'nota'
   title: string
-  kind: 'note-name' | 'duration' | 'sequence' | 'perde-name'
+  kind: 'note-name' | 'duration' | 'sequence' | 'perde-name' | 'accidental-name'
   cards: string[]
 }
 
@@ -49,5 +49,33 @@ export const NOTA_TOPICS: Topic[] = [
       'perde:E5', 'perde:F5', 'perde:G5', 'perde:A5',
       'perde-ters:E5', 'perde-ters:F5', 'perde-ters:G5', 'perde-ters:A5',
     ],
+  },
+  {
+    id: 'koma-1',
+    section: 'nota',
+    title: 'Koma işaretleri: bemoller',
+    kind: 'accidental-name',
+    cards: ['note:B4b1', 'note:B4b4', 'note:B4b5', 'note:B4b8'],
+  },
+  {
+    id: 'koma-2',
+    section: 'nota',
+    title: 'Koma işaretleri: diyezler',
+    kind: 'accidental-name',
+    cards: ['note:C5#1', 'note:C5#4', 'note:C5#5', 'note:C5#8'],
+  },
+  {
+    id: 'perde-3',
+    section: 'nota',
+    title: 'Perdeler: Segâh, Kürdî, Dik Kürdî',
+    kind: 'perde-name',
+    cards: ['perde:B4b1', 'perde:B4b5', 'perde:B4b4', 'perde-ters:B4b1', 'perde-ters:B4b5', 'perde-ters:B4b4'],
+  },
+  {
+    id: 'perde-4',
+    section: 'nota',
+    title: 'Perdeler: Nim Hicaz, Hicaz, Eviç',
+    kind: 'perde-name',
+    cards: ['perde:C5#4', 'perde:C5#5', 'perde:F5#4', 'perde-ters:C5#4', 'perde-ters:C5#5', 'perde-ters:F5#4'],
   },
 ]

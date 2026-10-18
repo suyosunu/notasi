@@ -1,5 +1,6 @@
 import { NOTA_TOPICS, type Topic } from '../content/nota-topics'
 import { PERDE_ADLARI } from '../content/perde-adlari'
+import { parseNoteKey } from '../music/accidentals'
 import type { DurationKind, MusicEvent } from '../music/notation'
 import type { Step } from '../music/pitch'
 
@@ -21,9 +22,9 @@ export function cardToEvent(cardId: string): MusicEvent {
   if (!m) return invalid(cardId)
   const [, type, rest] = m
   if (type === 'note') {
-    const n = /^([A-G])(\d)$/.exec(rest)
-    if (!n || !STEPS.includes(n[1])) return invalid(cardId)
-    return { kind: 'note', pitch: { step: n[1] as Step, octave: Number(n[2]), acc: 0 }, dur: 'quarter' }
+    const pitch = parseNoteKey(rest)
+    if (!pitch) return invalid(cardId)
+    return { kind: 'note', pitch, dur: 'quarter' }
   }
   const [dur, flag, ...extra] = rest.split('.')
   if (!DURATIONS.includes(dur) || extra.length > 0 || (flag !== undefined && flag !== 'dotted')) {
@@ -34,7 +35,7 @@ export function cardToEvent(cardId: string): MusicEvent {
   return { kind: 'note', pitch: { step: 'B', octave: 4, acc: 0 }, ...base }
 }
 
-/** 'perde:D5' / 'perde-ters:D5' içindeki nota anahtarı; dokuz perdeden biri olmalıdır. */
+/** 'perde:D5' / 'perde-ters:B4b1' içindeki nota anahtarı; tanımlı bir perde olmalıdır. */
 export function perdeKey(cardId: string): string {
   const m = /^perde(?:-ters)?:(.+)$/.exec(cardId)
   if (!m || !Object.hasOwn(PERDE_ADLARI, m[1]!)) return invalid(cardId)
@@ -50,7 +51,9 @@ export function cardToEvents(cardId: string): MusicEvent[] {
   if (cardId.startsWith('perde')) {
     const key = perdeKey(cardId)
     if (cardId.startsWith('perde-ters:')) return []
-    return [{ kind: 'note', pitch: { step: key.charAt(0) as Step, octave: Number(key.slice(1)), acc: 0 }, dur: 'quarter' }]
+    const pitch = parseNoteKey(key)
+    if (!pitch) return invalid(cardId)
+    return [{ kind: 'note', pitch, dur: 'quarter' }]
   }
   if (!cardId.startsWith('seq:')) return [cardToEvent(cardId)]
   const parts = cardId.slice(4).split('-')
