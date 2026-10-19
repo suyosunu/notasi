@@ -15,7 +15,13 @@ describe('About', () => {
     expect(
       screen.getByText('Ses motoru: Strudel (strudel.cc), © Strudel katkıcıları, AGPL-3.0-or-later lisansıyla.'),
     ).toBeTruthy()
-    expect(screen.getByText('Parça notaları: SymbTr (Karaosmanoğlu 2012), CC BY-NC-SA 4.0.')).toBeTruthy()
+    const symbtr = screen.getByRole('link', { name: 'SymbTr' })
+    expect(symbtr.getAttribute('href')).toBe('https://github.com/MTG/SymbTr')
+    const lisans = screen.getByRole('link', { name: 'CC BY-NC-SA 4.0' })
+    expect(lisans.getAttribute('href')).toBe('https://creativecommons.org/licenses/by-nc-sa/4.0/')
+    expect(symbtr.closest('p')?.textContent).toBe(
+      'Parça notaları: SymbTr (Karaosmanoğlu 2012), CC BY-NC-SA 4.0. Notalar uygulamanın biçimine dönüştürülmüştür.',
+    )
     expect(screen.getByText('← Ayarlar').closest('a')?.getAttribute('href')).toBe('#/ayarlar')
   })
 
@@ -26,7 +32,11 @@ describe('About', () => {
     expect(
       screen.getByText('Bu uygulamanın kaynak kodu AGPL-3.0-or-later lisansıyla açıktır: (yakında)'),
     ).toBeTruthy()
-    expect(document.querySelector('a[href^="http"]')).toBeNull()
+    // Yalnızca SymbTr ve lisans bağlantıları vardır; kaynak kodu bağlantısı yoktur.
+    expect(Array.from(document.querySelectorAll('a[href^="http"]')).map((a) => a.getAttribute('href'))).toEqual([
+      'https://github.com/MTG/SymbTr',
+      'https://creativecommons.org/licenses/by-nc-sa/4.0/',
+    ])
   })
 
   it('SOURCE_URL doluyken bağlantı gösterir', async () => {

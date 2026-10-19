@@ -16,3 +16,5 @@ Node.js 24 ile geliştirilmiştir.
 ## Lisans
 
 GNU Affero Genel Kamu Lisansı sürüm 3 veya sonrası (AGPL-3.0-or-later). Tam metin için [LICENSE](LICENSE) dosyasına bakın.
+
+Kod AGPL-3.0-or-later; `src/content/parcalar/` altındaki parça verisi CC BY-NC-SA 4.0 (bkz. src/content/parcalar/LISANS.md).
