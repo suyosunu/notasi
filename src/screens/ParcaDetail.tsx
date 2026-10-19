@@ -113,7 +113,7 @@ export function ParcaDetail({ parcaId }: { parcaId: string }) {
       <ScoreView olcu={piece.olcu} soz={piece.soz} />
 
       <label class="usul-speed">
-        <span>{`Hız: ${bpm}`}</span>
+        <span>{`Hız: ♩ = ${bpm}`}</span>
         <input
           type="range"
           min={BPM_MIN}

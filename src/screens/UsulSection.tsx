@@ -109,7 +109,7 @@ export function UsulSection() {
       <VurusDiagram usul={usul} />
 
       <label class="usul-speed">
-        <span>{`Hız: ${bpm}`}</span>
+        <span>{`Hız: ${usul.mertebe === 8 ? '♪' : '♩'} = ${bpm}`}</span>
         <input
           type="range"
           min={BPM_MIN}

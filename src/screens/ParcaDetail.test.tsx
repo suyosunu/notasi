@@ -61,7 +61,7 @@ describe('ParcaDetail', () => {
     expect(slider().min).toBe('40')
     expect(slider().max).toBe('100')
     expect(slider().value).toBe('60')
-    expect(screen.getByText('Hız: 60')).toBeTruthy()
+    expect(screen.getByText('Hız: ♩ = 60')).toBeTruthy()
     expect(usulBox().checked).toBe(true)
   })
 
@@ -92,7 +92,7 @@ describe('ParcaDetail', () => {
     fireEvent.click(usulBox())
     fireEvent.input(slider(), { target: { value: '90' } })
     fireEvent.change(slider(), { target: { value: '90' } })
-    expect(screen.getByText('Hız: 90')).toBeTruthy()
+    expect(screen.getByText('Hız: ♩ = 90')).toBeTruthy()
     fireEvent.click(btn)
     await waitFor(() => expect(playCode).toHaveBeenCalledTimes(1))
     const [code] = vi.mocked(playCode).mock.calls[0]!

@@ -70,13 +70,25 @@ describe('UsulSection', () => {
     expect(document.querySelectorAll('[data-testid="vurus"]')).toHaveLength(3)
   })
 
-  it('hız kaydırıcısı 40–120, varsayılan 60; etiket "Hız: {bpm}"', () => {
+  it('hız kaydırıcısı 40–120, varsayılan 60; etiket "Hız: ♩ = {bpm}"', () => {
     render(<UsulSection />)
     const slider = screen.getByRole('slider') as HTMLInputElement
     expect([slider.min, slider.max, slider.value]).toEqual(['40', '120', '60'])
-    expect(screen.getByText('Hız: 60')).toBeTruthy()
+    expect(screen.getByText('Hız: ♩ = 60')).toBeTruthy()
     fireEvent.input(slider, { target: { value: '90' } })
-    expect(screen.getByText('Hız: 90')).toBeTruthy()
+    expect(screen.getByText('Hız: ♩ = 90')).toBeTruthy()
+  })
+
+  it('mertebesi 8 olan usulde birim ♪, 4 olanda ♩ gösterilir', () => {
+    render(<UsulSection />)
+    pick(/Sofyan/)
+    expect(screen.getByText('Hız: ♩ = 60')).toBeTruthy()
+    pick(/Düyek/)
+    expect(screen.getByText('Hız: ♪ = 60')).toBeTruthy()
+    pick(/Dolap/)
+    expect(screen.getByText('Hız: ♪ = 60')).toBeTruthy()
+    pick(/^Semâî/)
+    expect(screen.getByText('Hız: ♩ = 60')).toBeTruthy()
   })
 
   it('Çal: sesi açıp seçili usulü varsayılan hızla başlatır; düğme "■ Durdur" olur', async () => {
