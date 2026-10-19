@@ -1,6 +1,7 @@
 import type { DurationKind, MusicEvent } from '../../music/notation'
 import type { Accidental, Step } from '../../music/pitch'
 import benimAdim from './benim-adim-dertli-dolap.json'
+import daglarIle from './daglar-ile-taslar-ile.json'
 import hakTeala from './hak-teala.json'
 import type { Parca, ParcaMakam } from './types'
 
@@ -23,13 +24,14 @@ function toEvent(v: unknown, where: string): MusicEvent {
   if (!isObj(v) || typeof v.dur !== 'string' || !DURATIONS.includes(v.dur)) return bad(`${where} süre`)
   const dur = v.dur as DurationKind
   const dotted = v.dotted === undefined ? {} : v.dotted === true ? { dotted: true } : bad(`${where} nokta`)
-  if (v.kind === 'rest') return { kind: 'rest', dur, ...dotted }
+  if (v.kind === 'rest') return 'tie' in v ? bad(`${where} susta bağ`) : { kind: 'rest', dur, ...dotted }
   if (v.kind !== 'note' || !isObj(v.pitch)) return bad(`${where} nota`)
+  const tie = v.tie === undefined ? {} : v.tie === true ? { tie: true } : bad(`${where} bağ`)
   const { step, octave, acc } = v.pitch
   if (typeof step !== 'string' || !STEPS.includes(step)) return bad(`${where} perde`)
   if (typeof octave !== 'number' || !Number.isInteger(octave)) return bad(`${where} oktav`)
   if (typeof acc !== 'number' || !ACCIDENTALS.includes(acc)) return bad(`${where} işaret`)
-  return { kind: 'note', pitch: { step: step as Step, octave, acc: acc as Accidental }, dur, ...dotted }
+  return { kind: 'note', pitch: { step: step as Step, octave, acc: acc as Accidental }, dur, ...dotted, ...tie }
 }
 
 /** JSON verisini çalışma anında doğrular (JSON türleri gevşek çıkarıldığı için). */
@@ -62,8 +64,5 @@ export function toParca(data: unknown): Parca {
   return parca
 }
 
-/**
- * Kolaydan zora. "Dağlar ile Taşlar ile" henüz yok: kaynakta 5/8 süreli (bağ gerektiren) dört nota var
- * ve dönüştürücü yaklaştırma yapmadan durur.
- */
-export const PARCALAR: Parca[] = [benimAdim, hakTeala].map(toParca)
+/** Kolaydan zora. */
+export const PARCALAR: Parca[] = [benimAdim, hakTeala, daglarIle].map(toParca)

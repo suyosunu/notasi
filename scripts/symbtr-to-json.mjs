@@ -110,6 +110,52 @@ export function durationOf(pay, payda) {
   return null
 }
 
+/** Bölmede kullanılan parçalar, büyükten küçüğe (birim: tam notanın 1/64'ü). */
+const PARTS = [
+  [64, { dur: 'whole' }],
+  [48, { dur: 'half', dotted: true }],
+  [32, { dur: 'half' }],
+  [24, { dur: 'quarter', dotted: true }],
+  [16, { dur: 'quarter' }],
+  [12, { dur: 'eighth', dotted: true }],
+  [8, { dur: 'eighth' }],
+  [6, { dur: 'sixteenth', dotted: true }],
+  [4, { dur: 'sixteenth' }],
+]
+
+/**
+ * Pay/Payda → bağlanacak süre parçaları. Tek değerle yazılabiliyorsa tek parça; değilse en az
+ * parçaya, büyükten küçüğe bölünür (5/8 → ikilik + sekizlik). Tam bölünemiyorsa null (üçleme, 1/32…).
+ */
+export function splitDuration(pay, payda) {
+  const single = durationOf(pay, payda)
+  if (single) return [single]
+  if (!(pay > 0 && payda > 0)) return null
+  const total = units(pay, payda)
+  if (!Number.isInteger(total)) return null
+  // best[u]: u birimi dolduran en kısa parça dizisi; eşitlikte büyük parça önce gelir.
+  const best = [[]]
+  for (let u = 1; u <= total; u++) {
+    let pick = null
+    for (const [len, part] of PARTS) {
+      const rest = len <= u ? best[u - len] : null
+      if (rest && (pick === null || rest.length + 1 < pick.length)) pick = [part, ...rest]
+    }
+    best[u] = pick
+  }
+  return best[total] ? best[total].map((part) => ({ ...part })) : null
+}
+
+/** Soz1 hecesi → gösterim: baştaki/sondaki boşluklar atılır, ulama (`_`) `‿` olur. */
+export function cleanSyllable(soz) {
+  return soz.trim().replaceAll('_', '‿')
+}
+
+const BASE_UNITS = { whole: 64, half: 32, quarter: 16, eighth: 8, sixteenth: 4 }
+function eventUnits(e) {
+  return BASE_UNITS[e.dur] * (e.dotted ? 1.5 : 1)
+}
+
 /** NotaAE → WrittenPitch; işaret b/# 1, 4, 5, 8 dışındaysa null. */
 export function pitchOf(notaAE) {
   return parseNoteKey(notaAE)
@@ -157,6 +203,7 @@ export function convertSymbTr(text, { file, usul }) {
   let notes = 0
   let rests = 0
   let komaChecked = 0
+  const tiedRows = []
 
   for (const row of rows.slice(1)) {
     if (row.kod === KOD_USUL) {
@@ -171,17 +218,22 @@ export function convertSymbTr(text, { file, usul }) {
       skipped.push({ sira: row.sira, reason: `sıfır süreli ${row.notaAE}`, soz: row.soz })
       continue
     }
-    const d = durationOf(row.pay, row.payda)
-    if (!d) {
+    const parts = splitDuration(row.pay, row.payda)
+    if (!parts) {
       fail(row, `${row.notaAE} süresi ${row.pay}/${row.payda} temsil edilemiyor`)
       // Ölçü bölmeyi bozmamak için süreyi sayarak devam et.
+    } else if (parts.length > 1) {
+      tiedRows.push({ sira: row.sira, notaAE: row.notaAE, pay: row.pay, payda: row.payda, parts })
     }
     const len = units(row.pay, row.payda)
 
     if (row.notaAE === 'Es') {
       if (row.komaAE !== -1) fail(row, `Es için KomaAE ${row.komaAE}, beklenen -1`)
-      if (d) events.push({ kind: 'rest', ...d })
-      syllables.push('')
+      // Bölünen sus bağsız ardışık suslardır.
+      for (const part of parts ?? []) {
+        events.push({ kind: 'rest', ...part })
+        syllables.push('')
+      }
       rests++
     } else {
       const pitch = pitchOf(row.notaAE)
@@ -189,11 +241,15 @@ export function convertSymbTr(text, { file, usul }) {
         fail(row, `NotaAE "${row.notaAE}" desteklenmiyor (yalnız b/# 1, 4, 5, 8)`)
       } else if (komaAEOf(pitch) !== row.komaAE) {
         fail(row, `${row.notaAE} → koma ${komaAEOf(pitch)}, oysa KomaAE ${row.komaAE}`)
-      } else {
+      } else if (parts) {
         komaChecked++
-        if (d) events.push({ kind: 'note', pitch, ...d })
+        // Son parça dışındaki her parça sonrakine bağlıdır; hece yalnızca ilk parçadadır.
+        parts.forEach((part, k) => {
+          const last = k === parts.length - 1
+          events.push({ kind: 'note', pitch: { ...pitch }, ...part, ...(last ? {} : { tie: true }) })
+          syllables.push(k === 0 ? cleanSyllable(row.soz) : '')
+        })
       }
-      syllables.push(row.soz)
       notes++
     }
 
@@ -224,29 +280,57 @@ export function convertSymbTr(text, { file, usul }) {
     throw new Error(`${file}: ${errors.length} satır dönüştürülemedi:\n  ${errors.join('\n  ')}`)
   }
 
-  verifyAgainstSource(olcu, rows, file)
+  const verified = verifyAgainstSource(olcu, rows, file)
   return {
     olcu,
     soz,
     skipped,
-    summary: { measures: olcu.length, notes, rests, komaChecked },
+    tiedRows,
+    summary: {
+      measures: olcu.length,
+      notes,
+      rests,
+      komaChecked,
+      events: olcu.reduce((s, m) => s + m.length, 0),
+      tiedRows: tiedRows.length,
+      verifiedRows: verified.rows,
+      verifiedEvents: verified.events,
+    },
   }
 }
 
-/** Üretilen olayları kaynak satırlarla tek tek karşılaştırır (perde KomaAE, süre Pay/Payda). */
+/**
+ * Üretilen olayları kaynak satırlara geri eşler: her kaynak satırı bir ya da (bölünmüşse) birkaç
+ * ardışık olaydır. Her parçanın perdesi KomaAE'ye, parçaların süre toplamı Pay/Payda'ya eşit olmalı;
+ * bağ yalnızca aynı satırın son parçası dışındaki notalarda bulunur.
+ */
 function verifyAgainstSource(olcu, rows, file) {
   const src = rows.filter((r) => r.kod === KOD_NOTA && r.pay !== 0)
   const flat = olcu.flat()
-  if (flat.length !== src.length) throw new Error(`${file}: doğrulama: ${flat.length} olay, ${src.length} satır`)
-  flat.forEach((e, i) => {
-    const r = src[i]
-    const koma = e.kind === 'rest' ? -1 : komaAEOf(e.pitch)
-    if (koma !== r.komaAE) throw new Error(`${file}: doğrulama Sira ${r.sira}: koma ${koma} ≠ KomaAE ${r.komaAE}`)
-    const want = durationOf(r.pay, r.payda)
-    if (want.dur !== e.dur || !!want.dotted !== !!e.dotted) {
-      throw new Error(`${file}: doğrulama Sira ${r.sira}: süre ${e.dur} ≠ ${r.pay}/${r.payda}`)
+  const fail = (r, msg) => {
+    throw new Error(`${file}: doğrulama Sira ${r.sira}: ${msg}`)
+  }
+  let i = 0
+  for (const r of src) {
+    const want = units(r.pay, r.payda)
+    let got = 0
+    let k = 0
+    while (got < want) {
+      const e = flat[i++]
+      if (!e) fail(r, 'olaylar bitti')
+      if ((e.kind === 'rest') !== (r.notaAE === 'Es')) fail(r, `tür ${e.kind}`)
+      const koma = e.kind === 'rest' ? -1 : komaAEOf(e.pitch)
+      if (koma !== r.komaAE) fail(r, `parça ${k + 1}: koma ${koma} ≠ KomaAE ${r.komaAE}`)
+      got += eventUnits(e)
+      const last = got >= want
+      if (e.kind === 'note' && !!e.tie === last) fail(r, `parça ${k + 1}: bağ ${e.tie ? 'var' : 'yok'}`)
+      if (e.kind === 'rest' && 'tie' in e) fail(r, 'susta bağ')
+      k++
     }
-  })
+    if (got !== want) fail(r, `süre ${got}/${UNIT} ≠ ${r.pay}/${r.payda}`)
+  }
+  if (i !== flat.length) throw new Error(`${file}: doğrulama: ${flat.length - i} fazla olay`)
+  return { rows: src.length, events: flat.length }
 }
 
 /** Okunur, diff dostu JSON: her olay kendi satırında. */
@@ -305,8 +389,13 @@ async function main() {
       const s = r.summary
       console.log(
         `✓ ${p.id}: ${s.measures} ölçü (${usul.zaman}/${usul.mertebe}), ${s.notes} nota, ${s.rests} sus; ` +
-          `KomaAE eşleşen ${s.komaChecked}/${s.notes}; atlanan ${r.skipped.length} satır`,
+          `KomaAE eşleşen ${s.komaChecked}/${s.notes}; ${s.verifiedEvents} olay ${s.verifiedRows} kaynak ` +
+          `satırına geri eşlendi; bağla bölünen ${s.tiedRows} satır; atlanan ${r.skipped.length} satır`,
       )
+      for (const t of r.tiedRows) {
+        const parts = t.parts.map((x) => `${x.dotted ? 'noktalı ' : ''}${x.dur}`).join(' + ')
+        console.log(`    bölündü Sira ${t.sira}: ${t.notaAE} ${t.pay}/${t.payda} → ${parts}`)
+      }
       for (const sk of r.skipped) console.log(`    atlandı Sira ${sk.sira}: ${sk.reason}${sk.soz ? ` (hece "${sk.soz}")` : ''}`)
     } catch (e) {
       failed++

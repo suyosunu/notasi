@@ -17,6 +17,8 @@ const MIN_GAP = 4
 const REST_BAR_W = 12
 const REST_BAR_H = 5
 
+/** Bağ yayının tepe noktasının uçlara göre yüksekliği (px). */
+const TIE_BULGE = 6
 /** Onaltılıkta iki bayrak arasındaki uzaklık (px). */
 const FLAG_STEP = 7
 
@@ -93,6 +95,30 @@ function NoteShape(props: { event: NoteEvent; x: number; index: number }) {
       })}
       {event.dotted && <circle data-dot cx={x + HEAD_RX + 5} cy={dotY} r={1.8} fill={INK} />}
     </g>
+  )
+}
+
+/**
+ * Bağ yayı: bu notanın başından sonraki notanın başına, sapın karşı tarafında ince bir eğri.
+ * Sonraki nota bu portede yoksa `x2` sağ kenardır.
+ */
+function TieArc(props: { event: NoteEvent; x1: number; x2: number }) {
+  const { event, x1, x2 } = props
+  const y = noteY(event.pitch)
+  const below = staffIndex(event.pitch) < 4 // sap yukarı → yay aşağıda
+  const sign = below ? 1 : -1
+  const y0 = y + sign * (HEAD_RY + 1)
+  const start = x1 + HEAD_RX - 1
+  const end = Math.max(x2 - HEAD_RX + 1, start + 6)
+  return (
+    <path
+      data-tie
+      d={`M ${start} ${y0} Q ${(start + end) / 2} ${y0 + sign * TIE_BULGE} ${end} ${y0}`}
+      fill="none"
+      stroke={INK}
+      stroke-width={1.2}
+      stroke-linecap="round"
+    />
   )
 }
 
@@ -218,6 +244,9 @@ export function Staff(props: { events: MusicEvent[]; width?: number; highlightIn
             style={highlighted ? { color: 'var(--accent, #d9480f)' } : undefined}
           >
             {e.kind === 'note' ? <NoteShape event={e} x={x} index={i} /> : <RestShape event={e} x={x} />}
+            {e.kind === 'note' && e.tie && (
+              <TieArc event={e} x1={x} x2={xs[i + 1] ?? width - RIGHT_MARGIN + HEAD_RX} />
+            )}
           </g>
         )
       })}

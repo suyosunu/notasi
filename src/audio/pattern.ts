@@ -2,6 +2,7 @@ import { soundingHz } from '../music/ahenk'
 import type { Tuning } from '../music/ahenk'
 import { beats } from '../music/notation'
 import type { MusicEvent } from '../music/notation'
+import type { WrittenPitch } from '../music/pitch'
 
 /** hz === null sus demektir. */
 export interface ToneEvent {
@@ -35,9 +36,20 @@ export function buildPatternCode(
   }
 }
 
+const samePitch = (a: WrittenPitch, b: WrittenPitch): boolean =>
+  a.step === b.step && a.octave === b.octave && a.acc === b.acc
+
+/** Bağlı nota dizisi (aynı perde) tek ses olur; süreleri toplanır. */
 export function toToneEvents(events: MusicEvent[], t: Tuning): ToneEvent[] {
-  return events.map((e) => ({
-    hz: e.kind === 'note' ? soundingHz(e.pitch, t) : null,
-    beats: beats(e),
-  }))
+  const out: ToneEvent[] = []
+  for (const [i, e] of events.entries()) {
+    const prev = events[i - 1]
+    const last = out.at(-1)
+    if (e.kind === 'note' && prev?.kind === 'note' && prev.tie && samePitch(prev.pitch, e.pitch) && last) {
+      last.beats += beats(e)
+      continue
+    }
+    out.push({ hz: e.kind === 'note' ? soundingHz(e.pitch, t) : null, beats: beats(e) })
+  }
+  return out
 }

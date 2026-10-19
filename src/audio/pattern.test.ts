@@ -43,6 +43,46 @@ describe('toToneEvents', () => {
     const written: MusicEvent[] = [{ kind: 'rest', dur: 'half', dotted: true }]
     expect(toToneEvents(written, DEFAULT_TUNING)).toEqual([{ hz: null, beats: 3 }])
   })
+
+  describe('bağlı notalar', () => {
+    const A4 = { step: 'A', octave: 4, acc: 0 } as const
+    const E5 = { step: 'E', octave: 5, acc: 0 } as const
+    const hzOf = (pitch: typeof A4 | typeof E5) =>
+      toToneEvents([{ kind: 'note', pitch, dur: 'quarter' }], DEFAULT_TUNING)[0]!.hz!
+
+    it('bağlı nota dizisi tek sese birleşir, vuruşlar toplanır', () => {
+      const written: MusicEvent[] = [
+        { kind: 'note', pitch: E5, dur: 'half', tie: true },
+        { kind: 'note', pitch: E5, dur: 'eighth' },
+        { kind: 'rest', dur: 'quarter' },
+      ]
+      const tones = toToneEvents(written, DEFAULT_TUNING)
+      expect(tones).toHaveLength(2)
+      expect(tones[0]!.beats).toBe(2.5)
+      expect(tones[0]!.hz).toBeCloseTo(hzOf(E5), 6)
+      expect(tones[1]).toEqual({ hz: null, beats: 1 })
+    })
+
+    it('üç parçalı bağ zinciri birleşir, ardından gelen bağsız aynı perde ayrı kalır', () => {
+      const written: MusicEvent[] = [
+        { kind: 'note', pitch: A4, dur: 'half', dotted: true, tie: true },
+        { kind: 'note', pitch: A4, dur: 'eighth', dotted: true, tie: true },
+        { kind: 'note', pitch: A4, dur: 'sixteenth' },
+        { kind: 'note', pitch: A4, dur: 'quarter' },
+      ]
+      expect(toToneEvents(written, DEFAULT_TUNING).map((t) => t.beats)).toEqual([4, 1])
+    })
+
+    it('farklı perdeye ya da susa giden bağ birleştirilmez', () => {
+      const written: MusicEvent[] = [
+        { kind: 'note', pitch: A4, dur: 'quarter', tie: true },
+        { kind: 'note', pitch: E5, dur: 'quarter' },
+        { kind: 'note', pitch: A4, dur: 'quarter', tie: true },
+        { kind: 'rest', dur: 'quarter' },
+      ]
+      expect(toToneEvents(written, DEFAULT_TUNING).map((t) => t.beats)).toEqual([1, 1, 1, 1])
+    })
+  })
 })
 
 describe('buildPatternCode: tek seferlik çalma (gerçek Strudel çekirdeği)', () => {

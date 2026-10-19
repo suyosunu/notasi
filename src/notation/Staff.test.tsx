@@ -86,6 +86,57 @@ describe('Staff', () => {
     expect(container.querySelectorAll('line[data-stem]')).toHaveLength(2)
   })
 
+  describe('bağ', () => {
+    const tied = (step: 'G' | 'D', octave: number): MusicEvent => ({
+      kind: 'note',
+      pitch: { step, octave, acc: 0 },
+      dur: 'half',
+      tie: true,
+    })
+    const head = (c: Element, i: number) => {
+      const h = c.querySelectorAll('[data-testid="notehead"]')[i]!
+      return { x: Number(h.getAttribute('cx')), y: Number(h.getAttribute('cy')) }
+    }
+    const arc = (c: Element) => {
+      const d = c.querySelector('[data-tie]')!.getAttribute('d')!
+      const [x1, y1, cx, cy, x2, y2] = d.match(/-?\d+(?:\.\d+)?/g)!.map(Number)
+      return { x1: x1!, y1: y1!, cx: cx!, cy: cy!, x2: x2!, y2: y2! }
+    }
+
+    it('bağlı notadan sonrakine bir yay çizer; sap yukarıyken yay aşağıdadır', () => {
+      const { container } = render(
+        <Staff events={[tied('G', 4), note('G', 4, 'eighth'), note('G', 4, 'quarter')]} />,
+      )
+      expect(container.querySelectorAll('[data-tie]')).toHaveLength(1)
+      const a = arc(container)
+      expect(a.x1).toBeGreaterThan(head(container, 0).x)
+      expect(a.x2).toBeLessThan(head(container, 1).x)
+      expect(a.x2).toBeGreaterThan(a.x1)
+      expect(a.y1).toBeGreaterThan(head(container, 0).y)
+      expect(a.cy).toBeGreaterThan(a.y1)
+    })
+
+    it('sap aşağıyken yay yukarıdadır', () => {
+      const { container } = render(<Staff events={[tied('D', 5), note('D', 5, 'half')]} />)
+      const a = arc(container)
+      expect(a.y1).toBeLessThan(head(container, 0).y)
+      expect(a.cy).toBeLessThan(a.y1)
+    })
+
+    it('sonraki nota portede yoksa yay sağ kenarda biter', () => {
+      const { container } = render(<Staff events={[note('G', 4, 'quarter'), tied('G', 4)]} width={240} />)
+      expect(container.querySelectorAll('[data-tie]')).toHaveLength(1)
+      const a = arc(container)
+      expect(a.x2).toBeGreaterThan(a.x1)
+      expect(a.x2).toBeLessThanOrEqual(240)
+    })
+
+    it('bağsız notalarda yay yok', () => {
+      const { container } = render(<Staff events={[note('G', 4, 'half'), note('G', 4, 'half')]} />)
+      expect(container.querySelectorAll('[data-tie]')).toHaveLength(0)
+    })
+  })
+
   it('onaltılık sus çizilir', () => {
     const { container } = render(<Staff events={[{ kind: 'rest', dur: 'sixteenth' }]} />)
     const rest = container.querySelector('[data-testid="rest"][data-dur="sixteenth"]')

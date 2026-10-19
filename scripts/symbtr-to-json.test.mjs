@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { convertSymbTr, durationOf, formatParca, komaAEOf, parseSymbTrTxt, pitchOf } from './symbtr-to-json.mjs'
+import {
+  cleanSyllable,
+  convertSymbTr,
+  durationOf,
+  formatParca,
+  komaAEOf,
+  parseSymbTrTxt,
+  pitchOf,
+  splitDuration,
+} from './symbtr-to-json.mjs'
 
 const HEADER = 'Sira\tKod\tNota53\tNotaAE\tKoma53\tKomaAE\tPay\tPayda\tMs\tLNS\tBas\tSoz1\tOffset'
 const txt = (rows) => [HEADER, ...rows.map((r) => r.join('\t'))].join('\n') + '\n'
@@ -29,11 +38,12 @@ const BENIM_ADIM = [
 
 const DOLAP = { zaman: 12, mertebe: 8 }
 const SOFYAN = { zaman: 4, mertebe: 4 }
-const n = (step, octave, acc, dur, dotted) => ({
+const n = (step, octave, acc, dur, dotted, tie) => ({
   kind: 'note',
   pitch: { step, octave, acc },
   dur,
   ...(dotted ? { dotted: true } : {}),
+  ...(tie ? { tie: true } : {}),
 })
 
 describe('parseSymbTrTxt', () => {
@@ -86,6 +96,41 @@ describe('durationOf', () => {
     expect(durationOf(5, 16)).toBeNull()
     expect(durationOf(7, 16)).toBeNull()
     expect(durationOf(0, 8)).toBeNull()
+  })
+})
+
+describe('splitDuration', () => {
+  it('tek değerle temsil edilebilen süre tek parçadır', () => {
+    expect(splitDuration(1, 4)).toEqual([{ dur: 'quarter' }])
+    expect(splitDuration(3, 16)).toEqual([{ dur: 'eighth', dotted: true }])
+  })
+  it('5/8 → ikilik + sekizlik', () => {
+    expect(splitDuration(5, 8)).toEqual([{ dur: 'half' }, { dur: 'eighth' }])
+  })
+  it('en az parça, büyükten küçüğe', () => {
+    expect(splitDuration(5, 16)).toEqual([{ dur: 'quarter' }, { dur: 'sixteenth' }])
+    expect(splitDuration(7, 16)).toEqual([{ dur: 'quarter', dotted: true }, { dur: 'sixteenth' }])
+    expect(splitDuration(7, 8)).toEqual([{ dur: 'half', dotted: true }, { dur: 'eighth' }])
+    expect(splitDuration(9, 8)).toEqual([{ dur: 'whole' }, { dur: 'eighth' }])
+    expect(splitDuration(15, 16)).toEqual([{ dur: 'half', dotted: true }, { dur: 'eighth', dotted: true }])
+    // Açgözlü seçim (sekizlik) 2/64 artık bırakırdı; en az parça noktalı onaltılık + onaltılık.
+    expect(splitDuration(5, 32)).toEqual([{ dur: 'sixteenth', dotted: true }, { dur: 'sixteenth' }])
+  })
+  it('tam bölünemeyen süre null döner', () => {
+    expect(splitDuration(1, 12)).toBeNull()
+    expect(splitDuration(1, 32)).toBeNull()
+    expect(splitDuration(1, 6)).toBeNull()
+    expect(splitDuration(0, 8)).toBeNull()
+  })
+})
+
+describe('cleanSyllable', () => {
+  it('sondaki boşlukları atar, ulamayı ‿ yapar', () => {
+    expect(cleanSyllable('Be')).toBe('Be')
+    expect(cleanSyllable('dım ')).toBe('dım')
+    expect(cleanSyllable('lap  ')).toBe('lap')
+    expect(cleanSyllable('nim_')).toBe('nim‿')
+    expect(cleanSyllable('')).toBe('')
   })
 })
 
@@ -142,7 +187,7 @@ describe('convertSymbTr', () => {
 
   it('heceleri ölçü başına notalarla hizalar (melizma boş)', () => {
     const r = convertSymbTr(txt(BENIM_ADIM), opts)
-    expect(r.soz[0]).toEqual(['Be', 'nim_', 'a', 'dım ', 'dert', 'li ', 'do', '', 'lap  '])
+    expect(r.soz[0]).toEqual(['Be', 'nim‿', 'a', 'dım', 'dert', 'li', 'do', '', 'lap'])
     expect(r.soz[1]).toHaveLength(r.olcu[1].length)
   })
 
@@ -180,14 +225,50 @@ describe('convertSymbTr', () => {
     expect(r.skipped[2].reason).toMatch(/sıfır/)
   })
 
-  it('temsil edilemeyen süre dosyayı ve satırı adlandıran hatayla durur', () => {
+  it('tek değerle yazılamayan süre aynı ölçüde bağlı notalara bölünür (Dağlar ile Sira 33–34)', () => {
     const rows = [
       [1, 51, '', '', 0, 0, 4, 4, 0, 6, 0, 'Sofyan', '0.0'],
       [2, 9, 'Re5', 'D5', 327, 327, 3, 8, 1364, 99, 96, 'ni  ', '0.375'],
       [3, 9, 'Mi5', 'E5', 336, 336, 5, 8, 2273, 95, 96, '', '1.0'],
     ]
+    const r = convertSymbTr(txt(rows), { file: 'daglar.txt', usul: SOFYAN })
+    expect(r.olcu).toEqual([
+      [n('D', 5, 0, 'quarter', true), n('E', 5, 0, 'half', false, true), n('E', 5, 0, 'eighth')],
+    ])
+    expect(r.soz).toEqual([['ni', '', '']])
+    expect(r.summary).toMatchObject({ notes: 2, komaChecked: 2, tiedRows: 1, events: 3 })
+  })
+
+  it('bölünen notanın hecesi yalnızca ilk parçada kalır', () => {
+    const rows = [
+      [1, 51, '', '', 0, 0, 4, 4, 0, 6, 0, 'Sofyan', '0.0'],
+      [2, 9, 'La4', 'A4', 305, 305, 7, 8, 909, 95, 96, 'Hak ', '0.875'],
+      [3, 9, 'Es', 'Es', -1, -1, 1, 8, 909, 100, 0, '', '1.0'],
+    ]
+    const r = convertSymbTr(txt(rows), { file: 'x.txt', usul: SOFYAN })
+    expect(r.olcu[0]).toEqual([n('A', 4, 0, 'half', true, true), n('A', 4, 0, 'eighth'), { kind: 'rest', dur: 'eighth' }])
+    expect(r.soz[0]).toEqual(['Hak', '', ''])
+  })
+
+  it('bölünen sus bağsız ardışık suslar olur', () => {
+    const rows = [
+      [1, 51, '', '', 0, 0, 4, 4, 0, 6, 0, 'Sofyan', '0.0'],
+      [2, 9, 'Es', 'Es', -1, -1, 5, 8, 909, 100, 0, '', '0.625'],
+      [3, 9, 'La4', 'A4', 305, 305, 3, 8, 909, 95, 96, 'a', '1.0'],
+    ]
+    const r = convertSymbTr(txt(rows), { file: 'x.txt', usul: SOFYAN })
+    expect(r.olcu[0]).toEqual([{ kind: 'rest', dur: 'half' }, { kind: 'rest', dur: 'eighth' }, n('A', 4, 0, 'quarter', true)])
+    expect(r.soz[0]).toEqual(['', '', 'a'])
+  })
+
+  it('temsil edilemeyen süre dosyayı ve satırı adlandıran hatayla durur', () => {
+    const rows = [
+      [1, 51, '', '', 0, 0, 4, 4, 0, 6, 0, 'Sofyan', '0.0'],
+      [2, 9, 'Re5', 'D5', 327, 327, 2, 3, 1364, 99, 96, 'ni  ', '0.6666666666667'],
+      [3, 9, 'Mi5', 'E5', 336, 336, 1, 3, 2273, 95, 96, '', '1.0'],
+    ]
     expect(() => convertSymbTr(txt(rows), { file: 'daglar.txt', usul: SOFYAN })).toThrow(
-      /daglar\.txt.*Sira 3.*5\/8/s,
+      /daglar\.txt.*Sira 2.*2\/3.*Sira 3.*1\/3/s,
     )
   })
 

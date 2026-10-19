@@ -6,6 +6,8 @@ export interface NoteEvent {
   pitch: WrittenPitch
   dur: DurationKind
   dotted?: boolean
+  /** true: sonraki notaya (aynı perde) bağlıdır; çalarken süreleri birleşir. */
+  tie?: boolean
 }
 export interface RestEvent {
   kind: 'rest'

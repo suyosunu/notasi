@@ -19,12 +19,16 @@ Depo: https://github.com/MTG/SymbTr (CC BY-NC-SA 4.0)
 |---|---|---|---|
 | Benim Adım Dertli Dolap | Uşşak / Dolap (12/8) | Anonim (güfte: Yunus Emre) | https://raw.githubusercontent.com/MTG/SymbTr/master/txt/ussak--ilahi--dolap--benim_adim--.txt |
 | Hak Teâlâ | Uşşak / Sofyan (4/4) | Ali Ufkî | https://raw.githubusercontent.com/MTG/SymbTr/master/txt/ussak--ilahi--sofyan--hak_taala--ali_ufki.txt |
+| Dağlar ile Taşlar ile | Hicaz / Sofyan (4/4) | Kutbî Dede (güfte: Yunus Emre) | https://raw.githubusercontent.com/MTG/SymbTr/master/txt/hicaz--ilahi--sofyan--daglar_ile--kutbi_dede.txt |
 
 ## Yapılan değişiklikler
 
 - SymbTr txt dosyaları `scripts/symbtr-to-json.mjs` ile bu uygulamanın JSON biçimine dönüştürüldü.
 - Perdeler NotaAE/KomaAE sütunlarından, süreler Pay/Payda sütunlarından alındı. Notalar ölçülere
-  bölündü, heceler (Soz1) ölçü başına notalarla hizalandı.
-- Ms, LNS, Bas ve Nota53/Koma53 sütunları alınmadı. Nota ya da süre değiştirilmedi.
+  bölündü, heceler (Soz1) ölçü başına notalarla hizalandı. Hecelerdeki boşluklar atıldı, ulama
+  işareti `_` yerine `‿` yazıldı.
+- Tek bir nota değeriyle yazılamayan süreler (ör. 5/8) aynı ölçü içinde bağlı notalara bölündü
+  (5/8 → ikilik + sekizlik). Toplam süre ve perde değişmedi.
+- Ms, LNS, Bas ve Nota53/Koma53 sütunları alınmadı.
 
 Bu dosyaları paylaşırken ya da değiştirirken aynı lisansı ve yukarıdaki atfı koruyun.

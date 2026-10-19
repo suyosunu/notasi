@@ -18,8 +18,8 @@ export interface Parca {
   /** Ölçüler; ilk ölçü anacrusis olabilir, diğerleri tam usul zamanıdır. */
   olcu: MusicEvent[][]
   /**
-   * Ölçü başına, olaylarla hizalı heceler (SymbTr Soz1, olduğu gibi). Sus ve melizma (aynı hecede
-   * yeni nota) için boş dizgi. Sondaki tek boşluk kelime sonu, çift boşluk dize sonu, `_` ulama demektir.
+   * Ölçü başına, olaylarla hizalı heceler (SymbTr Soz1, boşlukları kırpılmış; ulama `‿`). Sus, melizma
+   * (aynı hecede yeni nota) ve bağlı notanın devamı için boş dizgi.
    */
   soz?: string[][]
 }
