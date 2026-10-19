@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'preact/hooks'
 import { NEY_PERDELER } from '../content/ney-perdeler'
 import type { PerdeId } from '../content/ney-perdeler'
+import { perdeEtiketi } from '../content/perde-adlari'
 import type { PerdeStatus } from '../learning/evening-plan'
 import { loadEveningInput } from '../learning/evening-session'
 import { neyLevelConfig } from '../learning/long-tone'
-import { SOLFEJ } from '../music/pitch'
 import { LongToneTrainer, seconds } from '../ney/LongToneTrainer'
 import { useNeyLevel } from '../ney/useNeyLevel'
 import { navigate } from '../router'
@@ -45,7 +45,7 @@ export function NeySection() {
                   {ICONS[status]}
                 </span>
                 <span class="topic-title">{p.name}</span>
-                <small class="muted">{SOLFEJ[p.written.step]}</small>
+                <small class="muted">{perdeEtiketi(p.written)}</small>
               </>
             )
             return (

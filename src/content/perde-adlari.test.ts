@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { notaEtiketi, PERDE_ADLARI } from './perde-adlari'
+import { notaEtiketi, PERDE_ADLARI, perdeEtiketi } from './perde-adlari'
 
 describe('PERDE_ADLARI', () => {
   it('dokuz perde adı ile yeni koma perdelerini birebir içerir', () => {
@@ -40,5 +40,14 @@ describe('notaEtiketi', () => {
     expect(notaEtiketi('C5#5')).toBe('Do (küçük mücenneb diyezi)')
     expect(notaEtiketi('F5#4')).toBe('Fa (bakiye diyezi)')
     expect(notaEtiketi('F4#4')).toBe('Fa (bakiye diyezi)')
+  })
+})
+
+describe('perdeEtiketi', () => {
+  it('yazılı perdeden nota etiketi üretir', () => {
+    expect(perdeEtiketi({ step: 'D', octave: 5, acc: 0 })).toBe('Re')
+    expect(perdeEtiketi({ step: 'B', octave: 4, acc: -1 })).toBe('Si (koma bemolü)')
+    expect(perdeEtiketi({ step: 'C', octave: 5, acc: 4 })).toBe('Do (bakiye diyezi)')
+    expect(perdeEtiketi({ step: 'G', octave: 5, acc: 0 })).toBe('tiz Sol')
   })
 })

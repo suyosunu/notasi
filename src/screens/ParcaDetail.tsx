@@ -10,6 +10,8 @@ import { getSettings } from '../store/db'
 import type { Settings } from '../store/db'
 import { makamAdi, usulAdi } from './ParcalarSection'
 
+/** SymbTr deposunun sayfası; ham TSV bağlantısı (`piece.source`) kaynak olarak veri dosyasında kalır. */
+const SYMBTR_URL = 'https://github.com/MTG/SymbTr'
 const BPM_MIN = 40
 const BPM_MAX = 100
 const BPM_DEFAULT = 60
@@ -167,7 +169,7 @@ export function ParcaDetail({ parcaId }: { parcaId: string }) {
       )}
 
       <p class="muted">
-        Nota: <a href={piece.source}>SymbTr</a> (Karaosmanoğlu 2012), CC BY-NC-SA 4.0.
+        Nota: <a href={SYMBTR_URL}>SymbTr</a> (Karaosmanoğlu 2012), CC BY-NC-SA 4.0.
       </p>
       <div class="links">
         <a class="back" href="#/parcalar">

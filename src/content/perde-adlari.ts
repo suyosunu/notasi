@@ -1,5 +1,6 @@
 import { ACCIDENTAL_NAMES, parseNoteKey } from '../music/accidentals'
 import { SOLFEJ } from '../music/pitch'
+import type { WrittenPitch } from '../music/pitch'
 
 /**
  * Nota anahtarı (harf + oktav + isteğe bağlı NotaAE işareti) → perde adı.
@@ -35,4 +36,10 @@ export function notaEtiketi(key: string): string {
   const p = parseNoteKey(key)
   if (p && p.acc !== 0) return `${SOLFEJ[p.step]} (${ACCIDENTAL_NAMES[p.acc as Exclude<typeof p.acc, 0 | 9 | -9>]})`
   return SOLFEJ[key.charAt(0) as keyof typeof SOLFEJ]
+}
+
+/** Yazılı perdenin nota etiketi ("Si (koma bemolü)", "tiz Sol", "Re"). */
+export function perdeEtiketi(p: WrittenPitch): string {
+  const key = `${p.step}${p.octave}${p.acc === 0 ? '' : `${p.acc < 0 ? 'b' : '#'}${Math.abs(p.acc)}`}`
+  return notaEtiketi(key)
 }

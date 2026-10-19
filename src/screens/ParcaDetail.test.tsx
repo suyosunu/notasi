@@ -64,6 +64,11 @@ describe('ParcaDetail', () => {
     expect(document.querySelectorAll('[data-testid="hole"]')).toHaveLength(0)
   })
 
+  it('Nota: SymbTr bağlantısı SymbTr deposunun sayfasına gider (ham TSV değil)', () => {
+    render(<ParcaDetail parcaId="hak-teala" />)
+    expect(screen.getByRole('link', { name: 'SymbTr' }).getAttribute('href')).toBe('https://github.com/MTG/SymbTr')
+  })
+
   it('hız kaydırıcısı 40–100, varsayılan 60; usul eşliği varsayılan açık', () => {
     render(<ParcaDetail parcaId="hak-teala" />)
     expect(slider().min).toBe('40')

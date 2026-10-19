@@ -51,6 +51,18 @@ describe('NeySection', () => {
     expect(within(row('Rast')).getByText('🔒')).toBeTruthy()
   })
 
+  it('Si ailesi satırları işaretli nota etiketiyle ayırt edilir', async () => {
+    render(<NeySection />)
+    await screen.findByText('Nevâ')
+    expect(within(row('Bûselik')).getByText('Si')).toBeTruthy()
+    expect(within(row('Segâh')).getByText('Si (koma bemolü)')).toBeTruthy()
+    expect(within(row('Kürdî')).getByText('Si (küçük mücenneb bemolü)')).toBeTruthy()
+    expect(within(row('Dik Kürdî')).getByText('Si (bakiye bemolü)')).toBeTruthy()
+    expect(within(row('Nim Hicaz')).getByText('Do (bakiye diyezi)')).toBeTruthy()
+    expect(within(row('Eviç')).getByText('Fa (bakiye diyezi)')).toBeTruthy()
+    expect(within(row('Nevâ')).getByText('Re')).toBeTruthy()
+  })
+
   it('açık ve geçilmiş perdeye dokununca o perdenin uzun sesi açılır; kilitli dokunulamaz', async () => {
     await addLongTone({ perdeId: 'neva', durationMs: 4000, passed: true, toleranceCents: 25 })
     render(<NeySection />)
