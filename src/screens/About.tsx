@@ -8,6 +8,7 @@ export function About() {
       </a>
       <h1>Hakkında</h1>
       <p>Notası, ney ve nota öğrenmek için kişisel bir uygulamadır.</p>
+      <p>Parça notaları: SymbTr (Karaosmanoğlu 2012), CC BY-NC-SA 4.0.</p>
       <p>Ses motoru: Strudel (strudel.cc), © Strudel katkıcıları, AGPL-3.0-or-later lisansıyla.</p>
       <p>
         Bu uygulamanın kaynak kodu AGPL-3.0-or-later lisansıyla açıktır:{' '}

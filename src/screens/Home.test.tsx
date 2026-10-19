@@ -57,6 +57,8 @@ describe('Home', () => {
     expect(screen.getByText('Nota').closest('a')?.getAttribute('href')).toBe('#/nota')
     expect(screen.getByText('Piyano').closest('a')).toBeNull()
     expect(screen.getByText('Makam').closest('a')?.getAttribute('href')).toBe('#/makam')
+    expect(screen.getByText('Parçalar').closest('[data-status]')?.getAttribute('data-status')).toBe('aktif')
+    expect(screen.getByText('Parçalar').closest('a')?.getAttribute('href')).toBe('#/parcalar')
   })
 
   it('links the Masa başı card to /gunduz and the evening card to /aksam', async () => {

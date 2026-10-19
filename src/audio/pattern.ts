@@ -17,7 +17,12 @@ export const SOUND_CHAIN = '.s("triangle").vib(5).vibmod(0.1)'
  * Tek seferlik çalma: ilk döngüden sonrası (pratikte sonsuza dek) susturulur. hush() yalnızca saati durdurur,
  * Web Audio'ya verilmiş notaları kesemez; maskesiz olursa 2. döngünün ilk notası sonda duyulur.
  */
-const ONE_SHOT = '.mask("<1 0@1000000>")'
+export const ONE_SHOT = '.mask("<1 0@1000000>")'
+
+/** ToneEvent dizisi → freq mini-notasyonu adımları (`~` sus, `@n` vuruş sayısı). */
+export function toneSteps(events: ToneEvent[]): string {
+  return events.map((e) => `${e.hz === null ? '~' : e.hz.toFixed(2)}@${e.beats}`).join(' ')
+}
 
 export function buildPatternCode(
   events: ToneEvent[],
@@ -27,11 +32,8 @@ export function buildPatternCode(
   if (!(totalBeats > 0) || !(bpm > 0)) {
     throw new RangeError('Çalınacak ses ya da geçerli tempo yok')
   }
-  const steps = events
-    .map((e) => `${e.hz === null ? '~' : e.hz.toFixed(2)}@${e.beats}`)
-    .join(' ')
   return {
-    code: `freq("${steps}")${SOUND_CHAIN}${ONE_SHOT}.cpm(${bpm / totalBeats})`,
+    code: `freq("${toneSteps(events)}")${SOUND_CHAIN}${ONE_SHOT}.cpm(${bpm / totalBeats})`,
     durationMs: (totalBeats * 60000) / bpm,
   }
 }

@@ -19,6 +19,9 @@ const REST_BAR_H = 5
 
 /** Bağ yayının tepe noktasının uçlara göre yüksekliği (px). */
 const TIE_BULGE = 6
+/** Hece metninin taban çizgisi ve boyutu (px): portenin ve aşağı saplı notaların altında. */
+const SYLLABLE_Y = 103
+const SYLLABLE_SIZE = 11
 /** Onaltılıkta iki bayrak arasındaki uzaklık (px). */
 const FLAG_STEP = 7
 
@@ -180,15 +183,25 @@ function RestShape(props: { event: RestEvent; x: number }) {
   )
 }
 
+/** `n` olayın her biri en az `slot` px yuva alacak şekilde porte genişliği (en az `min`). */
+export function staffWidthFor(n: number, slot: number, min: number): number {
+  return Math.max(min, FIRST_X + RIGHT_MARGIN + n * slot)
+}
+
 /**
  * Her olay kendi yuvasını alır. Yuva en az `baseSlot` kadardır; işaretli notada solundaki işarete,
  * işaret ile nota başı arasındaki boşluğa ve başın kendisine yetecek kadar genişler. İşaretsiz
  * notalar yalnızca kendi yuvalarının gerektirdiği kadar yer değiştirir. Toplam genişlik `width`'i
  * aşarsa görünüm kutusu genişler (SVG %100 genişlikte ölçeklenir, kırpılmaz).
  */
-export function layoutEvents(events: MusicEvent[], width: number): { xs: number[]; viewWidth: number } {
+export function layoutEvents(
+  events: MusicEvent[],
+  width: number,
+): { xs: number[]; ends: number[]; viewWidth: number } {
   const baseSlot = (width - FIRST_X - RIGHT_MARGIN) / Math.max(events.length, 1)
   const xs: number[] = []
+  /** Her yuvanın sağ kenarı (ölçü çizgisi buraya çizilir). */
+  const ends: number[] = []
   let start = FIRST_X
   for (const e of events) {
     const accW = e.kind === 'note' ? accidentalWidth(e.pitch.acc) : 0
@@ -196,13 +209,26 @@ export function layoutEvents(events: MusicEvent[], width: number): { xs: number[
     const headFromStart = accW > 0 ? Math.max(slot / 2, accW + ACC_GAP + HEAD_RX + MIN_GAP / 2) : slot / 2
     xs.push(start + headFromStart)
     start += slot
+    ends.push(start)
   }
-  return { xs, viewWidth: Math.max(width, start + RIGHT_MARGIN) }
+  return { xs, ends, viewWidth: Math.max(width, start + RIGHT_MARGIN) }
 }
 
-export function Staff(props: { events: MusicEvent[]; width?: number; highlightIndex?: number }) {
-  const { events, width: baseWidth = DEFAULT_WIDTH, highlightIndex } = props
-  const { xs, viewWidth: width } = layoutEvents(events, baseWidth)
+export function Staff(props: {
+  events: MusicEvent[]
+  width?: number
+  highlightIndex?: number
+  /** Bu olay sıralarından sonra ölçü çizgisi çizilir; verilirse satır sonuna da bir çizgi çizilir. */
+  barlinesAfter?: number[]
+  /** Olaylarla hizalı heceler; nota altında küçük yazılır, boş dizgiler atlanır. */
+  syllables?: string[]
+}) {
+  const { events, width: baseWidth = DEFAULT_WIDTH, highlightIndex, barlinesAfter, syllables } = props
+  const { xs, ends, viewWidth: width } = layoutEvents(events, baseWidth)
+  const last = events.length - 1
+  const barXs = barlinesAfter
+    ? [...barlinesAfter.filter((i) => i >= 0 && i < last).map((i) => ends[i]!), width - 2]
+    : []
 
   return (
     <svg
@@ -233,6 +259,33 @@ export function Staff(props: { events: MusicEvent[]; width?: number; highlightIn
       >
         {CLEF_GLYPH}
       </text>
+      {barXs.map((bx) => (
+        <line
+          key={bx}
+          data-barline
+          x1={bx}
+          x2={bx}
+          y1={STAFF_TOP}
+          y2={STAFF_TOP + 4 * LINE_GAP}
+          stroke={INK}
+          stroke-width={1.2}
+        />
+      ))}
+      {syllables?.map((syl, i) =>
+        syl === '' || xs[i] === undefined ? null : (
+          <text
+            key={`s${i}`}
+            data-syllable
+            x={xs[i]}
+            y={SYLLABLE_Y}
+            font-size={SYLLABLE_SIZE}
+            text-anchor="middle"
+            fill={INK}
+          >
+            {syl}
+          </text>
+        ),
+      )}
       {events.map((e, i) => {
         const x = xs[i]!
         const highlighted = i === highlightIndex

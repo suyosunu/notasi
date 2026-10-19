@@ -153,4 +153,25 @@ describe('App', () => {
       cleanup()
     }
   })
+  it('#/parcalar rotası parça listesini gösterir', () => {
+    location.hash = '#/parcalar'
+    render(<App />)
+    expect(screen.getByRole('link', { name: /Hak Teâlâ/ }).getAttribute('href')).toBe('#/parcalar/hak-teala')
+  })
+
+  it('#/parcalar/<id> rotası parça sayfasını açar', () => {
+    location.hash = '#/parcalar/daglar-ile-taslar-ile'
+    render(<App />)
+    expect(screen.getByRole('heading', { name: /Dağlar ile Taşlar ile/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: '🔊 Dinle' })).toBeTruthy()
+  })
+
+  it('bilinmeyen parça için bulunamadı ekranını gösterir', () => {
+    for (const hash of ['#/parcalar/yok', '#/parcalar/toString', '#/parcalar/', '#/parcalar/__proto__']) {
+      location.hash = hash
+      render(<App />)
+      expect(screen.getByText('Sayfa bulunamadı')).toBeTruthy()
+      cleanup()
+    }
+  })
 })

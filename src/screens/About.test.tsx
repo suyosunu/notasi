@@ -15,6 +15,7 @@ describe('About', () => {
     expect(
       screen.getByText('Ses motoru: Strudel (strudel.cc), © Strudel katkıcıları, AGPL-3.0-or-later lisansıyla.'),
     ).toBeTruthy()
+    expect(screen.getByText('Parça notaları: SymbTr (Karaosmanoğlu 2012), CC BY-NC-SA 4.0.')).toBeTruthy()
     expect(screen.getByText('← Ayarlar').closest('a')?.getAttribute('href')).toBe('#/ayarlar')
   })
 

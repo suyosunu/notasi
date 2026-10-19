@@ -34,6 +34,11 @@ function strokeCode(u: Usul): string {
   return `stack(freq("${dum}")${DUM_CHAIN}, s("${noise}")${NOISE_CHAIN}.gain("${noiseGain}"))`
 }
 
+/** Tek usul ölçüsünün deseni (tempo yok): bir döngü = bir ölçü. Dolap'ta metronom. */
+export function buildUsulBody(u: Usul): string {
+  return u.vurus === null ? metronomeCode(u) : strokeCode(u)
+}
+
 /**
  * Bir döngü = bir usul ölçüsü. `bpm` mertebe birimine göredir (dakikada bpm birim),
  * dolayısıyla dakikada bpm / zaman ölçü: `.cpm(bpm / zaman)`.
@@ -41,8 +46,7 @@ function strokeCode(u: Usul): string {
  */
 export function buildUsulPatternCode(u: Usul, bpm: number): string {
   if (!(bpm > 0) || !(u.zaman > 0)) throw new RangeError('Geçerli tempo yok')
-  const body = u.vurus === null ? metronomeCode(u) : strokeCode(u)
-  return `${body}.cpm(${bpm / u.zaman})`
+  return `${buildUsulBody(u)}.cpm(${bpm / u.zaman})`
 }
 
 /** Her başlatma/durdurmada artar; sesi açmayı beklerken durdurulan ya da yenisi başlatılan çağrı bayatlığını anlar. */

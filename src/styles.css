@@ -574,3 +574,32 @@ a:focus-visible {
   margin-top: 0.5rem;
   accent-color: var(--accent);
 }
+
+.score {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem 0.25rem;
+  background: #fff;
+  border-radius: 1rem;
+  border: 1px solid #e6dfd1;
+  color: var(--ink);
+  overflow: hidden;
+}
+
+.score-row svg {
+  margin: 0 auto;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+}
+
+.toggle input {
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: var(--accent);
+}

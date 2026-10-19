@@ -104,14 +104,23 @@ export function stopAudio(): void {
 }
 
 export async function playTones(events: ToneEvent[], bpm = 60): Promise<void> {
-  stopAudio()
-  const mine = generation
-  active = mine
   if (events.length === 0) {
-    active = null
+    stopAudio()
     return
   }
   const { code, durationMs } = buildPatternCode(events, bpm)
+  return playCode(code, durationMs)
+}
+
+/**
+ * Tek seferlik çalma: önce çalan her şeyi durdurur (aynı anda yalnızca bir ses), kodu evaluate eder ve
+ * `durationMs` + kuyruk sonra susturur; bitince ya da durdurulunca çözülür. Kod kendi tek seferlik maskesini
+ * ve `.cpm()`'ini taşır (bkz. buildPatternCode, buildPieceCode).
+ */
+export async function playCode(code: string, durationMs: number): Promise<void> {
+  stopAudio()
+  const mine = generation
+  active = mine
   const m = await loadModule()
   await ensureInit(m)
   if (mine !== generation) return
@@ -119,6 +128,7 @@ export async function playTones(events: ToneEvent[], bpm = 60): Promise<void> {
     await m.evaluate(code)
   } catch (err) {
     if (mine !== generation) return // bayat çağrının hatası kimseyi ilgilendirmez
+    active = null
     throw err
   }
   if (mine !== generation) {

@@ -366,3 +366,48 @@ describe('Staff: değiştirgeç yerleşimi', () => {
     expect(container.querySelectorAll('g[data-acc]')).toHaveLength(0)
   })
 })
+
+describe('Staff: ölçü çizgileri ve heceler', () => {
+  const four = [note('G', 4, 'quarter'), note('A', 4, 'quarter'), note('B', 4, 'quarter'), note('C', 5, 'quarter')]
+  const barXs = (c: Element) => [...c.querySelectorAll('line[data-barline]')].map((l) => Number(l.getAttribute('x1')))
+  const headXs = (c: Element) =>
+    [...c.querySelectorAll('[data-testid="notehead"]')].map((h) => Number(h.getAttribute('cx')))
+
+  it('barlinesAfter yoksa ölçü çizgisi çizilmez (eski davranış)', () => {
+    const { container } = render(<Staff events={four} />)
+    expect(container.querySelectorAll('line[data-barline]')).toHaveLength(0)
+    expect(container.querySelectorAll('text[data-syllable]')).toHaveLength(0)
+  })
+
+  it('verilen olaylardan sonra ve satır sonunda ölçü çizgisi çizer; çizgi iki notanın arasındadır', () => {
+    const { container } = render(<Staff events={four} barlinesAfter={[1]} />)
+    const xs = barXs(container)
+    expect(xs).toHaveLength(2)
+    const heads = headXs(container)
+    expect(xs[0]!).toBeGreaterThan(heads[1]!)
+    expect(xs[0]!).toBeLessThan(heads[2]!)
+    const viewWidth = Number(container.querySelector('svg')!.getAttribute('viewBox')!.split(' ')[2])
+    expect(xs[1]!).toBeGreaterThan(heads[3]!)
+    expect(xs[1]!).toBeLessThanOrEqual(viewWidth)
+    // ölçü çizgisi portenin üst çizgisinden alt çizgisine iner
+    const bar = container.querySelector('line[data-barline]')!
+    expect([Number(bar.getAttribute('y1')), Number(bar.getAttribute('y2'))]).toEqual([30, 70])
+  })
+
+  it('son olaydan sonraki ölçü çizgisi iki kez çizilmez', () => {
+    const { container } = render(<Staff events={four} barlinesAfter={[1, 3]} />)
+    expect(barXs(container)).toHaveLength(2)
+  })
+
+  it('heceler notanın x konumunda, portenin altında yazılır; boş heceler atlanır', () => {
+    const { container } = render(<Staff events={four} syllables={['Hak', '', 'te', 'â‿lâ']} />)
+    const texts = [...container.querySelectorAll('text[data-syllable]')]
+    expect(texts.map((t) => t.textContent)).toEqual(['Hak', 'te', 'â‿lâ'])
+    const heads = headXs(container)
+    expect(texts.map((t) => Number(t.getAttribute('x')))).toEqual([heads[0], heads[2], heads[3]])
+    for (const t of texts) {
+      expect(t.getAttribute('text-anchor')).toBe('middle')
+      expect(Number(t.getAttribute('y'))).toBeGreaterThan(90)
+    }
+  })
+})

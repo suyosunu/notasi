@@ -236,3 +236,59 @@ describe('playLoop', () => {
     await expect(playLoop('x')).rejects.toThrow('ses yok')
   })
 })
+
+describe('playCode', () => {
+  it('verilen kodu evaluate eder; durationMs + 150 ms sonra hush çağırır ve çözülür', async () => {
+    const { playCode } = await freshPlayer()
+    let done = false
+    const p = playCode('stack(a, b)', 2000).then(() => {
+      done = true
+    })
+    await vi.advanceTimersByTimeAsync(0)
+    expect(strudel.evaluate).toHaveBeenCalledWith('stack(a, b)')
+    const hushBefore = strudel.hush.mock.calls.length
+    await vi.advanceTimersByTimeAsync(2149)
+    expect(done).toBe(false)
+    expect(strudel.hush.mock.calls.length).toBe(hushBefore)
+    await vi.advanceTimersByTimeAsync(1)
+    await p
+    expect(done).toBe(true)
+    expect(strudel.hush.mock.calls.length).toBe(hushBefore + 1)
+  })
+
+  it('stopAudio çalmayı keser: söz hemen çözülür, sonradan ikinci hush gelmez', async () => {
+    const { playCode, stopAudio } = await freshPlayer()
+    let done = false
+    const p = playCode('x', 60_000).then(() => {
+      done = true
+    })
+    await vi.advanceTimersByTimeAsync(0)
+    strudel.hush.mockClear()
+    stopAudio()
+    await p
+    expect(done).toBe(true)
+    expect(strudel.hush).toHaveBeenCalledTimes(1)
+    await vi.advanceTimersByTimeAsync(120_000)
+    expect(strudel.hush).toHaveBeenCalledTimes(1)
+  })
+
+  it('çalan döngü (playLoop) varsa önce onu durdurur: aynı anda iki desen çalmaz', async () => {
+    const { playCode, playLoop } = await freshPlayer()
+    await playLoop('döngü')
+    strudel.hush.mockClear()
+    const p = playCode('parça', 1000)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(strudel.hush).toHaveBeenCalledTimes(1)
+    expect(strudel.hush.mock.invocationCallOrder[0]!).toBeLessThan(
+      strudel.evaluate.mock.invocationCallOrder[1]!,
+    )
+    await vi.advanceTimersByTimeAsync(1150)
+    await p
+  })
+
+  it('evaluate hata fırlatırsa reject olur', async () => {
+    const { playCode } = await freshPlayer()
+    strudel.evaluate.mockRejectedValue(new Error('ses yok'))
+    await expect(playCode('x', 1000)).rejects.toThrow('ses yok')
+  })
+})

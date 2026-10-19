@@ -2,6 +2,7 @@ import type { ComponentChildren } from 'preact'
 import { MAKAMLAR } from './content/makamlar'
 import { NEY_PERDELER } from './content/ney-perdeler'
 import { NOTA_TOPICS } from './content/nota-topics'
+import { PARCALAR } from './content/parcalar'
 import { useRoute } from './router'
 import { About } from './screens/About'
 import { Calibration } from './screens/Calibration'
@@ -14,6 +15,8 @@ import { NeyPerdePractice, NeySection } from './screens/NeySection'
 import { MixedPractice } from './screens/MixedPractice'
 import { NotaSection } from './screens/NotaSection'
 import { Onboarding } from './screens/Onboarding'
+import { ParcaDetail } from './screens/ParcaDetail'
+import { ParcalarSection } from './screens/ParcalarSection'
 import { Placement } from './screens/Placement'
 import { SessionEnd } from './screens/SessionEnd'
 import { Settings } from './screens/Settings'
@@ -40,6 +43,7 @@ const routes: Record<string, () => ComponentChildren> = {
   '/makam': () => <MakamSection />,
   '/makam/sorular': () => <MakamQuiz />,
   '/usul': () => <UsulSection />,
+  '/parcalar': () => <ParcalarSection />,
   '/ayarlar': () => <Settings />,
   '/hakkinda': () => <About />,
   '/kalibrasyon': () => <Calibration />,
@@ -52,6 +56,7 @@ const FREE_PREFIX = '/nota/'
 const MIXED_ROUTE = '/nota/karisik'
 const PERDE_PREFIX = '/ney/'
 const MAKAM_PREFIX = '/makam/'
+const PARCA_PREFIX = '/parcalar/'
 
 export function App() {
   const route = useRoute()
@@ -69,6 +74,10 @@ export function App() {
   if (route.startsWith(MAKAM_PREFIX)) {
     const makamId = route.slice(MAKAM_PREFIX.length)
     if (MAKAMLAR.some((m) => m.id === makamId)) return <MakamDetail key={makamId} makamId={makamId} />
+  }
+  if (route.startsWith(PARCA_PREFIX)) {
+    const parcaId = route.slice(PARCA_PREFIX.length)
+    if (PARCALAR.some((p) => p.id === parcaId)) return <ParcaDetail key={parcaId} parcaId={parcaId} />
   }
   return <Placeholder title="Sayfa bulunamadı" />
 }
