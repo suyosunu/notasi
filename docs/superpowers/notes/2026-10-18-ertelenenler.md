@@ -35,3 +35,14 @@ Görev incelemelerinde "şimdilik kalabilir" denen bulgular. Sürüm 2'ye başla
 - Task 18: minor (deferred): CSS-by-regex test brittle; SEQ_MAX/%7 assumes STEP_LIST starts at C (comment)
 - Task 19: minor (deferred): reverseOptions top-up branch unreachable/untested (could add plain La next to tiz La if ever used); cardToEvents startsWith('perde') loose but guarded; Placement renders Staff unconditionally (fixed topics, unreachable)
 - Task 20: minor (deferred): "10 due → at most 6" test weaker than name; due cards excluded from weighted draw (no extra weight); disabled card div lacks role; no .catch on loadQuestions; import order; test name wording
+
+## Sürüm 2
+- Task 21: minor (deferred): ledger line passes under accidental; accNeed added for notes without accidentals; ACCIDENTAL_NAMES no separate RED
+- Task 21: minor (deferred): very small baseSlot (<13px) can still crowd unmarked heads; layoutEvents exported unused
+- Task 23: minor (deferred): no .catch on getSettings (Dinle stays disabled on DB error); makam-dizi hint is near answer key; distractor names overlapping makam names
+- Task 24: minor (deferred): slider keyboard steps restart loop each step (debounce); re-tapping selected usul restarts; no playTones-after-playLoop hush test; setState after unmount on rejected start (harmless); sound constants untuned by ear
+- Task 25: minor (deferred): no >5-perde cap test in evening plan; NeySection solfej label ambiguous for Si-family; kademe field unused in UI
+- Task 26: minor (deferred): converter .ts imports fragile (Node ≥22.18, no engines); literal BOM char in regex; tie split ignores beat position (cosmetic); first row Offset unchecked; toToneEvents merges ties → tone≠event count (matters for highlighting, T27/Sürüm 3); commit title says three pieces but has two
+- Task 27: minor (deferred): usulBpm dead export; ScoreView fitWidth recomputed on every slider input (memo); kabelsalat mock coupling; .score #fff hard-coded; fast()/compress() assume integer measure count
+- - Ruling: final-review minor "makam questions too easy (güçlü always Nevâ)" parked to Sürüm 3.
+- Sürüm 2 fix wave re-review: all 7 ADDRESSED. Residual minors: error-path wake-lock asserts lack counts; OS-released sentinel not re-acquired on page show.
