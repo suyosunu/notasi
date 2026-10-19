@@ -74,7 +74,8 @@ const KOMA_FARKI = 'aradaki koma farkını dudak ve baş açısıyla verirsin.'
  * İlk beş perde MEB Ney Modülü 3. tema (NEY.3.3.1, NEY.3.3.2) sırasıdır (2. kademe).
  * Sonrası nota konularının açılma sırasını izler: perde-2 (Hüseynî, Acem, Gerdâniye, Muhayyer;
  * 3. kademe), perde-3 (Segâh, Kürdî, Dik Kürdî), perde-4 (Nim Hicaz, Eviç). Böylece her perde,
- * kendi nota konusu açılınca önceki perde geçilir geçilmez açılır.
+ * kendi nota konusu açılınca, aynı kademedeki önceki perde geçilir geçilmez açılır (3. kademenin
+ * ilk perdesi Hüseynî için Rast'ın geçilmesi yeter).
  */
 export const NEY_PERDELER: NeyPerde[] = [
   {

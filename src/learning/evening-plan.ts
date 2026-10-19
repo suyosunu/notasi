@@ -17,10 +17,13 @@ export const ILK_SES_ID = 'ilk-ses'
 
 const OTHER_PASSED_MAX = 3
 
+/** Daha yüksek kademenin ilk perdesi (Hüseynî) için geçilmesi gereken perde: MEB çekirdek beşlisinin sonu. */
+const KADEME_ONKOSULU: PerdeId = 'rast'
+
 /**
- * Perde `i` şunların hepsi sağlanınca açılır: ilk perde ya da önceki perde geçilmiş,
- * nota konusu kilitli değil, parmak şeması doğrulanmış. Geçilmiş (`passed`) kaydı olan
- * perde geçilmiştir.
+ * Bir perde şunların hepsi sağlanınca açılır: aynı kademedeki önceki perde geçilmiş (kademenin
+ * ilk perdesi için: ilk kademede önkoşul yok, sonraki kademelerde Rast geçilmiş), nota konusu
+ * kilitli değil, parmak şeması doğrulanmış. Geçilmiş (`passed`) kaydı olan perde geçilmiştir.
  */
 export function perdeStatuses(
   longTones: LongToneRec[],
@@ -29,18 +32,23 @@ export function perdeStatuses(
 ): Record<PerdeId, PerdeStatus> {
   const passed = new Set(longTones.filter((r) => r.passed).map((r) => r.perdeId))
   const out = {} as Record<PerdeId, PerdeStatus>
-  let prev: PerdeStatus | null = null
+  const prevByKademe = new Map<number, PerdeStatus>()
+  const lowestKademe = Math.min(...perdeler.map((p) => p.kademe))
   for (const p of perdeler) {
     let status: PerdeStatus
     if (passed.has(p.id)) {
       status = 'gecildi'
     } else {
       const notaOpen = Object.hasOwn(notaStatuses, p.notaTopicId) && notaStatuses[p.notaTopicId] !== 'kilitli'
-      const prevOk: boolean = prev === null || prev === 'gecildi'
+      const prev = prevByKademe.get(p.kademe)
+      let prevOk: boolean
+      if (prev !== undefined) prevOk = prev === 'gecildi'
+      else if (p.kademe === lowestKademe) prevOk = true
+      else prevOk = out[KADEME_ONKOSULU] === 'gecildi'
       status = prevOk && notaOpen && visibleFingering(p) !== null ? 'acik' : 'kilitli'
     }
     out[p.id] = status
-    prev = status
+    prevByKademe.set(p.kademe, status)
   }
   return out
 }
