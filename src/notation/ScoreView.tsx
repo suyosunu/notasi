@@ -2,8 +2,8 @@ import { useMemo } from 'preact/hooks'
 import type { MusicEvent } from '../music/notation'
 import { layoutEvents, Staff, staffWidthFor } from './Staff'
 
-/** Satırın hedef görünüm genişliği (px): telefonda notanın kabı kabaca bu genişliktedir. */
-export const ROW_WIDTH = 340
+/** Satırın hedef görünüm genişliği (px): 375 pt telefonda notanın kabı bu genişliktedir (375 − 2×20 ekran dolgusu − 2×4 nota dolgusu − 2×1 kenarlık). */
+export const ROW_WIDTH = 325
 /**
  * Bir olaya düşen en küçük yuva (px). Kalabalık satırda görünüm kutusu genişler ve SVG %100 genişlikte
  * küçülerek sığar; böylece nota başları, bayraklar ve heceler üst üste binmez, yatay kaydırma da gerekmez.

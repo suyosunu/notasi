@@ -90,11 +90,13 @@ describe('ScoreView', () => {
     expect(rows(container).map((r) => r.querySelectorAll('line[data-barline]').length)).toEqual([2, 1, 1])
   })
 
-  it('üç gerçek parçada hece boyu 340 px kapta en az 12 × 0,8 = 9,6 px', () => {
+  it('üç gerçek parçada hece boyu 375 pt telefondaki 325 px kapta en az 12 × 0,8 = 9,6 px', () => {
+    // 375 − 2×20 (ekran dolgusu) − 2×4 (nota dolgusu) − 2×1 (kenarlık) = 325
+    expect(ROW_WIDTH).toBe(325)
     for (const p of PARCALAR) {
       const { width } = scoreLayout(p.olcu, p.soz, 2)
       expect(scoreScale(width, ROW_WIDTH)).toBeGreaterThanOrEqual(MIN_SCALE)
-      expect(SYLLABLE_SIZE * scoreScale(width, 340)).toBeGreaterThanOrEqual(9.6)
+      expect(SYLLABLE_SIZE * scoreScale(width, 325)).toBeGreaterThanOrEqual(9.6)
     }
   })
 
