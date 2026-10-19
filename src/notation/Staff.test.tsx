@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import type { MusicEvent } from '../music/notation'
 import type { Accidental } from '../music/pitch'
 import { AccidentalGlyph } from './glyphs'
-import { Staff } from './Staff'
+import { Staff, SYLLABLE_SIZE, syllableWidth } from './Staff'
 
 afterEach(cleanup)
 
@@ -397,6 +397,38 @@ describe('Staff: ölçü çizgileri ve heceler', () => {
   it('son olaydan sonraki ölçü çizgisi iki kez çizilmez', () => {
     const { container } = render(<Staff events={four} barlinesAfter={[1, 3]} />)
     expect(barXs(container)).toHaveLength(2)
+  })
+
+  it('heceler 12 px yazılır; tahmini genişlik karakter × 0,55 × 12', () => {
+    expect(SYLLABLE_SIZE).toBe(12)
+    expect(syllableWidth('Der')).toBeCloseTo(3 * 0.55 * 12, 6)
+    expect(syllableWidth('lar‿')).toBeCloseTo(4 * 0.55 * 12, 6)
+    const { container } = render(<Staff events={four} syllables={['a', '', '', '']} />)
+    expect(container.querySelector('text[data-syllable]')!.getAttribute('font-size')).toBe('12')
+  })
+
+  it('yan yana uzun heceler çakışmaz: merkezler arası uzaklık yarı genişliklerin toplamı + 4 px kadar', () => {
+    // Dar porte: yuva tek başına heceye yetmez, hece yuvayı genişletir.
+    const events = [note('G', 4, 'eighth'), note('A', 4, 'eighth'), note('B', 4, 'eighth'), note('C', 5, 'eighth')]
+    const syllables = ['Der', 'dim', 'var‿', 'mış']
+    const { container } = render(<Staff events={events} width={100} syllables={syllables} />)
+    const texts = [...container.querySelectorAll('text[data-syllable]')]
+    const xs = texts.map((t) => Number(t.getAttribute('x')))
+    for (let i = 1; i < xs.length; i++) {
+      const halfSum = (syllableWidth(syllables[i - 1]!) + syllableWidth(syllables[i]!)) / 2
+      expect(xs[i]! - xs[i - 1]!).toBeGreaterThanOrEqual(halfSum + 4 - 1e-9)
+    }
+    // ilk hece portenin sol kenarını, son hece görünüm kutusunun sağını aşmaz
+    const viewWidth = Number(container.querySelector('svg')!.getAttribute('viewBox')!.split(' ')[2])
+    expect(xs.at(-1)! + syllableWidth(syllables.at(-1)!) / 2).toBeLessThanOrEqual(viewWidth)
+  })
+
+  it('hece verilmeyen olayların yuvası değişmez', () => {
+    const a = render(<Staff events={four} />)
+    const plain = headXs(a.container)
+    a.unmount()
+    const b = render(<Staff events={four} syllables={['', '', '', '']} />)
+    expect(headXs(b.container)).toEqual(plain)
   })
 
   it('heceler notanın x konumunda, portenin altında yazılır; boş heceler atlanır', () => {

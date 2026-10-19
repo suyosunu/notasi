@@ -11,18 +11,13 @@ export function measureBeats(u: Usul): number {
   return (u.zaman * 4) / u.mertebe
 }
 
-/** Dörtlük bpm'i usulün mertebe birimine çevirir (mertebe 8 → ×2, mertebe 4 → ×1). */
-export function usulBpm(quarterBpm: number, u: Usul): number {
-  return (quarterBpm * u.mertebe) / 4
-}
-
 /**
  * Parçanın tamamı tek döngüdür: melodi (bağlar birleşik ToneEvent'ler) ve isteğe bağlı usul katmanı
  * aynı `stack` içinde, tek seferlik maskeyle ve `.cpm(bpm / toplamVuruş)` ile çalar; `bpm` dörtlük sayar.
  *
  * Usul katmanı bir ölçülük usul desenini `.fast(n)` ile döngüye n kez yerleştirir. Tempo ayrıca verilmez:
- * bir usul ölçüsü `measureBeats` dörtlük sürer, yani usul `usulBpm(bpm)` mertebe biriminde, dakikada
- * `usulBpm / zaman = bpm / measureBeats` ölçü çalar. İlk ölçü tam usul ölçüsünden kısaysa (anacrusis) usul
+ * bir usul ölçüsü `measureBeats` dörtlük sürer, yani usul dakikada `bpm / measureBeats` ölçü çalar (mertebe
+ * biriminde `bpm · mertebe / 4`: mertebe 8 → ×2, mertebe 4 → ×1). İlk ölçü tam usul ölçüsünden kısaysa (anacrusis) usul
  * ilk tam ölçüde başlar: katman `.compress(a / T, 1)` ile döngünün o kısmına sıkıştırılır, öncesi sessizdir.
  * Vuruş kalıbı olmayan usul (Dolap) metronom olarak çalar.
  */

@@ -21,7 +21,14 @@ const REST_BAR_H = 5
 const TIE_BULGE = 6
 /** Hece metninin taban çizgisi ve boyutu (px): portenin ve aşağı saplı notaların altında. */
 const SYLLABLE_Y = 103
-const SYLLABLE_SIZE = 11
+export const SYLLABLE_SIZE = 12
+/** Yan yana iki hece kutusu arasında kalan en az boşluk (px). */
+const SYLLABLE_PAD = 4
+
+/** Hecenin tahmini genişliği (px): karakter sayısı × 0,55 × yazı boyu. */
+export function syllableWidth(s: string): number {
+  return [...s].length * 0.55 * SYLLABLE_SIZE
+}
 /** Onaltılıkta iki bayrak arasındaki uzaklık (px). */
 const FLAG_STEP = 7
 
@@ -197,16 +204,24 @@ export function staffWidthFor(n: number, slot: number, min: number): number {
 export function layoutEvents(
   events: MusicEvent[],
   width: number,
+  syllables?: string[],
 ): { xs: number[]; ends: number[]; viewWidth: number } {
   const baseSlot = (width - FIRST_X - RIGHT_MARGIN) / Math.max(events.length, 1)
   const xs: number[] = []
   /** Her yuvanın sağ kenarı (ölçü çizgisi buraya çizilir). */
   const ends: number[] = []
   let start = FIRST_X
-  for (const e of events) {
+  for (const [i, e] of events.entries()) {
     const accW = e.kind === 'note' ? accidentalWidth(e.pitch.acc) : 0
-    const slot = accW > 0 ? Math.max(baseSlot, accW + ACC_GAP + 2 * HEAD_RX + MIN_GAP) : baseSlot
-    const headFromStart = accW > 0 ? Math.max(slot / 2, accW + ACC_GAP + HEAD_RX + MIN_GAP / 2) : slot / 2
+    let slot = accW > 0 ? Math.max(baseSlot, accW + ACC_GAP + 2 * HEAD_RX + MIN_GAP) : baseSlot
+    let headFromStart = accW > 0 ? Math.max(slot / 2, accW + ACC_GAP + HEAD_RX + MIN_GAP / 2) : slot / 2
+    // Hece notanın altında ortalanır: yuva, hecenin iki yarısına (ve aradaki boşluğa) yetecek kadar genişler.
+    const syl = syllables?.[i] ?? ''
+    if (syl !== '') {
+      const half = (syllableWidth(syl) + SYLLABLE_PAD) / 2
+      headFromStart = Math.max(headFromStart, half)
+      slot = Math.max(slot, headFromStart + half)
+    }
     xs.push(start + headFromStart)
     start += slot
     ends.push(start)
@@ -224,7 +239,7 @@ export function Staff(props: {
   syllables?: string[]
 }) {
   const { events, width: baseWidth = DEFAULT_WIDTH, highlightIndex, barlinesAfter, syllables } = props
-  const { xs, ends, viewWidth: width } = layoutEvents(events, baseWidth)
+  const { xs, ends, viewWidth: width } = layoutEvents(events, baseWidth, syllables)
   const last = events.length - 1
   const barXs = barlinesAfter
     ? [...barlinesAfter.filter((i) => i >= 0 && i < last).map((i) => ends[i]!), width - 2]

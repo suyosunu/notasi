@@ -46,7 +46,7 @@ describe('ParcaDetail', () => {
     expect(screen.getByRole('link', { name: 'Uşşak' }).getAttribute('href')).toBe('#/makam/ussak')
     expect(screen.getByRole('link', { name: 'Sofyan' }).getAttribute('href')).toBe('#/usul')
     expect(screen.getByText('Ali Ufkî')).toBeTruthy()
-    expect(document.querySelectorAll('[data-testid="score-row"]')).toHaveLength(16)
+    expect(document.querySelectorAll('[data-testid="score-row"]').length).toBeGreaterThanOrEqual(16)
     expect(document.querySelectorAll('text[data-syllable]').length).toBeGreaterThan(0)
   })
 

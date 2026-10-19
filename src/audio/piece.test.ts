@@ -4,7 +4,7 @@ import type { Parca } from '../content/parcalar'
 import { DEFAULT_TUNING } from '../music/ahenk'
 import type { MusicEvent } from '../music/notation'
 import { SOUND_CHAIN, toToneEvents } from './pattern'
-import { buildPieceCode, measureBeats, usulBpm } from './piece'
+import { buildPieceCode, measureBeats } from './piece'
 import { USULLER } from '../content/usuller'
 
 // Çekirdeğin gerçek (kullanılmayan) kabelsalat bağımlılığı Node'da yüklenmez; yalnızca onu taklit ederiz.
@@ -49,13 +49,11 @@ async function hits(code: string, from: number, to: number): Promise<Hit[]> {
 
 const totalBeats = (p: Parca) => toToneEvents(p.olcu.flat(), DEFAULT_TUNING).reduce((s, e) => s + e.beats, 0)
 
-describe('measureBeats / usulBpm', () => {
+describe('measureBeats', () => {
   const usul = (id: string) => USULLER.find((u) => u.id === id)!
-  it('ölçü süresi dörtlük cinsinden; bpm mertebe birimine çevrilir', () => {
+  it('ölçü süresi dörtlük cinsindendir (Sofyan 4/4 → 4, Dolap 12/8 → 6)', () => {
     expect(measureBeats(usul('sofyan'))).toBe(4)
     expect(measureBeats(usul('dolap'))).toBe(6)
-    expect(usulBpm(60, usul('sofyan'))).toBe(60)
-    expect(usulBpm(60, usul('dolap'))).toBe(120)
   })
 })
 

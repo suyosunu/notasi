@@ -2,7 +2,8 @@ import { cleanup, render } from '@testing-library/preact'
 import { afterEach, describe, expect, it } from 'vitest'
 import { PARCALAR } from '../content/parcalar'
 import type { MusicEvent } from '../music/notation'
-import { ScoreView } from './ScoreView'
+import { MIN_SCALE, ROW_WIDTH, scoreLayout, scoreScale, ScoreView } from './ScoreView'
+import { SYLLABLE_SIZE } from './Staff'
 
 afterEach(cleanup)
 
@@ -56,7 +57,7 @@ describe('ScoreView', () => {
       const wrap = container.firstElementChild as HTMLElement
       expect(wrap.style.width).toBe('')
       expect(wrap.style.minWidth).toBe('')
-      expect(rows(container)).toHaveLength(Math.ceil(p.olcu.length / 2))
+      expect(rows(container).length).toBeGreaterThanOrEqual(Math.ceil(p.olcu.length / 2))
       for (const svg of container.querySelectorAll('svg')) {
         expect(svg.getAttribute('width')).toBe('100%')
         expect(svg.getAttribute('height')).toBeNull()
@@ -71,6 +72,29 @@ describe('ScoreView', () => {
       const widths = [...container.querySelectorAll('svg')].map((s) => Number(s.getAttribute('viewBox')!.split(' ')[2]))
       for (const w of widths) expect(w).toBeCloseTo(widths[0]!, 3)
       cleanup()
+    }
+  })
+
+  it('yoğun ölçü çifti birer ölçülük satırlara ayrılır, seyrek çift iki ölçü kalır', () => {
+    const s = (step: 'G' | 'A' | 'B' | 'C'): MusicEvent => ({
+      kind: 'note',
+      pitch: { step, octave: step === 'C' ? 5 : 4, acc: 0 },
+      dur: 'sixteenth',
+    })
+    const dense = (): MusicEvent[] => Array.from({ length: 16 }, (_, i) => s((['G', 'A', 'B', 'C'] as const)[i % 4]!))
+    // ölçü 1-2 seyrek (4+4 olay), ölçü 3-4 yoğun (16+16 olay)
+    const olcu = [measure(), measure(), dense(), dense()]
+    const { rows: rs } = scoreLayout(olcu, undefined, 2)
+    expect(rs.map((r) => r.barlinesAfter.length)).toEqual([2, 1, 1])
+    const { container } = render(<ScoreView olcu={olcu} />)
+    expect(rows(container).map((r) => r.querySelectorAll('line[data-barline]').length)).toEqual([2, 1, 1])
+  })
+
+  it('üç gerçek parçada hece boyu 340 px kapta en az 12 × 0,8 = 9,6 px', () => {
+    for (const p of PARCALAR) {
+      const { width } = scoreLayout(p.olcu, p.soz, 2)
+      expect(scoreScale(width, ROW_WIDTH)).toBeGreaterThanOrEqual(MIN_SCALE)
+      expect(SYLLABLE_SIZE * scoreScale(width, 340)).toBeGreaterThanOrEqual(9.6)
     }
   })
 
