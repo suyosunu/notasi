@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { playCode, stopAudio, unlockAudio } from '../audio/player'
 import { toToneEvents } from '../audio/pattern'
 import { buildPieceCode } from '../audio/piece'
+import { acquireWakeLock, releaseWakeLock } from '../audio/wakeLock'
 import { PARCALAR } from '../content/parcalar'
 import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
 import { DEFAULT_TUNING } from '../music/ahenk'
@@ -16,6 +17,11 @@ vi.mock('../audio/player', () => ({
   stopAudio: vi.fn(),
 }))
 
+vi.mock('../audio/wakeLock', () => ({
+  acquireWakeLock: vi.fn(() => Promise.resolve()),
+  releaseWakeLock: vi.fn(),
+}))
+
 /** Çalmayı test bitirene dek sürdürür. */
 let finishPlay: () => void = () => {}
 
@@ -23,6 +29,8 @@ beforeEach(async () => {
   await resetDbForTests()
   vi.mocked(unlockAudio).mockReset().mockImplementation(() => Promise.resolve())
   vi.mocked(stopAudio).mockReset()
+  vi.mocked(acquireWakeLock).mockClear()
+  vi.mocked(releaseWakeLock).mockClear()
   vi.mocked(playCode)
     .mockReset()
     .mockImplementation(() => new Promise<void>((r) => (finishPlay = r)))
@@ -167,6 +175,45 @@ describe('ParcaDetail', () => {
     vi.mocked(stopAudio).mockClear()
     unmount()
     await waitFor(() => expect(stopAudio).toHaveBeenCalledTimes(1))
+  })
+
+  it('çalarken ekran kilidi istenir; Durdur, bitiş, hata ve unmount bırakır', async () => {
+    // Durdur
+    const first = render(<ParcaDetail parcaId="hak-teala" />)
+    fireEvent.click(await listenButton())
+    await screen.findByRole('button', { name: '■ Durdur' })
+    expect(acquireWakeLock).toHaveBeenCalledTimes(1)
+    vi.mocked(releaseWakeLock).mockClear() // önceki testin geç temizliği sayıma karışmasın
+    fireEvent.click(screen.getByRole('button', { name: '■ Durdur' }))
+    expect(releaseWakeLock).toHaveBeenCalledTimes(1)
+    // Bitiş
+    fireEvent.click(await listenButton())
+    await screen.findByRole('button', { name: '■ Durdur' })
+    vi.mocked(releaseWakeLock).mockClear()
+    finishPlay()
+    await screen.findByRole('button', { name: '🔊 Dinle' })
+    expect(releaseWakeLock).toHaveBeenCalledTimes(1)
+    // Unmount
+    fireEvent.click(await listenButton())
+    await screen.findByRole('button', { name: '■ Durdur' })
+    vi.mocked(releaseWakeLock).mockClear()
+    first.unmount()
+    await waitFor(() => expect(releaseWakeLock).toHaveBeenCalledTimes(1))
+  })
+
+  it('çalma hatasında ekran kilidi bırakılır; ses kapalıyken istenmez', async () => {
+    vi.mocked(playCode).mockImplementation(() => Promise.reject(new Error('strudel yok')))
+    render(<ParcaDetail parcaId="hak-teala" />)
+    fireEvent.click(await listenButton())
+    await screen.findByText(SOUND_WARNING)
+    expect(releaseWakeLock).toHaveBeenCalled()
+    cleanup()
+    vi.mocked(acquireWakeLock).mockClear()
+    await saveSettings({ soundOn: false })
+    render(<ParcaDetail parcaId="hak-teala" />)
+    fireEvent.click(await listenButton())
+    await screen.findByText(SOUND_OFF)
+    expect(acquireWakeLock).not.toHaveBeenCalled()
   })
 
   it('bilinmeyen parça için bulunamadı mesajı', () => {

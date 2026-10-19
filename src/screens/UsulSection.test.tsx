@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/preact'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { startUsul, stopUsul } from '../audio/usul'
+import { acquireWakeLock, releaseWakeLock } from '../audio/wakeLock'
 import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
 import { USULLER } from '../content/usuller'
 import { resetDbForTests, saveSettings } from '../store/db'
@@ -11,6 +12,11 @@ vi.mock('../audio/usul', () => ({
   stopUsul: vi.fn(),
 }))
 
+vi.mock('../audio/wakeLock', () => ({
+  acquireWakeLock: vi.fn(() => Promise.resolve()),
+  releaseWakeLock: vi.fn(),
+}))
+
 const DOLAP_NOTE = 'Bu usulün vuruş kalıbı kaynaklarda bulunamadı; yalnızca zaman sayılır (12/8).'
 
 const usul = (id: string) => USULLER.find((u) => u.id === id)!
@@ -19,6 +25,8 @@ beforeEach(async () => {
   await resetDbForTests()
   vi.mocked(startUsul).mockReset().mockImplementation(() => Promise.resolve())
   vi.mocked(stopUsul).mockClear()
+  vi.mocked(acquireWakeLock).mockClear()
+  vi.mocked(releaseWakeLock).mockClear()
   location.hash = ''
 })
 afterEach(() => cleanup())
@@ -147,9 +155,39 @@ describe('UsulSection', () => {
   it('sayfadan çıkınca (unmount) stopUsul çağrılır', async () => {
     const { unmount } = render(<UsulSection />)
     await waitFor(() => expect((screen.getByRole('button', { name: '▶ Çal' }) as HTMLButtonElement).disabled).toBe(false))
-    expect(stopUsul).not.toHaveBeenCalled()
+    vi.mocked(stopUsul).mockClear() // önceki testin geç unmount temizliği sayıma karışmasın
     unmount()
     await waitFor(() => expect(stopUsul).toHaveBeenCalledTimes(1))
+  })
+
+  it('çalarken ekran kilidi istenir; Durdur, hata ve unmount bırakır', async () => {
+    const { unmount } = render(<UsulSection />)
+    await tapPlay()
+    await screen.findByRole('button', { name: '■ Durdur' })
+    expect(acquireWakeLock).toHaveBeenCalled()
+    vi.mocked(releaseWakeLock).mockClear() // önceki testin geç temizliği sayıma karışmasın
+    fireEvent.click(screen.getByRole('button', { name: '■ Durdur' }))
+    expect(releaseWakeLock).toHaveBeenCalledTimes(1)
+    await tapPlay()
+    await screen.findByRole('button', { name: '■ Durdur' })
+    vi.mocked(releaseWakeLock).mockClear()
+    unmount()
+    await waitFor(() => expect(releaseWakeLock).toHaveBeenCalledTimes(1))
+  })
+
+  it('çalma başarısızsa ekran kilidi bırakılır; ses kapalıyken istenmez', async () => {
+    vi.mocked(startUsul).mockImplementation(() => Promise.reject(new Error('strudel yok')))
+    render(<UsulSection />)
+    await tapPlay()
+    await screen.findByText(SOUND_WARNING)
+    expect(releaseWakeLock).toHaveBeenCalled()
+    cleanup()
+    vi.mocked(acquireWakeLock).mockClear()
+    await saveSettings({ soundOn: false })
+    render(<UsulSection />)
+    await tapPlay()
+    await screen.findByText(SOUND_OFF)
+    expect(acquireWakeLock).not.toHaveBeenCalled()
   })
 
   it('ses kapalıyken SOUND_OFF gösterir, çalmaz', async () => {

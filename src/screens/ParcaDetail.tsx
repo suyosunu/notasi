@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
 import { playCode, stopAudio, unlockAudio } from '../audio/player'
 import { buildPieceCode } from '../audio/piece'
+import { acquireWakeLock, releaseWakeLock } from '../audio/wakeLock'
 import { PARCALAR } from '../content/parcalar'
 import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
 import { USULLER } from '../content/usuller'
@@ -40,6 +41,7 @@ export function ParcaDetail({ parcaId }: { parcaId: string }) {
     () => () => {
       runRef.current++
       stopAudio()
+      releaseWakeLock()
     },
     [],
   )
@@ -67,6 +69,7 @@ export function ParcaDetail({ parcaId }: { parcaId: string }) {
       return
     }
     setPlaying(true)
+    void acquireWakeLock() // uzun parça çalarken ekran kararmasın
     try {
       const unlocked = unlockAudio()
       unlocked.catch(() => {}) // kod üretimi fırlatırsa işlenmemiş ret kalmasın; hata aşağıda await ile yakalanır
@@ -77,13 +80,17 @@ export function ParcaDetail({ parcaId }: { parcaId: string }) {
     } catch {
       if (run === runRef.current) setWarn(SOUND_WARNING)
     } finally {
-      if (run === runRef.current) setPlaying(false)
+      if (run === runRef.current) {
+        setPlaying(false)
+        releaseWakeLock()
+      }
     }
   }
 
   function stop() {
     runRef.current++
     stopAudio()
+    releaseWakeLock()
     setPlaying(false)
   }
 

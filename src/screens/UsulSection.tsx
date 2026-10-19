@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
 import { startUsul, stopUsul } from '../audio/usul'
+import { acquireWakeLock, releaseWakeLock } from '../audio/wakeLock'
 import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
 import { USULLER } from '../content/usuller'
 import type { Usul } from '../content/usuller'
@@ -51,7 +52,13 @@ export function UsulSection() {
   }, [])
 
   // Sayfadan çıkınca çalan döngü susar.
-  useEffect(() => () => stopUsul(), [])
+  useEffect(
+    () => () => {
+      stopUsul()
+      releaseWakeLock()
+    },
+    [],
+  )
 
   const usul = USULLER.find((u) => u.id === selectedId)!
 
@@ -65,11 +72,13 @@ export function UsulSection() {
       return
     }
     setPlaying(true)
+    void acquireWakeLock() // döngü çalarken ekran kararmasın
     try {
       await startUsul(u, speed)
     } catch {
       if (run !== runRef.current) return
       setPlaying(false)
+      releaseWakeLock()
       setWarn(SOUND_WARNING)
     }
   }
@@ -77,6 +86,7 @@ export function UsulSection() {
   function stop() {
     runRef.current++
     stopUsul()
+    releaseWakeLock()
     setPlaying(false)
   }
 
