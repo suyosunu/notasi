@@ -46,3 +46,14 @@ Görev incelemelerinde "şimdilik kalabilir" denen bulgular. Sürüm 2'ye başla
 - Task 27: minor (deferred): usulBpm dead export; ScoreView fitWidth recomputed on every slider input (memo); kabelsalat mock coupling; .score #fff hard-coded; fast()/compress() assume integer measure count
 - - Ruling: final-review minor "makam questions too easy (güçlü always Nevâ)" parked to Sürüm 3.
 - Sürüm 2 fix wave re-review: all 7 ADDRESSED. Residual minors: error-path wake-lock asserts lack counts; OS-released sentinel not re-acquired on page show.
+
+## Ses ve gösterim iyileştirmeleri (2026-10-24)
+- Ruling: default ney sesi = 'mevcut' until the user picks by ear — avoids surprising change — cost if wrong: user must open Settings once.
+- Ruling: shakuhachi = one local MIT-licensed mp3 (FluidR3 via WebAudioFont), precached; global "no sample files" constraint narrowed to usul sounds — user asked for a closer ney sound — cost if wrong: 21 KB asset.
+- Task 28: minor (deferred): voice loudness not level-matched (PEAK_GAIN 0.3); loop seam/vibrato in sample untested; single zone timbre shift at low notes; db.ts imports audio/pattern for NeySesi type; play before settings load uses mevcut
+- Task 29: minor (deferred): beam may reach lyric zone in extreme synthetic groups; beams don't take highlight colour; pickup measures aligned to measure start; Aksak 9/8 grouping later
+- Task 29: minor (deferred): band-top 91 and clamp 88 separate constants; brief "group never crosses a beat" now has a 12/8 exception
+- Ruling: also fold Minor #2 (end level/chop: DUM_SUSTAIN ~0.08, tek tone short regardless of stroke length) and #3 (release clamp so the piece path keeps margin at max tempo) into fix round 1 — same constants, user-facing sound quality — cost if wrong: minor timbre change.
+- Task 30: minor (deferred): highlight uses performance.now not audio clock (drift on long plays / suspended ctx); test type casts
+- Ruling: apply the suggestion as fix round 2 — user's main complaint is audibility on iPhone; cheap constant change: DUM_MID_HZ 250 triangle, DUM_LOW_GAIN lowered (0.4), keep total peak ≤ ~1.2 — cost if wrong: slightly brighter düm.
+- Ruling: usul/melody balance in piece playback decided after the user's listening feedback — cost if wrong: one gain constant later.
