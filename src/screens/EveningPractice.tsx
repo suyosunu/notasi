@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
+import { ETUTLER } from '../content/etutler'
 import { NEY_PERDELER } from '../content/ney-perdeler'
 import { DersKapisi } from '../ders/DersKapisi'
 import { isPlanDone, loadOrStartEveningSession, nextTry, saveEveningProgress } from '../learning/evening-session'
@@ -12,6 +13,7 @@ import { getSettings } from '../store/db'
 import type { SessionRec, Settings } from '../store/db'
 import { BaspareTur } from './BaspareAlistirma'
 import { Calibration } from './Calibration'
+import { EtutCalisma } from './EtutDetail'
 
 function Loading() {
   return (
@@ -79,7 +81,7 @@ export function EveningPractice() {
   }
 
   // Bu sürümün bilmediği adım türü (eski ya da bozuk kayıt): takılmadan geçilir.
-  if (step.kind !== 'ilk-ses' && step.kind !== 'uzun-ses' && step.kind !== 'baspare') {
+  if (step.kind !== 'ilk-ses' && step.kind !== 'uzun-ses' && step.kind !== 'baspare' && step.kind !== 'etut') {
     return (
       <main class="screen">
         <p class="muted">Bu adım tanınmadı.</p>
@@ -113,6 +115,44 @@ export function EveningPractice() {
             </p>
           </header>
           <BaspareTur key={state.stepIndex} settings={settings} nextLabel="Devam" onNext={() => void advance()} />
+          <a class="back" href="#/">
+            Ana ekrana dön
+          </a>
+        </main>
+      </DersKapisi>
+    )
+  }
+
+  if (step.kind === 'etut') {
+    const etut = ETUTLER.find((e) => e.id === step.etutId)
+    if (!etut) {
+      return (
+        <main class="screen">
+          <p class="muted">Bu etüdün içeriği bulunamadı.</p>
+          <button type="button" class="primary" onClick={() => void advance()}>
+            Devam
+          </button>
+        </main>
+      )
+    }
+    // Etüt mikrofon kullanmaz: kalibrasyon gerekmez. "Çaldım" işaretler ve geçer, "Sonra çalarım" işaretlemeden geçer.
+    return (
+      <DersKapisi key={state.stepIndex} dersId={step.dersId}>
+        <main class="screen evening">
+          <header class="day-head">
+            <h1>🌙 {step.label}</h1>
+            <p class="muted step-meta">
+              <span>
+                Adım {state.stepIndex + 1}/{state.steps.length}
+              </span>
+            </p>
+          </header>
+          <EtutCalisma key={state.stepIndex} etut={etut} baslikGizle onDone={() => void advance()} />
+          <div class="tools">
+            <button type="button" class="tool" onClick={() => void advance()}>
+              Sonra çalarım
+            </button>
+          </div>
           <a class="back" href="#/">
             Ana ekrana dön
           </a>

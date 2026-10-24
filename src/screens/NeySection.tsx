@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'preact/hooks'
 import { dersById, perdeDersId } from '../content/dersler'
+import { ETUTLER } from '../content/etutler'
 import { NEY_PERDELER } from '../content/ney-perdeler'
 import type { PerdeId } from '../content/ney-perdeler'
 import { perdeEtiketi } from '../content/perde-adlari'
@@ -21,15 +22,19 @@ const HISTORY_SIZE = 5
 
 /**
  * Ney bölümü: perdeler durumlarıyla; açık ya da geçilmiş perde tek başına çalışılabilir. Dersi olan perdenin
- * yanında 📖 bağlantısı vardır; ders okumak serbest olduğu için kilitli perdede de görünür.
+ * yanında 📖 bağlantısı vardır; ders okumak serbest olduğu için kilitli perdede de görünür. Perde listesinin
+ * altında etütler: çalınanlar ✓, perdeleri henüz geçilmemiş olanlar soluk (ama kilit yok, hepsi açılır).
  */
 export function NeySection() {
   const [statuses, setStatuses] = useState<Record<PerdeId, PerdeStatus> | null>(null)
+  const [calinan, setCalinan] = useState<ReadonlySet<string>>(new Set())
 
   useEffect(() => {
     let alive = true
     void loadEveningInput().then((input) => {
-      if (alive) setStatuses(input.perdeStatus)
+      if (!alive) return
+      setStatuses(input.perdeStatus)
+      setCalinan(input.calinanEtutler)
     })
     return () => {
       alive = false
@@ -79,6 +84,27 @@ export function NeySection() {
             )
           })}
         </ul>
+      )}
+      {statuses && (
+        <section>
+          <h2>Etütler</h2>
+          <ul class="topic-list">
+            {ETUTLER.map((e) => {
+              const calindi = calinan.has(e.id)
+              const soluk = !e.perdeler.every((id) => statuses[id] === 'gecildi')
+              return (
+                <li key={e.id}>
+                  <a class="topic" href={`#/etut/${e.id}`} data-soluk={soluk} data-calindi={calindi}>
+                    <span class="topic-icon" role="img" aria-label={calindi ? 'çalındı' : 'çalınmadı'}>
+                      {calindi ? '✓' : '🎼'}
+                    </span>
+                    <span class="topic-title">{e.baslik}</span>
+                  </a>
+                </li>
+              )
+            })}
+          </ul>
+        </section>
       )}
       <div class="links">
         <a class="back" href="#/kalibrasyon">

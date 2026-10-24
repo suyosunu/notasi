@@ -153,6 +153,7 @@ a:focus-visible {
 
 .tools {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.75rem;
 }
 
@@ -783,4 +784,19 @@ h2.setting-label {
   margin: 0;
   font-size: 1.5rem;
   text-align: center;
+}
+
+/* Etütler: Ney bölümü listesi ve çalışma ekranı */
+.topic[data-soluk='true'] {
+  opacity: 0.6;
+}
+
+.etut-caldim {
+  align-items: center;
+  margin-top: 1.5rem;
+}
+
+.etut-rozet {
+  color: #2f6b25;
+  font-weight: 700;
 }

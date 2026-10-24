@@ -20,6 +20,7 @@ export interface EveningInput {
   ilkSesPassed: boolean
   calibrated: boolean
   baspareGecildi: boolean
+  calinanEtutler: ReadonlySet<string>
   perdeStatus: Record<PerdeId, PerdeStatus>
 }
 
@@ -36,6 +37,7 @@ export async function loadEveningInput(): Promise<EveningInput> {
     ilkSesPassed: longTones.some((r) => r.perdeId === ILK_SES_ID && r.passed),
     calibrated: settings.calibrated,
     baspareGecildi: longTones.some((r) => r.perdeId === BASPARE_ID && r.passed),
+    calinanEtutler: new Set(settings.calinanEtutler),
     perdeStatus: perdeStatuses(longTones, topicStatuses(NOTA_TOPICS, attempts, placedOut)),
   }
 }

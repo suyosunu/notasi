@@ -8,6 +8,7 @@ import {
   addFingeringFlag,
   addLongTone,
   getOpenSession,
+  getSettings,
   isaretEkle,
   listLongTones,
   listSessions,
@@ -32,7 +33,9 @@ vi.mock('../audio/mic', async (orig) => {
 vi.mock('../audio/player', () => ({
   unlockAudio: vi.fn(() => Promise.resolve()),
   playWritten: vi.fn(() => Promise.resolve()),
+  playCode: vi.fn(() => Promise.resolve()),
   stopAudio: vi.fn(),
+  getNeySesi: vi.fn(() => 'shakuhachi'),
 }))
 
 import { EveningPractice } from './EveningPractice'
@@ -455,6 +458,7 @@ describe('EveningPractice', () => {
         'uzun-ses',
         'uzun-ses',
         'baspare',
+        'etut',
       ])
     })
 
@@ -466,6 +470,117 @@ describe('EveningPractice', () => {
       expect(screen.queryByRole('button', { name: 'Başla' })).toBeNull()
       fireEvent.click(screen.getByRole('button', { name: 'Devam' }))
       await waitFor(() => expect(location.hash).toBe('#/oturum-sonu'))
+    })
+  })
+
+  describe('etüt adımı', () => {
+    const ETUT_ADIMI = { kind: 'etut', etutId: 'tek-neva', label: 'Etüt: Tek perde: Nevâ', tries: 1, dersId: 'etut:giris' } as const
+    const SONRAKI = { kind: 'uzun-ses', perdeId: 'neva', label: 'Uzun ses: Nevâ', tries: 1 } as const
+
+    async function oturumKur(steps: object[]) {
+      await saveSession({
+        id: 'etutlu',
+        kind: 'aksam',
+        date: todayLocal(),
+        startedAt: new Date().toISOString(),
+        completed: false,
+        elapsedMs: 0,
+        state: { steps, stepIndex: 0, tryIndex: 0 },
+      })
+    }
+
+    it('adım çizilir: tek başlık, adım sayacı, nota, hız, "Çaldım" ve "Sonra çalarım"; deneme sayacı çıkmaz', async () => {
+      await saveSettings({ calibrated: true })
+      await isaretEkle('okunanDersler', 'etut:giris')
+      await oturumKur([ETUT_ADIMI, SONRAKI])
+      render(<EveningPractice />)
+      expect(await screen.findByRole('heading', { name: /Etüt: Tek perde: Nevâ/ })).toBeTruthy()
+      expect(screen.getAllByRole('heading')).toHaveLength(1)
+      expect(screen.getByText('Adım 1/2')).toBeTruthy()
+      expect(screen.queryByText('Deneme 1/1')).toBeNull()
+      expect(document.querySelectorAll('[data-testid="score-row"]').length).toBeGreaterThan(0)
+      expect(screen.getByRole('slider')).toBeTruthy()
+      expect(screen.getByRole('button', { name: '✓ Çaldım' })).toBeTruthy()
+      expect(screen.getByRole('button', { name: 'Sonra çalarım' })).toBeTruthy()
+      expect(screen.getByRole('link', { name: 'Ana ekrana dön' })).toBeTruthy()
+    })
+
+    it('"Çaldım" etüdü işaretler ve sonraki adıma geçer', async () => {
+      await saveSettings({ calibrated: true })
+      await isaretEkle('okunanDersler', 'etut:giris')
+      await oturumKur([ETUT_ADIMI, SONRAKI])
+      render(<EveningPractice />)
+      fireEvent.click(await screen.findByRole('button', { name: '✓ Çaldım' }))
+      expect(await screen.findByRole('heading', { name: /Uzun ses: Nevâ/ })).toBeTruthy()
+      expect(screen.getByText('Adım 2/2')).toBeTruthy()
+      expect((await getSettings()).calinanEtutler).toEqual(['tek-neva'])
+    })
+
+    it('"Sonra çalarım" işaretlemeden sonraki adıma geçer; son adımsa oturum biter', async () => {
+      await saveSettings({ calibrated: true })
+      await isaretEkle('okunanDersler', 'etut:giris')
+      await oturumKur([ETUT_ADIMI, SONRAKI])
+      render(<EveningPractice />)
+      fireEvent.click(await screen.findByRole('button', { name: 'Sonra çalarım' }))
+      expect(await screen.findByRole('heading', { name: /Uzun ses: Nevâ/ })).toBeTruthy()
+      expect((await getSettings()).calinanEtutler).toEqual([])
+      cleanup()
+      await resetDbForTests()
+      await saveSettings({ calibrated: true })
+      await isaretEkle('okunanDersler', 'etut:giris')
+      await oturumKur([ETUT_ADIMI])
+      render(<EveningPractice />)
+      fireEvent.click(await screen.findByRole('button', { name: 'Sonra çalarım' }))
+      await waitFor(() => expect(location.hash).toBe('#/oturum-sonu'))
+      expect((await listSessions())[0]).toMatchObject({ completed: true })
+    })
+
+    it('ders okunmamışsa önce ders gelir; "Anladım"dan sonra etüt açılır', async () => {
+      await saveSettings({ calibrated: true })
+      await oturumKur([ETUT_ADIMI])
+      render(<EveningPractice />)
+      expect(await screen.findByRole('heading', { name: /Etüt nasıl çalışılır/ })).toBeTruthy()
+      expect(screen.queryByRole('button', { name: 'Sonra çalarım' })).toBeNull()
+      fireEvent.click(screen.getByRole('button', { name: 'Anladım, alıştırmaya geç' }))
+      expect(await screen.findByRole('button', { name: 'Sonra çalarım' })).toBeTruthy()
+    })
+
+    it('etüt kalibrasyon istemez (mikrofon kullanmaz)', async () => {
+      await isaretEkle('okunanDersler', 'etut:giris')
+      await oturumKur([ETUT_ADIMI])
+      render(<EveningPractice />)
+      expect(await screen.findByRole('button', { name: 'Sonra çalarım' })).toBeTruthy()
+      expect(screen.queryByRole('heading', { name: 'Kalibrasyon' })).toBeNull()
+    })
+
+    it('etüdü bulunamayan adım çökertmez: "Devam" sonraki adıma geçer', async () => {
+      await saveSettings({ calibrated: true })
+      await oturumKur([{ kind: 'etut', etutId: 'yok', label: 'Etüt: yok', tries: 1 }, SONRAKI])
+      render(<EveningPractice />)
+      expect(await screen.findByText('Bu etüdün içeriği bulunamadı.')).toBeTruthy()
+      fireEvent.click(screen.getByRole('button', { name: 'Devam' }))
+      expect(await screen.findByText('Adım 2/2')).toBeTruthy()
+    })
+
+    it('etutId taşımayan etüt adımı (bozuk kayıt) da çökertmez', async () => {
+      await oturumKur([{ kind: 'etut', label: 'Etüt', tries: 1 }])
+      render(<EveningPractice />)
+      expect(await screen.findByText('Bu etüdün içeriği bulunamadı.')).toBeTruthy()
+      fireEvent.click(screen.getByRole('button', { name: 'Devam' }))
+      await waitFor(() => expect(location.hash).toBe('#/oturum-sonu'))
+    })
+
+    it('planı kuran akış: Nevâ ve Çârgâh geçilmişse etüt adımı tek-neva ile gelir, çalınınca bir sonraki akşam tek-cargah', async () => {
+      await readyForPerde()
+      await addLongTone({ perdeId: 'neva', durationMs: 4500, passed: true, toleranceCents: 25 })
+      await addLongTone({ perdeId: 'cargah', durationMs: 4500, passed: true, toleranceCents: 25 })
+      await addLongTone({ perdeId: 'baspare', durationMs: 300, passed: true, toleranceCents: 25 })
+      await isaretEkle('okunanDersler', 'etut:giris')
+      render(<EveningPractice />)
+      await screen.findByRole('heading', { name: /Uzun ses: Çârgâh/ })
+      const open = await getOpenSession('aksam')
+      const steps = (open!.state as { steps: { kind: string; etutId?: string }[] }).steps
+      expect(steps.filter((s) => s.kind === 'etut').map((s) => s.etutId)).toEqual(['tek-neva'])
     })
   })
 

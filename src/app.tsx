@@ -1,6 +1,7 @@
 import type { ComponentChildren } from 'preact'
 import { MAKAMLAR } from './content/makamlar'
 import { NEY_PERDELER } from './content/ney-perdeler'
+import { ETUTLER } from './content/etutler'
 import { NOTA_TOPICS } from './content/nota-topics'
 import { PARCALAR } from './content/parcalar'
 import { dersById } from './content/dersler'
@@ -10,6 +11,7 @@ import { About } from './screens/About'
 import { BaspareAlistirma } from './screens/BaspareAlistirma'
 import { Calibration } from './screens/Calibration'
 import { DayPractice } from './screens/DayPractice'
+import { EtutDetail } from './screens/EtutDetail'
 import { EveningPractice } from './screens/EveningPractice'
 import { Home } from './screens/Home'
 import { MakamDetail } from './screens/MakamDetail'
@@ -66,6 +68,7 @@ const PERDE_PREFIX = '/ney/'
 const MAKAM_PREFIX = '/makam/'
 const PARCA_PREFIX = '/parcalar/'
 const DERS_PREFIX = '/ders/'
+const ETUT_PREFIX = '/etut/'
 
 /** `/ders/<kodlanmış kimlik>` yolundaki kimlik; bozuk kodlama (ör. `%E0%A4%A`) kimliksiz sayılır. */
 function dersKimligi(route: string): string | null {
@@ -99,6 +102,10 @@ function cozumle(route: string): (() => ComponentChildren) | null {
   if (route.startsWith(PARCA_PREFIX)) {
     const parcaId = route.slice(PARCA_PREFIX.length)
     if (PARCALAR.some((p) => p.id === parcaId)) return () => <ParcaDetail key={parcaId} parcaId={parcaId} />
+  }
+  if (route.startsWith(ETUT_PREFIX)) {
+    const etutId = route.slice(ETUT_PREFIX.length)
+    if (ETUTLER.some((e) => e.id === etutId)) return () => <EtutDetail key={etutId} etutId={etutId} />
   }
   if (route.startsWith(DERS_PREFIX)) {
     const dersId = dersKimligi(route)

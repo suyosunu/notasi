@@ -104,9 +104,13 @@ function envelope(d: number): Envelope {
   return { hold: floorTo(clip * d, 1000), clip, release }
 }
 
-function metronomeCode(u: Usul, bpm: number): string {
-  const freqs = Array.from({ length: u.zaman }, (_, i) => step(i === 0 ? CLICK_ACCENT_HZ : CLICK_HZ, 1))
-  const gains = Array.from({ length: u.zaman }, (_, i) => step(i === 0 ? CLICK_ACCENT_GAIN : CLICK_GAIN, 1))
+/**
+ * Bir ölçülük metronom deseni (tempo yok): `zaman` tık, ilki vurgulu. `bpm` zaman birimine göredir; yalnızca tıkın
+ * saniye cinsinden sönme süresini belirler. Dolap ve etütler (4/4) kullanır.
+ */
+export function metronomeBody(zaman: number, bpm: number): string {
+  const freqs = Array.from({ length: zaman }, (_, i) => step(i === 0 ? CLICK_ACCENT_HZ : CLICK_HZ, 1))
+  const gains = Array.from({ length: zaman }, (_, i) => step(i === 0 ? CLICK_ACCENT_GAIN : CLICK_GAIN, 1))
   const d = zamanSeconds(bpm)
   const env = envelope(d)
   const decay = Math.min(ms(CLICK_FRACTION * d), env.hold)
@@ -196,7 +200,7 @@ function sampleCode(u: Usul, bpm: number, ses: KayitSesi): string {
  * sesi kullanılır.
  */
 export function buildUsulBody(u: Usul, bpm: number, ses: UsulSesi = getUsulSesi()): string {
-  if (u.vurus === null) return metronomeCode(u, bpm)
+  if (u.vurus === null) return metronomeBody(u.zaman, bpm)
   return ses === 'oryantal' ? strokeCode(u, bpm) : sampleCode(u, bpm, ses)
 }
 

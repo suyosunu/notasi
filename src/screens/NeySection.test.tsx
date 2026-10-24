@@ -1,6 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/preact'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PitchSample } from '../audio/mic'
+import { ETUTLER } from '../content/etutler'
 import { NEY_PERDELER } from '../content/ney-perdeler'
 import { NOTA_TOPICS } from '../content/nota-topics'
 import { DEFAULT_TUNING, soundingHz } from '../music/ahenk'
@@ -50,7 +51,7 @@ describe('NeySection', () => {
     await addLongTone({ perdeId: 'neva', durationMs: 4000, passed: true, toleranceCents: 25 })
     render(<NeySection />)
     await screen.findByText('Nevâ')
-    expect(screen.getAllByRole('listitem')).toHaveLength(NEY_PERDELER.length)
+    expect(within(screen.getAllByRole('list')[0]!).getAllByRole('listitem')).toHaveLength(NEY_PERDELER.length)
     expect(within(row('Nevâ')).getByText('✓')).toBeTruthy()
     expect(within(row('Çârgâh')).getByText('▶')).toBeTruthy()
     expect(within(row('Bûselik')).getByText('🔒')).toBeTruthy()
@@ -116,6 +117,58 @@ describe('NeySection', () => {
     expect(within(row('Rast')).getByRole('link', { name: 'Rast dersi' }).getAttribute('href')).toBe('#/ders/perde%3Arast')
     for (const name of ['Çârgâh', 'Segâh', 'Dügâh']) expect(within(row(name)).getByRole('link', { name: `${name} dersi` })).toBeTruthy()
     expect(within(row('Hüseynî')).queryByRole('link')).toBeNull()
+  })
+
+  describe('Etütler', () => {
+    /** Başlığı tam eşleşen etüt bağlantısı (✓ ve başlık aynı bağlantıdadır). */
+    const etutSatiri = (baslik: string) => {
+      const a = screen.getAllByRole('link').find((l) => l.querySelector('.topic-title')?.textContent === baslik)
+      if (!a) throw new Error(`Etüt bağlantısı yok: ${baslik}`)
+      return a
+    }
+
+    it('perde listesinin altında "Etütler" başlığı ve ETUTLER sırasıyla 11 bağlantı vardır', async () => {
+      render(<NeySection />)
+      const baslik = await screen.findByRole('heading', { name: 'Etütler' })
+      const liste = baslik.nextElementSibling as HTMLElement
+      const linkler = within(liste).getAllByRole('link')
+      expect(linkler).toHaveLength(ETUTLER.length)
+      expect(linkler.map((a) => a.getAttribute('href'))).toEqual(ETUTLER.map((e) => `#/etut/${e.id}`))
+      for (const [i, e] of ETUTLER.entries()) expect(linkler[i]!.textContent).toContain(e.baslik)
+      // Etütler perde listesinin altındadır.
+      const perdeListesi = screen.getAllByRole('list')[0]!
+      expect(perdeListesi.compareDocumentPosition(baslik) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+
+    it('çalınan etütte ✓ vardır, çalınmayanda yoktur', async () => {
+      await isaretEkle('calinanEtutler', 'tek-neva')
+      render(<NeySection />)
+      await screen.findByRole('heading', { name: 'Etütler' })
+      expect(within(etutSatiri('Tek perde: Nevâ')).getByRole('img', { name: 'çalındı' }).textContent).toBe('✓')
+      expect(within(etutSatiri('Tek perde: Çârgâh')).queryByRole('img', { name: 'çalındı' })).toBeNull()
+    })
+
+    it('perdeleri henüz geçilmemiş etüt soluk gösterilir ama tıklanabilir (kilit yok)', async () => {
+      await addLongTone({ perdeId: 'neva', durationMs: 4000, passed: true, toleranceCents: 25 })
+      render(<NeySection />)
+      await screen.findByRole('heading', { name: 'Etütler' })
+      expect(etutSatiri('Tek perde: Nevâ').getAttribute('data-soluk')).toBe('false')
+      for (const baslik of ['Tek perde: Çârgâh', 'İki perde: Nevâ–Çârgâh', 'Rast beşlisi 1 (dörtlükler)']) {
+        const a = etutSatiri(baslik)
+        expect(a.getAttribute('data-soluk')).toBe('true')
+        expect(a.getAttribute('href')).toMatch(/^#\/etut\//)
+        expect(a.getAttribute('aria-disabled')).toBeNull()
+      }
+    })
+
+    it('bütün perdeleri geçilmiş etütler soluk değildir', async () => {
+      for (const id of ['neva', 'cargah', 'segah', 'dugah', 'rast']) {
+        await addLongTone({ perdeId: id, durationMs: 4000, passed: true, toleranceCents: 25 })
+      }
+      render(<NeySection />)
+      await screen.findByRole('heading', { name: 'Etütler' })
+      for (const e of ETUTLER) expect(etutSatiri(e.baslik).getAttribute('data-soluk')).toBe('false')
+    })
   })
 
   it('altta "Yeniden kalibre et" bağlantısı vardır', async () => {

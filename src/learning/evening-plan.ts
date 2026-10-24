@@ -1,4 +1,5 @@
 import { perdeDersId } from '../content/dersler'
+import { ETUTLER } from '../content/etutler'
 import { NEY_PERDELER, visibleFingering } from '../content/ney-perdeler'
 import type { NeyPerde, PerdeId } from '../content/ney-perdeler'
 import type { LongToneRec } from '../store/db'
@@ -7,8 +8,10 @@ import type { TopicStatus } from './mastery'
 export type PerdeStatus = 'kilitli' | 'acik' | 'gecildi'
 
 export interface EveningStep {
-  kind: 'ilk-ses' | 'kalibrasyon' | 'uzun-ses' | 'baspare'
+  kind: 'ilk-ses' | 'kalibrasyon' | 'uzun-ses' | 'baspare' | 'etut'
   perdeId?: PerdeId
+  /** `kind: 'etut'` adımında çalınacak etüt (`ETUTLER` kimliği). */
+  etutId?: string
   label: string
   tries: number
   /** Adımdan önce okunması gereken ders (`DersKapisi`). Bu alandan önce açılmış oturumlarda yoktur: kapı atlanır. */
@@ -77,11 +80,20 @@ function baspareStep(): EveningStep {
   return { kind: 'baspare', label: 'Başpâre koy-çek', tries: 1, dersId: BASPARE_DERS_ID }
 }
 
+/** `ETUTLER` sırasında, bütün perdeleri geçilmiş ve henüz çalınmamış ilk etüt; yoksa adım da yoktur. */
+function etutStep(perdeStatus: Record<PerdeId, PerdeStatus>, calinan: ReadonlySet<string>): EveningStep | null {
+  const etut = ETUTLER.find((e) => !calinan.has(e.id) && e.perdeler.every((id) => perdeStatus[id] === 'gecildi'))
+  if (!etut) return null
+  return { kind: 'etut', etutId: etut.id, label: `Etüt: ${etut.baslik}`, tries: 1, dersId: etut.dersId }
+}
+
 export function buildEveningPlan(input: {
   ilkSesPassed: boolean
   calibrated: boolean
   /** Başpâre koy-çek ölçütü geçildi mi (`LongToneRec` `baspare`, `passed`). */
   baspareGecildi: boolean
+  /** Çalındı diye işaretlenen etütler (`calinanEtutler`). */
+  calinanEtutler: ReadonlySet<string>
   perdeStatus: Record<PerdeId, PerdeStatus>
 }): EveningStep[] {
   if (!input.ilkSesPassed) return [ilkSesStep(3)]
@@ -94,6 +106,9 @@ export function buildEveningPlan(input: {
   if (current) plan.push(perdeStep(current, 3, true))
   // Nevâ oturduktan sonra başpâre koy-çek; geçilene dek her akşam, güncel perde adımının hemen ardından.
   if (input.perdeStatus.neva === 'gecildi' && !input.baspareGecildi) plan.push(baspareStep())
+  // Perdeleri geçilmiş sıradaki etüt: güncel perde (ve varsa başpâre) adımından sonra, tekrarlardan önce.
+  const etut = etutStep(input.perdeStatus, input.calinanEtutler)
+  if (etut) plan.push(etut)
   // Diğer geçilenler: güncel perdeye en yakın olandan geriye doğru.
   for (const p of passed.slice(0, -1).reverse().slice(0, OTHER_PASSED_MAX)) plan.push(perdeStep(p, 1))
   return plan

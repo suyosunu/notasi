@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { addLongTone, getOpenSession, listSessions, resetDbForTests, saveSettings } from '../store/db'
+import { addLongTone, getOpenSession, isaretEkle, listSessions, resetDbForTests, saveSettings } from '../store/db'
 import { todayLocal } from '../util/date'
 import { isPlanDone, loadEveningInput, loadOrStartEveningSession, nextTry, saveEveningProgress } from './evening-session'
 import type { EveningState } from './evening-session'
@@ -44,6 +44,13 @@ describe('evening session', () => {
     expect((await loadEveningInput()).baspareGecildi).toBe(false)
     await addLongTone({ perdeId: 'baspare', durationMs: 300, passed: true, toleranceCents: 25 })
     expect((await loadEveningInput()).baspareGecildi).toBe(true)
+  })
+
+  it('girdi: çalınan etütler ayarlardan bir küme olarak okunur', async () => {
+    expect([...(await loadEveningInput()).calinanEtutler]).toEqual([])
+    await isaretEkle('calinanEtutler', 'tek-neva')
+    await isaretEkle('calinanEtutler', 'tek-cargah')
+    expect([...(await loadEveningInput()).calinanEtutler]).toEqual(['tek-neva', 'tek-cargah'])
   })
 
   it('bugünün oturumunu açar, ikinci çağrıda aynısını döner; plan bitince tamamlar', async () => {

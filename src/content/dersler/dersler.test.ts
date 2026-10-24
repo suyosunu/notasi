@@ -5,7 +5,9 @@ import { NOTA_TOPICS } from '../nota-topics'
 import { DERSLER, dersById, notaDersId, perdeDersId } from './index'
 import { HAZIRLIK_DERSLERI } from './hazirlik'
 import { NOTA_DERSLERI } from './nota'
+import { ETUT_DERSLERI } from './etut'
 import { PERDE_DERSLERI } from './perdeler'
+import { ETUTLER } from '../etutler'
 import { cardToEvents } from '../../learning/cards'
 import type { MusicEvent } from '../../music/notation'
 import type { Ders, DersBlok } from './types'
@@ -297,5 +299,51 @@ describe('Seviye 1 perde dersleri', () => {
 
   it.each(PERDELER)('%s: orta parmakların (2. ve 5. delik) destek için kapalı olduğu söylenir', (id) => {
     expect(metinler(ders(id)).join(' ')).toMatch(/orta parma/)
+  })
+})
+
+describe('Seviye 1 etüt dersleri', () => {
+  const ders = (id: string) => dersById(id)!
+  const porteler = (id: string) => ders(id).bloklar.flatMap((b) => (b.tur === 'porte' ? [b] : []))
+
+  it('iki etüt dersi bu sırayla var; seviye 1, DERSLER içinde, alıştırması ilk etüde gider', () => {
+    expect(ETUT_DERSLERI.map((d) => d.id)).toEqual(['etut:giris', 'etut:rast-besli'])
+    expect(DERSLER.filter((d) => d.id.startsWith('etut:')).map((d) => d.id)).toEqual(['etut:giris', 'etut:rast-besli'])
+    expect(ETUT_DERSLERI.every((d) => d.seviye === 1)).toBe(true)
+    expect(ders('etut:giris').alistirma).toBe('/etut/tek-neva')
+    expect(ders('etut:rast-besli').alistirma).toBe('/etut/rast-besli-1')
+  })
+
+  it('her etüdün dersi vardır', () => {
+    for (const e of ETUTLER) expect(dersById(e.dersId), e.id).toBeDefined()
+  })
+
+  it('etut:giris: tek-neva etüdünün ilk iki ölçüsü porte olarak gösterilir', () => {
+    const tekNeva = ETUTLER.find((e) => e.id === 'tek-neva')!
+    expect(porteler('etut:giris').map((b) => b.olaylar)).toContainEqual(tekNeva.olcu.slice(0, 2).flat())
+  })
+
+  it('etut:giris: dinle, oku, metronomla yavaş çal, hızlan sırası ve uzun ses → etüt → eser anlatılır', () => {
+    const m = metinler(ders('etut:giris')).join(' ')
+    expect(m).toMatch(/Önce dinle/)
+    expect(m).toMatch(/Notayı oku/)
+    expect(m).toMatch(/Metronomla yavaş çal/)
+    expect(m).toMatch(/Sonra hızlan/)
+    expect(m).toMatch(/Uzun ses[\s\S]*Etüt[\s\S]*Eser/)
+    expect(m).toMatch(/M\.M\. 60–80/)
+    expect(m).toMatch(/öneridir/)
+  })
+
+  it('etut:rast-besli: Rast’tan Nevâ’ya beş ses ve çıkış / iniş portesi; sekizlik etüdü anlatılır', () => {
+    const d = ders('etut:rast-besli')
+    expect(metinler(d).join(' ')).toMatch(/Rast, Dügâh, Segâh, Çârgâh, Nevâ/)
+    const [cikis, inis] = porteler('etut:rast-besli').map((b) => b.olaylar)
+    expect(cikis).toHaveLength(5)
+    expect(inis).toEqual([...cikis!].reverse())
+    expect(cikis!.map((e) => (e.kind === 'note' ? e.pitch : null))).toEqual(
+      ['rast', 'dugah', 'segah', 'cargah', 'neva'].map((id) => NEY_PERDELER.find((p) => p.id === id)!.written),
+    )
+    expect(metinler(d).join(' ')).toMatch(/sekizlik/)
+    expect(metinler(d).join(' ')).toMatch(/S2/)
   })
 })

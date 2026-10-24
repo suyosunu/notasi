@@ -178,6 +178,21 @@ describe('App', () => {
     }
   })
 
+  it('#/etut/<id> rotası etüt sayfasını açar (önce ders kapısı); bilinmeyen etüt bulunamadı ekranı', async () => {
+    location.hash = '#/etut/tek-neva'
+    render(<App />)
+    expect(await screen.findByRole('heading', { name: /Etüt nasıl çalışılır/ })).toBeTruthy()
+    cleanup()
+    for (const hash of ['#/etut/yok', '#/etut/', '#/etut/__proto__']) {
+      location.hash = hash
+      render(<App />)
+      expect(screen.getByText('Sayfa bulunamadı')).toBeTruthy()
+      cleanup()
+    }
+    expect(rotaBilinir('/etut/rast-besli-2')).toBe(true)
+    expect(rotaBilinir('/etut/yok')).toBe(false)
+  })
+
   describe('Öğren ve ders rotaları', () => {
     const FIXTURE: Ders = {
       id: 's0:rota deneme',

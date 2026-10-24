@@ -87,7 +87,8 @@ describe('Home', () => {
     const labels = within(night2)
       .getAllByRole('listitem')
       .map((li) => li.querySelector('.plan-label')?.textContent)
-    expect(labels).toEqual(['Uzun ses: Nevâ', 'Uzun ses: Çârgâh', 'Başpâre koy-çek'])
+    // Nevâ geçilmişken etüt de planda: başpâre adımından sonra, tek perde Nevâ etüdü.
+    expect(labels).toEqual(['Uzun ses: Nevâ', 'Uzun ses: Çârgâh', 'Başpâre koy-çek', 'Etüt: Tek perde: Nevâ'])
     cleanup()
     await addLongTone({ perdeId: 'baspare', durationMs: 300, passed: true, toleranceCents: 25 })
     render(<Home />)

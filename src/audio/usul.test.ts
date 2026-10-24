@@ -13,7 +13,7 @@ const player = vi.hoisted(() => ({
 vi.mock('./player', () => player)
 
 import { ONE_SHOT } from './pattern'
-import { buildUsulBody, buildUsulOnceCode, buildUsulPatternCode, startUsul, stopUsul } from './usul'
+import { buildUsulBody, buildUsulOnceCode, buildUsulPatternCode, metronomeBody, startUsul, stopUsul } from './usul'
 import { getUsulSesi, setUsulSesi, strokeSound } from './usulSamples'
 import type { UsulSesi } from './usulSamples'
 
@@ -77,6 +77,14 @@ describe('buildUsulPatternCode', () => {
     expect(code.endsWith('.cpm(5)')).toBe(true)
     expect(code).not.toContain('white')
     expect(code).not.toContain('stack(')
+  })
+
+  it('metronomeBody: Dolap gövdesiyle aynı; 4 zamanda dört tık, ilki vurgulu', () => {
+    expect(buildUsulBody(usul('dolap'), 60, 'oryantal')).toBe(metronomeBody(12, 60))
+    const body = metronomeBody(4, 60)
+    expect(body).toContain('freq("1200@1 800@1 800@1 800@1")')
+    expect(body).toContain('.gain("0.9@1 0.5@1 0.5@1 0.5@1")')
+    expect(body).toContain('.decay(0.3)')
   })
 
   it('geçersiz tempoda RangeError', () => {
