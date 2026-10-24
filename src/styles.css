@@ -595,7 +595,7 @@ h2.setting-label {
   color: var(--ink);
 }
 
-/* Çalan vuruş: daha koyu/doygun zemin ve belirgin çerçeve. */
+/* Çalan vuruş: belirgin çerçeve; düm'de zemin daha da koyudur (beyaz yazıyla ≥ 4,5:1), tek'te daha doygun. */
 .vurus[data-active='true'] {
   outline: 3px solid var(--accent);
   outline-offset: -3px;
@@ -603,7 +603,7 @@ h2.setting-label {
 }
 
 .vurus-dum[data-active='true'] {
-  background: #9a6a24;
+  background: #4a3010;
 }
 
 .vurus-tek[data-active='true'] {
