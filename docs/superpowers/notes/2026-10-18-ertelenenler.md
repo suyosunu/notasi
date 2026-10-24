@@ -57,3 +57,9 @@ Görev incelemelerinde "şimdilik kalabilir" denen bulgular. Sürüm 2'ye başla
 - Task 30: minor (deferred): highlight uses performance.now not audio clock (drift on long plays / suspended ctx); test type casts
 - Ruling: apply the suggestion as fix round 2 — user's main complaint is audibility on iPhone; cheap constant change: DUM_MID_HZ 250 triangle, DUM_LOW_GAIN lowered (0.4), keep total peak ≤ ~1.2 — cost if wrong: slightly brighter düm.
 - Ruling: usul/melody balance in piece playback decided after the user's listening feedback — cost if wrong: one gain constant later.
+
+## Usul sesi seçeneği (2026-10-24)
+- Ruling: Dolap metronome stays synthesized for every usul voice (a metronome is not an usul stroke) — cost if wrong: minor.
+- Ruling: Darbuka stroke mapping from spectrum analysis (research) — user auditions by ear — cost if wrong: remap 3 files.
+- Ruling: fold in Minor #1 (tek/te/ke ~9–11 dB under düm in darbuka/konga → set per-stroke gain so tek RMS sits ~4–6 dB under düm) and the Temple Blocks attribution line in LISANS.txt — user-audible, cheap — cost if wrong: retune by ear.
+- Task 31: minor (deferred): trigger stop() no-op (cut groups unused); circular mapping test; -60 dB tail trim shortens darbuka tek
