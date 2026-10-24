@@ -1,8 +1,8 @@
 import { NOTA_TOPICS } from '../content/nota-topics'
 import type { Hedef, Seviye } from '../content/seviyeler'
-import { seconds } from '../ney/LongToneTrainer'
 import { getSettings, listAttempts, listLongTones, listTopics } from '../store/db'
 import type { LongToneRec } from '../store/db'
+import { seconds } from '../util/sure'
 import { BASPARE_ID } from './baspare'
 import { ILK_SES_ID } from './evening-plan'
 import { topicStatuses } from './mastery'
@@ -38,9 +38,9 @@ function hedefDurumu(h: Hedef, g: IlerlemeGirdisi): HedefDurumu {
     case 'baspare':
       return { tamam: g.longTones.some((r) => r.perdeId === BASPARE_ID && r.passed) }
     case 'uzun-ses': {
-      // Tolerans payı hedeften geniş olan kayıtlar (ör. ±25) bu hedefe sayılmaz.
-      const uygun = g.longTones.filter((r) => r.perdeId === o.perdeId && r.toleranceCents <= o.cent)
-      const tamam = uygun.some((r) => r.passed && r.durationMs >= o.ms)
+      // Yalnız geçen ve tolerans payı hedeften geniş olmayan (ör. ±25 değil) kayıtlar bu hedefe sayılır.
+      const uygun = g.longTones.filter((r) => r.perdeId === o.perdeId && r.passed && r.toleranceCents <= o.cent)
+      const tamam = uygun.some((r) => r.durationMs >= o.ms)
       if (uygun.length === 0) return { tamam }
       return { tamam, ilerleme: `en iyi ${seconds(Math.max(...uygun.map((r) => r.durationMs)))} sn` }
     }

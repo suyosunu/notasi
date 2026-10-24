@@ -71,6 +71,7 @@ function Hedefler(props: {
 /** Yolum ekranı: mevcut seviye açık, diğer seviyeler katlanır; hedefler uygulama verisinden ya da kullanıcı onayıyla işaretlenir. */
 export function Yolum() {
   const [girdi, setGirdi] = useState<IlerlemeGirdisi | null>(null)
+  const [hata, setHata] = useState(false)
 
   useEffect(() => {
     let alive = true
@@ -78,7 +79,9 @@ export function Yolum() {
       .then((g) => {
         if (alive) setGirdi(g)
       })
-      .catch(() => undefined)
+      .catch(() => {
+        if (alive) setHata(true)
+      })
     return () => {
       alive = false
     }
@@ -99,7 +102,23 @@ export function Yolum() {
     yaz('onaylananHedefler', hedef.id).catch(() => ayarla(!isaretli))
   }
 
-  if (!girdi) return null
+  if (!girdi) {
+    return (
+      <main class="screen">
+        <h1>🗺️ Yolum</h1>
+        {hata && (
+          <p class="notice" role="status">
+            İlerleme okunamadı.
+          </p>
+        )}
+        <div class="links">
+          <a class="back" href="#/">
+            Ana ekrana dön
+          </a>
+        </div>
+      </main>
+    )
+  }
 
   const durumlar = hedefDurumlari(SEVIYELER, girdi)
   const mevcut = mevcutSeviye(SEVIYELER, durumlar)

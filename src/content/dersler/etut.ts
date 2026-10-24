@@ -70,7 +70,7 @@ export const ETUT_DERSLERI: Ders[] = [
         maddeler: [
           'Önce dinle: "▶ Dinle" ile etüdü baştan sona duy.',
           'Notayı oku: ölçüleri soldan sağa izle, hangi sürenin geldiğine bak.',
-          'Metronomla yavaş çal: "🎵 Metronomla çal" bir ölçü sayar, sonra metronom seninle sürer. Sonra neyinle aynı ezgiyi çal.',
+          'Metronomla yavaş çal: "🎵 Metronomla çal" bir ölçü sayar, sonra metronom seninle sürer. Metronom sürerken neyinle aynı ezgiyi çal.',
           'Sonra hızlan: yavaşta hatasız çalınca hızı kaydırıcıyla biraz artır.',
         ],
       },

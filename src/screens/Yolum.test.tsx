@@ -1,8 +1,14 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/preact'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { SEVIYELER } from '../content/seviyeler'
 import { addLongTone, getSettings, isaretEkle, resetDbForTests } from '../store/db'
+import { loadIlerleme } from '../learning/seviye'
 import { Yolum } from './Yolum'
+
+vi.mock('../learning/seviye', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../learning/seviye')>()
+  return { ...actual, loadIlerleme: vi.fn(actual.loadIlerleme) }
+})
 
 beforeEach(async () => {
   await resetDbForTests()
@@ -32,12 +38,30 @@ describe('Yolum', () => {
 
   it('tamam hedef ✓, eksik hedef ○ ile gösterilir; ilerleme yazılır', async () => {
     await isaretEkle('okunanDersler', 's0:neyi-tani')
-    await addLongTone({ perdeId: 'neva', durationMs: 4200, passed: false, toleranceCents: 20 })
+    await addLongTone({ perdeId: 'neva', durationMs: 4200, passed: true, toleranceCents: 20 })
     render(<Yolum />)
     await screen.findByText('Neyin bölümlerini öğrendim')
     expect(within(satir('Neyin bölümlerini öğrendim')).getByRole('img', { name: 'tamam' }).textContent).toBe('✓')
     expect(within(satir('Duruş ve tutuş dersini okudum')).getByRole('img', { name: 'eksik' }).textContent).toBe('○')
     expect(satir(/Nevâ'da 5 sn kararlı ses/).textContent).toContain('en iyi 4,2 sn')
+  })
+
+  it('geçmemiş uzun ses denemesi ilerleme yazdırmaz', async () => {
+    await addLongTone({ perdeId: 'neva', durationMs: 5800, passed: false, toleranceCents: 20 })
+    render(<Yolum />)
+    await screen.findByText('Neyin bölümlerini öğrendim')
+    const li = satir(/Nevâ'da 5 sn kararlı ses/)
+    expect(li.textContent).not.toContain('en iyi')
+    expect(within(li).getByRole('img', { name: 'eksik' })).toBeTruthy()
+  })
+
+  it('ilerleme okunamazsa başlık, kısa bir not ve ana ekrana dönüş bağlantısı görünür', async () => {
+    vi.mocked(loadIlerleme).mockRejectedValueOnce(new Error('db'))
+    render(<Yolum />)
+    expect(screen.getByRole('heading', { name: /Yolum/ })).toBeTruthy()
+    expect(await screen.findByText('İlerleme okunamadı.')).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Ana ekrana dön' }).getAttribute('href')).toBe('#/')
+    expect(screen.queryByText('Diğer seviyeler')).toBeNull()
   })
 
   it('onay kutusu işaretlenince kaydedilir, yeniden açılınca işaretli kalır ve kaldırılabilir', async () => {

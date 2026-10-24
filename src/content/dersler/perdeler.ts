@@ -46,7 +46,7 @@ const ILIK =
 const HAFTA = 'Mehmet Yücel her yeni sese ortalama bir hafta, hatta on gün uzun ses çalışmayı önerir.'
 
 const HEDEF =
-  "Seviye 1 için önerimiz: her perdeyi en az 8 sn, ±20 sent içinde tutmak. Bu sayı bir öneridir; kaynaklar kesin süre vermez. Uygulama başta 5 sn'lik bir tutuşu ve ±25 sentlik bir bandı kabul eder; sen ilerledikçe süre 10 sn'ye çıkar, bant ±15 sente daralır. Bunlar da önerilerdir."
+  "Seviye 1 için önerimiz: her perdeyi en az 8 sn, ±20 sent içinde tutmak. Bu sayı bir öneridir; kaynaklar kesin süre vermez. Uygulama başta 5 sn'lik bir tutuşu ve ±25 sentlik bir bandı kabul eder; sen ilerledikçe süre 10 sn'ye çıkar, bant ±15 sente daralır. Öneri ±20 senttir; daha dar bant fazladan alıştırmadır."
 
 /** Her dersin "Kendin dene" adımları: uzun ses, ▶ Dinle ile kulakla karşılaştırma, akort göstergesi. */
 function deneAdimlari(ad: { belirtme: string }, onceki?: { ad: string; gecis: string }): DersBlok {

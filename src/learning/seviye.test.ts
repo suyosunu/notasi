@@ -66,14 +66,16 @@ describe('hedefDurumlari', () => {
     expect(d['s0-neva-5']!.ilerleme).toBeUndefined()
   })
 
-  it('uzun ses: geçmemiş kayıt tamamlamaz; yine de en iyi süre ilerlemede görünür', () => {
-    const d = hedefDurumlari(SEVIYELER, girdi({ longTones: [kayit('neva', 6200, 20, false)] }))
-    expect(d['s0-neva-5']).toEqual({ tamam: false, ilerleme: 'en iyi 6,2 sn' })
+  it('uzun ses: geçmemiş kayıt sayılmaz; ne tamamlar ne ilerleme gösterir', () => {
+    const d = hedefDurumlari(SEVIYELER, girdi({ longTones: [kayit('neva', 5800, 20, false)] }))
+    expect(d['s0-neva-5']!.tamam).toBe(false)
+    expect(d['s0-neva-5']!.ilerleme).toBeUndefined()
   })
 
   it('uzun ses: yetersiz süre tamam değil; başka perdenin kaydı sayılmaz', () => {
     const d = hedefDurumlari(SEVIYELER, girdi({ longTones: [kayit('neva', 4900, 15), kayit('cargah', 9000, 15)] }))
     expect(d['s0-neva-5']).toEqual({ tamam: false, ilerleme: 'en iyi 4,9 sn' })
+    expect(d['s0-neva-5']!.tamam).toBe(false)
     expect(d['s1-cargah-8']).toEqual({ tamam: true, ilerleme: 'en iyi 9,0 sn' })
     expect(d['s1-neva-8']!.tamam).toBe(false)
   })

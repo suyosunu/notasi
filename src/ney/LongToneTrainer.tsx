@@ -15,6 +15,7 @@ import type { Settings } from '../store/db'
 import { FingeringDiagram } from './Fingering'
 import { MicGate } from './MicGate'
 import { TunerGauge } from './TunerGauge'
+import { seconds } from '../util/sure'
 
 export type ToneTarget = { kind: 'ilk-ses' } | { kind: 'perde'; perde: NeyPerde }
 
@@ -28,11 +29,6 @@ interface View {
   cents: number | null
   holdingMs: number
   bestMs: number
-}
-
-/** Saniye, bir ondalık, Türkçe ondalık virgülüyle: 3200 → "3,2". */
-export function seconds(ms: number): string {
-  return (ms / 1000).toFixed(1).replace('.', ',')
 }
 
 /**
