@@ -39,7 +39,53 @@ export function beamGroups(events: MusicEvent[], beatBeats: number, barlinesAfte
     }
   })
   close()
-  return groups
+  if (beat !== UNIT) groups.push(...quarterFallback(events, bars, groups))
+  return groups.sort((a, b) => a[0]! - b[0]!)
+}
+
+/**
+ * Yedek geçiş (vuruş penceresi bir dörtlükten farklıyken, ör. 12/8): henüz gruplanmamış, sus ya da ölçü
+ * çizgisiyle ayrılmamış ardışık sekizlik/onaltılıklar sekizlik ızgarasında (0,5 dörtlüğün katı) başlıyor ve
+ * toplam tam bir dörtlük sürüyorsa (`e. s`, `s e.`, `e e`, `s s e`) kirişlenir. 4/4'te her dörtlük zaten bir
+ * vuruş penceresidir; orada bu geçiş vuruşu aşan gruplar kuracağı için uygulanmaz.
+ */
+function quarterFallback(events: MusicEvent[], bars: Set<number>, taken: number[][]): number[][] {
+  const used = new Set(taken.flat())
+  const eighth = UNIT / 2
+  const free = (i: number) => {
+    const e = events[i]!
+    return !used.has(i) && e.kind === 'note' && (e.dur === 'eighth' || e.dur === 'sixteenth')
+  }
+  const starts: number[] = []
+  let pos = 0
+  events.forEach((e, i) => {
+    starts.push(pos)
+    pos = bars.has(i) ? 0 : pos + Math.round(beats(e) * UNIT)
+  })
+  const out: number[][] = []
+  let i = 0
+  while (i < events.length) {
+    if (!free(i) || starts[i]! % eighth !== 0) {
+      i++
+      continue
+    }
+    const run = [i]
+    let span = Math.round(beats(events[i]!) * UNIT)
+    let j = i
+    while (span < UNIT && !bars.has(j) && j + 1 < events.length && free(j + 1)) {
+      j++
+      run.push(j)
+      span += Math.round(beats(events[j]!) * UNIT)
+    }
+    if (span === UNIT && run.length >= 2) {
+      out.push(run)
+      run.forEach((k) => used.add(k))
+      i = j + 1
+    } else {
+      i++
+    }
+  }
+  return out
 }
 
 /** Usulün kiriş vuruş birimi (dörtlük): mertebe 8 (ör. 12/8) → üç sekizlik, aksi halde bir dörtlük. */

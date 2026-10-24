@@ -1,7 +1,9 @@
 import { cleanup, render } from '@testing-library/preact'
 import { afterEach, describe, expect, it } from 'vitest'
 import { PARCALAR } from '../content/parcalar'
+import { USULLER } from '../content/usuller'
 import type { MusicEvent } from '../music/notation'
+import { beamBeatsFor } from './beams'
 import { MIN_SCALE, ROW_WIDTH, scoreLayout, scoreScale, ScoreView } from './ScoreView'
 import { SYLLABLE_SIZE } from './Staff'
 
@@ -112,6 +114,32 @@ describe('ScoreView', () => {
     const twelve = render(<ScoreView olcu={olcu} beamBeats={1.5} />).container
     expect(twelve.querySelectorAll('[data-beam="1"]')).toHaveLength(6)
     expect(twelve.querySelectorAll('[data-flag]')).toHaveLength(0)
+  })
+
+  it('üç gerçek parçada hiçbir kiriş hece bandına inmez (satır genişliğinde, usulün vuruş birimiyle)', () => {
+    const nums = (d: string) => d.match(/-?\d+(?:\.\d+)?/g)!.map(Number)
+    let beams = 0
+    for (const p of PARCALAR) {
+      const beat = beamBeatsFor(USULLER.find((u) => u.id === p.usul))
+      const { container } = render(<ScoreView olcu={p.olcu} soz={p.soz} beamBeats={beat} />)
+      const syl = container.querySelector('text[data-syllable]')!
+      // Hece kutusunun üstü: taban çizgisi − yazı boyu (tam em; gerçek büyük harf yüksekliğinden daha temkinli).
+      const bandTop = Number(syl.getAttribute('y')) - Number(syl.getAttribute('font-size'))
+      expect(bandTop).toBe(91)
+      for (const b of container.querySelectorAll('[data-beam]')) {
+        beams++
+        nums(b.getAttribute('d')!).forEach((v, i) => {
+          if (i % 2 === 1) expect(v, `${p.id}: ${b.getAttribute('d')}`).toBeLessThan(bandTop)
+        })
+      }
+      // Gerçek parçalarda 2 aralıklık kenar istisnası hiç kullanılmaz: her kirişli sap en az 2,5 aralık.
+      for (const s of container.querySelectorAll('line[data-beamed]')) {
+        const len = Math.abs(Number(s.getAttribute('y2')) - Number(s.getAttribute('y1')))
+        expect(len, p.id).toBeGreaterThanOrEqual(25 - 1e-9)
+      }
+      cleanup()
+    }
+    expect(beams).toBeGreaterThan(100)
   })
 
   it('tüm olaylar çizilir (bağlı notalar dahil)', () => {

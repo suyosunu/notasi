@@ -69,6 +69,46 @@ describe('beamGroups', () => {
     expect(beamGroups([n('quarter'), n('eighth', true), n('sixteenth'), n('eighth')], 1.5)).toEqual([[2, 3]])
   })
 
+  it("12/8 yedek geçişi: Dolap ölçüsü (e e e q e q e. s q) iki grup verir", () => {
+    const m = [
+      n('eighth'),
+      n('eighth'),
+      n('eighth'),
+      n('quarter'),
+      n('eighth'),
+      n('quarter'),
+      n('eighth', true),
+      n('sixteenth'),
+      n('quarter'),
+    ]
+    expect(beamGroups(m, 1.5)).toEqual([
+      [0, 1, 2],
+      [6, 7],
+    ])
+    // İki ölçü art arda: her ölçüde aynı iki grup, ölçü çizgisi aşılmaz.
+    expect(beamGroups([...m, ...m], 1.5, [8, 17])).toEqual([
+      [0, 1, 2],
+      [6, 7],
+      [9, 10, 11],
+      [15, 16],
+    ])
+  })
+
+  it('12/8 yedek geçişi: bir dörtlükten uzun ya da sekizlik ızgarasında başlamayan çift gruplanmaz', () => {
+    // q e. e: noktalı sekizlik + sekizlik 1,25 dörtlük sürer.
+    expect(beamGroups([n('quarter'), n('eighth', true), n('eighth')], 1.5)).toEqual([])
+    // q (s sus) e. s: noktalı sekizlik 1,25'te başlar (ızgara dışı).
+    expect(beamGroups([n('quarter'), r('sixteenth'), n('eighth', true), n('sixteenth')], 1.5)).toEqual([])
+    // Ölçü çizgisi yedek grubu da böler: q e. | s
+    expect(beamGroups([n('quarter'), n('eighth', true), n('sixteenth')], 1.5, [1])).toEqual([])
+  })
+
+  it("4/4'te yedek geçiş uygulanmaz: vuruşu aşan e e çifti gruplanmaz", () => {
+    // e q e e q e: 1,5–2,5 arasındaki iki sekizlik 2. ve 3. vuruşa yayılır.
+    const ev = [n('eighth'), n('quarter'), n('eighth'), n('eighth'), n('quarter'), n('eighth')]
+    expect(beamGroups(ev, 1)).toEqual([])
+  })
+
   it('usulden vuruş birimi: mertebe 8 → 1,5, aksi halde 1', () => {
     expect(beamBeatsFor(USULLER.find((u) => u.id === 'dolap'))).toBe(1.5)
     expect(beamBeatsFor(USULLER.find((u) => u.id === 'sofyan'))).toBe(1)
@@ -77,7 +117,7 @@ describe('beamGroups', () => {
 })
 
 describe('beamGroups: gerçek parçalar', () => {
-  it('üç gerçek parçada hiçbir kiriş vuruş sınırını, ölçü çizgisini ya da susu aşmaz', () => {
+  it('üç gerçek parçada hiçbir kiriş vuruş sınırını (12/8 yedek dörtlük grupları dışında), ölçü çizgisini ya da susu aşmaz', () => {
     expect(PARCALAR).toHaveLength(3)
     let total = 0
     for (const p of PARCALAR) {
@@ -111,7 +151,11 @@ describe('beamGroups: gerçek parçalar', () => {
         const start = startOf(first)
         const end = startOf(last) + beats(events[last]!)
         const beatIndex = Math.floor(start / beat + 1e-9)
-        expect(end, `${p.id} grup ${g.join(',')}`).toBeLessThanOrEqual((beatIndex + 1) * beat + 1e-9)
+        const inBeat = end <= (beatIndex + 1) * beat + 1e-9
+        // Yedek grup (yalnızca 12/8): sekizlik ızgarasında başlar ve tam bir dörtlük sürer.
+        const quarterOnGrid =
+          beat !== 1 && Math.abs(start * 2 - Math.round(start * 2)) < 1e-9 && Math.abs(end - start - 1) < 1e-9
+        expect(inBeat || quarterOnGrid, `${p.id} grup ${g.join(',')}`).toBe(true)
       }
     }
     expect(total).toBeGreaterThan(20)

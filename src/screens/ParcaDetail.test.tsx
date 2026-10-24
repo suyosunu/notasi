@@ -61,10 +61,12 @@ describe('ParcaDetail', () => {
 
   it('kiriş vuruş birimi usulden gelir: Dolap (12/8) üçlü, Sofyan (4/4) ikili gruplar', () => {
     render(<ParcaDetail parcaId="benim-adim-dertli-dolap" />)
-    // Her ölçü "e e e q e q e. s q": 12/8'de yalnızca ilk üç sekizlik bir grup olur.
+    // Her ölçü "e e e q e q e. s q": 12/8'de ilk üç sekizlik ve (yedek geçişle) e. s birer grup olur;
+    // e. s grubundaki onaltılığın kısa ikinci kirişi vardır.
     const dolap = byId('benim-adim-dertli-dolap')
-    expect(document.querySelectorAll('[data-beam="1"]')).toHaveLength(dolap.olcu.length)
-    expect(document.querySelectorAll('line[data-beamed]')).toHaveLength(3 * dolap.olcu.length)
+    expect(document.querySelectorAll('[data-beam="1"]')).toHaveLength(2 * dolap.olcu.length)
+    expect(document.querySelectorAll('[data-beam="2"]')).toHaveLength(dolap.olcu.length)
+    expect(document.querySelectorAll('line[data-beamed]')).toHaveLength(5 * dolap.olcu.length)
     cleanup()
     render(<ParcaDetail parcaId="hak-teala" />)
     // Hak Teâlâ 1. ölçü "q q e e e e": iki ayrı ikili grup.
