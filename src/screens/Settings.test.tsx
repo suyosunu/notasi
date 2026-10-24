@@ -1,7 +1,8 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/preact'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { playWritten, setNeySesi, stopAudio, unlockAudio } from '../audio/player'
+import { getNeySesi, playWritten, setNeySesi, stopAudio, unlockAudio } from '../audio/player'
 import { toToneEvents } from '../audio/pattern'
+import type { NeySesi } from '../audio/pattern'
 import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
 import { soundingHz } from '../music/ahenk'
 import { exportBackup, shareOrDownloadBackup } from '../store/backup'
@@ -13,6 +14,7 @@ vi.mock('../audio/player', () => ({
   playWritten: vi.fn(() => Promise.resolve()),
   stopAudio: vi.fn(),
   setNeySesi: vi.fn(),
+  getNeySesi: vi.fn(() => 'mevcut'),
 }))
 
 vi.mock('../store/backup', async (importOriginal) => {
@@ -31,7 +33,11 @@ beforeEach(async () => {
   vi.mocked(unlockAudio).mockReset().mockImplementation(() => Promise.resolve())
   vi.mocked(playWritten).mockReset().mockImplementation(() => Promise.resolve())
   vi.mocked(stopAudio).mockReset()
-  vi.mocked(setNeySesi).mockReset()
+  let voice: NeySesi = 'mevcut'
+  vi.mocked(setNeySesi).mockReset().mockImplementation((v) => {
+    voice = v
+  })
+  vi.mocked(getNeySesi).mockReset().mockImplementation(() => voice)
 })
 
 afterEach(() => {
@@ -178,6 +184,19 @@ describe('Settings', () => {
     await waitFor(() => expect(select.value).toBe('davud'))
   })
 
+  it('geri yüklemeden sonra player sesi yedekteki ney sesine ayarlanır', async () => {
+    await saveSettings({ neySesi: 'shakuhachi' })
+    const backup = await exportBackup()
+    await saveSettings({ neySesi: 'nefesli' })
+    render(<Settings />)
+    await screen.findByRole('button', { name: 'Yedeği geri yükle' })
+    expect(getNeySesi()).toBe('mevcut')
+    pickFile(JSON.stringify(backup))
+    await screen.findByText('Yedek yüklendi.')
+    expect(getNeySesi()).toBe('shakuhachi')
+    expect((screen.getByRole('radio', { name: 'Shakuhachi' }) as HTMLInputElement).checked).toBe(true)
+  })
+
   it('Hakkında ve Ana ekran bağlantıları vardır', async () => {
     render(<Settings />)
     expect((await screen.findByText('Hakkında')).closest('a')?.getAttribute('href')).toBe('#/hakkinda')
@@ -259,6 +278,35 @@ describe('Settings: Ney sesi', () => {
     await screen.findByRole('heading', { name: 'Ney sesi' })
     fireEvent.click(screen.getByRole('button', { name: '▶ Dene (Mevcut)' }))
     expect(await screen.findByText(SOUND_WARNING)).toBeTruthy()
+  })
+
+  it('unlockAudio beklerken sayfadan çıkılırsa deneme çalmaya başlamaz', async () => {
+    let release: () => void = () => {}
+    vi.mocked(unlockAudio).mockImplementation(() => new Promise<void>((res) => (release = res)))
+    const { unmount } = render(<Settings />)
+    await screen.findByRole('heading', { name: 'Ney sesi' })
+    fireEvent.click(screen.getByRole('button', { name: '▶ Dene (Nefesli)' }))
+    await waitFor(() => expect(unlockAudio).toHaveBeenCalledTimes(1))
+    unmount()
+    release()
+    await new Promise((r) => setTimeout(r, 30))
+    expect(playWritten).not.toHaveBeenCalled()
+  })
+
+  it('unlockAudio beklerken başka Dene basılırsa yalnızca sonuncusu çalar', async () => {
+    const releases: (() => void)[] = []
+    vi.mocked(unlockAudio).mockImplementation(() => new Promise<void>((res) => releases.push(res)))
+    render(<Settings />)
+    await screen.findByRole('heading', { name: 'Ney sesi' })
+    fireEvent.click(screen.getByRole('button', { name: '▶ Dene (Nefesli)' }))
+    await waitFor(() => expect(releases).toHaveLength(1))
+    fireEvent.click(screen.getByRole('button', { name: '▶ Dene (Shakuhachi)' }))
+    await waitFor(() => expect(releases).toHaveLength(2))
+    releases.forEach((r) => r())
+    await waitFor(() => expect(playWritten).toHaveBeenCalledTimes(1))
+    await new Promise((r) => setTimeout(r, 30))
+    expect(playWritten).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(playWritten).mock.calls[0]![3]).toBe('shakuhachi')
   })
 
   it('sayfadan çıkınca ses durur', async () => {

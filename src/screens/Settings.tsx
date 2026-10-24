@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'preact/hooks'
+import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks'
 import { playWritten, setNeySesi, stopAudio, unlockAudio } from '../audio/player'
 import type { NeySesi } from '../audio/pattern'
 import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
@@ -54,7 +54,16 @@ export function Settings() {
   }
 
   // Sayfadan çıkınca deneme sesi susar.
-  useEffect(() => () => stopAudio(), [])
+  // Bekleyen bir "Dene" (unlockAudio sürerken) çıkıştan sonra çalmaya başlamasın. Preact edilgen (useEffect)
+  // temizliklerini çizimden sonraya erteler; bu yüzden geçersiz kılma eşzamanlı çalışan useLayoutEffect'tedir.
+  const runRef = useRef(0)
+  useLayoutEffect(
+    () => () => {
+      runRef.current++
+      stopAudio()
+    },
+    [],
+  )
 
   async function changeNeySesi(neySesi: NeySesi) {
     setNeySesi(neySesi) // hemen uygulanır; kayıt arkadan gelir
@@ -68,12 +77,14 @@ export function Settings() {
       setSoundWarn(SOUND_OFF)
       return
     }
+    const run = ++runRef.current
     try {
       // unlockAudio dokunuş işleyicisinde, ilk iş olarak çağrılmalıdır (iOS).
       await unlockAudio()
+      if (run !== runRef.current) return
       await playWritten(DENEME_DIZISI, settings.tuning, DENEME_BPM, voice)
     } catch {
-      setSoundWarn(SOUND_WARNING)
+      if (run === runRef.current) setSoundWarn(SOUND_WARNING)
     }
   }
 
@@ -109,7 +120,9 @@ export function Settings() {
       }
       throw err
     }
-    setSettings(await getSettings())
+    const restored = await getSettings()
+    setNeySesi(restored.neySesi) // oynatıcı sesi geri yüklenen ayarla eşleşsin
+    setSettings(restored)
     setMessage({ kind: 'ok', text: 'Yedek yüklendi.' })
   }
 
