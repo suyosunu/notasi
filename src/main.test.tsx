@@ -4,11 +4,16 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   preloadAudio: vi.fn(() => Promise.resolve()),
   setNeySesi: vi.fn(),
-  getSettings: vi.fn(() => Promise.resolve({ neySesi: 'nefesli' })),
+  setUsulSesi: vi.fn(),
+  getSettings: vi.fn(() => Promise.resolve({ neySesi: 'nefesli', usulSesi: 'darbuka' })),
 }))
 
 vi.mock('./app', () => ({ App: () => null }))
-vi.mock('./audio/player', () => ({ preloadAudio: mocks.preloadAudio, setNeySesi: mocks.setNeySesi }))
+vi.mock('./audio/player', () => ({
+  preloadAudio: mocks.preloadAudio,
+  setNeySesi: mocks.setNeySesi,
+  setUsulSesi: mocks.setUsulSesi,
+}))
 vi.mock('./store/db', () => ({ getSettings: mocks.getSettings }))
 
 afterEach(() => {
@@ -22,6 +27,12 @@ describe('main', () => {
     await import('./main')
     await waitFor(() => expect(mocks.setNeySesi).toHaveBeenCalledWith('nefesli'))
     expect(mocks.preloadAudio).toHaveBeenCalled()
+  })
+
+  it("açılışta kayıtlı usul sesini player'a uygular", async () => {
+    document.body.innerHTML = '<div id="app"></div>'
+    await import('./main')
+    await waitFor(() => expect(mocks.setUsulSesi).toHaveBeenCalledWith('darbuka'))
   })
 
   it('ayarlar okunamazsa uygulama yine açılır (hata yutulur)', async () => {

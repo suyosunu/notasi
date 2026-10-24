@@ -34,6 +34,18 @@ describe('About', () => {
     )
   })
 
+  it('usul seslerinin (Konga, Tahta, Darbuka) kaynaklarını ve lisanslarını gösterir', async () => {
+    const { About } = await import('./About')
+    render(<About />)
+    expect(screen.getByText(/Konga ve Tahta usul sesleri:/).textContent).toBe(
+      'Konga ve Tahta usul sesleri: Fluid R3 GM SoundFont, © 2000-2002, 2008 Frank Wen, MIT lisansıyla ' +
+        '(WebAudioFont dönüşümü, © 2017 Srgy Surkv, MIT).',
+    )
+    expect(screen.getByText(/Darbuka usul sesi:/).textContent).toBe(
+      'Darbuka usul sesi: Versilian Community Sample Library (VCSL), Versilian Studios, CC0 1.0 (kamu malı).',
+    )
+  })
+
   it("SOURCE_URL boşken bağlantı yerine '(yakında)' yazar", async () => {
     vi.doMock('../config', () => ({ SOURCE_URL: '' }))
     const { About } = await import('./About')

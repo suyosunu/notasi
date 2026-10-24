@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { PARCALAR } from '../content/parcalar'
 import type { Parca } from '../content/parcalar'
 import { DEFAULT_TUNING } from '../music/ahenk'
@@ -6,6 +6,7 @@ import type { MusicEvent } from '../music/notation'
 import { melodyChain, NEY_SESLERI, SOUND_CHAIN, toToneEvents } from './pattern'
 import { buildPieceCode, measureBeats } from './piece'
 import { USULLER } from '../content/usuller'
+import { setUsulSesi } from './usulSamples'
 
 // Çekirdeğin gerçek (kullanılmayan) kabelsalat bağımlılığı Node'da yüklenmez; yalnızca onu taklit ederiz.
 vi.mock('@kabelsalat/web', () => ({ SalatRepl: class {} }))
@@ -216,6 +217,61 @@ describe('buildPieceCode: gerçek Strudel çekirdeğiyle', () => {
         const next = onsets.find((t) => t > h.at + 1e-9)!
         expect(next - (h.at + h.hold + h.release! + 0.01)).toBeGreaterThanOrEqual(0.005 - 1e-9)
       }
+    }
+  })
+})
+
+describe('buildPieceCode: usul sesi', () => {
+  afterEach(() => setUsulSesi('oryantal'))
+
+  it('usul katmanı seçilen kayıt sesini kullanır: Hak Teâlâ (Sofyan) düm ölçü başında, te-ke 3. ve 4. vuruşta', async () => {
+    const p = parca('hak-teala')
+    for (const ses of ['konga', 'tahta', 'darbuka'] as const) {
+      const { code } = buildPieceCode(p, DEFAULT_TUNING, 60, true, 'mevcut', ses)
+      const hs = await hits(code, 0, 124)
+      const usulHits = hs.filter((h) => h.s?.startsWith('usul_'))
+      expect(usulHits.filter((h) => h.s === `usul_${ses}_dum`).map((h) => h.at)).toEqual(
+        Array.from({ length: 31 }, (_, i) => i * 4),
+      )
+      const teke = ses === 'tahta' ? 'usul_tahta_tek' : `usul_${ses}_teke`
+      expect(usulHits.filter((h) => h.s === teke).map((h) => h.at)).toEqual(
+        Array.from({ length: 31 }, (_, i) => [i * 4 + 2, i * 4 + 3]).flat(),
+      )
+      // Sentez usul katmanı yoktur; melodi aynı kalır.
+      expect(hs.some(isDum) || hs.some(isTekClick)).toBe(false)
+      expect(hs.filter((h) => isMelody(h))).toEqual(
+        (await hits(buildPieceCode(p, DEFAULT_TUNING, 60, false).code, 0, 124)).filter((h) => isMelody(h)),
+      )
+      expect(await hits(code, 124, 600)).toEqual([])
+    }
+  })
+
+  it('varsayılan: seçili usul sesi (getUsulSesi)', () => {
+    const p = parca('hak-teala')
+    expect(buildPieceCode(p, DEFAULT_TUNING, 60, true).code).toBe(
+      buildPieceCode(p, DEFAULT_TUNING, 60, true, 'mevcut', 'oryantal').code,
+    )
+    setUsulSesi('darbuka')
+    const { code } = buildPieceCode(p, DEFAULT_TUNING, 60, true)
+    expect(code).toBe(buildPieceCode(p, DEFAULT_TUNING, 60, true, 'mevcut', 'darbuka').code)
+    expect(code).toContain('usul_darbuka_dum')
+  })
+
+  it('Dolap parçasında metronom her seçenekte sentez tık olarak kalır', () => {
+    const p = parca('benim-adim-dertli-dolap')
+    for (const ses of ['konga', 'tahta', 'darbuka'] as const) {
+      expect(buildPieceCode(p, DEFAULT_TUNING, 60, true, 'mevcut', ses).code).toBe(
+        buildPieceCode(p, DEFAULT_TUNING, 60, true, 'mevcut', 'oryantal').code,
+      )
+    }
+  })
+
+  it('♩ = 100 Sofyan parçada kayıt vuruşları sonrakine taşmaz (≥ 5 ms pay)', async () => {
+    const { code } = buildPieceCode(parca('hak-teala'), DEFAULT_TUNING, 100, true, 'mevcut', 'darbuka')
+    const hs = (await hits(code, 0, 24)).filter((h) => h.s?.startsWith('usul_'))
+    expect(hs.length).toBeGreaterThan(0)
+    for (const [i, h] of hs.slice(0, -1).entries()) {
+      expect(hs[i + 1]!.at - (h.at + h.hold + h.release! + 0.01)).toBeGreaterThanOrEqual(0.005 - 1e-9)
     }
   })
 })

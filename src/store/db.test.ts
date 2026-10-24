@@ -88,6 +88,22 @@ describe('settings', () => {
     expect((await getSettings()).neySesi).toBe('mevcut')
   })
 
+  it("usulSesi varsayılan olarak 'oryantal' olur ve kaydedilir", async () => {
+    expect(DEFAULT_SETTINGS.usulSesi).toBe('oryantal')
+    expect((await getSettings()).usulSesi).toBe('oryantal')
+    await saveSettings({ usulSesi: 'darbuka' })
+    expect((await getSettings()).usulSesi).toBe('darbuka')
+  })
+
+  it("usulSesi'z eski kayıt ve bilinmeyen değer 'oryantal' olur", async () => {
+    await replaceAllStores({ ...noStores(), settings: [{ id: 'settings', neySesi: 'nefesli' }] })
+    const old = await getSettings()
+    expect(old.usulSesi).toBe('oryantal')
+    expect(old.neySesi).toBe('nefesli')
+    await replaceAllStores({ ...noStores(), settings: [{ id: 'settings', usulSesi: 'bongo' }] })
+    expect((await getSettings()).usulSesi).toBe('oryantal')
+  })
+
   it('accumulates successive patches', async () => {
     await saveSettings({ onboarded: true })
     await saveSettings({ calibrated: true })

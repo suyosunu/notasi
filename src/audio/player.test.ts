@@ -370,3 +370,81 @@ describe('ney sesi (setNeySesi / getNeySesi)', () => {
     expect(strudel.evaluate).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('usul sesi (setUsulSesi / getUsulSesi) ve kayıt yükleme', () => {
+  const fetchMock = vi.fn((_url: string) => Promise.resolve(new Response(new ArrayBuffer(8))))
+  beforeEach(() => {
+    fetchMock.mockReset().mockImplementation(() => Promise.resolve(new Response(new ArrayBuffer(8))))
+    vi.stubGlobal('fetch', fetchMock)
+  })
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  const konga = 's("usul_konga_dum@2 usul_konga_teke@1 usul_konga_teke@1").clip("0.9@2 0.9@1 0.9@1").cpm(15)'
+
+  it("varsayılan 'oryantal'; setUsulSesi seçimi değiştirir", async () => {
+    const { getUsulSesi, setUsulSesi } = await freshPlayer()
+    expect(getUsulSesi()).toBe('oryantal')
+    setUsulSesi('tahta')
+    expect(getUsulSesi()).toBe('tahta')
+  })
+
+  it('oryantal (sentez) usul kodu hiçbir dosya istemez', async () => {
+    const { playLoop } = await freshPlayer()
+    await playLoop('stack(freq("65@2 ~@1 ~@1").s("sine"), s("~@2 white@1 white@1")).cpm(15)')
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(strudel.registerSound).not.toHaveBeenCalled()
+  })
+
+  it('playLoop: kayıtlar yerel dosyalardan bir kez yüklenir ve evaluate öncesi kaydedilir', async () => {
+    const { playLoop } = await freshPlayer()
+    await playLoop(konga)
+    await playLoop(konga)
+    expect(fetchMock.mock.calls.map((c) => c[0]).sort()).toEqual([
+      '/sounds/usul/konga-dum.mp3',
+      '/sounds/usul/konga-tek.mp3',
+      '/sounds/usul/konga-teke.mp3',
+    ])
+    for (const [url] of fetchMock.mock.calls) expect(url).not.toMatch(/^[a-z]+:/i) // ağ isteği değil, yerel yol
+    expect(strudel.registerSound).toHaveBeenCalledTimes(3)
+    expect(Math.max(...strudel.registerSound.mock.invocationCallOrder)).toBeLessThan(
+      strudel.evaluate.mock.invocationCallOrder[0]!,
+    )
+    expect(strudel.evaluate).toHaveBeenCalledTimes(2)
+  })
+
+  it('playCode (parça): usul katmanındaki kayıt sesi yüklenir', async () => {
+    const { playCode, stopAudio } = await freshPlayer()
+    const p = playCode('stack(freq("440@1").s("triangle"), s("usul_darbuka_dum@2 ~@2")).cpm(15)', 1000)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(fetchMock.mock.calls.map((c) => c[0])).toContain('/sounds/usul/darbuka-dum.mp3')
+    expect(strudel.evaluate).toHaveBeenCalledTimes(1)
+    stopAudio()
+    await p
+  })
+
+  it('yükleme sürerken durdurulursa döngü başlamaz', async () => {
+    const { playLoop, stopAudio } = await freshPlayer()
+    const releases: (() => void)[] = []
+    fetchMock.mockImplementation(
+      () => new Promise<Response>((r) => releases.push(() => r(new Response(new ArrayBuffer(8))))),
+    )
+    const p = playLoop(konga)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(releases.length).toBeGreaterThan(0)
+    stopAudio()
+    releases.forEach((r) => r())
+    await p
+    expect(strudel.evaluate).not.toHaveBeenCalled()
+  })
+
+  it('kayıt yüklenemezse çalma reject olur (SOUND_WARNING), sonraki denemede yeniden istenir', async () => {
+    const { playLoop } = await freshPlayer()
+    fetchMock.mockImplementationOnce(() => Promise.reject(new Error('çevrimdışı')))
+    await expect(playLoop(konga)).rejects.toThrow()
+    expect(strudel.evaluate).not.toHaveBeenCalled()
+    await playLoop(konga)
+    expect(strudel.evaluate).toHaveBeenCalledTimes(1)
+  })
+})

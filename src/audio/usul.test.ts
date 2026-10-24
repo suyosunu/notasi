@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { USULLER } from '../content/usuller'
 import type { Usul } from '../content/usuller'
 
@@ -12,7 +12,10 @@ const player = vi.hoisted(() => ({
 }))
 vi.mock('./player', () => player)
 
-import { buildUsulPatternCode, startUsul, stopUsul } from './usul'
+import { ONE_SHOT } from './pattern'
+import { buildUsulBody, buildUsulOnceCode, buildUsulPatternCode, startUsul, stopUsul } from './usul'
+import { getUsulSesi, setUsulSesi, strokeSound } from './usulSamples'
+import type { UsulSesi } from './usulSamples'
 
 const usul = (id: string): Usul => USULLER.find((u) => u.id === id)!
 
@@ -287,5 +290,123 @@ describe('startUsul / stopUsul', () => {
     await Promise.all([a, b])
     expect(player.playLoop).toHaveBeenCalledTimes(1)
     expect(player.playLoop.mock.calls[0]![0]).toBe(buildUsulPatternCode(usul('duyek'), 60))
+  })
+})
+
+describe('usul sesi: kayıt tabanlı seçenekler (Konga, Tahta, Darbuka)', () => {
+  const KAYITLI = ['konga', 'tahta', 'darbuka'] as const
+  afterEach(() => setUsulSesi('oryantal'))
+
+  /** Bir ölçünün vuruşları; bir sorgu-döngüsü 1 sn (bkz. yukarıdaki haps). */
+  async function sampleHaps(u: Usul, bpm: number, ses: UsulSesi): Promise<UsulHit[]> {
+    const { evalScope } = await import('@strudel/core')
+    const { evaluate, transpiler } = await import('@strudel/transpiler')
+    await evalScope(import('@strudel/core'), import('@strudel/mini'))
+    const { pattern } = await evaluate(buildUsulPatternCode(u, bpm, ses), transpiler)
+    return pattern
+      .queryArc(0, (u.zaman * 60) / bpm)
+      .filter((h) => h.hasOnset())
+      .map((h) => ({ at: Number(h.whole.begin), hold: Number(h.duration), ...h.value }) as UsulHit)
+      .sort((a, b) => a.at - b.at)
+  }
+
+  it("varsayılan ses 'oryantal': bugünkü sentez kodu aynen üretilir", () => {
+    expect(getUsulSesi()).toBe('oryantal')
+    for (const u of USULLER) {
+      expect(buildUsulPatternCode(u, 60)).toBe(buildUsulPatternCode(u, 60, 'oryantal'))
+    }
+    setUsulSesi('konga')
+    expect(buildUsulPatternCode(usul('sofyan'), 60)).toBe(buildUsulPatternCode(usul('sofyan'), 60, 'konga'))
+  })
+
+  it('her vuruş, vuruş zamanında doğru kayıtla çalar (düm/tek/te/ke eşlemesi)', async () => {
+    for (const ses of KAYITLI) {
+      for (const u of USULLER.filter((x) => x.vurus !== null)) {
+        const hs = await sampleHaps(u, 60, ses)
+        let t = 0
+        const expected = u.vurus!.map((v) => {
+          const at = t
+          t += v.sure
+          return [at, strokeSound(ses, v.ses)]
+        })
+        expect(hs.map((h) => [Math.round(h.at * 1e6) / 1e6, h.s])).toEqual(expected)
+      }
+    }
+  })
+
+  it('kayıt seçeneklerinde sentez katmanı yoktur; ses adları yalnızca usul_<ses>_ kayıtlarıdır', () => {
+    for (const ses of KAYITLI) {
+      const code = buildUsulPatternCode(usul('aksak'), 60, ses)
+      const names = [...code.matchAll(/\bs\("([^"]*)"\)/g)].flatMap((m) => m[1]!.split(/[\s@\d.]+/)).filter(Boolean)
+      expect(names.filter((n) => n !== '~').every((n) => n.startsWith(`usul_${ses}_`))).toBe(true)
+      expect(code).not.toMatch(/white|sine|triangle|freq\(/)
+    }
+  })
+
+  it("seviyeler: tek düm'ün 0.85×'i; te ve ke tek'in 0.7× ve 0.6×'i", async () => {
+    for (const ses of KAYITLI) {
+      const hs = await sampleHaps(usul('aksak'), 60, ses) // düm te ke düm tek tek
+      const dum = hs[0]!.gain!
+      const [te, ke, tek] = [hs[1]!.gain!, hs[2]!.gain!, hs[4]!.gain!]
+      expect(dum).toBeGreaterThan(0)
+      expect(dum).toBeLessThanOrEqual(1)
+      expect(tek / dum).toBeCloseTo(0.85, 3)
+      expect(te / tek).toBeCloseTo(0.7, 3)
+      expect(ke / tek).toBeCloseTo(0.6, 3)
+      expect(hs[3]!.gain).toBe(dum)
+      expect(hs[5]!.gain).toBe(tek)
+    }
+  })
+
+  it('hiçbir vuruş sonrakine taşmaz; en hızlı tempolarda da ≥ 5 ms pay kalır (clip/release sınırı)', async () => {
+    for (const ses of KAYITLI) {
+      for (const u of USULLER.filter((x) => x.vurus !== null)) {
+        for (const bpm of [40, 60, 120, 200]) {
+          const hs = await sampleHaps(u, bpm, ses)
+          const measure = (u.zaman * 60) / bpm
+          const onsets = [...hs.map((h) => h.at), measure]
+          for (const [i, h] of hs.entries()) {
+            const next = onsets[i + 1]!
+            expect(h.release).toBeGreaterThanOrEqual(0.01)
+            expect(h.release).toBeLessThanOrEqual(0.03)
+            // tutma + bırakma + superdough'un (ve kayıt tetikleyicisinin) 10 ms durdurma payı
+            expect(next - (h.at + h.hold + h.release! + 0.01)).toBeGreaterThanOrEqual(0.005 - 1e-9)
+          }
+        }
+      }
+    }
+  })
+
+  it('Dolap metronomu her seçenekte sentez tık olarak kalır', () => {
+    for (const ses of KAYITLI) {
+      expect(buildUsulPatternCode(usul('dolap'), 60, ses)).toBe(buildUsulPatternCode(usul('dolap'), 60, 'oryantal'))
+    }
+  })
+
+  it('startUsul seçili usul sesini kullanır', async () => {
+    setUsulSesi('darbuka')
+    await startUsul(usul('sofyan'), 60)
+    expect(player.playLoop).toHaveBeenCalledWith(buildUsulPatternCode(usul('sofyan'), 60, 'darbuka'))
+    expect(player.playLoop.mock.calls[0]![0]).toContain('usul_darbuka_dum')
+  })
+})
+
+describe('buildUsulOnceCode: bir ölçü, tek seferlik (Ayarlar → Dene)', () => {
+  it('Sofyan ♩ = 80: bir ölçü (3 sn), o sesle; ölçüden sonra ses yok', async () => {
+    const { code, durationMs } = buildUsulOnceCode(usul('sofyan'), 80, 'tahta')
+    expect(durationMs).toBe(3000)
+    expect(code).toBe(`${buildUsulBody(usul('sofyan'), 80, 'tahta')}${ONE_SHOT}.cpm(20)`)
+    const { evalScope } = await import('@strudel/core')
+    const { evaluate, transpiler } = await import('@strudel/transpiler')
+    await evalScope(import('@strudel/core'), import('@strudel/mini'))
+    const { pattern } = await evaluate(code, transpiler)
+    // cpm(20) ⇒ bir ölçü 3 sorgu-döngüsü (cps = 1 kabulü).
+    const hs = pattern.queryArc(0, 3).filter((h) => h.hasOnset())
+    expect(hs.map((h) => (h.value as { s: string }).s)).toEqual(['usul_tahta_dum', 'usul_tahta_tek', 'usul_tahta_tek'])
+    expect(pattern.queryArc(3, 300).filter((h) => h.hasOnset())).toEqual([])
+  })
+
+  it('geçersiz tempoda RangeError', () => {
+    expect(() => buildUsulOnceCode(usul('sofyan'), 0, 'konga')).toThrow(RangeError)
   })
 })

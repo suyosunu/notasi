@@ -1,8 +1,20 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/preact'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/preact'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { getNeySesi, playWritten, setNeySesi, stopAudio, unlockAudio } from '../audio/player'
+import {
+  getNeySesi,
+  getUsulSesi,
+  playCode,
+  playWritten,
+  setNeySesi,
+  setUsulSesi,
+  stopAudio,
+  unlockAudio,
+} from '../audio/player'
 import { toToneEvents } from '../audio/pattern'
 import type { NeySesi } from '../audio/pattern'
+import { buildUsulOnceCode } from '../audio/usul'
+import type { UsulSesi } from '../audio/usulSamples'
+import { USULLER } from '../content/usuller'
 import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
 import { soundingHz } from '../music/ahenk'
 import { exportBackup, shareOrDownloadBackup } from '../store/backup'
@@ -12,9 +24,12 @@ import { Settings } from './Settings'
 vi.mock('../audio/player', () => ({
   unlockAudio: vi.fn(() => Promise.resolve()),
   playWritten: vi.fn(() => Promise.resolve()),
+  playCode: vi.fn(() => Promise.resolve()),
   stopAudio: vi.fn(),
   setNeySesi: vi.fn(),
   getNeySesi: vi.fn(() => 'mevcut'),
+  setUsulSesi: vi.fn(),
+  getUsulSesi: vi.fn(() => 'oryantal'),
 }))
 
 vi.mock('../store/backup', async (importOriginal) => {
@@ -38,6 +53,12 @@ beforeEach(async () => {
     voice = v
   })
   vi.mocked(getNeySesi).mockReset().mockImplementation(() => voice)
+  vi.mocked(playCode).mockReset().mockImplementation(() => Promise.resolve())
+  let usulVoice: UsulSesi = 'oryantal'
+  vi.mocked(setUsulSesi).mockReset().mockImplementation((v) => {
+    usulVoice = v
+  })
+  vi.mocked(getUsulSesi).mockReset().mockImplementation(() => usulVoice)
 })
 
 afterEach(() => {
@@ -213,7 +234,8 @@ describe('Settings: Ney sesi', () => {
     expect(radio('Mevcut').checked).toBe(true)
     expect(radio('Nefesli').checked).toBe(false)
     expect(radio('Shakuhachi').checked).toBe(false)
-    const dene = screen.getAllByRole('button', { name: /▶ Dene/ })
+    const group = screen.getByRole('radiogroup', { name: 'Ney sesi' })
+    const dene = within(group).getAllByRole('button', { name: /▶ Dene/ })
     expect(dene.map((b) => b.textContent)).toEqual(['▶ Dene', '▶ Dene', '▶ Dene'])
   })
 
@@ -314,5 +336,130 @@ describe('Settings: Ney sesi', () => {
     await screen.findByRole('heading', { name: 'Ney sesi' })
     unmount()
     expect(stopAudio).toHaveBeenCalled()
+  })
+})
+
+describe('Settings: Usul sesi', () => {
+  const radio = (name: string) => screen.getByRole('radio', { name }) as HTMLInputElement
+  const sofyan = USULLER.find((u) => u.id === 'sofyan')!
+
+  it('başlık ve dört seçenek; varsayılan Oryantal seçilidir; her birinin Dene düğmesi vardır', async () => {
+    render(<Settings />)
+    expect(await screen.findByRole('heading', { name: 'Usul sesi' })).toBeTruthy()
+    const group = screen.getByRole('radiogroup', { name: 'Usul sesi' })
+    expect(within(group).getAllByRole('radio').map((r) => r.closest('label')?.textContent)).toEqual([
+      'Oryantal',
+      'Konga',
+      'Tahta',
+      'Darbuka',
+    ])
+    expect(radio('Oryantal').checked).toBe(true)
+    expect(within(group).getAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual([
+      '▶ Dene (Oryantal)',
+      '▶ Dene (Konga)',
+      '▶ Dene (Tahta)',
+      '▶ Dene (Darbuka)',
+    ])
+  })
+
+  it("seçim kaydedilir ve hemen player'a uygulanır", async () => {
+    render(<Settings />)
+    await screen.findByRole('heading', { name: 'Usul sesi' })
+    fireEvent.click(radio('Darbuka'))
+    expect(setUsulSesi).toHaveBeenCalledWith('darbuka')
+    await waitFor(async () => expect((await getSettings()).usulSesi).toBe('darbuka'))
+    await waitFor(() => expect(radio('Darbuka').checked).toBe(true))
+  })
+
+  it('kayıtlı ses seçili görünür', async () => {
+    await saveSettings({ usulSesi: 'tahta' })
+    render(<Settings />)
+    await screen.findByRole('heading', { name: 'Usul sesi' })
+    expect(radio('Tahta').checked).toBe(true)
+  })
+
+  it('Dene: önce unlockAudio, sonra Sofyan\'ın bir ölçüsü ♩ = 80\'de o sesle tek seferlik çalar', async () => {
+    render(<Settings />)
+    await screen.findByRole('heading', { name: 'Usul sesi' })
+    for (const [label, ses] of [
+      ['Konga', 'konga'],
+      ['Oryantal', 'oryantal'],
+    ] as const) {
+      vi.mocked(playCode).mockClear()
+      fireEvent.click(screen.getByRole('button', { name: `▶ Dene (${label})` }))
+      await waitFor(() => expect(playCode).toHaveBeenCalledTimes(1))
+      const { code, durationMs } = buildUsulOnceCode(sofyan, 80, ses)
+      expect(playCode).toHaveBeenCalledWith(code, durationMs)
+      expect(vi.mocked(unlockAudio).mock.invocationCallOrder.at(-1)!).toBeLessThan(
+        vi.mocked(playCode).mock.invocationCallOrder[0]!,
+      )
+    }
+    // Dene seçimi değiştirmez.
+    expect(setUsulSesi).not.toHaveBeenCalled()
+    expect((await getSettings()).usulSesi).toBe('oryantal')
+  })
+
+  it('ses kapalıyken Dene çalmaz, SOUND_OFF gösterir', async () => {
+    await saveSettings({ soundOn: false })
+    render(<Settings />)
+    await screen.findByRole('heading', { name: 'Usul sesi' })
+    fireEvent.click(screen.getByRole('button', { name: '▶ Dene (Tahta)' }))
+    expect(await screen.findByText(SOUND_OFF)).toBeTruthy()
+    expect(unlockAudio).not.toHaveBeenCalled()
+    expect(playCode).not.toHaveBeenCalled()
+  })
+
+  it('çalma başarısız olursa (ör. kayıt yüklenemedi) SOUND_WARNING gösterir', async () => {
+    vi.mocked(playCode).mockImplementation(() => Promise.reject(new Error('yüklenemedi')))
+    render(<Settings />)
+    await screen.findByRole('heading', { name: 'Usul sesi' })
+    fireEvent.click(screen.getByRole('button', { name: '▶ Dene (Darbuka)' }))
+    expect(await screen.findByText(SOUND_WARNING)).toBeTruthy()
+  })
+
+  it('unlockAudio beklerken sayfadan çıkılırsa deneme çalmaya başlamaz', async () => {
+    let release: () => void = () => {}
+    vi.mocked(unlockAudio).mockImplementation(() => new Promise<void>((res) => (release = res)))
+    const { unmount } = render(<Settings />)
+    await screen.findByRole('heading', { name: 'Usul sesi' })
+    fireEvent.click(screen.getByRole('button', { name: '▶ Dene (Konga)' }))
+    await waitFor(() => expect(unlockAudio).toHaveBeenCalledTimes(1))
+    unmount()
+    release()
+    await new Promise((r) => setTimeout(r, 30))
+    expect(playCode).not.toHaveBeenCalled()
+    expect(stopAudio).toHaveBeenCalled()
+  })
+
+  it('unlockAudio beklerken başka Dene (ney ya da usul) basılırsa yalnızca sonuncusu çalar', async () => {
+    const releases: (() => void)[] = []
+    vi.mocked(unlockAudio).mockImplementation(() => new Promise<void>((res) => releases.push(res)))
+    render(<Settings />)
+    await screen.findByRole('heading', { name: 'Usul sesi' })
+    fireEvent.click(screen.getByRole('button', { name: '▶ Dene (Konga)' }))
+    await waitFor(() => expect(releases).toHaveLength(1))
+    fireEvent.click(screen.getByRole('button', { name: '▶ Dene (Nefesli)' }))
+    await waitFor(() => expect(releases).toHaveLength(2))
+    fireEvent.click(screen.getByRole('button', { name: '▶ Dene (Darbuka)' }))
+    await waitFor(() => expect(releases).toHaveLength(3))
+    releases.forEach((r) => r())
+    await waitFor(() => expect(playCode).toHaveBeenCalledTimes(1))
+    await new Promise((r) => setTimeout(r, 30))
+    expect(playCode).toHaveBeenCalledTimes(1)
+    expect(playWritten).not.toHaveBeenCalled()
+    expect(vi.mocked(playCode).mock.calls[0]![0]).toBe(buildUsulOnceCode(sofyan, 80, 'darbuka').code)
+  })
+
+  it('geri yüklemeden sonra player usul sesi yedekteki sese ayarlanır', async () => {
+    await saveSettings({ usulSesi: 'konga' })
+    const backup = await exportBackup()
+    await saveSettings({ usulSesi: 'tahta' })
+    render(<Settings />)
+    await screen.findByRole('button', { name: 'Yedeği geri yükle' })
+    expect(getUsulSesi()).toBe('oryantal')
+    pickFile(JSON.stringify(backup))
+    await screen.findByText('Yedek yüklendi.')
+    expect(getUsulSesi()).toBe('konga')
+    expect(radio('Konga').checked).toBe(true)
   })
 })

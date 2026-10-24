@@ -1,0 +1,94 @@
+Usul sesleri (public/sounds/usul/)
+==================================
+
+Dosyalar scripts/usul-sesleri.mjs ile üretilmiştir: kaynak kayıt mono 44.1 kHz'e
+çevrilir, baştaki ve sondaki sessizlik kırpılır, en çok 1.2 sn tutulur (sonda
+30 ms sönüş), tepe düzeyi -1 dBFS'e normalleştirilir ve 64 kbps mp3 olarak
+kodlanır.
+
+Konga ve Tahta
+--------------
+
+Kaynak / Source:
+  Fluid (R3) General MIDI SoundFont davul örnekleri, WebAudioFont veri dönüşümü
+  (https://github.com/surikov/webaudiofontdata). Dosyalardaki base64 "file"
+  alanı (MP3) çözülüp yukarıdaki gibi işlenmiştir.
+
+  konga-dum.mp3   GM 64 Low Conga      https://surikov.github.io/webaudiofontdata/sound/12864_0_FluidR3_GM_sf2_file.js
+  konga-tek.mp3   GM 63 Open Hi Conga  https://surikov.github.io/webaudiofontdata/sound/12863_0_FluidR3_GM_sf2_file.js
+  konga-teke.mp3  GM 62 Mute Hi Conga  https://surikov.github.io/webaudiofontdata/sound/12862_0_FluidR3_GM_sf2_file.js
+  tahta-dum.mp3   GM 77 Low Wood Block https://surikov.github.io/webaudiofontdata/sound/12877_0_FluidR3_GM_sf2_file.js
+  tahta-tek.mp3   GM 76 Hi Wood Block  https://surikov.github.io/webaudiofontdata/sound/12876_0_FluidR3_GM_sf2_file.js
+
+Fluid (R3) SoundFont
+--------------------
+
+Copyright (c) 2000-2002, 2008 Frank Wen <getfrank@gmail.com>
+
+Permission is hereby granted, free of charge, to any person
+obtaining a copy of this software and associated documentation
+files (the "Software"), to deal in the Software without
+restriction, including without limitation the rights to use,
+copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+
+WebAudioFont data (webaudiofontdata)
+------------------------------------
+
+MIT License
+
+Copyright (c) 2017 Srgy Surkv
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+Darbuka
+-------
+
+Kaynak / Source:
+  Versilian Community Sample Library (VCSL), Versilian Studios
+  https://github.com/sgossner/VCSL
+  Klasör: Membranophones/Struck Membranophones/Darbuka/ (sert katman vl2, rr1)
+
+  darbuka-dum.mp3   https://raw.githubusercontent.com/sgossner/VCSL/master/Membranophones/Struck%20Membranophones/Darbuka/Darbuka_1_hit_vl2_rr1.wav
+  darbuka-tek.mp3   https://raw.githubusercontent.com/sgossner/VCSL/master/Membranophones/Struck%20Membranophones/Darbuka/Darbuka_2_hit_vl2_rr1.wav
+  darbuka-teke.mp3  https://raw.githubusercontent.com/sgossner/VCSL/master/Membranophones/Struck%20Membranophones/Darbuka/Darbuka_3_hit_vl2_rr1.wav
+
+Lisans / License: CC0 1.0 Universal (Public Domain Dedication)
+  https://creativecommons.org/publicdomain/zero/1.0/
+  https://raw.githubusercontent.com/sgossner/VCSL/master/LICENSE
+
+  VCSL, yaratıcılarınca CC0 1.0 ile kamu malına adanmıştır: telif ve bağlantılı
+  haklardan yasaların izin verdiği ölçüde feragat edilmiştir. Atıf zorunlu
+  değildir; kaynak nezaketen belirtilmiştir.
+  The Versilian Community Sample Library is dedicated to the public domain
+  under CC0 1.0 Universal; no attribution is required.

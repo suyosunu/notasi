@@ -1,8 +1,12 @@
 import type { Usul, Vurus, VurusSesi } from '../content/usuller'
+import { ONE_SHOT } from './pattern'
 import { playLoop, stopAudio, unlockAudio } from './player'
+import { getUsulSesi, strokeSound } from './usulSamples'
+import type { KayitSesi, UsulSesi } from './usulSamples'
 
-// Kulakla ayarlanabilir ses parametreleri. Örnek ses dosyası yoktur: yalnızca sentez (sine, triangle) ve gürültü (white).
-// Oryantal (kudüm/darbuka) karakter: düm derin, perdesi hafif aşağı kayan; tek tiz ve kuru; te/ke tekin hafifi.
+// Kulakla ayarlanabilir ses parametreleri. "Oryantal" seçenekte örnek ses dosyası yoktur: yalnızca sentez (sine,
+// triangle) ve gürültü (white). Oryantal (kudüm/darbuka) karakter: düm derin, perdesi hafif aşağı kayan; tek tiz ve
+// kuru; te/ke tekin hafifi. Konga, Tahta ve Darbuka seçenekleri kayıt çalar (bkz. usulSamples.ts, sampleCode).
 
 /**
  * Süre kuralı: her vuruş kendi süresinin (d = `sure × 60 / bpm` sn) ~%90'ı boyunca tınlar, sonra hızla söner.
@@ -147,11 +151,44 @@ function strokeCode(u: Usul, bpm: number): string {
 }
 
 /**
- * Tek usul ölçüsünün deseni (tempo yok): bir döngü = bir ölçü. Dolap'ta metronom.
- * `bpm` (mertebe birimi) yalnızca seslerin saniye cinsinden sönme sürelerini belirler.
+ * Kayıt seçeneklerinde vuruş düzeyleri: tek düm'ün 0.85'i; te ve ke, tek kaydının 0.7× ve 0.6× düzeyi.
+ * Kayıtlar tepe düzeyi -1 dBFS'e normalleştirilmiştir.
  */
-export function buildUsulBody(u: Usul, bpm: number): string {
-  return u.vurus === null ? metronomeCode(u, bpm) : strokeCode(u, bpm)
+const SAMPLE_LEVEL: Record<VurusSesi, number> = { düm: 1, tek: 0.85, te: 0.85 * 0.7, ke: 0.85 * 0.6 }
+/**
+ * Sese özgü genel düzey: gürlük oryantal sesle yakın olsun diye. Kulakla ayarlanabilir. Başlangıç değerleri düm
+ * kayıtlarının ilk 300 ms RMS düzeyinden (konga -14.7, darbuka -12.4, tahta -22.6 dBFS) oryantal düm'ün kestirilen
+ * ~-18.6 dBFS düzeyine göre hesaplandı; tahta 1'de sınırlandı (ahşap tık tiz olduğundan zaten belirgin duyulur).
+ */
+const SAMPLE_GAIN: Record<KayitSesi, number> = { konga: 0.65, tahta: 1, darbuka: 0.5 }
+/** Düzey oranları (0.7, 0.6) yuvarlamada bozulmasın. */
+const gainRound = (x: number) => Math.round(x * 10000) / 10000
+
+/**
+ * Kayıt seçenekleri (Konga, Tahta, Darbuka): tek katman, her vuruş kendi kaydını çalar (`usulSamples.strokeSound`).
+ * Kayıt doğal uzunluğu kadar tınlar (döngü yok); vuruştan uzunsa oryantal sesle aynı `envelope(d)` sınırıyla
+ * (`clip`/`release`) sonraki vuruştan önce kesilir.
+ */
+function sampleCode(u: Usul, bpm: number, ses: KayitSesi): string {
+  const vurus = u.vurus!
+  const pat = (f: (x: Vurus) => string | number) => `"${vurus.map((x) => step(f(x), x.sure)).join(' ')}"`
+  const env = (x: Vurus) => envelope(x.sure * zamanSeconds(bpm))
+  return (
+    `s(${pat((x) => strokeSound(ses, x.ses))})` +
+    `.clip(${pat((x) => env(x).clip)}).release(${pat((x) => env(x).release)})` +
+    `.gain(${pat((x) => gainRound(SAMPLE_GAIN[ses] * SAMPLE_LEVEL[x.ses]))})`
+  )
+}
+
+/**
+ * Tek usul ölçüsünün deseni (tempo yok): bir döngü = bir ölçü. Dolap'ta metronom (her seçenekte sentez tık:
+ * metronom usul vuruşu değildir).
+ * `bpm` (mertebe birimi) yalnızca seslerin saniye cinsinden sönme sürelerini belirler. `ses` verilmezse seçili usul
+ * sesi kullanılır.
+ */
+export function buildUsulBody(u: Usul, bpm: number, ses: UsulSesi = getUsulSesi()): string {
+  if (u.vurus === null) return metronomeCode(u, bpm)
+  return ses === 'oryantal' ? strokeCode(u, bpm) : sampleCode(u, bpm, ses)
 }
 
 /**
@@ -159,9 +196,18 @@ export function buildUsulBody(u: Usul, bpm: number): string {
  * dolayısıyla dakikada bpm / zaman ölçü: `.cpm(bpm / zaman)`.
  * Vuruş kalıbı olmayan usul (Dolap) metronom olarak çalar: zaman başına bir tık, ilki vurgulu.
  */
-export function buildUsulPatternCode(u: Usul, bpm: number): string {
+export function buildUsulPatternCode(u: Usul, bpm: number, ses: UsulSesi = getUsulSesi()): string {
   if (!(bpm > 0) || !(u.zaman > 0)) throw new RangeError('Geçerli tempo yok')
-  return `${buildUsulBody(u, bpm)}.cpm(${bpm / u.zaman})`
+  return `${buildUsulBody(u, bpm, ses)}.cpm(${bpm / u.zaman})`
+}
+
+/** Usulün tek bir ölçüsü, tek seferlik (Ayarlar → Usul sesi → "▶ Dene"); `playCode` ile çalınır. */
+export function buildUsulOnceCode(u: Usul, bpm: number, ses: UsulSesi): { code: string; durationMs: number } {
+  if (!(bpm > 0) || !(u.zaman > 0)) throw new RangeError('Geçerli tempo yok')
+  return {
+    code: `${buildUsulBody(u, bpm, ses)}${ONE_SHOT}.cpm(${bpm / u.zaman})`,
+    durationMs: (u.zaman * 60000) / bpm,
+  }
 }
 
 /** Her başlatma/durdurmada artar; sesi açmayı beklerken durdurulan ya da yenisi başlatılan çağrı bayatlığını anlar. */

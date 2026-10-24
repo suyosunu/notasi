@@ -4,6 +4,8 @@ import { DEFAULT_TUNING } from '../music/ahenk'
 import type { Tuning } from '../music/ahenk'
 import { isNeySesi } from '../audio/pattern'
 import type { NeySesi } from '../audio/pattern'
+import { isUsulSesi } from '../audio/usulSamples'
+import type { UsulSesi } from '../audio/usulSamples'
 
 export const DB_NAME = 'notasi'
 export const DB_VERSION = 1
@@ -60,6 +62,8 @@ export interface Settings {
   lastBackupAt: string | null
   /** Melodi çalımlarının sesi (Ayarlar → "Ney sesi"). */
   neySesi: NeySesi
+  /** Usul vuruşlarının sesi (Ayarlar → "Usul sesi"); usul bölümünde ve parça eşliğinde. */
+  usulSesi: UsulSesi
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -71,6 +75,7 @@ export const DEFAULT_SETTINGS: Settings = {
   placementDone: false,
   lastBackupAt: null,
   neySesi: 'mevcut',
+  usulSesi: 'oryantal',
 }
 
 /** `settings` deposunda tek kayıt tutulur; anahtarı bu sabittir. */
@@ -155,6 +160,7 @@ function mergeSettings(stored: Partial<SettingsRec> | undefined): Settings {
     tuning: { ...DEFAULT_SETTINGS.tuning, ...(rest.tuning ?? {}) },
     // Eski kayıtlarda yoktur; bilinmeyen değer (ör. başka sürümden yedek) varsayılana döner.
     neySesi: isNeySesi(rest.neySesi) ? rest.neySesi : DEFAULT_SETTINGS.neySesi,
+    usulSesi: isUsulSesi(rest.usulSesi) ? rest.usulSesi : DEFAULT_SETTINGS.usulSesi,
   }
 }
 

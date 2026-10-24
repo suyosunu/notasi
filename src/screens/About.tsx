@@ -19,6 +19,11 @@ export function About() {
         MIT).
       </p>
       <p>
+        Konga ve Tahta usul sesleri: Fluid R3 GM SoundFont, © 2000-2002, 2008 Frank Wen, MIT lisansıyla (WebAudioFont
+        dönüşümü, © 2017 Srgy Surkv, MIT).
+      </p>
+      <p>Darbuka usul sesi: Versilian Community Sample Library (VCSL), Versilian Studios, CC0 1.0 (kamu malı).</p>
+      <p>
         Bu uygulamanın kaynak kodu AGPL-3.0-or-later lisansıyla açıktır:{' '}
         {SOURCE_URL === '' ? '(yakında)' : <a href={SOURCE_URL}>{SOURCE_URL}</a>}
       </p>

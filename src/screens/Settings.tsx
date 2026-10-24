@@ -1,6 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks'
-import { playWritten, setNeySesi, stopAudio, unlockAudio } from '../audio/player'
+import { playCode, playWritten, setNeySesi, setUsulSesi, stopAudio, unlockAudio } from '../audio/player'
 import type { NeySesi } from '../audio/pattern'
+import { buildUsulOnceCode } from '../audio/usul'
+import type { UsulSesi } from '../audio/usulSamples'
+import { USULLER } from '../content/usuller'
 import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
 import { AHENKLER } from '../music/ahenk'
 import type { AhenkId } from '../music/ahenk'
@@ -27,6 +30,16 @@ const DENEME_DIZISI: MusicEvent[] = [
 ]
 const DENEME_BPM = 72
 
+const USUL_SESI_SECENEKLERI: { id: UsulSesi; label: string }[] = [
+  { id: 'oryantal', label: 'Oryantal' },
+  { id: 'konga', label: 'Konga' },
+  { id: 'tahta', label: 'Tahta' },
+  { id: 'darbuka', label: 'Darbuka' },
+]
+/** Usul sesi "▶ Dene": Sofyan'ın bir ölçüsü (düm te ke), ♩ = 80. */
+const DENEME_USUL = USULLER.find((u) => u.id === 'sofyan')!
+const DENEME_USUL_BPM = 80
+
 interface Message {
   kind: 'ok' | 'error'
   text: string
@@ -36,6 +49,7 @@ export function Settings() {
   const [settings, setSettings] = useState<SettingsData | null>(null)
   const [message, setMessage] = useState<Message | null>(null)
   const [soundWarn, setSoundWarn] = useState<string | null>(null)
+  const [usulWarn, setUsulWarn] = useState<string | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -88,6 +102,31 @@ export function Settings() {
     }
   }
 
+  async function changeUsulSesi(usulSesi: UsulSesi) {
+    setUsulSesi(usulSesi) // hemen uygulanır; kayıt arkadan gelir
+    setSettings(await saveSettings({ usulSesi }))
+  }
+
+  /** Ney sesi denemesiyle aynı kurallar: iOS dokunuşu, soundOn, SOUND_WARNING, çıkışta ve yeni Dene'de iptal. */
+  async function tryUsulVoice(ses: UsulSesi) {
+    if (!settings) return
+    setUsulWarn(null)
+    if (!settings.soundOn) {
+      setUsulWarn(SOUND_OFF)
+      return
+    }
+    const run = ++runRef.current
+    try {
+      // unlockAudio dokunuş işleyicisinde, ilk iş olarak çağrılmalıdır (iOS).
+      await unlockAudio()
+      if (run !== runRef.current) return
+      const { code, durationMs } = buildUsulOnceCode(DENEME_USUL, DENEME_USUL_BPM, ses)
+      await playCode(code, durationMs)
+    } catch {
+      if (run === runRef.current) setUsulWarn(SOUND_WARNING)
+    }
+  }
+
   async function changeSound(soundOn: boolean) {
     setSettings(await saveSettings({ soundOn }))
   }
@@ -121,7 +160,8 @@ export function Settings() {
       throw err
     }
     const restored = await getSettings()
-    setNeySesi(restored.neySesi) // oynatıcı sesi geri yüklenen ayarla eşleşsin
+    setNeySesi(restored.neySesi) // oynatıcı sesleri geri yüklenen ayarla eşleşsin
+    setUsulSesi(restored.usulSesi)
     setSettings(restored)
     setMessage({ kind: 'ok', text: 'Yedek yüklendi.' })
   }
@@ -210,6 +250,41 @@ export function Settings() {
         {soundWarn && (
           <p class="notice" role="alert">
             {soundWarn}
+          </p>
+        )}
+      </section>
+
+      <section class="setting" aria-labelledby="usul-sesi">
+        <h2 id="usul-sesi" class="setting-label">
+          Usul sesi
+        </h2>
+        <div class="voice-options" role="radiogroup" aria-labelledby="usul-sesi">
+          {USUL_SESI_SECENEKLERI.map((o) => (
+            <div key={o.id} class="voice-option">
+              <label class="radio">
+                <input
+                  type="radio"
+                  name="usulSesi"
+                  value={o.id}
+                  checked={settings.usulSesi === o.id}
+                  onChange={() => void changeUsulSesi(o.id)}
+                />
+                <span>{o.label}</span>
+              </label>
+              <button
+                type="button"
+                class="tool"
+                aria-label={`▶ Dene (${o.label})`}
+                onClick={() => void tryUsulVoice(o.id)}
+              >
+                ▶ Dene
+              </button>
+            </div>
+          ))}
+        </div>
+        {usulWarn && (
+          <p class="notice" role="alert">
+            {usulWarn}
           </p>
         )}
       </section>

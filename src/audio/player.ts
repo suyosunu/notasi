@@ -2,6 +2,7 @@ import { setPlaybackSession } from './ios'
 import { buildPatternCode, toToneEvents } from './pattern'
 import type { NeySesi, ToneEvent } from './pattern'
 import { loadShakuhachi, SHAKUHACHI_SOUND } from './shakuhachi'
+import { loadUsulSamples, usulSesiInCode } from './usulSamples'
 import type { Tuning } from '../music/ahenk'
 import type { MusicEvent } from '../music/notation'
 
@@ -29,6 +30,9 @@ export function setNeySesi(v: NeySesi): void {
 export function getNeySesi(): NeySesi {
   return neySesi
 }
+
+/** Seçili usul sesi (Ayarlar → "Usul sesi"); durum usulSamples.ts'tedir, ney sesi gibi buradan da kullanılır. */
+export { getUsulSesi, setUsulSesi } from './usulSamples'
 
 /**
  * Strudel'i (büyük paket) arka planda yükler. Kullanıcı hareketi gerekmez;
@@ -92,9 +96,16 @@ export function unlockAudio(): Promise<void> {
   return loadModule().then(startAudio)
 }
 
-/** Kod yerel shakuhachi sesini kullanıyorsa onu (bir kez) yükler; diğer sesler sentezdir, dosya gerekmez. */
+/**
+ * Kod yerel kayıtları kullanıyorsa onları (her biri bir kez) yükler: shakuhachi ney sesi ve kayıt tabanlı usul sesi
+ * (Konga, Tahta, Darbuka). Diğer sesler sentezdir, dosya gerekmez.
+ */
 function ensureSounds(m: StrudelWeb, code: string): Promise<void> {
-  return code.includes(`s("${SHAKUHACHI_SOUND}")`) ? loadShakuhachi(m) : Promise.resolve()
+  const loads: Promise<void>[] = []
+  if (code.includes(`s("${SHAKUHACHI_SOUND}")`)) loads.push(loadShakuhachi(m))
+  const usulSesi = usulSesiInCode(code)
+  if (usulSesi) loads.push(loadUsulSamples(m, usulSesi))
+  return Promise.all(loads).then(() => undefined)
 }
 
 function safeHush(): void {
@@ -182,6 +193,8 @@ export async function playLoop(code: string): Promise<void> {
   await ensureInit(m)
   if (mine !== generation) return
   try {
+    await ensureSounds(m, code)
+    if (mine !== generation) return
     await m.evaluate(code)
   } catch (err) {
     if (mine !== generation) return
