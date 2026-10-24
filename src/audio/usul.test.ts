@@ -27,11 +27,13 @@ describe('buildUsulPatternCode', () => {
     const code = buildUsulPatternCode(usul('sofyan'), 60)
     expect(code.startsWith('stack(')).toBe(true)
     expect(code).toContain('freq("65@2 ~@1 ~@1").s("sine")')
+    expect(code).toContain('freq("200@2 ~@1 ~@1").s("sine")') // telefonda duyulan orta gövde
     expect(code).toContain('s("white@2 ~@1 ~@1")')
     expect(code).toContain('freq("~@2 450@1 450@1").s("sine")')
     expect(code).toContain('s("~@2 white@1 white@1")')
     // Vuruşlarla hizalı sönme deseni: 0.9 × vuruş süresi (saniye); bpm 60'ta 1 zaman = 1 sn.
     expect(code).toContain('.decay("1.8@2 0.9@1 0.9@1")')
+    expect(code).toContain('.clip("0.9@2 0.9@1 0.9@1")')
     expect(code.endsWith('.cpm(15)')).toBe(true)
   })
 
@@ -48,7 +50,7 @@ describe('buildUsulPatternCode', () => {
   it('tek, te ve ke aynı ses; te 0.7×, ke 0.6× tek', () => {
     const code = buildUsulPatternCode(usul('aksak'), 60)
     const gains = [...code.matchAll(/\.gain\("([^"]*)"\)/g)].map((m) => m[1]!.split(' '))
-    expect(gains).toHaveLength(2) // ton ve tık katmanı
+    expect(gains).toHaveLength(3) // ton, tık ve tını katmanı
     for (const g of gains) {
       const [te, ke, tek] = [g[1]!, g[2]!, g[4]!].map((x) => Number(x.split('@')[0]))
       expect(te! / tek!).toBeCloseTo(0.7, 2)
@@ -134,23 +136,54 @@ describe('buildUsulPatternCode: gerçek Strudel çekirdeğiyle', () => {
     expect(hs.filter((h) => h.s === 'white' && h.bandf === undefined).map(z)).toEqual([0])
   })
 
+  /** Tek'in bant geçirenli, süreye uyan alçak düzeyli tınısı (tık 3 kHz, tını TEK_RING_BPF). */
+  const isRing = (h: UsulHit) => h.s === 'white' && h.bandf !== undefined && h.bandf !== 3000
+
   it("Aksak: 2 zamanlık düm'ün sönme ve tutma süresi 1 zamanlık vuruşun ~2 katıdır", async () => {
     for (const bpm of [60, 90]) {
       const hs = await haps(usul('aksak'), bpm)
       const dum = hs.filter((h) => h.freq === 65)
-      const tone = hs.filter((h) => h.freq === 450)
+      const ring = hs.filter(isRing)
       expect(dum).toHaveLength(2)
-      expect(tone).toHaveLength(4)
+      expect(ring).toHaveLength(4)
       const one = 60 / bpm // 1 zaman (sn)
       expect(dum[0]!.decay).toBeCloseTo(0.9 * 2 * one, 2)
-      expect(tone[0]!.decay).toBeCloseTo(0.9 * one, 2) // te, 1 zaman
-      expect(dum[0]!.decay! / tone[0]!.decay!).toBeCloseTo(2, 2)
-      expect(dum[0]!.hold / tone[0]!.hold).toBeCloseTo(2, 6)
+      expect(ring[0]!.decay).toBeCloseTo(0.9 * one, 2) // te, 1 zaman
+      expect(dum[0]!.decay! / ring[0]!.decay!).toBeCloseTo(2, 2)
+      expect(dum[0]!.hold / ring[0]!.hold).toBeCloseTo(2, 3)
       // 2 zamanlık tek ile 1 zamanlık son tek
-      expect(tone[2]!.decay! / tone[3]!.decay!).toBeCloseTo(2, 2)
-      // düm duyulur biçimde tınlar (tık + sessizlik değil); tek düm'den az tınlar.
-      expect(dum[0]!.sustain).toBeGreaterThanOrEqual(0.2)
-      expect(tone[0]!.sustain).toBeLessThan(dum[0]!.sustain!)
+      expect(ring[2]!.decay! / ring[3]!.decay!).toBeCloseTo(2, 2)
+      // düm davul gibi tutma boyunca neredeyse sıfıra söner (org gibi kesilmez)
+      expect(dum[0]!.sustain).toBeGreaterThan(0)
+      expect(dum[0]!.sustain).toBeLessThanOrEqual(0.1)
+    }
+  })
+
+  it('düm, telefon hoparlöründe duyulan ≥ 150 Hz bir bileşen içerir; o da tutma boyunca süreye göre söner', async () => {
+    const hs = await haps(usul('aksak'))
+    const low = hs.filter((h) => h.freq === 65)
+    const mid = hs.filter((h) => h.s === 'sine' && h.freq! >= 150 && h.penv !== undefined)
+    expect(mid.map(z)).toEqual(low.map(z)) // her düm'de
+    for (const [i, m] of mid.entries()) {
+      expect(m.decay).toBeCloseTo(low[i]!.decay!, 6)
+      expect(m.hold).toBeCloseTo(low[i]!.hold, 6)
+      expect(m.decay).toBeCloseTo(m.hold, 2) // tutmanın tamamı boyunca
+      expect(m.gain).toBeGreaterThanOrEqual(low[i]!.gain!) // küçük hoparlörde baskın
+    }
+  })
+
+  it('tek tonu (450 Hz) vuruş süresinden bağımsız kısadır (≤ 120 ms); süreye yalnızca alçak düzeyli tını uyar', async () => {
+    for (const bpm of [40, 60]) {
+      const hs = await haps(usul('aksak'), bpm)
+      const tone = hs.filter((h) => h.freq === 450)
+      expect(tone).toHaveLength(4)
+      for (const t of tone) {
+        expect(t.decay).toBeLessThanOrEqual(0.12)
+        expect(t.sustain).toBe(0)
+      }
+      const ring = hs.filter(isRing)
+      const dumMid = hs.find((h) => h.s === 'sine' && h.freq! >= 150 && h.penv !== undefined)!
+      for (const r of ring) expect(r.gain).toBeLessThan(dumMid.gain!)
     }
   })
 
@@ -159,14 +192,16 @@ describe('buildUsulPatternCode: gerçek Strudel çekirdeğiyle', () => {
     const dum = hs.find((h) => h.freq === 65)!
     expect(65 * 2 ** (dum.penv! / 12)).toBeCloseTo(110, 0)
     expect(dum.pdecay).toBeCloseTo(0.12, 3)
-    const click = hs.find((h) => h.bandf !== undefined)!
+    const click = hs.find((h) => h.bandf !== undefined && h.decay! < 0.05)!
     expect(click.bandf).toBeGreaterThanOrEqual(2500)
     expect(click.bandf).toBeLessThanOrEqual(3500)
     const skin = hs.find((h) => h.s === 'white' && h.cutoff !== undefined)!
-    expect(skin.decay).toBeLessThanOrEqual(0.02)
+    expect(skin.decay).toBeLessThanOrEqual(0.03)
+    expect(skin.cutoff).toBeGreaterThanOrEqual(2000)
   })
 
-  it('hiçbir vuruşun sesi sonraki vuruşun başlangıcını aşmaz (her usul, yavaş ve hızlı tempolar)', async () => {
+  it('hiçbir vuruşun sesi sonraki vuruşun başlangıcını aşmaz; en hızlı tempolarda da ≥ 5 ms pay kalır', async () => {
+    // ♪ 120: usul kaydırıcısının üst sınırı; ♪ 200: parçada Dolap ♩ = 100 (sekizlik 0.3 sn).
     for (const u of USULLER) {
       for (const bpm of [40, 60, 120, 200]) {
         const hs = await haps(u, bpm)
@@ -175,10 +210,11 @@ describe('buildUsulPatternCode: gerçek Strudel çekirdeğiyle', () => {
         for (const h of hs) {
           const next = onsets.find((t) => t > h.at + 1e-9)!
           expect(h.release).toBeLessThanOrEqual(0.03)
-          // tutma + sönüş; superdough düğümü sönüşten 10 ms sonra durdurur
-          expect(h.at + h.hold + h.release! + 0.01).toBeLessThanOrEqual(next + 1e-6)
+          expect(h.release).toBeGreaterThanOrEqual(0.01) // superdough alt sınırı
+          // tutma + sönüş + superdough'un 10 ms durdurma payı, sonraki vuruştan en az 5 ms önce biter
+          expect(next - (h.at + h.hold + h.release! + 0.01)).toBeGreaterThanOrEqual(0.005 - 1e-9)
           // sönme tutma süresini aşmaz
-          expect(h.decay!).toBeLessThanOrEqual(h.hold + 1e-6)
+          expect(h.decay!).toBeLessThanOrEqual(h.hold + 1e-9)
         }
       }
     }
