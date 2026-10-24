@@ -4,6 +4,7 @@ import { NEY_PERDELER, visibleFingering } from '../content/ney-perdeler'
 import { DersKapisi } from '../ders/DersKapisi'
 import {
   BASPARE_DENEME,
+  BASPARE_GECME,
   BASPARE_ID,
   BASPARE_TOLERANS,
   baspareSonuc,
@@ -51,7 +52,8 @@ export function BaspareTur(props: {
 
   const [phase, setPhase] = useState<Phase>('hazir')
   const [view, setView] = useState<BaspareState>(initialBaspare)
-  const [result, setResult] = useState<{ sonuc: BaspareSonucu; saved: boolean } | null>(null)
+  /** `kayit`: yazılıyor / yazıldı / yazılamadı; yazılamasa da sonraki adım açılır, akış takılmaz. */
+  const [result, setResult] = useState<{ sonuc: BaspareSonucu; kayit: 'yaziliyor' | 'yazildi' | 'hata' } | null>(null)
 
   const phaseRef = useRef<Phase>('hazir')
   const stopRef = useRef<() => void>(() => undefined)
@@ -72,7 +74,7 @@ export function BaspareTur(props: {
     setPhase('bitti')
     stopRef.current()
     const sonuc = baspareSonuc(stateRef.current)
-    setResult({ sonuc, saved: false })
+    setResult({ sonuc, kayit: 'yaziliyor' })
     try {
       await addLongTone({
         perdeId: BASPARE_ID,
@@ -81,10 +83,11 @@ export function BaspareTur(props: {
         toleranceCents: BASPARE_TOLERANS,
       })
     } catch {
-      return // kayıt yazılamadı: sonraki adım düğmesi çıkmaz; çağıran ekranın çıkış yolu kalır
+      if (mountedRef.current) setResult({ sonuc, kayit: 'hata' })
+      return
     }
     if (!mountedRef.current) return
-    setResult({ sonuc, saved: true })
+    setResult({ sonuc, kayit: 'yazildi' })
     props.onSaved?.()
   }
 
@@ -133,40 +136,41 @@ export function BaspareTur(props: {
         </p>
       )}
 
-      <MicGate onSample={onSample}>
-        {(start, stop) => {
-          stopRef.current = stop
-          if (phase === 'hazir') {
-            return (
-              <button type="button" class="primary" onClick={() => void begin(start)}>
-                Başla
-              </button>
-            )
-          }
-          if (phase === 'dinliyor') {
+      {phase === 'bitti' ? (
+        // Tur bitince MicGate hiç çizilmez: hata uyarısı ve kendi "Tekrar dene"si kalmaz, mikrofon yeniden açılamaz.
+        <div class="result" role="status">
+          <p class={result?.sonuc.gecti ? 'result-ok' : 'result-bad'}>
+            {result?.sonuc.gecti ? 'Geçtin 👏' : `Hedef: ${BASPARE_DENEME} denemenin en az ${BASPARE_GECME}’inde anında.`}
+          </p>
+          {result && <p>{baspareSonucMetni(result.sonuc)}</p>}
+          {result?.sonuc.ortancaMs != null && <p class="muted">{`Ortanca süre: ${seconds(result.sonuc.ortancaMs)} sn`}</p>}
+          {result?.kayit === 'hata' && <p class="notice">Sonuç kaydedilemedi.</p>}
+          {(result?.kayit === 'yazildi' || result?.kayit === 'hata') && (
+            <button type="button" class="primary" onClick={props.onNext}>
+              {props.nextLabel}
+            </button>
+          )}
+        </div>
+      ) : (
+        <MicGate onSample={onSample}>
+          {(start, stop) => {
+            stopRef.current = stop
+            if (phase === 'hazir') {
+              return (
+                <button type="button" class="primary" onClick={() => void begin(start)}>
+                  Başla
+                </button>
+              )
+            }
             // Mikrofon açılamasa ya da hiç ses gelmese de tur bitirilebilir; ekran takılı kalmaz.
             return (
               <button type="button" class="primary" onClick={() => void finish()}>
                 Bitir
               </button>
             )
-          }
-          return (
-            <div class="result" role="status">
-              <p class={result?.sonuc.gecti ? 'result-ok' : 'result-bad'}>
-                {result?.sonuc.gecti ? 'Geçtin 👏' : `Hedef: ${BASPARE_DENEME} denemenin en az 8’inde anında.`}
-              </p>
-              {result && <p>{baspareSonucMetni(result.sonuc)}</p>}
-              {result?.sonuc.ortancaMs != null && <p class="muted">{`Ortanca süre: ${seconds(result.sonuc.ortancaMs)} sn`}</p>}
-              {result?.saved && (
-                <button type="button" class="primary" onClick={props.onNext}>
-                  {props.nextLabel}
-                </button>
-              )}
-            </div>
-          )
-        }}
-      </MicGate>
+          }}
+        </MicGate>
+      )}
     </section>
   )
 }

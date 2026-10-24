@@ -94,7 +94,8 @@ export function baspareSonuc(s: BaspareState): BaspareSonucu {
   return {
     aninda,
     toplam: s.denemeler.length,
-    gecti: aninda >= BASPARE_GECME,
+    // Ölçüt "10 denemenin 8'i": erken bırakılan tur (10'dan az deneme) geçmez.
+    gecti: s.denemeler.length >= BASPARE_DENEME && aninda >= BASPARE_GECME,
     ortancaMs: bulunan.length === 0 ? null : Math.round(median(bulunan)),
   }
 }

@@ -14,9 +14,9 @@ afterEach(() => {
   location.hash = ''
 })
 
-/** Yalnız aralık zamanlayıcısı sahte; IndexedDB ve bekleme yardımcıları gerçek zamanda çalışır. */
+/** Yalnız aralık zamanlayıcısı ve saat sahte (süre duvar saatinden hesaplanır); IndexedDB ve bekleme yardımcıları gerçek. */
 function sahteAralik() {
-  vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+  vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] })
 }
 
 function gec(sn: number) {
@@ -76,6 +76,25 @@ describe('NefesEgzersizi', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Yeniden başla' }))
     expect(screen.getByText('Nefes al')).toBeTruthy()
     expect(screen.getByText('Tur 1/4')).toBeTruthy()
+  })
+
+  it('zamanlayıcı yavaşlatılsa da süre duvar saatine göre ilerler (tik sayısına göre değil)', async () => {
+    const btn = await hazirla()
+    fireEvent.click(btn)
+    // iOS zamanlayıcıyı dondurdu: 20 sn geçti ama tek tik bile çalışmadı; sonraki tik gerçek süreyi okur.
+    act(() => {
+      vi.setSystemTime(Date.now() + 20_000)
+      vi.advanceTimersByTime(250)
+    })
+    expect(screen.getByText('Tur 2/4')).toBeTruthy()
+    expect(screen.getByText('Nefes ver')).toBeTruthy() // 20. sn: tur 2'nin 9. sn'si → ver
+    // Uzun donma 48 sn'yi aşarsa çalışma tamamlanır.
+    act(() => {
+      vi.setSystemTime(Date.now() + 40_000)
+      vi.advanceTimersByTime(250)
+    })
+    expect(screen.getByText('Tamamlandı ✓')).toBeTruthy()
+    await waitFor(async () => expect((await getSettings()).onaylananHedefler).toContain(NEFES_HEDEF_ID))
   })
 
   it('"Durdur" zamanlayıcıyı temizler ve başa döndürür; işaret yazılmaz', async () => {

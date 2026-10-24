@@ -5,7 +5,7 @@ import type { PitchSample } from '../audio/mic'
 import { NEY_PERDELER } from '../content/ney-perdeler'
 import { BASPARE_ID, BASPARE_TOLERANS } from '../learning/baspare'
 import { DEFAULT_TUNING, soundingHz } from '../music/ahenk'
-import { isaretEkle, listLongTones, listSessions, resetDbForTests, saveSettings } from '../store/db'
+import { addLongTone, isaretEkle, listLongTones, listSessions, resetDbForTests, saveSettings } from '../store/db'
 
 let emit: ((s: PitchSample) => void) | null = null
 const stopper = vi.fn()
@@ -16,6 +16,10 @@ const startPitchStream = vi.fn(async (cb: (s: PitchSample) => void) => {
 vi.mock('../audio/mic', async (orig) => {
   const actual = await orig<typeof import('../audio/mic')>()
   return { ...actual, startPitchStream: (cb: (s: PitchSample) => void) => startPitchStream(cb) }
+})
+vi.mock('../store/db', async (orig) => {
+  const actual = await orig<typeof import('../store/db')>()
+  return { ...actual, addLongTone: vi.fn(actual.addLongTone) }
 })
 vi.mock('../audio/player', () => ({
   unlockAudio: vi.fn(() => Promise.resolve()),
@@ -159,16 +163,38 @@ describe('BaspareAlistirma', () => {
     expect(rec!.durationMs).toBeLessThanOrEqual(700)
   })
 
-  it('mikrofon hatasında "Bitir" ve geri bağlantısı görünür kalır; Bitir kayıt yazar', async () => {
+  it('mikrofon hatasında "Bitir" ve geri bağlantısı görünür kalır; Bitir kaydı yazar, MicGate kalkar, mikrofon yeniden açılamaz', async () => {
     await hazir()
     startPitchStream.mockImplementation(() => Promise.reject(new MicError('izin-yok')))
     render(<BaspareAlistirma />)
     fireEvent.click(await screen.findByRole('button', { name: 'Başla' }))
     expect(await screen.findByRole('alert')).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Öğren bölümüne dön' })).toBeTruthy()
+    expect(startPitchStream).toHaveBeenCalledTimes(1)
     fireEvent.click(screen.getByRole('button', { name: 'Bitir' }))
-    expect(await screen.findByRole('button', { name: 'Tekrar dene' })).toBeTruthy()
+    expect(await screen.findByText('Henüz deneme yapılmadı.')).toBeTruthy()
+    await waitFor(async () => expect(await listLongTones(BASPARE_ID)).toHaveLength(1))
     expect((await listLongTones(BASPARE_ID))[0]).toMatchObject({ durationMs: 0, passed: false })
+    // MicGate'in hata uyarısı ve kendi "Tekrar dene"si kalkar; sonuç ekranında tek "Tekrar dene" (yeni tur) vardır.
+    expect(screen.queryByRole('alert')).toBeNull()
+    const tekrar = await screen.findAllByRole('button', { name: 'Tekrar dene' })
+    expect(tekrar).toHaveLength(1)
+    expect(startPitchStream).toHaveBeenCalledTimes(1)
+    // Yeni tur temiz başlar ve mikrofonu yalnız yeniden "Başla"yla açar.
+    fireEvent.click(tekrar[0]!)
+    expect(await screen.findByRole('button', { name: 'Başla' })).toBeTruthy()
+    expect(startPitchStream).toHaveBeenCalledTimes(1)
+  })
+
+  it('kayıt yazılamazsa sonuç ve kısa uyarı görünür, yine de "Tekrar dene" çıkar (akış takılmaz)', async () => {
+    await hazir()
+    vi.mocked(addLongTone).mockRejectedValueOnce(new Error('idb yok'))
+    render(<BaspareAlistirma />)
+    await basla()
+    fireEvent.click(screen.getByRole('button', { name: 'Bitir' }))
+    expect(await screen.findByText('Sonuç kaydedilemedi.')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Tekrar dene' })).toBeTruthy()
+    expect(await listLongTones(BASPARE_ID)).toHaveLength(0)
   })
 
   it('sayfadan çıkınca mikrofon akışı durdurulur', async () => {

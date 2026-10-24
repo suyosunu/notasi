@@ -139,6 +139,11 @@ describe('baspareSonuc', () => {
     expect(r).toMatchObject({ aninda: 8, toplam: 10, gecti: true })
   })
 
+  it('erken bırakılan tur geçmez: 8/8 anında olsa da 10 deneme dolmadıysa gecti false', () => {
+    const r = baspareSonuc(durum([100, 200, 300, 400, 500, 600, 700, 800]))
+    expect(r).toMatchObject({ aninda: 8, toplam: 8, gecti: false })
+  })
+
   it('7/10 anında geçmez', () => {
     const r = baspareSonuc(durum([100, 200, 300, 400, 500, 600, 700, 1001, 1500, null]))
     expect(r).toMatchObject({ aninda: 7, toplam: 10, gecti: false })
