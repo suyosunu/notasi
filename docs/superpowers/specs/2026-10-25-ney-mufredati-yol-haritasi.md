@@ -101,7 +101,7 @@ Kaynaklarda sayısal hedef yoktur (saniye, cent, tempo). Tablodaki sayılar öne
 
 Her aşama tamamlandığında uygulama o seviyeyi eksiksiz destekler. Kullanıcı şu an seviye 1–2 civarında olduğu için öncelik baştaki aşamalarda.
 
-**Aşama A: Müfredat iskeleti ve seviye 0–1'in tamamlanması** (öncelikli)
+**Aşama A: Müfredat iskeleti ve seviye 0–1'in tamamlanması** (öncelikli) — **tamamlandı ve yayında (2026-10-25)**; plan: `docs/superpowers/plans/2026-10-25-asama-a.md`
 0. **Öğren katmanı (A0, kullanıcı geri bildirimi):** Her öğrenme birimine, sorulardan ve pratikten önce gelen bir ders sayfası eklenir. Birimler: nota konusu, ney perdesi, usul, makam, etüt ve seviye 0 konuları. Bir ders sayfasında şunlar bulunur:
    - Kısa ve sade Türkçe anlatım.
    - Görsel: porte, parmak şeması ya da vuruş şeması.

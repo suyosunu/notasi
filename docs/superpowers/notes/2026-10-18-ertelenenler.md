@@ -63,3 +63,21 @@ Görev incelemelerinde "şimdilik kalabilir" denen bulgular. Sürüm 2'ye başla
 - Ruling: Darbuka stroke mapping from spectrum analysis (research) — user auditions by ear — cost if wrong: remap 3 files.
 - Ruling: fold in Minor #1 (tek/te/ke ~9–11 dB under düm in darbuka/konga → set per-stroke gain so tek RMS sits ~4–6 dB under düm) and the Temple Blocks attribution line in LISANS.txt — user-audible, cheap — cost if wrong: retune by ear.
 - Task 31: minor (deferred): trigger stop() no-op (cut groups unused); circular mapping test; -60 dB tail trim shortens darbuka tek
+
+## Aşama A (2026-10-25)
+- Ruling: iki-<a>-<b> etüt perdeler = [a, b]; tek-<p> = [p] — cost if wrong: etüt appears one step earlier/later.
+- Ruling: day-session lesson gate wraps the whole DaySession (timer doesn't run during the lesson); review questions from learned topics need no lesson — cost if wrong: none / one optional lesson.
+- Ruling: s0:uzun-ses → /ney/neva → perde:neva lessons can come back to back (each unit taught once) — cost if wrong: one extra screen.
+- Ruling: neyLevelConfig tolerance k0 25, k1–3 20, k≥4 15 sent; required 5000+1000k ≤ 10000 ms, so the "8 sn ±20" seviye 1 goal is reachable at ±20 — cost if wrong: trainer a bit more lenient at levels 2–3.
+- Ruling: Nevâ uzun-ses step gates s0:uzun-ses then perde:neva; gate lessons have an "Ana ekrana dön" exit that doesn't mark read.
+- Ruling: evening warm-up = passed perde just before the current one (migrated users don't warm up on half-hole Bûselik).
+- Ruling: parazvane drawn at both ends; boğumlar drawn without a count (count not in research note).
+- Task 32: minor (deferred): no tests for varsayilanSesSurumu 1 / 3 (no-downgrade) branches; some usul/piece tests rely on the new default implicitly
+- Task 33: minor (deferred): cryptic source comment in ney-perdeler.ts; duplicate "ilk beş" test; no test for an old user with Segâh passed late and Bûselik not
+- Task 34: minor (deferred): boğum spacing not exactly even; Öğren list blank briefly while loading
+- Task 36: minor (deferred): nota-2 mentions Dügâh/Rast ahead of perde-1; no UI test for a review-only day session; seq strings duplicated (guarded by a coverage test)
+- Task 37: minor (deferred): no calibration→lesson path test; no render test of dotted/rest lesson figures with beams
+- Task 39: minor (deferred): EtutDetail play logic duplicates ParcaDetail (shared hook later); bpm label vs audible tempo while dragging; test-input formatting noise; `.tools` flex-wrap is global; faded etüt rows use opacity .6 (contrast)
+- Task 40: minor (deferred): Home's loadIlerleme re-reads rows load() already has; Yolum checkbox rollback is silent on write failure; weak regexes in dersler.test; Home test lacks the goal-less fallback
+- Process note: several UI test files were written after their components (no RED run); behaviour is still asserted.
+- Final fix wave: minor (deferred): stale comments DersView.tsx:25 (geri only in route mode) and evening-plan.ts:726 (order wording)
