@@ -107,6 +107,13 @@ describe('Seviye 0 (hazırlık) dersleri', () => {
     for (const m of metinler(dersById('s0:neyi-tani')!)) expect(m).not.toMatch(/\d+\s*boğum/i)
   })
 
+  it("neyi tanı dersi öğrencinin neyinin ahengini varsaymaz; ahengi Ayarlar'a bağlar", () => {
+    const metin = metinler(dersById('s0:neyi-tani')!).join(' ')
+    expect(metin).not.toMatch(/Senin neyin|rast ahengi/)
+    expect(metin).toMatch(/Ney ahengi/)
+    expect(metin).toMatch(/4\. çizgi/)
+  })
+
   it('uzun ses dersindeki sayısal hedef "öneri" olarak anılır', () => {
     const metin = metinler(dersById('s0:uzun-ses')!).join(' ')
     expect(metin).toMatch(/5 sn/)

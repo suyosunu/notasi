@@ -391,6 +391,29 @@ describe('EveningPractice', () => {
       expect(screen.queryByRole('heading', { name: /Dudak ve ilk ses/ })).toBeNull()
     })
 
+    it('kalibrasyon adımında ilk ses dersi okunmamış olsa da ders değil kalibrasyon görünür', async () => {
+      await addLongTone({ perdeId: 'ilk-ses', durationMs: 3000, passed: true, toleranceCents: 50 })
+      await saveSession({
+        id: 'kalibrasyonda',
+        kind: 'aksam',
+        date: todayLocal(),
+        startedAt: new Date().toISOString(),
+        completed: false,
+        elapsedMs: 0,
+        state: {
+          steps: [
+            { kind: 'ilk-ses', label: 'İlk ses', tries: 1, dersId: 's0:ilk-ses' },
+            { kind: 'kalibrasyon', label: 'Kalibrasyon', tries: 1 },
+          ],
+          stepIndex: 1,
+          tryIndex: 0,
+        },
+      })
+      render(<EveningPractice />)
+      expect(await screen.findByRole('heading', { name: 'Kalibrasyon' })).toBeTruthy()
+      expect(screen.queryByRole('heading', { name: /Dudak ve ilk ses/ })).toBeNull()
+    })
+
     it('dersId taşımayan eski açık oturum kapısız açılır', async () => {
       await saveSession({
         id: 'eski-bugun',

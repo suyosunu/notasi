@@ -36,20 +36,19 @@ export const HAZIRLIK_DERSLERI: Ders[] = [
       },
       {
         tur: 'metin',
-        metin: 'Neyler farklı boylarda yapılır ve her boy başka bir yükseklikte ses verir. Neyin ses yüksekliğine ahenk denir. Kız, Mansur, Şah, Davud ve Bolâhenk bilinen ahenklerdendir.',
+        metin: 'Neyler farklı boylarda yapılır ve her boy başka bir yükseklikte ses verir. Neyin ses yüksekliğine ahenk denir. Her ney boyunun bir ahengi vardır: Kız, Mansur, Şah, Davud, Bolâhenk gibi.',
       },
-      { tur: 'metin', metin: 'Senin neyin bir Kız ney. Kaynaklarda Kız ney, rast ahengi olarak geçer.' },
       {
         tur: 'metin',
         metin: 'Ney notası, ahenk ne olursa olsun aynı yazılır. Porte, notaların yazıldığı beş yatay çizgidir. Nevâ, portenin alttan 4. çizgisindeki Re notasıdır.',
       },
       {
         tur: 'metin',
-        metin: "Neyinden duyduğun gerçek ses ise ahenge göre değişir. Aynı Nevâ'yı Kız neyde, Mansur neydekinden daha ince duyarsın. Parmakların ve okuduğun nota değişmez.",
+        metin: 'Parmak yerleri ve okuduğun nota ahenk ne olursa olsun aynıdır; yalnız neyinden duyduğun ses değişir.',
       },
       {
         tur: 'metin',
-        metin: "Notası'nda neyinin ahengini Ayarlar'daki \"Ney ahengi\" seçeneğinden belirlersin. Başlangıçta Kız seçilidir.",
+        metin: "Notası neyinin ahengini Ayarlar'daki 'Ney ahengi' seçeneğinden bilir; başlangıçta Kız seçilidir. Neyin başka bir ahenkteyse oradan değiştir. Kalibrasyon da sesine bakıp ahengi önerir.",
       },
       {
         tur: 'dene',
@@ -85,7 +84,7 @@ export const HAZIRLIK_DERSLERI: Ders[] = [
       },
       {
         tur: 'metin',
-        metin: 'Delikleri parmak uçlarınla değil, parmaklarının orta boğumlarıyla kapat. Boğum, parmaktaki eklem yeridir; burada parmağın orta bölümü kastedilir.',
+        metin: 'Delikleri parmak uçlarınla değil, parmaklarının orta bölümüyle kapat.',
       },
       { tur: 'metin', metin: 'Delik tam kapanmalı. Küçük bir aralıktan kaçan hava bile sesi bozar.' },
       { tur: 'metin', metin: 'Üflerken başını hafifçe sağa yatır.' },
@@ -94,7 +93,7 @@ export const HAZIRLIK_DERSLERI: Ders[] = [
         adimlar: [
           'Aynanın karşısına otur; sırtının dik, omuzlarının gevşek olduğunu kontrol et.',
           'Neyi sağ el üstte tut ve parmaklarını şemadaki gibi yerleştir.',
-          'Delikleri parmaklarının orta boğumlarıyla kapat; parmaklarını kaldırıp yeniden koy.',
+          'Delikleri parmaklarının orta bölümüyle kapat; parmaklarını kaldırıp yeniden koy.',
           'Başını hafifçe sağa yatır ve aynada duruşuna bak.',
         ],
       },
@@ -108,7 +107,7 @@ export const HAZIRLIK_DERSLERI: Ders[] = [
     bloklar: [
       {
         tur: 'metin',
-        metin: 'Neyde sesin gücü nefesinden gelir. Kaynaklar en uygun nefesin diyafram nefesi olduğunu söyler.',
+        metin: "Neyde sesin gücü nefesinden gelir. MEB'in lise ney programı en uygun nefesin diyafram nefesi olduğunu söyler.",
       },
       {
         tur: 'metin',
@@ -156,7 +155,7 @@ export const HAZIRLIK_DERSLERI: Ders[] = [
       },
       {
         tur: 'metin',
-        metin: "Perde, Türk müziğinde belli bir sesin adıdır. İlk öğreneceğin perde açık Nevâ'dır; kaynakların hepsi buradan başlar. Açık Nevâ'da ön deliklerin çoğu açıktır. Aynı sesin bütün delikler kapalıyken çalınan bir kapalı Nevâ'sı da vardır; onu ileride öğreneceksin.",
+        metin: "Perde, Türk müziğinde belli bir sesin adıdır. İlk öğreneceğin perde açık Nevâ'dır; kaynakların çoğu buradan başlar. Açık Nevâ'da ön deliklerin çoğu açıktır; kapalı Nevâ'yı ileride göreceksin.",
       },
       {
         tur: 'parmak',
@@ -229,7 +228,7 @@ export const HAZIRLIK_DERSLERI: Ders[] = [
     bloklar: [
       {
         tur: 'metin',
-        metin: 'Uzun ses, bir perdeyi aynı yükseklikte ve aynı güçte, dalgalanmadan uzun süre tutmaktır. Buna düz ses de denir. Kaynaklar her çalışmayı uzun sesle başlatır; Zeki Sözen başlayanlara günde 100 düz ses önerir.',
+        metin: 'Uzun ses, bir perdeyi aynı yükseklikte ve aynı güçte, dalgalanmadan uzun süre tutmaktır. Buna düz ses de denir. Çoğu kaynak her çalışmayı uzun sesle başlatır; Zeki Sözen başlayanlara günde 100 düz ses önerir.',
       },
       { tur: 'parmak', perdeId: 'neva', aciklama: "Uzun sesi önce Nevâ'da çalış." },
       {
@@ -247,11 +246,11 @@ export const HAZIRLIK_DERSLERI: Ders[] = [
       },
       {
         tur: 'metin',
-        metin: 'Sapma sent ile ölçülür. Sent, çok küçük bir ses aralığı birimidir; yarım ses 100 senttir. Gösterge iki yana 50 sente kadar gösterir.',
+        metin: 'Sapma sent ile ölçülür. Sent, çok küçük bir ses aralığı birimidir; piyanodaki bir yarım ses 100 senttir. Gösterge iki yana 50 sente kadar gösterir.',
       },
       {
         tur: 'metin',
-        metin: "Seviye 0 için önerimiz: Nevâ'yı en az 5 sn, ±20 sent içinde tutmak. Bu sayı bir öneridir; kaynaklar kesin süre vermez, sesi akort aletiyle doğru yükseklikte vermeni ister.",
+        metin: "Seviye 0 için önerimiz: Nevâ'yı en az 5 sn, ±20 sent içinde tutmak. Bu sayı bir öneridir; kaynaklar kesin süre vermez, sesi akort aletiyle doğru yükseklikte vermeni ister. Uygulamadaki yeşil bant başta biraz daha geniştir (±25 sent) ve sen ilerledikçe daralır.",
       },
       {
         tur: 'metin',
