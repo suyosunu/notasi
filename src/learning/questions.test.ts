@@ -134,7 +134,7 @@ describe('makeQuestion', () => {
 })
 
 describe('perde isimleri (perde: / perde-ters:)', () => {
-  const NINE = ['Rast', 'Dügâh', 'Bûselik', 'Çârgâh', 'Nevâ', 'Hüseynî', 'Acem', 'Gerdâniye', 'Muhayyer']
+  const NINE = ['Rast', 'Dügâh', 'Segâh', 'Çârgâh', 'Nevâ', 'Hüseynî', 'Acem', 'Gerdâniye', 'Muhayyer']
 
   it('perde:D5 → nota göster, perde adı sor', () => {
     const q = makeQuestion('perde:D5', seededRng(1))
@@ -142,7 +142,7 @@ describe('perde isimleri (perde: / perde-ters:)', () => {
     expect(q.answer).toBe('Nevâ')
     expect(q.events).toEqual([expect.objectContaining({ kind: 'note', dur: 'quarter', pitch: { step: 'D', octave: 5, acc: 0 } })])
     expect(q.hint).toBe(
-      'Sırayla: Rast (Sol), Dügâh, Bûselik, Çârgâh, Nevâ, Hüseynî, Acem, Gerdâniye, Muhayyer (tiz La).',
+      'Sırayla: Rast (Sol), Dügâh, Segâh, Çârgâh, Nevâ, Hüseynî, Acem, Gerdâniye, Muhayyer (tiz La).',
     )
   })
 
@@ -155,9 +155,9 @@ describe('perde isimleri (perde: / perde-ters:)', () => {
   })
 
   it('perde-1 ileri soruda seçenekler yalnızca perde-1 notalarının beş adıdır', () => {
-    const FIVE = ['Rast', 'Dügâh', 'Bûselik', 'Çârgâh', 'Nevâ']
+    const FIVE = ['Rast', 'Dügâh', 'Segâh', 'Çârgâh', 'Nevâ']
     for (let s = 1; s <= 30; s++) {
-      for (const card of ['perde:G4', 'perde:A4', 'perde:B4', 'perde:C5', 'perde:D5']) {
+      for (const card of ['perde:G4', 'perde:A4', 'perde:B4b1', 'perde:C5', 'perde:D5']) {
         const opts = makeQuestion(card, seededRng(s)).options
         expect(opts).toHaveLength(4)
         expect(new Set(opts).size).toBe(4)
@@ -178,14 +178,14 @@ describe('perde isimleri (perde: / perde-ters:)', () => {
     expect(q.answer).toBe('Re')
     expect(q.events).toEqual([])
     expect(q.hint).toBe(
-      'Sırayla: Rast (Sol), Dügâh, Bûselik, Çârgâh, Nevâ, Hüseynî, Acem, Gerdâniye, Muhayyer (tiz La).',
+      'Sırayla: Rast (Sol), Dügâh, Segâh, Çârgâh, Nevâ, Hüseynî, Acem, Gerdâniye, Muhayyer (tiz La).',
     )
   })
 
   it('perde-ters çeldiricileri konunun notalarındandır (oktav karşılığı hariç)', () => {
     for (let s = 1; s <= 30; s++) {
       const opts = makeQuestion('perde-ters:D5', seededRng(s)).options
-      for (const o of opts) expect(['Sol', 'La', 'Si', 'Do', 'Re']).toContain(o)
+      for (const o of opts) expect(['Sol', 'La', 'Si (koma bemolü)', 'Do', 'Re']).toContain(o)
     }
   })
 
@@ -229,16 +229,25 @@ describe('perde isimleri (perde: / perde-ters:)', () => {
 })
 
 describe('perde-3 / perde-4 ipuçları ve Irak', () => {
-  const OLD = 'Sırayla: Rast (Sol), Dügâh, Bûselik, Çârgâh, Nevâ, Hüseynî, Acem, Gerdâniye, Muhayyer (tiz La).'
-  const H3 = 'Si üzerindeki işaretler: Segâh koma bemolü, Dik Kürdî bakiye bemolü, Kürdî küçük mücenneb bemolü.'
+  const OLD = 'Sırayla: Rast (Sol), Dügâh, Segâh, Çârgâh, Nevâ, Hüseynî, Acem, Gerdâniye, Muhayyer (tiz La).'
+  const H3 = 'Si üzerindeki işaretler: işaretsiz Si Bûselik, Dik Kürdî bakiye bemolü, Kürdî küçük mücenneb bemolü.'
   const H4 = 'Do üzerinde: Nim Hicaz bakiye diyezi, Hicaz küçük mücenneb diyezi; Fa üzerinde: Eviç bakiye diyezi.'
 
   it('perde-3 ve perde-4 kendi ipucunu kullanır; perde-1/2 eskisini korur', () => {
-    for (const c of ['perde:B4b1', 'perde-ters:B4b5']) expect(makeQuestion(c, seededRng(1)).hint).toBe(H3)
+    for (const c of ['perde:B4', 'perde-ters:B4b5']) expect(makeQuestion(c, seededRng(1)).hint).toBe(H3)
     for (const c of ['perde:C5#4', 'perde-ters:F5#4']) expect(makeQuestion(c, seededRng(1)).hint).toBe(H4)
-    for (const c of ['perde:G4', 'perde-ters:D5', 'perde:E5', 'perde-ters:A5']) {
+    for (const c of ['perde:G4', 'perde-ters:D5', 'perde:E5', 'perde-ters:A5', 'perde:B4b1', 'perde-ters:B4b1']) {
       expect(makeQuestion(c, seededRng(1)).hint).toBe(OLD)
     }
+  })
+
+  it('perde-1 ipucu Segâh’ı sayar, Bûselik’i saymaz; perde-3 ipucu Bûselik’i işaretsiz Si olarak anar', () => {
+    const h1 = makeQuestion('perde:B4b1', seededRng(1)).hint!
+    expect(h1).toContain('Segâh')
+    expect(h1).not.toContain('Bûselik')
+    const h3 = makeQuestion('perde:B4', seededRng(1)).hint!
+    expect(h3).toContain('işaretsiz Si Bûselik')
+    expect(h3).not.toContain('Segâh')
   })
 
   it('hiçbir perde sorusunda Irak adı seçenek olmaz (ters sorularda etiketi Eviç ile aynı olduğundan yalnızca ad denetlenir)', () => {

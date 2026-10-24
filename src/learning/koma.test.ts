@@ -50,9 +50,9 @@ describe('işaretli (NotaAE) kartlar', () => {
       cards: ['note:C5#1', 'note:C5#4', 'note:C5#5', 'note:C5#8'],
     })
     expect(t('perde-3')).toMatchObject({
-      title: 'Perdeler: Segâh, Kürdî, Dik Kürdî',
+      title: 'Perdeler: Bûselik, Kürdî, Dik Kürdî',
       kind: 'perde-name',
-      cards: ['perde:B4b1', 'perde:B4b5', 'perde:B4b4', 'perde-ters:B4b1', 'perde-ters:B4b5', 'perde-ters:B4b4'],
+      cards: ['perde:B4', 'perde:B4b5', 'perde:B4b4', 'perde-ters:B4', 'perde-ters:B4b5', 'perde-ters:B4b4'],
     })
     expect(t('perde-4')).toMatchObject({
       title: 'Perdeler: Nim Hicaz, Hicaz, Eviç',
@@ -114,6 +114,7 @@ describe('koma soruları', () => {
 
   it('perde: işaretli notanın perde adı', () => {
     expect(makeQuestion('perde:B4b1', seededRng(1)).answer).toBe('Segâh')
+    expect(makeQuestion('perde:B4', seededRng(1)).answer).toBe('Bûselik')
     expect(makeQuestion('perde:B4b5', seededRng(1)).answer).toBe('Kürdî')
     expect(makeQuestion('perde:B4b4', seededRng(1)).answer).toBe('Dik Kürdî')
     expect(makeQuestion('perde:C5#4', seededRng(1)).answer).toBe('Nim Hicaz')
@@ -129,27 +130,27 @@ describe('koma soruları', () => {
     expect(q.answer).toBe('Fa (bakiye diyezi)')
     expect(q.prompt).toBe('Eviç hangi nota?')
     expect(q.events).toEqual([])
-    const earlier = ['Sol', 'La', 'Si', 'Do', 'Re', 'Mi', 'Fa', 'tiz Sol', 'tiz La']
-    const p3 = ['Si (koma bemolü)', 'Si (küçük mücenneb bemolü)', 'Si (bakiye bemolü)']
+    const earlier = ['Sol', 'La', 'Si (koma bemolü)', 'Do', 'Re', 'Mi', 'Fa', 'tiz Sol', 'tiz La']
+    const p3 = ['Si', 'Si (küçük mücenneb bemolü)', 'Si (bakiye bemolü)']
     const p4 = ['Do (bakiye diyezi)', 'Do (küçük mücenneb diyezi)', 'Fa (bakiye diyezi)']
     for (let s = 1; s <= 40; s++) {
-      for (const o of makeQuestion('perde-ters:B4b1', seededRng(s)).options) expect([...p3, ...earlier]).toContain(o)
+      for (const o of makeQuestion('perde-ters:B4', seededRng(s)).options) expect([...p3, ...earlier]).toContain(o)
       for (const o of makeQuestion('perde-ters:C5#4', seededRng(s)).options) expect([...p3, ...p4, ...earlier]).toContain(o)
     }
     for (let s = 1; s <= 20; s++) {
-      const o = makeQuestion('perde-ters:B4b1', seededRng(s)).options
+      const o = makeQuestion('perde-ters:B4', seededRng(s)).options
       expect(o).toContain('Si (küçük mücenneb bemolü)')
       expect(o).toContain('Si (bakiye bemolü)')
     }
   })
 
   it('ileri perde sorularında çeldiriciler önceki konuların adlarıdır; Irak hiç çıkmaz', () => {
-    const upTo3 = ['Rast', 'Dügâh', 'Bûselik', 'Çârgâh', 'Nevâ', 'Hüseynî', 'Acem', 'Gerdâniye', 'Muhayyer', 'Segâh', 'Kürdî', 'Dik Kürdî']
+    const upTo3 = ['Rast', 'Dügâh', 'Segâh', 'Çârgâh', 'Nevâ', 'Hüseynî', 'Acem', 'Gerdâniye', 'Muhayyer', 'Bûselik', 'Kürdî', 'Dik Kürdî']
     for (let s = 1; s <= 40; s++) {
       for (const c of ['perde:B4b1', 'perde:B4b5', 'perde:B4b4', 'perde:C5#4', 'perde:C5#5', 'perde:F5#4']) {
         for (const o of makeQuestion(c, seededRng(s)).options) expect(o).not.toBe('Irak')
       }
-      for (const o of makeQuestion('perde:B4b1', seededRng(s)).options) expect(upTo3).toContain(o)
+      for (const o of makeQuestion('perde:B4', seededRng(s)).options) expect(upTo3).toContain(o)
     }
   })
 })

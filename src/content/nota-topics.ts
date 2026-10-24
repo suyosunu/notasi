@@ -29,8 +29,8 @@ export const NOTA_TOPICS: Topic[] = [
     title: "Perde adları: Rast'tan Nevâ'ya",
     kind: 'perde-name',
     cards: [
-      'perde:G4', 'perde:A4', 'perde:B4', 'perde:C5', 'perde:D5',
-      'perde-ters:G4', 'perde-ters:A4', 'perde-ters:B4', 'perde-ters:C5', 'perde-ters:D5',
+      'perde:G4', 'perde:A4', 'perde:B4b1', 'perde:C5', 'perde:D5',
+      'perde-ters:G4', 'perde-ters:A4', 'perde-ters:B4b1', 'perde-ters:C5', 'perde-ters:D5',
     ],
   },
   {
@@ -67,9 +67,9 @@ export const NOTA_TOPICS: Topic[] = [
   {
     id: 'perde-3',
     section: 'nota',
-    title: 'Perdeler: Segâh, Kürdî, Dik Kürdî',
+    title: 'Perdeler: Bûselik, Kürdî, Dik Kürdî',
     kind: 'perde-name',
-    cards: ['perde:B4b1', 'perde:B4b5', 'perde:B4b4', 'perde-ters:B4b1', 'perde-ters:B4b5', 'perde-ters:B4b4'],
+    cards: ['perde:B4', 'perde:B4b5', 'perde:B4b4', 'perde-ters:B4', 'perde-ters:B4b5', 'perde-ters:B4b4'],
   },
   {
     id: 'perde-4',

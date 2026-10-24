@@ -34,7 +34,29 @@ describe('perdeStatuses', () => {
     const s = perdeStatuses([tone('neva', false), tone('neva', true)], NOTA_1_OPEN)
     expect(s.neva).toBe('gecildi')
     expect(s.cargah).toBe('acik')
+    expect(s.segah).toBe('kilitli')
+  })
+
+  it('yeni kullanıcıda perdeler yeni sırayla açılır', () => {
+    expect(perdeStatuses([], NOTA_1_OPEN)).toEqual(statuses({ neva: 'acik' }))
+    const s = perdeStatuses([tone('neva', true), tone('cargah', true)], NOTA_1_OPEN)
+    expect(s.segah).toBe('acik')
+    expect(s.dugah).toBe('kilitli')
     expect(s.buselik).toBe('kilitli')
+  })
+
+  it('eski sırayla ilerlemiş kullanıcının ilerlemesi korunur', () => {
+    // Eski sıra: Nevâ, Çârgâh, Bûselik, Dügâh, Rast geçilmiş; nota konuları perde-2'ye kadar açık.
+    const old = ['neva', 'cargah', 'buselik', 'dugah', 'rast'].map((id) => tone(id, true))
+    const open = topics(['perde-3', 'perde-4'])
+    const s = perdeStatuses(old, open)
+    expect(s.buselik).toBe('gecildi')
+    expect(s.dugah).toBe('gecildi')
+    expect(s.rast).toBe('gecildi')
+    expect(s.segah).toBe('acik')
+    expect(s.huseyni).toBe('acik')
+    const plan = buildEveningPlan({ ilkSesPassed: true, calibrated: true, perdeStatus: s })
+    expect(plan.find((st) => st.tries === 3)!.perdeId).toBe('segah')
   })
 
   it('geçilmemiş denemeler perdeyi geçilmiş saymaz', () => {
@@ -44,7 +66,7 @@ describe('perdeStatuses', () => {
   })
 
   it('nota-2 kilitliyken Dügâh kilitli kalır', () => {
-    const passed = [tone('neva', true), tone('cargah', true), tone('buselik', true)]
+    const passed = [tone('neva', true), tone('cargah', true), tone('segah', true)]
     expect(perdeStatuses(passed, NOTA_1_OPEN).dugah).toBe('kilitli')
     expect(perdeStatuses(passed, NOTA_2_OPEN).dugah).toBe('acik')
   })
@@ -57,54 +79,54 @@ describe('perdeStatuses', () => {
     const perdeler = NEY_PERDELER.map((p) => (p.id === 'cargah' ? { ...p, verified: false } : p))
     const s = perdeStatuses([tone('neva', true)], NOTA_1_OPEN, perdeler)
     expect(s.cargah).toBe('kilitli')
-    expect(s.buselik).toBe('kilitli')
+    expect(s.segah).toBe('kilitli')
   })
 
   it('Rast geçilince Hüseynî, perde-2 kilitliyse kilitli kalır; açıksa hemen açılır', () => {
-    const passed = ['neva', 'cargah', 'buselik', 'dugah', 'rast'].map((id) => tone(id, true))
+    const passed = ['neva', 'cargah', 'segah', 'dugah', 'rast'].map((id) => tone(id, true))
     expect(perdeStatuses(passed, topics(['perde-2'])).huseyni).toBe('kilitli')
     expect(perdeStatuses(passed, topics()).huseyni).toBe('acik')
   })
 
   it('yeni perdeler nota konusu sırasıyla ve kendi konusuna bağlı açılır', () => {
     const upTo = (ids: string[]) => ids.map((id) => tone(id, true))
-    const base = ['neva', 'cargah', 'buselik', 'dugah', 'rast']
+    const base = ['neva', 'cargah', 'segah', 'dugah', 'rast']
     // perde-2: Hüseynî, Acem, Gerdâniye, Muhayyer
     const p2 = [...base, 'huseyni', 'acem', 'gerdaniye', 'muhayyer']
     expect(perdeStatuses(upTo([...base, 'huseyni']), topics()).acem).toBe('acik')
     expect(perdeStatuses(upTo([...base, 'huseyni', 'acem']), topics()).gerdaniye).toBe('acik')
     expect(perdeStatuses(upTo([...base, 'huseyni', 'acem', 'gerdaniye']), topics()).muhayyer).toBe('acik')
-    // perde-3: Segâh, Kürdî, Dik Kürdî
-    expect(perdeStatuses(upTo(p2), topics(['perde-3'])).segah).toBe('kilitli')
-    expect(perdeStatuses(upTo(p2), topics()).segah).toBe('acik')
-    expect(perdeStatuses(upTo([...p2, 'segah']), topics()).kurdi).toBe('acik')
-    expect(perdeStatuses(upTo([...p2, 'segah', 'kurdi']), topics())['dik-kurdi']).toBe('acik')
+    // perde-3: Bûselik, Kürdî, Dik Kürdî
+    expect(perdeStatuses(upTo(p2), topics(['perde-3'])).buselik).toBe('kilitli')
+    expect(perdeStatuses(upTo(p2), topics()).buselik).toBe('acik')
+    expect(perdeStatuses(upTo([...p2, 'buselik']), topics()).kurdi).toBe('acik')
+    expect(perdeStatuses(upTo([...p2, 'buselik', 'kurdi']), topics())['dik-kurdi']).toBe('acik')
     // perde-4: Nim Hicaz, Eviç
-    const p3 = [...p2, 'segah', 'kurdi', 'dik-kurdi']
+    const p3 = [...p2, 'buselik', 'kurdi', 'dik-kurdi']
     expect(perdeStatuses(upTo(p3), topics(['perde-4']))['nim-hicaz']).toBe('kilitli')
     expect(perdeStatuses(upTo(p3), topics())['nim-hicaz']).toBe('acik')
     expect(perdeStatuses(upTo([...p3, 'nim-hicaz']), topics()).evic).toBe('acik')
     // Önceki (aynı kademedeki) geçilmeden sonraki açılmaz.
-    expect(perdeStatuses(upTo(['neva', 'cargah', 'buselik', 'dugah']), topics()).segah).toBe('kilitli')
+    expect(perdeStatuses(upTo(['neva', 'cargah', 'segah', 'dugah']), topics()).buselik).toBe('kilitli')
   })
 
-  it('Segâh, Rast geçilip perde-3 açılınca; Muhayyer/Hüseynî geçilmese de açılır', () => {
-    const base = ['neva', 'cargah', 'buselik', 'dugah', 'rast'].map((id) => tone(id, true))
+  it('Rast geçilip perde-3 açılınca; Muhayyer/Hüseynî geçilmese de Bûselik açılır', () => {
+    const base = ['neva', 'cargah', 'segah', 'dugah', 'rast'].map((id) => tone(id, true))
     const s = perdeStatuses(base, topics())
-    expect(s.segah).toBe('acik')
+    expect(s.buselik).toBe('acik')
     expect(s.huseyni).toBe('acik')
-    expect(perdeStatuses(base, topics(['perde-3'])).segah).toBe('kilitli')
+    expect(perdeStatuses(base, topics(['perde-3'])).buselik).toBe('kilitli')
   })
 
-  it('2. kademe zinciri: Segâh → Kürdî → Dik Kürdî → Nim Hicaz', () => {
+  it('2. kademe zinciri: Bûselik → Kürdî → Dik Kürdî → Nim Hicaz', () => {
     const upTo = (ids: string[]) => ids.map((id) => tone(id, true))
-    const base = ['neva', 'cargah', 'buselik', 'dugah', 'rast']
-    expect(perdeStatuses(upTo([...base, 'segah', 'kurdi', 'dik-kurdi']), topics())['nim-hicaz']).toBe('acik')
-    expect(perdeStatuses(upTo([...base, 'segah', 'kurdi']), topics())['nim-hicaz']).toBe('kilitli')
+    const base = ['neva', 'cargah', 'segah', 'dugah', 'rast']
+    expect(perdeStatuses(upTo([...base, 'buselik', 'kurdi', 'dik-kurdi']), topics())['nim-hicaz']).toBe('acik')
+    expect(perdeStatuses(upTo([...base, 'buselik', 'kurdi']), topics())['nim-hicaz']).toBe('kilitli')
   })
 
   it('Hüseynî hâlâ Rast geçilmesini ve perde-2 açık olmasını ister', () => {
-    const noRast = ['neva', 'cargah', 'buselik', 'dugah'].map((id) => tone(id, true))
+    const noRast = ['neva', 'cargah', 'segah', 'dugah'].map((id) => tone(id, true))
     expect(perdeStatuses(noRast, topics()).huseyni).toBe('kilitli')
     const withRast = [...noRast, tone('rast', true)]
     expect(perdeStatuses(withRast, topics(['perde-2'])).huseyni).toBe('kilitli')
@@ -113,12 +135,12 @@ describe('perdeStatuses', () => {
 
   it('Eviç, Muhayyer geçilmesini ve perde-4 açık olmasını ister; Nim Hicaz geçilmesi yetmez', () => {
     const upTo = (ids: string[]) => ids.map((id) => tone(id, true))
-    const base = ['neva', 'cargah', 'buselik', 'dugah', 'rast']
+    const base = ['neva', 'cargah', 'segah', 'dugah', 'rast']
     const k3 = ['huseyni', 'acem', 'gerdaniye']
     expect(perdeStatuses(upTo([...base, ...k3, 'muhayyer']), topics()).evic).toBe('acik')
     expect(perdeStatuses(upTo([...base, ...k3, 'muhayyer']), topics(['perde-4'])).evic).toBe('kilitli')
     expect(perdeStatuses(upTo([...base, ...k3]), topics()).evic).toBe('kilitli')
-    expect(perdeStatuses(upTo([...base, 'segah', 'kurdi', 'dik-kurdi', 'nim-hicaz']), topics()).evic).toBe('kilitli')
+    expect(perdeStatuses(upTo([...base, 'buselik', 'kurdi', 'dik-kurdi', 'nim-hicaz']), topics()).evic).toBe('kilitli')
   })
 
   it('ilk-ses kayıtları perde durumunu etkilemez', () => {
@@ -149,12 +171,12 @@ describe('buildEveningPlan', () => {
     const plan = buildEveningPlan({
       ilkSesPassed: true,
       calibrated: true,
-      perdeStatus: statuses({ neva: 'gecildi', cargah: 'gecildi', buselik: 'gecildi', dugah: 'gecildi', rast: 'acik' }),
+      perdeStatus: statuses({ neva: 'gecildi', cargah: 'gecildi', segah: 'gecildi', dugah: 'gecildi', rast: 'acik' }),
     })
     expect(plan.map((s) => [s.perdeId, s.tries])).toEqual([
       ['dugah', 1],
       ['rast', 3],
-      ['buselik', 1],
+      ['segah', 1],
       ['cargah', 1],
       ['neva', 1],
     ])
@@ -175,9 +197,9 @@ describe('buildEveningPlan', () => {
     const plan = buildEveningPlan({
       ilkSesPassed: true,
       calibrated: true,
-      perdeStatus: statuses({ neva: 'gecildi', cargah: 'gecildi', buselik: 'gecildi', dugah: 'gecildi', rast: 'gecildi' }),
+      perdeStatus: statuses({ neva: 'gecildi', cargah: 'gecildi', segah: 'gecildi', dugah: 'gecildi', rast: 'gecildi' }),
     })
-    expect(plan.map((s) => s.perdeId)).toEqual(['rast', 'dugah', 'buselik', 'cargah'])
+    expect(plan.map((s) => s.perdeId)).toEqual(['rast', 'dugah', 'segah', 'cargah'])
     expect(plan.every((s) => s.tries === 1)).toBe(true)
   })
 })

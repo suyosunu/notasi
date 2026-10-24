@@ -3,15 +3,33 @@ import { NOTA_TOPICS } from './nota-topics'
 import { ILK_SES_REHBER, NEY_PERDELER, visibleFingering } from './ney-perdeler'
 
 describe('NEY_PERDELER', () => {
-  it('MEB sırasıyla gelir: Nevâ, Çârgâh, Bûselik, Dügâh, Rast; ardından yeni perdeler', () => {
+  it('ilk beş ses Nevâ, Çârgâh, Segâh, Dügâh, Rast', () => {
+    expect(NEY_PERDELER.slice(0, 5).map((p) => p.id)).toEqual(['neva', 'cargah', 'segah', 'dugah', 'rast'])
+  })
+
+  it('sıra: ilk beş, ardından yeni perdeler; Bûselik Rast’tan sonra gelir', () => {
     expect(NEY_PERDELER.map((p) => p.id)).toEqual([
-      'neva', 'cargah', 'buselik', 'dugah', 'rast',
-      'huseyni', 'acem', 'gerdaniye', 'muhayyer', 'segah', 'kurdi', 'dik-kurdi', 'nim-hicaz', 'evic',
+      'neva', 'cargah', 'segah', 'dugah', 'rast',
+      'huseyni', 'acem', 'gerdaniye', 'muhayyer', 'buselik', 'kurdi', 'dik-kurdi', 'nim-hicaz', 'evic',
     ])
     expect(NEY_PERDELER.map((p) => p.name)).toEqual([
-      'Nevâ', 'Çârgâh', 'Bûselik', 'Dügâh', 'Rast',
-      'Hüseynî', 'Acem', 'Gerdâniye (açık)', 'Muhayyer (açık)', 'Segâh', 'Kürdî', 'Dik Kürdî', 'Nim Hicaz', 'Eviç',
+      'Nevâ', 'Çârgâh', 'Segâh', 'Dügâh', 'Rast',
+      'Hüseynî', 'Acem', 'Gerdâniye (açık)', 'Muhayyer (açık)', 'Bûselik', 'Kürdî', 'Dik Kürdî', 'Nim Hicaz', 'Eviç',
     ])
+  })
+
+  it("Bûselik Rast'tan sonra, perde-3 konusuyla açılır", () => {
+    const ids = NEY_PERDELER.map((p) => p.id)
+    expect(ids.indexOf('buselik')).toBeGreaterThan(ids.indexOf('rast'))
+    const byId = Object.fromEntries(NEY_PERDELER.map((p) => [p.id, p]))
+    expect(byId.buselik.notaTopicId).toBe('perde-3')
+    expect(byId.segah.notaTopicId).toBe('nota-1')
+    expect(byId.segah.tip).toBe(
+      'Çârgâh duruşuna üstteki elin yüzük parmağını ekle: üstten ilk üç delik kapalı, dördüncü delik açık, alttaki elin orta parmağı kapalı.',
+    )
+    expect(byId.buselik.tip).toBe(
+      'Segâh duruşunda üçüncü deliğin yarısını aç (üstteki elin yüzük parmağı yarım). Ses Segâh’tan bir koma tiz çıkar; yarım deliği kulağınla ayarla.',
+    )
   })
 
   it('Irak ve Hicaz (58) listede yoktur', () => {
@@ -26,14 +44,14 @@ describe('NEY_PERDELER', () => {
     expect(rows).toEqual([
       ['neva', 'D', 5, 0, 'nota-1'],
       ['cargah', 'C', 5, 0, 'nota-1'],
-      ['buselik', 'B', 4, 0, 'nota-1'],
+      ['segah', 'B', 4, -1, 'nota-1'],
       ['dugah', 'A', 4, 0, 'nota-2'],
       ['rast', 'G', 4, 0, 'nota-2'],
       ['huseyni', 'E', 5, 0, 'perde-2'],
       ['acem', 'F', 5, 0, 'perde-2'],
       ['gerdaniye', 'G', 5, 0, 'perde-2'],
       ['muhayyer', 'A', 5, 0, 'perde-2'],
-      ['segah', 'B', 4, -1, 'perde-3'],
+      ['buselik', 'B', 4, 0, 'perde-3'],
       ['kurdi', 'B', 4, -5, 'perde-3'],
       ['dik-kurdi', 'B', 4, -4, 'perde-3'],
       ['nim-hicaz', 'C', 5, 4, 'perde-4'],

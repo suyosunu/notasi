@@ -45,9 +45,10 @@ export interface NeyPerde {
 }
 
 // Kaynaklar (ayrıntı: .superpowers/sdd/2026-10-13-notasi-surum-1/task-12-report.md).
-// MEB Ney Modülü (tymm.meb.gov.tr ünite 1216) ilk beş perdeyi ikinci kademe ana sesleri olarak
-// sıralar, ancak parmak pozisyonunu yazılı vermez ("öğretmen uygulamalı gösterir").
-// Sonraki perdeler (ikinci kademe Segâh, Kürdî, Dik Kürdî, Nim Hicaz ve üçüncü kademe Hüseynî, Acem,
+// MEB Ney Modülü (tymm.meb.gov.tr ünite 1216) ikinci kademe ana seslerini sıralar, ancak parmak
+// pozisyonunu yazılı vermez ("öğretmen uygulamalı gösterir"). Uygulamanın ilk beşi Nevâ, Çârgâh,
+// Segâh, Dügâh, Rast'tır; Bûselik sonra gelir.
+// Sonraki perdeler (ikinci kademe Bûselik, Kürdî, Dik Kürdî, Nim Hicaz ve üçüncü kademe Hüseynî, Acem,
 // Eviç, açık Gerdâniye, açık Muhayyer; MEB ünite 1217) açılma sırasını nota konularından alır.
 // Şemalar Neyzenim ney derslerinden alınmıştır: sağ el üstte, sağ başparmak aşîrân deliğinde;
 // iki elin orta parmağı (2. ve 5. delik) destek için kapalı tutulur.
@@ -71,9 +72,10 @@ const SERT = 'Daha sert üfle: '
 const KOMA_FARKI = 'aradaki koma farkını dudak ve baş açısıyla verirsin.'
 
 /**
- * İlk beş perde MEB Ney Modülü 3. tema (NEY.3.3.1, NEY.3.3.2) sırasıdır (2. kademe).
+ * İlk beş perde Nevâ, Çârgâh, Segâh, Dügâh, Rast sırasıyla öğretilir (2. kademe; araştırma §4.1,
+ * S2, S4, S5, S13 Segâh der). Bûselik bu beşin dışındadır, Rast'tan sonra perde-3 konusuyla açılır.
  * Sonrası nota konularının açılma sırasını izler: perde-2 (Hüseynî, Acem, Gerdâniye, Muhayyer;
- * 3. kademe), perde-3 (Segâh, Kürdî, Dik Kürdî), perde-4 (Nim Hicaz, Eviç). Böylece her perde,
+ * 3. kademe), perde-3 (Bûselik, Kürdî, Dik Kürdî), perde-4 (Nim Hicaz, Eviç). Böylece her perde,
  * kendi nota konusu açılınca, aynı kademedeki önceki perde geçilir geçilmez açılır (3. kademenin
  * ilk perdesi Hüseynî için Rast'ın geçilmesi yeter).
  */
@@ -101,14 +103,14 @@ export const NEY_PERDELER: NeyPerde[] = [
     notaTopicId: 'nota-1',
   },
   {
-    id: 'buselik',
-    name: 'Bûselik',
+    id: 'segah',
+    name: 'Segâh',
     kademe: 2,
-    written: { step: 'B', octave: 4, acc: 0 },
-    fingering: { thumb: 'kapali', front: ['kapali', 'kapali', 'yarim', 'acik', 'kapali', 'acik'] },
+    written: { step: 'B', octave: 4, acc: -1 },
+    fingering: { thumb: 'kapali', front: ['kapali', 'kapali', 'kapali', 'acik', 'kapali', 'acik'] },
     verified: true,
-    source: SRC_BUSELIK,
-    tip: 'Çârgâh duruşunda üstteki elin yüzük parmağıyla üçüncü deliğin yarısını kapat. Yarım deliği kulağınla ayarla.',
+    source: SRC_TEMEL,
+    tip: 'Çârgâh duruşuna üstteki elin yüzük parmağını ekle: üstten ilk üç delik kapalı, dördüncü delik açık, alttaki elin orta parmağı kapalı.',
     notaTopicId: 'nota-1',
   },
   {
@@ -178,14 +180,14 @@ export const NEY_PERDELER: NeyPerde[] = [
     notaTopicId: 'perde-2',
   },
   {
-    id: 'segah',
-    name: 'Segâh',
+    id: 'buselik',
+    name: 'Bûselik',
     kademe: 2,
-    written: { step: 'B', octave: 4, acc: -1 },
-    fingering: { thumb: 'kapali', front: ['kapali', 'kapali', 'kapali', 'acik', 'kapali', 'acik'] },
+    written: { step: 'B', octave: 4, acc: 0 },
+    fingering: { thumb: 'kapali', front: ['kapali', 'kapali', 'yarim', 'acik', 'kapali', 'acik'] },
     verified: true,
-    source: SRC_TEMEL,
-    tip: 'Bûselik duruşundan üçüncü delik tam kapalı, dördüncü delik açık; alttaki elin orta parmağı kapalı. Ses Bûselik’ten bir koma pest çıkar.',
+    source: SRC_BUSELIK,
+    tip: 'Segâh duruşunda üçüncü deliğin yarısını aç (üstteki elin yüzük parmağı yarım). Ses Segâh’tan bir koma tiz çıkar; yarım deliği kulağınla ayarla.',
     notaTopicId: 'perde-3',
   },
   {

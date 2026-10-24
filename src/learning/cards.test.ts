@@ -123,8 +123,8 @@ describe('perde kartları', () => {
     expect(p1.kind).toBe('perde-name')
     expect(p1.title).toBe("Perde adları: Rast'tan Nevâ'ya")
     expect(p1.cards).toEqual([
-      'perde:G4', 'perde:A4', 'perde:B4', 'perde:C5', 'perde:D5',
-      'perde-ters:G4', 'perde-ters:A4', 'perde-ters:B4', 'perde-ters:C5', 'perde-ters:D5',
+      'perde:G4', 'perde:A4', 'perde:B4b1', 'perde:C5', 'perde:D5',
+      'perde-ters:G4', 'perde-ters:A4', 'perde-ters:B4b1', 'perde-ters:C5', 'perde-ters:D5',
     ])
     expect(p2.kind).toBe('perde-name')
     expect(p2.title).toBe("Perde adları: Hüseynî'den Muhayyer'e")
@@ -133,5 +133,28 @@ describe('perde kartları', () => {
       'perde-ters:E5', 'perde-ters:F5', 'perde-ters:G5', 'perde-ters:A5',
     ])
     expect(topicOfCard('perde-ters:A5').id).toBe('perde-2')
+  })
+  it("Segâh kartları perde-1'de, Bûselik kartları perde-3'tedir; hiçbir kart yetim kalmaz", () => {
+    const p1 = NOTA_TOPICS.find((t) => t.id === 'perde-1')!
+    const p3 = NOTA_TOPICS.find((t) => t.id === 'perde-3')!
+    expect(p1.cards).toContain('perde:B4b1')
+    expect(p1.cards).toContain('perde-ters:B4b1')
+    expect(p1.cards).not.toContain('perde:B4')
+    expect(p3.title).toBe('Perdeler: Bûselik, Kürdî, Dik Kürdî')
+    expect(p3.cards).toContain('perde:B4')
+    expect(p3.cards).toContain('perde-ters:B4')
+    expect(p3.cards).not.toContain('perde:B4b1')
+    expect(p3.cards).not.toContain('perde-ters:B4b1')
+    // Toplam kart kümesi değişmez: B4 ve B4b1 kartları yalnızca yer değiştirdi.
+    const perdeCards = [...p1.cards, ...p3.cards].sort()
+    expect(perdeCards).toEqual(
+      [
+        'perde:G4', 'perde:A4', 'perde:B4b1', 'perde:C5', 'perde:D5',
+        'perde-ters:G4', 'perde-ters:A4', 'perde-ters:B4b1', 'perde-ters:C5', 'perde-ters:D5',
+        'perde:B4', 'perde:B4b5', 'perde:B4b4', 'perde-ters:B4', 'perde-ters:B4b5', 'perde-ters:B4b4',
+      ].sort(),
+    )
+    expect(topicOfCard('perde:B4').id).toBe('perde-3')
+    expect(topicOfCard('perde-ters:B4b1').id).toBe('perde-1')
   })
 })
