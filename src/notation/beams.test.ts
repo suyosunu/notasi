@@ -103,6 +103,20 @@ describe('beamGroups', () => {
     expect(beamGroups([n('quarter'), n('eighth', true), n('sixteenth')], 1.5, [1])).toEqual([])
   })
 
+  it("12/8 yedek geçişi: vuruş sınırını aşan yalın sekizlik çifti gruplanmaz (q e | e q)", () => {
+    // q (0–1) e (1–1,5) | e (1,5–2) q: 3. ve 4. sekizlik farklı vuruşlarda.
+    expect(beamGroups([n('quarter'), n('eighth'), n('eighth'), n('quarter')], 1.5)).toEqual([])
+    // Aynı çift vuruşun içindeyse (e e e: 0–1,5) normal kirişlenir.
+    expect(beamGroups([n('eighth'), n('eighth'), n('eighth')], 1.5)).toEqual([[0, 1, 2]])
+  })
+
+  it("12/8 yedek geçişi: vuruş sınırını aşan e. s ve s e. çiftleri hâlâ kirişlenir", () => {
+    // q e. s: noktalı sekizlik 1–1,75 sınırı (1,5) aşar; yedek geçiş yine de kirişler.
+    expect(beamGroups([n('quarter'), n('eighth', true), n('sixteenth')], 1.5)).toEqual([[1, 2]])
+    // q s e.: onaltılık 1–1,25, noktalı sekizlik 1,25–2 sınırı aşar; s e. çifti kirişlenir.
+    expect(beamGroups([n('quarter'), n('sixteenth'), n('eighth', true)], 1.5)).toEqual([[1, 2]])
+  })
+
   it("4/4'te yedek geçiş uygulanmaz: vuruşu aşan e e çifti gruplanmaz", () => {
     // e q e e q e: 1,5–2,5 arasındaki iki sekizlik 2. ve 3. vuruşa yayılır.
     const ev = [n('eighth'), n('quarter'), n('eighth'), n('eighth'), n('quarter'), n('eighth')]

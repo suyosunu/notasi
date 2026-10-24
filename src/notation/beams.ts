@@ -39,7 +39,7 @@ export function beamGroups(events: MusicEvent[], beatBeats: number, barlinesAfte
     }
   })
   close()
-  if (beat !== UNIT) groups.push(...quarterFallback(events, bars, groups))
+  if (beat !== UNIT) groups.push(...quarterFallback(events, bars, groups, beat))
   return groups.sort((a, b) => a[0]! - b[0]!)
 }
 
@@ -47,9 +47,10 @@ export function beamGroups(events: MusicEvent[], beatBeats: number, barlinesAfte
  * Yedek geçiş (vuruş penceresi bir dörtlükten farklıyken, ör. 12/8): henüz gruplanmamış, sus ya da ölçü
  * çizgisiyle ayrılmamış ardışık sekizlik/onaltılıklar sekizlik ızgarasında (0,5 dörtlüğün katı) başlıyor ve
  * toplam tam bir dörtlük sürüyorsa (`e. s`, `s e.`, `e e`, `s s e`) kirişlenir. 4/4'te her dörtlük zaten bir
- * vuruş penceresidir; orada bu geçiş vuruşu aşan gruplar kuracağı için uygulanmaz.
+ * vuruş penceresidir; orada bu geçiş vuruşu aşan gruplar kuracağı için uygulanmaz. Yalnızca noktasız sekizliklerden
+ * oluşan ve vuruş sınırını aşan çift (12/8 `q e | e q`) kirişlenmez; `e. s` ve `s e.` kabul edilir.
  */
-function quarterFallback(events: MusicEvent[], bars: Set<number>, taken: number[][]): number[][] {
+function quarterFallback(events: MusicEvent[], bars: Set<number>, taken: number[][], beat: number): number[][] {
   const used = new Set(taken.flat())
   const eighth = UNIT / 2
   const free = (i: number) => {
@@ -77,7 +78,13 @@ function quarterFallback(events: MusicEvent[], bars: Set<number>, taken: number[
       run.push(j)
       span += Math.round(beats(events[j]!) * UNIT)
     }
-    if (span === UNIT && run.length >= 2) {
+    // Yalın (noktasız) sekizliklerden oluşan, vuruş sınırını aşan çift (12/8'de q e | e q) kirişlenmez.
+    const plainEighths = run.every((k) => {
+      const e = events[k]!
+      return e.kind === 'note' && e.dur === 'eighth' && !e.dotted
+    })
+    const crossesBeat = Math.floor(starts[i]! / beat) !== Math.floor((starts[i]! + span - 1) / beat)
+    if (span === UNIT && run.length >= 2 && !(plainEighths && crossesBeat)) {
       out.push(run)
       run.forEach((k) => used.add(k))
       i = j + 1
