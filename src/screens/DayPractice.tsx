@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
 import { playWritten, stopAudio, unlockAudio } from '../audio/player'
+import { notaDersId } from '../content/dersler'
 import { NOTA_TOPICS } from '../content/nota-topics'
+import { DersKapisi } from '../ders/DersKapisi'
 import { buildFreeQuestions } from '../learning/day-plan'
 import { review } from '../learning/leitner'
-import { answerQuestion, loadOrStartDaySession, tick } from '../learning/day-session'
+import { answerQuestion, currentNotaTopicId, loadOrStartDaySession, tick } from '../learning/day-session'
 import type { DayState } from '../learning/day-session'
 import type { Question } from '../learning/questions'
 import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
@@ -344,9 +346,42 @@ function FreePractice({ topicId }: { topicId: string }) {
     const rng = seededRng(Date.now())
     return buildFreeQuestions(topic, FREE_QUESTION_COUNT, rng)
   })
-  return <FreeRound questions={questions} emptyMessage="Konu bulunamadı." />
+  // Okunmamışsa konunun dersi turun önüne gelir (dersi olmayan konuda kapı doğrudan geçer).
+  return (
+    <DersKapisi dersId={notaDersId(topicId)}>
+      <FreeRound questions={questions} emptyMessage="Konu bulunamadı." />
+    </DersKapisi>
+  )
+}
+
+/**
+ * Gündüz oturumunun ders kapısı: yalnızca güncel konunun dersi istenir; öğrenilmiş konulardan gelen tekrar
+ * soruları ders istemez. Kapı oturumun dışındadır: ders okunurken oturum açılmaz ve 10 dakikalık süre işlemez.
+ */
+function DaySessionGate() {
+  /** undefined: güncel konu henüz okunmadı; null: güncel konu yok (hepsi öğrenildi ya da okunamadı). */
+  const [topicId, setTopicId] = useState<string | null | undefined>(undefined)
+
+  useEffect(() => {
+    let alive = true
+    currentNotaTopicId()
+      .catch(() => null) // konu okunamazsa kapı atlanır; oturum yine açılır
+      .then((id) => {
+        if (alive) setTopicId(id)
+      })
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  if (topicId === undefined) return <Message>Yükleniyor…</Message>
+  return (
+    <DersKapisi dersId={topicId ? notaDersId(topicId) : null}>
+      <DaySession />
+    </DersKapisi>
+  )
 }
 
 export function DayPractice({ topicId }: { topicId?: string }) {
-  return topicId ? <FreePractice topicId={topicId} /> : <DaySession />
+  return topicId ? <FreePractice topicId={topicId} /> : <DaySessionGate />
 }

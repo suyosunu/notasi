@@ -10,7 +10,8 @@ import {
   saveSettings,
   setPlacedOut,
 } from '../store/db'
-import { DAY_CAP_MS, answerQuestion, finishSession, loadOrStartDaySession, tick } from './day-session'
+import { NOTA_TOPICS } from '../content/nota-topics'
+import { DAY_CAP_MS, answerQuestion, currentNotaTopicId, finishSession, loadOrStartDaySession, tick } from './day-session'
 import type { DayState } from './day-session'
 
 const TODAY = new Date(2026, 9, 13, 9, 0, 0)
@@ -233,5 +234,17 @@ describe('Leitner tekrarı', () => {
     const st = (await loadOrStartDaySession(TODAY)).state as DayState
     expect(st.reviewNote).toBe(false)
     expect(st.questions.every((q) => q.topicId === 'nota-1')).toBe(true)
+  })
+})
+
+describe('currentNotaTopicId', () => {
+  it('currentNotaTopicId ilk açık konuyu döner; hepsi öğrenildiyse null', async () => {
+    expect(await currentNotaTopicId()).toBe('nota-1')
+    await setPlacedOut('nota-1')
+    expect(await currentNotaTopicId()).toBe('sure-1')
+    for (let i = 0; i < 10; i++) await addAttempt({ topicId: 'sure-1', cardId: 'dur:whole', correct: true })
+    expect(await currentNotaTopicId()).toBe('nota-2')
+    for (const t of NOTA_TOPICS) await setPlacedOut(t.id)
+    expect(await currentNotaTopicId()).toBeNull()
   })
 })

@@ -6,7 +6,20 @@ import { playWritten, unlockAudio } from '../audio/player'
 import { DAY_CAP_MS, loadOrStartDaySession } from '../learning/day-session'
 import type { DayState } from '../learning/day-session'
 import { makeQuestion, seededRng } from '../learning/questions'
-import { addAttempt, getOpenSession, listAttempts, listCards, resetDbForTests, saveSession, saveSettings } from '../store/db'
+import {
+  addAttempt,
+  getOpenSession,
+  getSettings,
+  isaretEkle,
+  listAttempts,
+  listCards,
+  resetDbForTests,
+  saveSession,
+  saveSettings,
+  setPlacedOut,
+} from '../store/db'
+import { dersById, notaDersId } from '../content/dersler'
+import { NOTA_DERSLERI } from '../content/dersler/nota'
 import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
 import { DayPractice } from './DayPractice'
 
@@ -21,6 +34,8 @@ const WARNING = 'Ses çalınamadı. Telefonun sessiz düğmesini kontrol edin.'
 
 beforeEach(async () => {
   await resetDbForTests()
+  // Soru ekranı testleri için nota dersleri okunmuş sayılır; ders kapısı ayrı bölümde sınanır.
+  await saveSettings({ okunanDersler: NOTA_DERSLERI.map((d) => d.id) })
   vi.mocked(unlockAudio).mockClear()
   vi.mocked(playWritten).mockReset()
   vi.mocked(playWritten).mockImplementation(() => Promise.resolve())
@@ -361,5 +376,59 @@ describe('DayPractice (serbest tur)', () => {
     expect(cards.length).toBeGreaterThan(0)
     expect(cards.every((c) => ['note:A4', 'note:G4'].includes(c.id))).toBe(true)
     expect(screen.queryByText(REVIEW_NOTE)).toBeNull()
+  })
+})
+
+describe('DayPractice (ders kapısı)', () => {
+  const ANLADIM = 'Anladım, alıştırmaya geç'
+  const dersBasligi = (topicId: string) => `📖 ${dersById(notaDersId(topicId))!.baslik}`
+
+  beforeEach(async () => {
+    await saveSettings({ okunanDersler: [] })
+  })
+
+  it('/nota/nota-1 okunmamışken önce ders, "Anladım"dan sonra ilk soru görünür', async () => {
+    render(<DayPractice topicId="nota-1" />)
+    expect(await screen.findByRole('heading', { name: dersBasligi('nota-1') })).toBeTruthy()
+    expect(screen.queryByText(/Nota okuma ·/)).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: ANLADIM }))
+    expect(await screen.findByText('☀️ Nota okuma · 1/8')).toBeTruthy()
+    expect((await getSettings()).okunanDersler).toEqual(['nota:nota-1'])
+  })
+
+  it('ders okunmuşsa serbest turda doğrudan soru görünür', async () => {
+    await isaretEkle('okunanDersler', 'nota:nota-1')
+    render(<DayPractice topicId="nota-1" />)
+    expect(await screen.findByText('☀️ Nota okuma · 1/8')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: ANLADIM })).toBeNull()
+  })
+
+  it('dersi olmayan bir konu (koma-1) doğrudan soruya geçer', async () => {
+    render(<DayPractice topicId="koma-1" />)
+    expect(await screen.findByText('☀️ Nota okuma · 1/8')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: ANLADIM })).toBeNull()
+  })
+
+  async function guncelKonuNota2() {
+    await setPlacedOut('nota-1')
+    await setPlacedOut('sure-1')
+  }
+
+  it('gündüz oturumunda güncel konu nota-2 ve dersi okunmamışsa ders görünür; "Anladım"dan sonra soru gelir', async () => {
+    await guncelKonuNota2()
+    render(<DayPractice />)
+    expect(await screen.findByRole('heading', { name: dersBasligi('nota-2') })).toBeTruthy()
+    expect(screen.queryByText(/Nota okuma ·/)).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: ANLADIM }))
+    await currentQuestion()
+    expect((await getSettings()).okunanDersler).toEqual(['nota:nota-2'])
+  })
+
+  it('gündüz oturumunda güncel konunun dersi okunduysa soru görünür; öğrenilmiş konuların dersleri istenmez', async () => {
+    await guncelKonuNota2()
+    await isaretEkle('okunanDersler', 'nota:nota-2')
+    render(<DayPractice />)
+    await currentQuestion()
+    expect(screen.queryByRole('button', { name: ANLADIM })).toBeNull()
   })
 })

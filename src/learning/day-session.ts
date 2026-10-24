@@ -85,6 +85,13 @@ async function startDaySession(now: Date): Promise<SessionRec> {
   return session
 }
 
+/** Güncel (ilk açık) nota konusunun kimliği; hepsi öğrenildiyse `null`. Gündüz ders kapısı bunu kullanır. */
+export async function currentNotaTopicId(): Promise<string | null> {
+  const [attempts, topics] = await Promise.all([listAttempts(), listTopics()])
+  const placedOut = new Set(topics.filter((t) => t.placedOut).map((t) => t.id))
+  return currentTopic(NOTA_TOPICS, topicStatuses(NOTA_TOPICS, attempts, placedOut))?.id ?? null
+}
+
 /** Bugünün açık oturumunu döner; önceki günden kalanı tamamlanmamış diye kapatıp yenisini açar. */
 export async function loadOrStartDaySession(now: Date): Promise<SessionRec> {
   const open = await getOpenSession('gunduz')

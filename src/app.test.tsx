@@ -52,7 +52,8 @@ describe('App', () => {
     expect(await screen.findByText('Re, Do, Si')).toBeTruthy()
   })
 
-  it('#/nota/<konu> rotası serbest turu açar', async () => {
+  it('#/nota/<konu> rotası serbest turu açar (konunun dersi okunduysa)', async () => {
+    await saveSettings({ okunanDersler: ['nota:nota-1'] })
     location.hash = '#/nota/nota-1'
     render(<App />)
     expect(await screen.findByText(/Nota okuma · 1\/8/)).toBeTruthy()
