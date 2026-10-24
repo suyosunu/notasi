@@ -310,6 +310,30 @@ a:focus-visible {
   text-align: center;
 }
 
+/* Satır + yanında 📖 ders bağlantısı (Ney bölümü) */
+.topic-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.topic-row > .topic {
+  flex: 1;
+  min-width: 0;
+}
+
+.ders-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 3rem;
+  min-height: 3rem;
+  text-decoration: none;
+  background: #fff;
+  border: 1px solid #d8cfbd;
+  border-radius: 0.75rem;
+}
+
 .topic-ogrenildi .topic-icon {
   color: #2f6b25;
 }

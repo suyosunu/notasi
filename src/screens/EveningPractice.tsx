@@ -134,7 +134,7 @@ export function EveningPractice() {
     </main>
   )
   // Ders kuralı: adımın dersi okunmadan alıştırması gelmez. Kapı adım sırasıyla kurulur; aynı adımın sonraki
-  // denemelerinde ders yeniden gelmez. `dersId`'siz (eski oturum, perde) adımda kapı doğrudan ekranı gösterir.
+  // denemelerinde ders yeniden gelmez. `dersId`'siz (eski oturum, ısınma ya da tekrar) adımda kapı doğrudan ekranı gösterir.
   // Kalibrasyon adımı yukarıda döndüğü için kapıdan geçmez.
   return (
     <DersKapisi key={state.stepIndex} dersId={step.dersId}>

@@ -1,3 +1,4 @@
+import { perdeDersId } from '../content/dersler'
 import { NEY_PERDELER, visibleFingering } from '../content/ney-perdeler'
 import type { NeyPerde, PerdeId } from '../content/ney-perdeler'
 import type { LongToneRec } from '../store/db'
@@ -62,8 +63,11 @@ function ilkSesStep(tries: number): EveningStep {
   return { kind: 'ilk-ses', label: 'İlk ses', tries, dersId: ILK_SES_DERS_ID }
 }
 
-function perdeStep(p: NeyPerde, tries: number): EveningStep {
-  return { kind: 'uzun-ses', perdeId: p.id, label: `Uzun ses: ${p.name}`, tries }
+/** `ders`: güncel (yeni çalışılan) perdenin adımı o perdenin dersini taşır; ısınma ve tekrar adımları taşımaz. */
+function perdeStep(p: NeyPerde, tries: number, ders = false): EveningStep {
+  const step: EveningStep = { kind: 'uzun-ses', perdeId: p.id, label: `Uzun ses: ${p.name}`, tries }
+  if (ders) step.dersId = perdeDersId(p.id)
+  return step
 }
 
 export function buildEveningPlan(input: {
@@ -78,7 +82,7 @@ export function buildEveningPlan(input: {
   const warmup = passed.at(-1)
   const plan: EveningStep[] = []
   if (warmup) plan.push(perdeStep(warmup, 1))
-  if (current) plan.push(perdeStep(current, 3))
+  if (current) plan.push(perdeStep(current, 3, true))
   // Diğer geçilenler: güncel perdeye en yakın olandan geriye doğru.
   for (const p of passed.slice(0, -1).reverse().slice(0, OTHER_PASSED_MAX)) plan.push(perdeStep(p, 1))
   return plan

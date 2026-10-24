@@ -4,7 +4,7 @@ import type { PitchSample } from '../audio/mic'
 import { NEY_PERDELER } from '../content/ney-perdeler'
 import { NOTA_TOPICS } from '../content/nota-topics'
 import { DEFAULT_TUNING, soundingHz } from '../music/ahenk'
-import { addLongTone, listLongTones, listSessions, resetDbForTests, saveSettings, setPlacedOut } from '../store/db'
+import { addLongTone, isaretEkle, listLongTones, listSessions, resetDbForTests, saveSettings, setPlacedOut } from '../store/db'
 
 let emit: ((s: PitchSample) => void) | null = null
 vi.mock('../audio/mic', async (orig) => {
@@ -37,6 +37,12 @@ afterEach(() => {
 
 function row(name: string): HTMLElement {
   return screen.getByText(name).closest('li') as HTMLElement
+}
+
+/** Dersi olan beş perde; trainer testlerinde dersleri okunmuş sayılır, kapı açılır. */
+const DERSLI = ['neva', 'cargah', 'segah', 'dugah', 'rast']
+async function perdeDersleriOkundu() {
+  for (const id of DERSLI) await isaretEkle('okunanDersler', `perde:${id}`)
 }
 
 describe('NeySection', () => {
@@ -99,6 +105,19 @@ describe('NeySection', () => {
     expect(screen.queryByRole('button', { name: /Acem/ })).toBeNull()
   })
 
+  it('dersi olan perdenin yanında 📖 ders bağlantısı vardır; kilitli perdede de görünür, dersi olmayanda yoktur', async () => {
+    render(<NeySection />)
+    await screen.findByText('Nevâ')
+    const link = within(row('Nevâ')).getByRole('link', { name: 'Nevâ dersi' })
+    expect(link.textContent).toBe('📖')
+    expect(link.getAttribute('href')).toBe('#/ders/perde%3Aneva')
+    // Rast kilitli, ama ders okumak serbesttir.
+    expect(within(row('Rast')).getByText('🔒')).toBeTruthy()
+    expect(within(row('Rast')).getByRole('link', { name: 'Rast dersi' }).getAttribute('href')).toBe('#/ders/perde%3Arast')
+    for (const name of ['Çârgâh', 'Segâh', 'Dügâh']) expect(within(row(name)).getByRole('link', { name: `${name} dersi` })).toBeTruthy()
+    expect(within(row('Hüseynî')).queryByRole('link')).toBeNull()
+  })
+
   it('altta "Yeniden kalibre et" bağlantısı vardır', async () => {
     render(<NeySection />)
     const link = await screen.findByRole('link', { name: 'Yeniden kalibre et' })
@@ -106,7 +125,54 @@ describe('NeySection', () => {
   })
 })
 
+describe('NeyPerdePractice ders kapısı', () => {
+  it('/ney/neva okunmamış derste önce ders gelir; "Anladım"dan sonra trainer görünür', async () => {
+    await saveSettings({ calibrated: true })
+    render(<NeyPerdePractice perdeId="neva" />)
+    expect(await screen.findByRole('heading', { name: /Nevâ perdesi/ })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Başla' })).toBeNull()
+    expect(screen.queryByRole('heading', { name: /Uzun ses: Nevâ/ })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Anladım, alıştırmaya geç' }))
+    expect(await screen.findByRole('heading', { name: /Uzun ses: Nevâ/ })).toBeTruthy()
+    expect(await screen.findByRole('button', { name: 'Başla' })).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: /Nevâ perdesi/ })).toBeNull()
+  })
+
+  it('ders okunmuşsa doğrudan trainer görünür', async () => {
+    await saveSettings({ calibrated: true })
+    await isaretEkle('okunanDersler', 'perde:neva')
+    render(<NeyPerdePractice perdeId="neva" />)
+    expect(await screen.findByRole('button', { name: 'Başla' })).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: /Nevâ perdesi/ })).toBeNull()
+  })
+
+  it('kalibre değilse ders değil önce kalibrasyon gelir', async () => {
+    render(<NeyPerdePractice perdeId="neva" />)
+    expect(await screen.findByRole('heading', { name: 'Kalibrasyon' })).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: /Nevâ perdesi/ })).toBeNull()
+  })
+
+  it('kilitli perdede ders kapısı çıkmaz, "henüz açılmadı" görünür', async () => {
+    await saveSettings({ calibrated: true })
+    render(<NeyPerdePractice perdeId="rast" />)
+    expect(await screen.findByText('Bu perde henüz açılmadı.')).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: /Rast perdesi/ })).toBeNull()
+  })
+
+  it('dersi olmayan perde (Hüseynî) kapısız açılır', async () => {
+    await saveSettings({ calibrated: true })
+    for (const id of ['neva', 'cargah', 'segah', 'dugah', 'rast']) {
+      await addLongTone({ perdeId: id, durationMs: 4000, passed: true, toleranceCents: 25 })
+    }
+    for (const id of NOTA_TOPICS.map((t) => t.id)) await setPlacedOut(id)
+    render(<NeyPerdePractice perdeId="huseyni" />)
+    expect(await screen.findByRole('button', { name: 'Başla' })).toBeTruthy()
+  })
+})
+
 describe('NeyPerdePractice', () => {
+  beforeEach(perdeDersleriOkundu)
+
   it('tek perde uzun sesi kayıt yazar, oturum açmaz', async () => {
     await saveSettings({ calibrated: true })
     render(<NeyPerdePractice perdeId="neva" />)

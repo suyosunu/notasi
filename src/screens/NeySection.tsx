@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'preact/hooks'
+import { dersById, perdeDersId } from '../content/dersler'
 import { NEY_PERDELER } from '../content/ney-perdeler'
 import type { PerdeId } from '../content/ney-perdeler'
 import { perdeEtiketi } from '../content/perde-adlari'
@@ -7,6 +8,7 @@ import { loadEveningInput } from '../learning/evening-session'
 import { neyLevelConfig } from '../learning/long-tone'
 import { LongToneTrainer, seconds } from '../ney/LongToneTrainer'
 import { useNeyLevel } from '../ney/useNeyLevel'
+import { DersKapisi } from '../ders/DersKapisi'
 import { navigate } from '../router'
 import { getSettings, listLongTones } from '../store/db'
 import type { Settings } from '../store/db'
@@ -17,7 +19,10 @@ const LABELS: Record<PerdeStatus, string> = { kilitli: 'kilitli', acik: 'açık'
 /** Tek perde sayfasında gösterilen son deneme sayısı. */
 const HISTORY_SIZE = 5
 
-/** Ney bölümü: perdeler durumlarıyla; açık ya da geçilmiş perde tek başına çalışılabilir. */
+/**
+ * Ney bölümü: perdeler durumlarıyla; açık ya da geçilmiş perde tek başına çalışılabilir. Dersi olan perdenin
+ * yanında 📖 bağlantısı vardır; ders okumak serbest olduğu için kilitli perdede de görünür.
+ */
 export function NeySection() {
   const [statuses, setStatuses] = useState<Record<PerdeId, PerdeStatus> | null>(null)
 
@@ -39,6 +44,7 @@ export function NeySection() {
         <ul class="topic-list">
           {NEY_PERDELER.map((p) => {
             const status = statuses[p.id]
+            const dersId = perdeDersId(p.id)
             const body = (
               <>
                 <span class="topic-icon" role="img" aria-label={LABELS[status]}>
@@ -49,7 +55,7 @@ export function NeySection() {
               </>
             )
             return (
-              <li key={p.id}>
+              <li key={p.id} class="topic-row">
                 {status === 'kilitli' ? (
                   <div class="topic topic-kilitli" data-status={status} aria-disabled="true">
                     {body}
@@ -63,6 +69,11 @@ export function NeySection() {
                   >
                     {body}
                   </button>
+                )}
+                {dersById(dersId) && (
+                  <a class="ders-link" href={`#/ders/${encodeURIComponent(dersId)}`} aria-label={`${p.name} dersi`}>
+                    📖
+                  </a>
                 )}
               </li>
             )
@@ -147,26 +158,29 @@ export function NeyPerdePractice({ perdeId }: { perdeId: string }) {
     return <Calibration onDone={() => void getSettings().then(setSettings)} onCancel={() => navigate('/ney')} />
   }
 
+  // Ders kuralı: perdenin dersi okunmadan alıştırması gelmez (kilitli perdede ve kalibrasyonda kapı yok).
   return (
-    <main class="screen evening">
-      <header class="day-head">
-        <h1>🪈 Uzun ses: {perde.name}</h1>
-      </header>
-      <LongToneTrainer
-        key={round}
-        target={{ kind: 'perde', perde }}
-        settings={settings}
-        cfg={neyLevelConfig(level)}
-        nextLabel="Tekrar dene"
-        onNext={() => setRound((n) => n + 1)}
-        onSaved={() => setSavedCount((n) => n + 1)}
-      />
-      {history.length > 0 && (
-        <p class="muted tone-history">{`Son denemeler: ${history.map(seconds).join(' · ')} sn`}</p>
-      )}
-      <a class="back" href="#/ney">
-        Ney bölümüne dön
-      </a>
-    </main>
+    <DersKapisi dersId={perdeDersId(perde.id)}>
+      <main class="screen evening">
+        <header class="day-head">
+          <h1>🪈 Uzun ses: {perde.name}</h1>
+        </header>
+        <LongToneTrainer
+          key={round}
+          target={{ kind: 'perde', perde }}
+          settings={settings}
+          cfg={neyLevelConfig(level)}
+          nextLabel="Tekrar dene"
+          onNext={() => setRound((n) => n + 1)}
+          onSaved={() => setSavedCount((n) => n + 1)}
+        />
+        {history.length > 0 && (
+          <p class="muted tone-history">{`Son denemeler: ${history.map(seconds).join(' · ')} sn`}</p>
+        )}
+        <a class="back" href="#/ney">
+          Ney bölümüne dön
+        </a>
+      </main>
+    </DersKapisi>
   )
 }

@@ -154,7 +154,7 @@ describe('buildEveningPlan', () => {
     expect(plan).toEqual([{ kind: 'ilk-ses', label: 'İlk ses', tries: 3, dersId: 's0:ilk-ses' }])
   })
 
-  it('ilk ses adımı s0:ilk-ses dersini taşır; perde adımları bu görevde ders taşımaz', () => {
+  it('ilk ses adımı s0:ilk-ses dersini taşır; kalibrasyon adımı ders taşımaz', () => {
     const ilk = buildEveningPlan({ ilkSesPassed: false, calibrated: false, perdeStatus: statuses({ neva: 'acik' }) })
     expect(ilk.map((s) => s.dersId)).toEqual(['s0:ilk-ses'])
     const kalibre = buildEveningPlan({ ilkSesPassed: true, calibrated: false, perdeStatus: statuses({ neva: 'acik' }) })
@@ -162,13 +162,35 @@ describe('buildEveningPlan', () => {
       ['ilk-ses', 's0:ilk-ses'],
       ['kalibrasyon', undefined],
     ])
-    const perde = buildEveningPlan({
+  })
+
+  it('güncel perde adımı perde:<id> dersini taşır, ısınma taşımaz', () => {
+    const ilk = buildEveningPlan({ ilkSesPassed: true, calibrated: true, perdeStatus: statuses({ neva: 'acik' }) })
+    expect(ilk.map((s) => [s.perdeId, s.tries, s.dersId])).toEqual([['neva', 3, 'perde:neva']])
+    const iki = buildEveningPlan({
       ilkSesPassed: true,
       calibrated: true,
       perdeStatus: statuses({ neva: 'gecildi', cargah: 'acik' }),
     })
-    expect(perde).toHaveLength(2)
-    expect(perde.every((s) => s.kind === 'uzun-ses' && s.dersId === undefined)).toBe(true)
+    expect(iki.map((s) => [s.perdeId, s.tries, s.dersId])).toEqual([
+      ['neva', 1, undefined],
+      ['cargah', 3, 'perde:cargah'],
+    ])
+  })
+
+  it('geçilmiş perdelerin tekrar adımları ders taşımaz; hepsi geçilmişse hiçbir adım ders taşımaz', () => {
+    const plan = buildEveningPlan({
+      ilkSesPassed: true,
+      calibrated: true,
+      perdeStatus: statuses({ neva: 'gecildi', cargah: 'gecildi', segah: 'gecildi', dugah: 'gecildi', rast: 'acik' }),
+    })
+    expect(plan.filter((s) => s.dersId !== undefined).map((s) => [s.perdeId, s.dersId])).toEqual([['rast', 'perde:rast']])
+    const bitti = buildEveningPlan({
+      ilkSesPassed: true,
+      calibrated: true,
+      perdeStatus: statuses({ neva: 'gecildi', cargah: 'gecildi', segah: 'gecildi', dugah: 'gecildi', rast: 'gecildi' }),
+    })
+    expect(bitti.every((s) => s.dersId === undefined)).toBe(true)
   })
 
   it('kalibre değilse plan kalibrasyon adımını içerir', () => {
@@ -181,7 +203,7 @@ describe('buildEveningPlan', () => {
 
   it('henüz geçilen perde yoksa güncel açık perde ×3', () => {
     const plan = buildEveningPlan({ ilkSesPassed: true, calibrated: true, perdeStatus: statuses({ neva: 'acik' }) })
-    expect(plan).toEqual([{ kind: 'uzun-ses', perdeId: 'neva', label: 'Uzun ses: Nevâ', tries: 3 }])
+    expect(plan).toEqual([{ kind: 'uzun-ses', perdeId: 'neva', label: 'Uzun ses: Nevâ', tries: 3, dersId: 'perde:neva' }])
   })
 
   it('ısınma (son geçilen) ×1, açık perde ×3, diğer geçilenler ×1 (en fazla 3)', () => {

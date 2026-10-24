@@ -5,6 +5,7 @@ import { NOTA_TOPICS } from '../nota-topics'
 import { DERSLER, dersById, notaDersId, perdeDersId } from './index'
 import { HAZIRLIK_DERSLERI } from './hazirlik'
 import { NOTA_DERSLERI } from './nota'
+import { PERDE_DERSLERI } from './perdeler'
 import { cardToEvents } from '../../learning/cards'
 import type { MusicEvent } from '../../music/notation'
 import type { Ders, DersBlok } from './types'
@@ -200,5 +201,101 @@ describe('Seviye 1 nota dersleri', () => {
     expect(m).toMatch(/Segâh[^.]*Si'nin biraz pesti/)
     expect(m).toMatch(/koma bemolü/)
     expect(m).toMatch(/koma konularında/)
+  })
+})
+
+describe('Seviye 1 perde dersleri', () => {
+  const PERDELER = ['neva', 'cargah', 'segah', 'dugah', 'rast'] as const
+  const perde = (id: string) => NEY_PERDELER.find((p) => p.id === id)!
+  const ders = (id: string) => dersById(perdeDersId(id))!
+  const porteler = (id: string) => ders(id).bloklar.flatMap((b) => (b.tur === 'porte' ? [b.olaylar] : []))
+  const yukseklik = (e: MusicEvent) => (e.kind === 'note' ? e.pitch : null)
+
+  it('beş perde dersi bu sırayla var; seviye 1, kimlik perde:<id>, alıştırması /ney/<id>, DERSLER içinde', () => {
+    expect(PERDE_DERSLERI.map((d) => d.id)).toEqual(PERDELER.map(perdeDersId))
+    for (const id of PERDELER) {
+      const d = dersById(perdeDersId(id))
+      expect(d).toBeDefined()
+      expect(d!.seviye).toBe(1)
+      expect(d!.alistirma).toBe(`/ney/${id}`)
+    }
+  })
+
+  it('ders sırası uygulamadaki perde sırasıyla aynıdır', () => {
+    expect(NEY_PERDELER.slice(0, 5).map((p) => p.id)).toEqual([...PERDELER])
+  })
+
+  it.each(PERDELER)('%s: parmak blokları yalnız dersin perdesine bağlı ve en az bir tane var', (id) => {
+    const parmaklar = ders(id).bloklar.filter((b) => b.tur === 'parmak')
+    expect(parmaklar.length).toBeGreaterThan(0)
+    for (const b of parmaklar) expect(b.tur === 'parmak' && b.perdeId).toBe(id)
+  })
+
+  it.each(PERDELER)('%s: perdenin yazılı notası birlik olarak tek başına bir portede gösterilir', (id) => {
+    expect(porteler(id)).toContainEqual([{ kind: 'note', pitch: perde(id).written, dur: 'whole' }])
+  })
+
+  it.each(PERDELER.slice(1).map((id, i) => [PERDELER[i]!, id] as const))(
+    '%s → %s: önceki perdeden geçişi gösteren iki notalık porte var',
+    (onceki, id) => {
+      const gecis = porteler(id).filter(
+        (o) => o.length === 2 && o.every((e) => e.kind === 'note'),
+      )
+      expect(gecis.map((o) => o.map(yukseklik))).toContainEqual([perde(onceki).written, perde(id).written])
+    },
+  )
+
+  it('Nevâ dersinde geçiş portesi yoktur (ilk ses)', () => {
+    expect(porteler('neva').filter((o) => o.length === 2)).toHaveLength(0)
+  })
+
+  it.each(PERDELER.slice(1).map((id, i) => [PERDELER[i]!, id] as const))(
+    '%s → %s: "bir parmak ekle" doğrudur; şemada tek bir delik açıktan kapalıya geçer',
+    (onceki, id) => {
+      const a = perde(onceki).fingering!
+      const b = perde(id).fingering!
+      expect(b.thumb).toBe(a.thumb)
+      const degisen = a.front.flatMap((h, i) => (h === b.front[i] ? [] : [[h, b.front[i]]]))
+      expect(degisen).toEqual([['acik', 'kapali']])
+    },
+  )
+
+  it.each(PERDELER)('%s: kaynaklar perdenin şema kaynağını (source) içerir', (id) => {
+    const src = perde(id).source!
+    expect(ders(id).kaynaklar.some((k) => k.includes(src))).toBe(true)
+  })
+
+  it.each(PERDELER)('%s: üfleme notu ve "Kendin dene": uzun ses, Dinle ile kulakla karşılaştırma, akort göstergesi', (id) => {
+    const m = metinler(ders(id)).join(' ')
+    expect(m).toMatch(/ılık/)
+    const dene = ders(id).bloklar.find((b) => b.tur === 'dene')!
+    const adimlar = dene.tur === 'dene' ? dene.adimlar.join(' ') : ''
+    expect(adimlar).toMatch(/uzun ses/i)
+    expect(adimlar).toMatch(/▶ Dinle/)
+    expect(adimlar).toMatch(/kulağın/)
+    expect(adimlar).toMatch(/akort göstergesi/i)
+  })
+
+  it.each(PERDELER)('%s: sayısal hedef (8 sn, ±20 sent) "öneri" olarak anılır', (id) => {
+    const m = metinler(ders(id)).join(' ')
+    expect(m).toMatch(/8 sn/)
+    expect(m).toMatch(/±20 sent/)
+    expect(m).toMatch(/öneri/i)
+  })
+
+  it.each(PERDELER)('%s: perdenin adı ve nota adı derste geçer', (id) => {
+    const m = metinler(ders(id)).join(' ')
+    const notaAdi = { neva: 'Re', cargah: 'Do', segah: 'Si', dugah: 'La', rast: 'Sol' }[id]
+    expect(m).toContain(perde(id).name)
+    expect(m).toContain(notaAdi)
+  })
+
+  it("Segâh dersi koma bemolünü anlatır; Rast dersi Zeki Sözen'in Sol kuralını anar", () => {
+    expect(metinler(ders('segah')).join(' ')).toMatch(/koma bemolü/)
+    expect(metinler(ders('rast')).join(' ')).toMatch(/Zeki Sözen/)
+  })
+
+  it.each(PERDELER)('%s: orta parmakların (2. ve 5. delik) destek için kapalı olduğu söylenir', (id) => {
+    expect(metinler(ders(id)).join(' ')).toMatch(/orta parma/)
   })
 })

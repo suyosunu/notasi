@@ -73,6 +73,14 @@ describe('DersView', () => {
     expect(screen.getByText('Nefes düzeni')).toBeTruthy()
   })
 
+  it('porte bloklarında bir vuruştaki iki sekizlik kirişlenir (bayrak yerine kiriş, 4/4)', () => {
+    const sekizlik = (step: 'D' | 'C'): MusicEvent => ({ kind: 'note', pitch: { step, octave: 5, acc: 0 }, dur: 'eighth' })
+    const ders: Ders = { ...DERS, bloklar: [{ tur: 'porte', olaylar: [sekizlik('D'), sekizlik('C')] }] }
+    const { container } = render(<DersView ders={ders} onDone={() => undefined} />)
+    expect(container.querySelectorAll('[data-beam-group]')).toHaveLength(1)
+    expect(container.querySelectorAll('[data-flag]')).toHaveLength(0)
+  })
+
   it('"Kendin dene" kutusu başlığıyla ve adımlarıyla görünür', () => {
     render(<DersView ders={DERS} onDone={() => undefined} />)
     expect(screen.getByRole('heading', { name: 'Kendin dene' })).toBeTruthy()

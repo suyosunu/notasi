@@ -12,6 +12,8 @@ import { Gorsel } from './Gorseller'
 
 const STAFF_WIDTH = 320
 const VARSAYILAN_BPM = 60
+/** Ders portelerindeki örnekler 4/4'tür: bir dörtlük içindeki sekizlikler kirişlenir. */
+const DERS_VURUS = 1
 
 function sesliMi(olaylar: MusicEvent[]): boolean {
   return olaylar.some((e) => e.kind === 'note')
@@ -110,7 +112,7 @@ export function DersView(props: { ders: Ders; onDone: () => void; geri?: { href:
         return (
           <figure key={i} class="ders-figur">
             <div class="staff-wrap">
-              <Staff events={b.olaylar} width={STAFF_WIDTH} />
+              <Staff events={b.olaylar} width={STAFF_WIDTH} beamBeats={DERS_VURUS} />
             </div>
             {b.aciklama && <figcaption class="muted">{b.aciklama}</figcaption>}
             {sesliMi(b.olaylar) && dinleDugmesi(i, b.olaylar, b.bpm ?? VARSAYILAN_BPM)}

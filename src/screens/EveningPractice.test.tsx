@@ -56,7 +56,14 @@ afterEach(() => {
   location.hash = ''
 })
 
+/** İlk ses geçilmiş, kalibre; perde adımlarının dersleri okunmuş sayılır (kapı açılır). */
 async function readyForPerde() {
+  await readyForPerdeDerssiz()
+  for (const id of ['neva', 'cargah', 'segah', 'dugah', 'rast']) await isaretEkle('okunanDersler', `perde:${id}`)
+}
+
+/** İlk ses geçilmiş, kalibre; perde dersleri okunmamış. */
+async function readyForPerdeDerssiz() {
   await addLongTone({ perdeId: 'ilk-ses', durationMs: 3000, passed: true, toleranceCents: 50 })
   await saveSettings({ calibrated: true })
 }
@@ -359,6 +366,7 @@ describe('EveningPractice', () => {
     await addLongTone({ perdeId: 'ilk-ses', durationMs: 3000, passed: true, toleranceCents: 50 })
     await saveSettings({ calibrated: true })
     await ilkSesDersiOkundu()
+    await isaretEkle('okunanDersler', 'perde:neva')
     render(<EveningPractice />)
     await begin()
     fireEvent.click(screen.getByRole('button', { name: 'Bitir' }))
@@ -366,7 +374,7 @@ describe('EveningPractice', () => {
     const recs = await listLongTones('ilk-ses')
     expect(recs.at(-1)!.toleranceCents).toBe(50)
   })
-  describe('ilk ses dersi kapısı', () => {
+  describe('ders kapısı', () => {
     it('okunmamış s0:ilk-ses ile akşam açılınca ders görünür, "Başla" görünmez; "Anladım"dan sonra trainer görünür', async () => {
       render(<EveningPractice />)
       expect(await screen.findByRole('heading', { name: /Dudak ve ilk ses/ })).toBeTruthy()
@@ -412,6 +420,32 @@ describe('EveningPractice', () => {
       render(<EveningPractice />)
       expect(await screen.findByRole('heading', { name: 'Kalibrasyon' })).toBeTruthy()
       expect(screen.queryByRole('heading', { name: /Dudak ve ilk ses/ })).toBeNull()
+    })
+
+    it('güncel perde adımında ders kapısı çıkar; "Anladım"dan sonra trainer gelir, sonraki denemede ders gelmez', async () => {
+      await readyForPerdeDerssiz()
+      render(<EveningPractice />)
+      expect(await screen.findByRole('heading', { name: /Nevâ perdesi/ })).toBeTruthy()
+      expect(screen.queryByRole('button', { name: 'Başla' })).toBeNull()
+      expect(startPitchStream).not.toHaveBeenCalled()
+      fireEvent.click(screen.getByRole('button', { name: 'Anladım, alıştırmaya geç' }))
+      expect(await screen.findByRole('heading', { name: /Uzun ses: Nevâ/ })).toBeTruthy()
+      await finishTry()
+      expect(await screen.findByText('Deneme 2/3')).toBeTruthy()
+      expect(screen.queryByRole('heading', { name: /Nevâ perdesi/ })).toBeNull()
+    })
+
+    it('ısınma adımı (geçilmiş perde) ders göstermez; sonraki güncel perde adımı kendi dersini gösterir', async () => {
+      await readyForPerdeDerssiz()
+      await addLongTone({ perdeId: 'neva', durationMs: 4500, passed: true, toleranceCents: 25 })
+      render(<EveningPractice />)
+      expect(await screen.findByRole('heading', { name: /Uzun ses: Nevâ/ })).toBeTruthy()
+      expect(screen.queryByRole('heading', { name: /Nevâ perdesi/ })).toBeNull()
+      await finishTry()
+      expect(await screen.findByRole('heading', { name: /Çârgâh perdesi/ })).toBeTruthy()
+      expect(screen.queryByRole('button', { name: 'Başla' })).toBeNull()
+      fireEvent.click(screen.getByRole('button', { name: 'Anladım, alıştırmaya geç' }))
+      expect(await screen.findByRole('heading', { name: /Uzun ses: Çârgâh/ })).toBeTruthy()
     })
 
     it('dersId taşımayan eski açık oturum kapısız açılır', async () => {

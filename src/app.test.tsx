@@ -93,7 +93,7 @@ describe('App', () => {
   })
 
   it('#/ney/<perde> rotası o perdenin uzun sesini açar', async () => {
-    await saveSettings({ calibrated: true })
+    await saveSettings({ calibrated: true, okunanDersler: ['perde:neva'] })
     location.hash = '#/ney/neva'
     render(<App />)
     expect(await screen.findByRole('heading', { name: /Uzun ses: Nevâ/ })).toBeTruthy()
