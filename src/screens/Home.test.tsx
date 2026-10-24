@@ -87,7 +87,12 @@ describe('Home', () => {
     const labels = within(night2)
       .getAllByRole('listitem')
       .map((li) => li.querySelector('.plan-label')?.textContent)
-    expect(labels).toEqual(['Uzun ses: Nevâ', 'Uzun ses: Çârgâh'])
+    expect(labels).toEqual(['Uzun ses: Nevâ', 'Uzun ses: Çârgâh', 'Başpâre koy-çek'])
+    cleanup()
+    await addLongTone({ perdeId: 'baspare', durationMs: 300, passed: true, toleranceCents: 25 })
+    render(<Home />)
+    const night3 = (await screen.findByText('🌙 Akşam neyle')).closest('a') as HTMLElement
+    expect(within(night3).queryByText('Başpâre koy-çek')).toBeNull()
   })
 
   it('shows the streak from completed sessions', async () => {

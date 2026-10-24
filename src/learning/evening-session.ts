@@ -3,6 +3,7 @@ import type { PerdeId } from '../content/ney-perdeler'
 import { getOpenSession, getSettings, listAttempts, listLongTones, listTopics, saveSession } from '../store/db'
 import type { SessionRec } from '../store/db'
 import { todayLocal } from '../util/date'
+import { BASPARE_ID } from './baspare'
 import { finishSession } from './day-session'
 import { buildEveningPlan, ILK_SES_ID, perdeStatuses } from './evening-plan'
 import type { EveningStep, PerdeStatus } from './evening-plan'
@@ -18,6 +19,7 @@ export interface EveningState {
 export interface EveningInput {
   ilkSesPassed: boolean
   calibrated: boolean
+  baspareGecildi: boolean
   perdeStatus: Record<PerdeId, PerdeStatus>
 }
 
@@ -33,6 +35,7 @@ export async function loadEveningInput(): Promise<EveningInput> {
   return {
     ilkSesPassed: longTones.some((r) => r.perdeId === ILK_SES_ID && r.passed),
     calibrated: settings.calibrated,
+    baspareGecildi: longTones.some((r) => r.perdeId === BASPARE_ID && r.passed),
     perdeStatus: perdeStatuses(longTones, topicStatuses(NOTA_TOPICS, attempts, placedOut)),
   }
 }

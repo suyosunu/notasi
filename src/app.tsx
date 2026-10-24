@@ -7,6 +7,7 @@ import { dersById } from './content/dersler'
 import { DersView } from './ders/DersView'
 import { navigate, useRoute } from './router'
 import { About } from './screens/About'
+import { BaspareAlistirma } from './screens/BaspareAlistirma'
 import { Calibration } from './screens/Calibration'
 import { DayPractice } from './screens/DayPractice'
 import { EveningPractice } from './screens/EveningPractice'
@@ -15,6 +16,7 @@ import { MakamDetail } from './screens/MakamDetail'
 import { MakamQuiz, MakamSection } from './screens/MakamSection'
 import { NeyPerdePractice, NeySection } from './screens/NeySection'
 import { MixedPractice } from './screens/MixedPractice'
+import { NefesEgzersizi } from './screens/NefesEgzersizi'
 import { NotaSection } from './screens/NotaSection'
 import { OgrenSection } from './screens/OgrenSection'
 import { Onboarding } from './screens/Onboarding'
@@ -54,6 +56,8 @@ const routes: Record<string, () => ComponentChildren> = {
   '/baslangic': () => <Onboarding />,
   '/yoklama': () => <Placement />,
   '/oturum-sonu': () => <SessionEnd />,
+  '/hazirlik/nefes': () => <NefesEgzersizi />,
+  '/hazirlik/baspare': () => <BaspareAlistirma />,
 }
 
 const FREE_PREFIX = '/nota/'

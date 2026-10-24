@@ -38,6 +38,14 @@ describe('evening session', () => {
     expect(input.perdeStatus.neva).toBe('acik')
   })
 
+  it('girdi: başpâre yalnız geçilmiş kayıttan okunur', async () => {
+    expect((await loadEveningInput()).baspareGecildi).toBe(false)
+    await addLongTone({ perdeId: 'baspare', durationMs: 300, passed: false, toleranceCents: 25 })
+    expect((await loadEveningInput()).baspareGecildi).toBe(false)
+    await addLongTone({ perdeId: 'baspare', durationMs: 300, passed: true, toleranceCents: 25 })
+    expect((await loadEveningInput()).baspareGecildi).toBe(true)
+  })
+
   it('bugünün oturumunu açar, ikinci çağrıda aynısını döner; plan bitince tamamlar', async () => {
     const s = await loadOrStartEveningSession(new Date())
     expect(s).toMatchObject({ kind: 'aksam', date: todayLocal(), completed: false })

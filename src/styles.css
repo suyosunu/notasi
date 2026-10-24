@@ -746,3 +746,41 @@ h2.setting-label {
   color: var(--muted);
   overflow-wrap: anywhere;
 }
+
+/* Nefes çalışması (4-4-4) */
+.nefes {
+  display: grid;
+  gap: 1rem;
+}
+
+.nefes-sahne {
+  display: grid;
+  justify-items: center;
+  gap: 0.25rem;
+  padding: 1.5rem 1rem;
+  border-radius: 1rem;
+  background: #f3ecdc;
+  text-align: center;
+}
+
+.nefes-sahne p {
+  margin: 0;
+}
+
+.nefes-faz {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.nefes-sayac {
+  font-size: 5rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.nefes-bitti {
+  margin: 0;
+  font-size: 1.5rem;
+  text-align: center;
+}

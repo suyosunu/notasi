@@ -95,14 +95,14 @@ describe('Seviye 0 (hazırlık) dersleri', () => {
     expect(dersById(id)!.bloklar).toContainEqual(expect.objectContaining({ tur: 'gorsel', ad }))
   })
 
-  it('alıştırma rotaları: ilk ses akşama, uzun ses Nevâ çalışmasına; diğerleri henüz yok', () => {
+  it('alıştırma rotaları: nefes ve başpâre kendi sayfalarına, ilk ses akşama, uzun ses Nevâ çalışmasına; duruş henüz yok', () => {
     const rotalar = Object.fromEntries(HAZIRLIK_DERSLERI.map((d) => [d.id, d.alistirma]))
     expect(rotalar).toEqual({
       's0:neyi-tani': undefined,
       's0:durus': undefined,
-      's0:nefes': undefined,
+      's0:nefes': '/hazirlik/nefes',
       's0:ilk-ses': '/aksam',
-      's0:baspare': undefined,
+      's0:baspare': '/hazirlik/baspare',
       's0:uzun-ses': '/ney/neva',
     })
   })

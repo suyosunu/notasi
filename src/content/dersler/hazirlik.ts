@@ -3,7 +3,6 @@ import type { Ders } from './types'
 // Seviye 0 (hazırlık) dersleri. Bilgiler yalnızca araştırma notundan
 // (docs/superpowers/notes/2026-10-25-ney-mufredat-arastirma.md, S1–S13), ney-perdeler.ts'teki şemalardan
 // ve genel nota bilgisinden gelir. Sayısal hedefler "öneri" diye anılır.
-// `/hazirlik/nefes` ve `/hazirlik/baspare` rotaları Task 38'de gelir; o iki ders şimdilik alıştırmasızdır.
 // `s0:durus` alıştırmasını ('/yolum') Task 40 ekler.
 
 const S1 = 'S1 MEB TYMM, Bireysel Çalgı Eğitimi Ney Modülü (1–8): https://tymm.meb.gov.tr/assets/pdf/muzik-bireysel-calgi-egitimi-ney.pdf'
@@ -134,6 +133,7 @@ export const HAZIRLIK_DERSLERI: Ders[] = [
       },
     ],
     kaynaklar: [S1, S2, S5],
+    alistirma: '/hazirlik/nefes',
   },
   {
     id: 's0:ilk-ses',
@@ -220,6 +220,7 @@ export const HAZIRLIK_DERSLERI: Ders[] = [
       },
     ],
     kaynaklar: [S5],
+    alistirma: '/hazirlik/baspare',
   },
   {
     id: 's0:uzun-ses',

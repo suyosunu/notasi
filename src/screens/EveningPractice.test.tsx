@@ -374,6 +374,101 @@ describe('EveningPractice', () => {
     const recs = await listLongTones('ilk-ses')
     expect(recs.at(-1)!.toleranceCents).toBe(50)
   })
+  describe('başpâre adımı', () => {
+    const BASPARE_ADIMI = { kind: 'baspare', label: 'Başpâre koy-çek', tries: 1, dersId: 's0:baspare' } as const
+
+    async function oturumKur(steps: object[], stepIndex = 0) {
+      await saveSession({
+        id: 'baspareli',
+        kind: 'aksam',
+        date: todayLocal(),
+        startedAt: new Date().toISOString(),
+        completed: false,
+        elapsedMs: 0,
+        state: { steps, stepIndex, tryIndex: 0 },
+      })
+    }
+
+    it('adım gömülü çizilir (başlık, adım sayacı, Başla); "Deneme x/1" sayacı çıkmaz', async () => {
+      await saveSettings({ calibrated: true })
+      await isaretEkle('okunanDersler', 's0:baspare')
+      await oturumKur([BASPARE_ADIMI])
+      render(<EveningPractice />)
+      expect(await screen.findByRole('heading', { name: /Başpâre koy-çek/ })).toBeTruthy()
+      expect(screen.getByText('Adım 1/1')).toBeTruthy()
+      expect(screen.queryByText('Deneme 1/1')).toBeNull()
+      expect(screen.getByText('Deneme 0/10')).toBeTruthy()
+      expect(await screen.findByRole('button', { name: 'Başla' })).toBeTruthy()
+      expect(screen.getByRole('link', { name: 'Ana ekrana dön' })).toBeTruthy()
+    })
+
+    it('tur kaydedilince "Devam" sonraki adıma geçer; son adımsa oturum biter', async () => {
+      await saveSettings({ calibrated: true })
+      await isaretEkle('okunanDersler', 's0:baspare')
+      await oturumKur([BASPARE_ADIMI, { kind: 'uzun-ses', perdeId: 'neva', label: 'Uzun ses: Nevâ', tries: 1 }])
+      render(<EveningPractice />)
+      await begin()
+      fireEvent.click(screen.getByRole('button', { name: 'Bitir' }))
+      fireEvent.click(await screen.findByRole('button', { name: 'Devam' }))
+      expect(await screen.findByRole('heading', { name: /Uzun ses: Nevâ/ })).toBeTruthy()
+      expect(await listLongTones('baspare')).toHaveLength(1)
+      expect(screen.getByText('Adım 2/2')).toBeTruthy()
+    })
+
+    it('son adım bitince oturum tamamlanır ve oturum sonuna gidilir', async () => {
+      await saveSettings({ calibrated: true })
+      await isaretEkle('okunanDersler', 's0:baspare')
+      await oturumKur([BASPARE_ADIMI])
+      render(<EveningPractice />)
+      await begin()
+      fireEvent.click(screen.getByRole('button', { name: 'Bitir' }))
+      fireEvent.click(await screen.findByRole('button', { name: 'Devam' }))
+      await waitFor(() => expect(location.hash).toBe('#/oturum-sonu'))
+      expect((await listSessions())[0]).toMatchObject({ completed: true })
+    })
+
+    it('ders okunmamışsa önce ders gelir; "Anladım"dan sonra alıştırma açılır', async () => {
+      await saveSettings({ calibrated: true })
+      await oturumKur([BASPARE_ADIMI])
+      render(<EveningPractice />)
+      expect(await screen.findByRole('heading', { name: /Başpâreyi koy, çek/ })).toBeTruthy()
+      expect(screen.queryByRole('button', { name: 'Başla' })).toBeNull()
+      fireEvent.click(screen.getByRole('button', { name: 'Anladım, alıştırmaya geç' }))
+      expect(await screen.findByRole('button', { name: 'Başla' })).toBeTruthy()
+    })
+
+    it('kalibre değilse önce kalibrasyon gösterilir', async () => {
+      await oturumKur([BASPARE_ADIMI])
+      render(<EveningPractice />)
+      expect(await screen.findByRole('heading', { name: 'Kalibrasyon' })).toBeTruthy()
+      expect(screen.queryByText('Deneme 0/10')).toBeNull()
+    })
+
+    it('planı kuran akış: Nevâ geçilmiş, başpâre geçilmemişse güncel perdeden sonra başpâre gelir', async () => {
+      await readyForPerde()
+      await addLongTone({ perdeId: 'neva', durationMs: 4500, passed: true, toleranceCents: 25 })
+      await isaretEkle('okunanDersler', 's0:baspare')
+      render(<EveningPractice />)
+      await screen.findByRole('heading', { name: /Uzun ses: Nevâ/ })
+      const open = await getOpenSession('aksam')
+      expect((open!.state as { steps: { kind: string }[] }).steps.map((s) => s.kind)).toEqual([
+        'uzun-ses',
+        'uzun-ses',
+        'baspare',
+      ])
+    })
+
+    it('tanınmayan adım türü (gelecekteki ya da bozuk kayıt) çökertmez: "Devam" sonraki adıma geçer', async () => {
+      await saveSettings({ calibrated: true })
+      await oturumKur([{ kind: 'bilinmeyen-tur', label: 'Gizemli adım', tries: 1 }])
+      render(<EveningPractice />)
+      expect(await screen.findByText('Bu adım tanınmadı.')).toBeTruthy()
+      expect(screen.queryByRole('button', { name: 'Başla' })).toBeNull()
+      fireEvent.click(screen.getByRole('button', { name: 'Devam' }))
+      await waitFor(() => expect(location.hash).toBe('#/oturum-sonu'))
+    })
+  })
+
   describe('ders kapısı', () => {
     it('okunmamış s0:ilk-ses ile akşam açılınca ders görünür, "Başla" görünmez; "Anladım"dan sonra trainer görünür', async () => {
       render(<EveningPractice />)

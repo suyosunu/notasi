@@ -55,7 +55,7 @@ describe('perdeStatuses', () => {
     expect(s.rast).toBe('gecildi')
     expect(s.segah).toBe('acik')
     expect(s.huseyni).toBe('acik')
-    const plan = buildEveningPlan({ ilkSesPassed: true, calibrated: true, perdeStatus: s })
+    const plan = buildEveningPlan({ ilkSesPassed: true, calibrated: true, baspareGecildi: true, perdeStatus: s })
     expect(plan.find((st) => st.tries === 3)!.perdeId).toBe('segah')
   })
 
@@ -150,14 +150,14 @@ describe('perdeStatuses', () => {
 
 describe('buildEveningPlan', () => {
   it('ilk ses geçilmemişse plan yalnızca 3 ilk ses denemesidir', () => {
-    const plan = buildEveningPlan({ ilkSesPassed: false, calibrated: true, perdeStatus: statuses({ neva: 'acik' }) })
+    const plan = buildEveningPlan({ ilkSesPassed: false, calibrated: true, baspareGecildi: true, perdeStatus: statuses({ neva: 'acik' }) })
     expect(plan).toEqual([{ kind: 'ilk-ses', label: 'İlk ses', tries: 3, dersId: 's0:ilk-ses' }])
   })
 
   it('ilk ses adımı s0:ilk-ses dersini taşır; kalibrasyon adımı ders taşımaz', () => {
-    const ilk = buildEveningPlan({ ilkSesPassed: false, calibrated: false, perdeStatus: statuses({ neva: 'acik' }) })
+    const ilk = buildEveningPlan({ ilkSesPassed: false, calibrated: false, baspareGecildi: true, perdeStatus: statuses({ neva: 'acik' }) })
     expect(ilk.map((s) => s.dersId)).toEqual(['s0:ilk-ses'])
-    const kalibre = buildEveningPlan({ ilkSesPassed: true, calibrated: false, perdeStatus: statuses({ neva: 'acik' }) })
+    const kalibre = buildEveningPlan({ ilkSesPassed: true, calibrated: false, baspareGecildi: true, perdeStatus: statuses({ neva: 'acik' }) })
     expect(kalibre.map((s) => [s.kind, s.dersId])).toEqual([
       ['ilk-ses', 's0:ilk-ses'],
       ['kalibrasyon', undefined],
@@ -165,11 +165,12 @@ describe('buildEveningPlan', () => {
   })
 
   it('güncel perde adımı perde:<id> dersini taşır, ısınma taşımaz', () => {
-    const ilk = buildEveningPlan({ ilkSesPassed: true, calibrated: true, perdeStatus: statuses({ neva: 'acik' }) })
+    const ilk = buildEveningPlan({ ilkSesPassed: true, calibrated: true, baspareGecildi: true, perdeStatus: statuses({ neva: 'acik' }) })
     expect(ilk.map((s) => [s.perdeId, s.tries, s.dersId])).toEqual([['neva', 3, 'perde:neva']])
     const iki = buildEveningPlan({
       ilkSesPassed: true,
       calibrated: true,
+      baspareGecildi: true,
       perdeStatus: statuses({ neva: 'gecildi', cargah: 'acik' }),
     })
     expect(iki.map((s) => [s.perdeId, s.tries, s.dersId])).toEqual([
@@ -182,19 +183,21 @@ describe('buildEveningPlan', () => {
     const plan = buildEveningPlan({
       ilkSesPassed: true,
       calibrated: true,
+      baspareGecildi: true,
       perdeStatus: statuses({ neva: 'gecildi', cargah: 'gecildi', segah: 'gecildi', dugah: 'gecildi', rast: 'acik' }),
     })
     expect(plan.filter((s) => s.dersId !== undefined).map((s) => [s.perdeId, s.dersId])).toEqual([['rast', 'perde:rast']])
     const bitti = buildEveningPlan({
       ilkSesPassed: true,
       calibrated: true,
+      baspareGecildi: true,
       perdeStatus: statuses({ neva: 'gecildi', cargah: 'gecildi', segah: 'gecildi', dugah: 'gecildi', rast: 'gecildi' }),
     })
     expect(bitti.every((s) => s.dersId === undefined)).toBe(true)
   })
 
   it('kalibre değilse plan kalibrasyon adımını içerir', () => {
-    const plan = buildEveningPlan({ ilkSesPassed: true, calibrated: false, perdeStatus: statuses({ neva: 'acik' }) })
+    const plan = buildEveningPlan({ ilkSesPassed: true, calibrated: false, baspareGecildi: true, perdeStatus: statuses({ neva: 'acik' }) })
     expect(plan).toEqual([
       { kind: 'ilk-ses', label: 'İlk ses', tries: 1, dersId: 's0:ilk-ses' },
       { kind: 'kalibrasyon', label: 'Kalibrasyon', tries: 1 },
@@ -202,7 +205,7 @@ describe('buildEveningPlan', () => {
   })
 
   it('henüz geçilen perde yoksa güncel açık perde ×3', () => {
-    const plan = buildEveningPlan({ ilkSesPassed: true, calibrated: true, perdeStatus: statuses({ neva: 'acik' }) })
+    const plan = buildEveningPlan({ ilkSesPassed: true, calibrated: true, baspareGecildi: true, perdeStatus: statuses({ neva: 'acik' }) })
     expect(plan).toEqual([{ kind: 'uzun-ses', perdeId: 'neva', label: 'Uzun ses: Nevâ', tries: 3, dersId: 'perde:neva' }])
   })
 
@@ -210,6 +213,7 @@ describe('buildEveningPlan', () => {
     const plan = buildEveningPlan({
       ilkSesPassed: true,
       calibrated: true,
+      baspareGecildi: true,
       perdeStatus: statuses({ neva: 'gecildi', cargah: 'gecildi', segah: 'gecildi', dugah: 'gecildi', rast: 'acik' }),
     })
     expect(plan.map((s) => [s.perdeId, s.tries])).toEqual([
@@ -227,6 +231,7 @@ describe('buildEveningPlan', () => {
     const plan = buildEveningPlan({
       ilkSesPassed: true,
       calibrated: true,
+      baspareGecildi: true,
       perdeStatus: statuses({ neva: 'gecildi', cargah: 'acik' }),
     })
     expect(plan.map((s) => s.label)).toEqual(['Uzun ses: Nevâ', 'Uzun ses: Çârgâh'])
@@ -236,9 +241,47 @@ describe('buildEveningPlan', () => {
     const plan = buildEveningPlan({
       ilkSesPassed: true,
       calibrated: true,
+      baspareGecildi: true,
       perdeStatus: statuses({ neva: 'gecildi', cargah: 'gecildi', segah: 'gecildi', dugah: 'gecildi', rast: 'gecildi' }),
     })
     expect(plan.map((s) => s.perdeId)).toEqual(['rast', 'dugah', 'segah', 'cargah'])
     expect(plan.every((s) => s.tries === 1)).toBe(true)
+  })
+
+  describe('başpâre adımı', () => {
+    const girdi = (over: Partial<Parameters<typeof buildEveningPlan>[0]>) => ({
+      ilkSesPassed: true,
+      calibrated: true,
+      baspareGecildi: false,
+      perdeStatus: statuses({ neva: 'gecildi', cargah: 'acik' }),
+      ...over,
+    })
+
+    it('Nevâ geçilmiş ve başpâre geçilmemişken güncel perde adımından sonra eklenir', () => {
+      const plan = buildEveningPlan(girdi({}))
+      expect(plan.map((s) => s.kind)).toEqual(['uzun-ses', 'uzun-ses', 'baspare'])
+      expect(plan[2]).toEqual({ kind: 'baspare', label: 'Başpâre koy-çek', tries: 1, dersId: 's0:baspare' })
+      expect(plan[1]!.perdeId).toBe('cargah')
+    })
+
+    it('güncel (açık) perde yoksa ısınmadan sonra eklenir', () => {
+      const plan = buildEveningPlan(girdi({ perdeStatus: statuses({ neva: 'gecildi' }) }))
+      expect(plan.map((s) => s.kind)).toEqual(['uzun-ses', 'baspare'])
+    })
+
+    it('başpâre geçilmişse eklenmez', () => {
+      const plan = buildEveningPlan(girdi({ baspareGecildi: true }))
+      expect(plan.some((s) => s.kind === 'baspare')).toBe(false)
+    })
+
+    it('Nevâ geçilmemişse eklenmez', () => {
+      const plan = buildEveningPlan(girdi({ perdeStatus: statuses({ neva: 'acik' }) }))
+      expect(plan.some((s) => s.kind === 'baspare')).toBe(false)
+    })
+
+    it('ilk ses geçilmemişken ya da kalibre değilken eklenmez', () => {
+      expect(buildEveningPlan(girdi({ ilkSesPassed: false })).some((s) => s.kind === 'baspare')).toBe(false)
+      expect(buildEveningPlan(girdi({ calibrated: false })).some((s) => s.kind === 'baspare')).toBe(false)
+    })
   })
 })

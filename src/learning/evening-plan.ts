@@ -7,7 +7,7 @@ import type { TopicStatus } from './mastery'
 export type PerdeStatus = 'kilitli' | 'acik' | 'gecildi'
 
 export interface EveningStep {
-  kind: 'ilk-ses' | 'kalibrasyon' | 'uzun-ses'
+  kind: 'ilk-ses' | 'kalibrasyon' | 'uzun-ses' | 'baspare'
   perdeId?: PerdeId
   label: string
   tries: number
@@ -20,6 +20,9 @@ export const ILK_SES_ID = 'ilk-ses'
 
 /** "İlk ses" adımından önce okunan ders. */
 const ILK_SES_DERS_ID = 's0:ilk-ses'
+
+/** Başpâre koy-çek adımından önce okunan ders. */
+const BASPARE_DERS_ID = 's0:baspare'
 
 const OTHER_PASSED_MAX = 3
 
@@ -70,9 +73,15 @@ function perdeStep(p: NeyPerde, tries: number, ders = false): EveningStep {
   return step
 }
 
+function baspareStep(): EveningStep {
+  return { kind: 'baspare', label: 'Başpâre koy-çek', tries: 1, dersId: BASPARE_DERS_ID }
+}
+
 export function buildEveningPlan(input: {
   ilkSesPassed: boolean
   calibrated: boolean
+  /** Başpâre koy-çek ölçütü geçildi mi (`LongToneRec` `baspare`, `passed`). */
+  baspareGecildi: boolean
   perdeStatus: Record<PerdeId, PerdeStatus>
 }): EveningStep[] {
   if (!input.ilkSesPassed) return [ilkSesStep(3)]
@@ -83,6 +92,8 @@ export function buildEveningPlan(input: {
   const plan: EveningStep[] = []
   if (warmup) plan.push(perdeStep(warmup, 1))
   if (current) plan.push(perdeStep(current, 3, true))
+  // Nevâ oturduktan sonra başpâre koy-çek; geçilene dek her akşam, güncel perde adımının hemen ardından.
+  if (input.perdeStatus.neva === 'gecildi' && !input.baspareGecildi) plan.push(baspareStep())
   // Diğer geçilenler: güncel perdeye en yakın olandan geriye doğru.
   for (const p of passed.slice(0, -1).reverse().slice(0, OTHER_PASSED_MAX)) plan.push(perdeStep(p, 1))
   return plan

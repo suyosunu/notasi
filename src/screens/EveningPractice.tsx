@@ -10,6 +10,7 @@ import { useNeyLevel } from '../ney/useNeyLevel'
 import { navigate } from '../router'
 import { getSettings } from '../store/db'
 import type { SessionRec, Settings } from '../store/db'
+import { BaspareTur } from './BaspareAlistirma'
 import { Calibration } from './Calibration'
 
 function Loading() {
@@ -75,6 +76,49 @@ export function EveningPractice() {
 
   if (step.kind === 'kalibrasyon') {
     return <Calibration key="kalibrasyon-adimi" onDone={() => void afterCalibration(true)} onCancel={() => navigate('/')} />
+  }
+
+  // Bu sürümün bilmediği adım türü (eski ya da bozuk kayıt): takılmadan geçilir.
+  if (step.kind !== 'ilk-ses' && step.kind !== 'uzun-ses' && step.kind !== 'baspare') {
+    return (
+      <main class="screen">
+        <p class="muted">Bu adım tanınmadı.</p>
+        <button type="button" class="primary" onClick={() => void advance()}>
+          Devam
+        </button>
+      </main>
+    )
+  }
+
+  if (step.kind === 'baspare') {
+    // Hedef Nevâ ahenge bağlı: kalibrasyon yapılmadıysa önce o.
+    if (!settings.calibrated) {
+      return (
+        <Calibration
+          key="kalibrasyon-once"
+          onDone={() => void afterCalibration(false)}
+          onCancel={() => navigate('/')}
+        />
+      )
+    }
+    return (
+      <DersKapisi key={state.stepIndex} dersId={step.dersId}>
+        <main class="screen evening">
+          <header class="day-head">
+            <h1>🌙 {step.label}</h1>
+            <p class="muted step-meta">
+              <span>
+                Adım {state.stepIndex + 1}/{state.steps.length}
+              </span>
+            </p>
+          </header>
+          <BaspareTur key={state.stepIndex} settings={settings} nextLabel="Devam" onNext={() => void advance()} />
+          <a class="back" href="#/">
+            Ana ekrana dön
+          </a>
+        </main>
+      </DersKapisi>
+    )
   }
 
   let target: ToneTarget = { kind: 'ilk-ses' }

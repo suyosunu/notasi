@@ -76,7 +76,7 @@ export const PERDE_DERSLERI: Ders[] = [
     bloklar: [
       {
         tur: 'metin',
-        metin: "Seviye 1'de beş ses öğreneceksin: Nevâ, Çârgâh, Segâh, Dügâh ve Rast. Kaynaklar bu sırayı izler. Her yeni perdede bir parmak daha eklersin ve ses bir basamak pesleşir.",
+        metin: "Seviye 1'de beş ses öğreneceksin: Nevâ, Çârgâh, Segâh, Dügâh ve Rast. MEB lise programı ve neyzenim.com bu sırayı izler. Her yeni perdede bir parmak daha eklersin ve ses bir basamak pesleşir.",
       },
       {
         tur: 'metin',
@@ -160,7 +160,7 @@ export const PERDE_DERSLERI: Ders[] = [
       },
       {
         tur: 'metin',
-        metin: "Segâh, Si'nin biraz pestidir. Notada bunu Si'nin önündeki küçük işaret, koma bemolü gösterir. Notası Segâh'ı bu küçük farkla bekler; ibreyi ortaya getirdiğinde doğru yerdesin.",
+        metin: "Segâh, Si'nin biraz pestidir. Notada Si'nin önündeki koma bemolü bu küçük farkı gösterir. Akort göstergesinde ibre ortadayken Segâh'ın doğru yerindesin.",
       },
       {
         tur: 'porte',
@@ -252,7 +252,7 @@ export const PERDE_DERSLERI: Ders[] = [
       },
       {
         tur: 'metin',
-        metin: "Zeki Sözen, Sol sesini (Rast) çıkarmadan bir sonraki derse geçmemeyi söyler. Rast'ı gür ve sağlam çıkarmayı hedefle.",
+        metin: "Zeki Sözen (neyzenim.com, Ders 2) şöyle der: \"Sol sesini çıkartmadan 3. derse geçmeyiniz\". Sol, Rast sesidir; Rast'ı gür ve sağlam çıkarmayı hedefle.",
       },
       { tur: 'metin', metin: HAFTA },
       { tur: 'metin', metin: HEDEF },
