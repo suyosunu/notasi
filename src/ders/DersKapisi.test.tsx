@@ -15,6 +15,18 @@ vi.mock('../store/db', async (orijinal) => {
   return { ...m, isaretEkle: vi.fn(m.isaretEkle) }
 })
 
+const DIGER: Ders = {
+  id: 's0:diger',
+  seviye: 0,
+  baslik: 'Diğer ders',
+  bloklar: [
+    { tur: 'metin', metin: 'Diğer ders metni.' },
+    { tur: 'gorsel', ad: 'nefes-444' },
+    { tur: 'dene', adimlar: ['Dene'] },
+  ],
+  kaynaklar: ['test'],
+}
+
 const FIXTURE: Ders = {
   id: 's0:kapi',
   seviye: 0,
@@ -29,11 +41,12 @@ const FIXTURE: Ders = {
 
 beforeEach(async () => {
   await resetDbForTests()
-  DERSLER.push(FIXTURE)
+  DERSLER.push(FIXTURE, DIGER)
 })
 afterEach(() => {
   cleanup()
   DERSLER.splice(DERSLER.indexOf(FIXTURE), 1)
+  DERSLER.splice(DERSLER.indexOf(DIGER), 1)
 })
 
 const cocuk = () => <p>Alıştırma burada</p>
@@ -81,5 +94,14 @@ describe('DersKapisi', () => {
     render(<DersKapisi dersId="s0:kapi">{cocuk()}</DersKapisi>)
     fireEvent.click(await screen.findByRole('button', { name: 'Anladım, alıştırmaya geç' }))
     await waitFor(() => expect(screen.getByText('Alıştırma burada')).toBeTruthy())
+  })
+
+  it('dersId değişince önceki dersin durumu sıfırlanır (geçmiş ders çocuğu göstermez)', async () => {
+    const { rerender } = render(<DersKapisi dersId="s0:kapi">{cocuk()}</DersKapisi>)
+    fireEvent.click(await screen.findByRole('button', { name: 'Anladım, alıştırmaya geç' }))
+    await screen.findByText('Alıştırma burada')
+    rerender(<DersKapisi dersId="s0:diger">{cocuk()}</DersKapisi>)
+    expect(screen.queryByText('Alıştırma burada')).toBeNull()
+    expect(await screen.findByText('Diğer ders metni.')).toBeTruthy()
   })
 })

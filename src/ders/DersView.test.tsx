@@ -5,7 +5,7 @@ import type { Ders } from '../content/dersler/types'
 import { NEY_PERDELER } from '../content/ney-perdeler'
 import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
 import type { MusicEvent } from '../music/notation'
-import { getSettings, isaretEkle, resetDbForTests, saveSettings } from '../store/db'
+import { DEFAULT_SETTINGS, getSettings, isaretEkle, resetDbForTests, saveSettings } from '../store/db'
 import { DersView } from './DersView'
 
 vi.mock('../audio/player', () => ({
@@ -15,7 +15,7 @@ vi.mock('../audio/player', () => ({
 }))
 vi.mock('../store/db', async (orijinal) => {
   const m = await orijinal<typeof import('../store/db')>()
-  return { ...m, isaretEkle: vi.fn(m.isaretEkle) }
+  return { ...m, isaretEkle: vi.fn(m.isaretEkle), getSettings: vi.fn(m.getSettings) }
 })
 
 const NOTALAR: MusicEvent[] = [
@@ -147,6 +147,14 @@ describe('DersView', () => {
     bitir()
     await new Promise((r) => setTimeout(r, 0))
     expect(playWritten).not.toHaveBeenCalled()
+  })
+
+  it('ayarlar okunamazsa Dinle yine de çalışır (varsayılan ayarlarla)', async () => {
+    vi.mocked(getSettings).mockRejectedValueOnce(new Error('IndexedDB okunamadı'))
+    render(<DersView ders={DERS} onDone={() => undefined} />)
+    await dinle(0)
+    await waitFor(() => expect(playWritten).toHaveBeenCalledTimes(1))
+    expect(vi.mocked(playWritten).mock.calls[0]![1]).toEqual(DEFAULT_SETTINGS.tuning)
   })
 
   it('"Anladım, alıştırmaya geç" okundu kaydını yazar ve onDone çağrılır', async () => {

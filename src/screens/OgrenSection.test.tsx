@@ -34,8 +34,9 @@ afterEach(() => {
 })
 
 describe('OgrenSection', () => {
-  it('dersler seviyeye göre gruplanır; bilinmeyen seviye "Seviye N" olur', () => {
+  it('dersler seviyeye göre gruplanır; bilinmeyen seviye "Seviye N" olur', async () => {
     render(<OgrenSection />)
+    await screen.findByRole('heading', { name: 'Seviye 7' })
     expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual([
       'Seviye 0 · Hazırlık',
       'Seviye 1 · İlk beş ses',
@@ -60,10 +61,16 @@ describe('OgrenSection', () => {
     expect(link('Ney nedir').querySelector('[role="img"]')?.getAttribute('aria-label')).toBe('okunmadı')
   })
 
-  it('ders yoksa kısa soluk mesaj gösterir', () => {
+  it('okundu bilgisi gelmeden liste çizilmez (hepsi bir an 📖 görünmez)', async () => {
+    const { container } = render(<OgrenSection />)
+    expect(container.querySelector('.topic')).toBeNull()
+    expect(await screen.findByText('Ney nedir')).toBeTruthy()
+  })
+
+  it('ders yoksa kısa soluk mesaj gösterir', async () => {
     DERSLER.splice(0, DERSLER.length)
     render(<OgrenSection />)
-    expect(screen.getByText('Dersler yakında burada olacak.').className).toBe('muted')
+    expect((await screen.findByText('Dersler yakında burada olacak.')).className).toBe('muted')
     expect(screen.queryAllByRole('heading', { level: 2 })).toHaveLength(0)
   })
 

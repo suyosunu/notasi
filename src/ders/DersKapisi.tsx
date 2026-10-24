@@ -10,6 +10,11 @@ import { DersView } from './DersView'
  * (DersView `onDone`'u yine çağırır) kullanıcı takılmaz.
  */
 export function DersKapisi(props: { dersId: string | null | undefined; children: ComponentChildren }) {
+  // Kimlik değişince önceki dersin durumu (okundu, geçti) sıfırlansın.
+  return <Kapi key={props.dersId ?? ''} {...props} />
+}
+
+function Kapi(props: { dersId: string | null | undefined; children: ComponentChildren }) {
   const { dersId, children } = props
   const ders = dersId ? dersById(dersId) : undefined
   const kimlik = ders?.id

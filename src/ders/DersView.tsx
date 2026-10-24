@@ -6,7 +6,7 @@ import type { Ders, DersBlok } from '../content/dersler/types'
 import type { MusicEvent } from '../music/notation'
 import { FingeringDiagram } from '../ney/Fingering'
 import { Staff } from '../notation/Staff'
-import { getSettings, isaretEkle } from '../store/db'
+import { DEFAULT_SETTINGS, getSettings, isaretEkle } from '../store/db'
 import type { Settings } from '../store/db'
 import { Gorsel } from './Gorseller'
 
@@ -29,9 +29,11 @@ export function DersView(props: { ders: Ders; onDone: () => void; geri?: { href:
 
   useEffect(() => {
     let alive = true
-    void getSettings().then((cfg) => {
-      if (alive) setSettings(cfg)
-    })
+    getSettings()
+      .catch(() => DEFAULT_SETTINGS) // ayarlar okunamazsa varsayılanlarla çalınır; Dinle sessizce kilitli kalmaz
+      .then((cfg) => {
+        if (alive) setSettings(cfg)
+      })
     return () => {
       alive = false
     }

@@ -24,60 +24,73 @@ function Cerceve(props: { w: number; h: number; etiket: string; ad: GorselAdi; c
 
 // --- ney bölümleri ------------------------------------------------------
 
-const NEY_X0 = 24
-const NEY_X1 = 336
-const NEY_Y = 70
-const NEY_H = 20
-/** Ön delik konumları (soldan, başpâreden uzaklaşan sırayla). */
-const ON_DELIK_X = [150, 172, 194, 238, 260, 282]
-/** Boğumlar (kamışın düğümleri). */
-const BOGUMLAR = [105, 215, 305]
+const NEY_Y = 72
+const NEY_H = 18
+const NEY_UST = NEY_Y - NEY_H / 2
+const NEY_ALT = NEY_Y + NEY_H / 2
+const NEY_X0 = 32
+const NEY_X1 = 288
+/** Parazvane: kamışın iki ucundaki dolu halkalar (üstteki başpârenin hemen altında). */
+const HALKA_W = 7
+const PARAZVANE_X = [NEY_X0, NEY_X1 - HALKA_W]
+/** Boğumlar kamışın boyunca eşit aralıklıdır; kenarlarda ince çentik olarak çizilir. */
+const BOGUMLAR = [52, 84, 116, 148, 180, 212, 244, 268]
+/** Ön delikler: ilk üç ve son üç arasında küçük bir boşluk vardır. */
+const ON_DELIK_X = [124, 146, 168, 202, 224, 246]
+/** Aşîrân deliği arkadadır (kesik çizgi yalnız bunu gösterir); 1. deliğin hizasına yakın durur. */
+const ASIRAN_X = 106
 
 function NeyBolumleri() {
   return (
     <Cerceve
-      w={360}
+      w={300}
       h={150}
       ad="ney-bolumleri"
-      etiket="Ney çizimi: soldan başpâre, parazvane, boğumlar, altı ön delik; arkada aşîrân deliği."
+      etiket="Ney çizimi: üstte başpâre, kamışın iki ucunda parazvane halkaları, gövde boyunca boğumlar, altı ön delik; arkada aşîrân deliği."
     >
       {/* gövde */}
-      <rect x={NEY_X0} y={NEY_Y - NEY_H / 2} width={NEY_X1 - NEY_X0} height={NEY_H} rx={4} fill="none" stroke={INK} stroke-width={1.6} />
+      <rect x={NEY_X0} y={NEY_UST} width={NEY_X1 - NEY_X0} height={NEY_H} rx={3} fill="none" stroke={INK} stroke-width={1.6} />
       {/* başpâre: üst uçtaki kalın parça */}
-      <rect x={NEY_X0 - 8} y={NEY_Y - NEY_H / 2 - 3} width={22} height={NEY_H + 6} rx={4} fill={INK} fill-opacity={0.2} stroke={INK} stroke-width={1.6} />
-      {/* parazvane: başpârenin hemen ardındaki kısa kısım */}
-      <line x1={NEY_X0 + 30} x2={NEY_X0 + 30} y1={NEY_Y - NEY_H / 2} y2={NEY_Y + NEY_H / 2} stroke={INK} stroke-width={1.2} stroke-dasharray="2 2" />
-      {/* boğumlar */}
+      <rect data-baspare="" x={NEY_X0 - 22} y={NEY_UST - 3} width={22} height={NEY_H + 6} rx={4} fill={INK} fill-opacity={0.2} stroke={INK} stroke-width={1.6} />
+      {/* parazvane: iki uçtaki dolu halkalar */}
+      {PARAZVANE_X.map((x) => (
+        <rect key={x} data-parazvane="" x={x} y={NEY_UST - 2} width={HALKA_W} height={NEY_H + 4} fill={INK} />
+      ))}
+      {/* boğumlar: kenarlarda çentik */}
       {BOGUMLAR.map((x) => (
-        <line key={x} data-bogum="" x1={x} x2={x} y1={NEY_Y - NEY_H / 2 - 2} y2={NEY_Y + NEY_H / 2 + 2} stroke={INK} stroke-width={2.4} />
+        <g key={x} data-bogum="" stroke={INK} stroke-width={1.3}>
+          <line x1={x} x2={x} y1={NEY_UST - 3} y2={NEY_UST + 4} />
+          <line x1={x} x2={x} y1={NEY_ALT - 4} y2={NEY_ALT + 3} />
+        </g>
       ))}
       {/* ön delikler */}
       {ON_DELIK_X.map((x, i) => (
-        <circle key={i} data-on-delik="" cx={x} cy={NEY_Y} r={5} fill="none" stroke={INK} stroke-width={1.6} />
+        <circle key={i} data-on-delik="" cx={x} cy={NEY_Y} r={4.5} fill="none" stroke={INK} stroke-width={1.6} />
       ))}
-      {/* aşîrân deliği: arkada, kesikli */}
-      <circle data-asiran="" cx={128} cy={NEY_Y} r={5} fill="none" stroke={INK} stroke-width={1.4} stroke-dasharray="3 2" stroke-opacity={SOLUK + 0.2} />
+      {/* aşîrân deliği: arkada, kesik çizgi */}
+      <circle data-asiran="" cx={ASIRAN_X} cy={NEY_Y} r={4.5} fill="none" stroke={INK} stroke-width={1.5} stroke-dasharray="3 2" />
 
-      {/* etiketler */}
-      <text x={NEY_X0 + 3} y={26} font-size={12} text-anchor="middle" fill={INK}>
+      {/* etiketler ve gösterme çizgileri (düz çizgi) */}
+      <text x={NEY_X0 - 22} y={16} font-size={12} fill={INK}>
         Başpâre
       </text>
-      <line x1={NEY_X0 + 3} x2={NEY_X0 + 3} y1={31} y2={NEY_Y - NEY_H / 2 - 5} stroke={INK} stroke-opacity={SOLUK} />
-      <text x={NEY_X0 + 40} y={48} font-size={12} text-anchor="start" fill={INK}>
-        Parazvane
+      <line x1={NEY_X0 - 11} x2={NEY_X0 - 11} y1={21} y2={NEY_UST - 5} stroke={INK} stroke-opacity={SOLUK} />
+      <text x={64} y={40} font-size={12} fill={INK}>
+        Parazvane (iki uçta)
       </text>
-      <text x={BOGUMLAR[1]} y={26} font-size={12} text-anchor="middle" fill={INK}>
-        Boğum
+      <line x1={62} x2={NEY_X0 + HALKA_W / 2} y1={44} y2={NEY_UST - 3} stroke={INK} stroke-opacity={SOLUK} />
+      <text x={212} y={16} font-size={12} text-anchor="middle" fill={INK}>
+        Boğumlar
       </text>
-      <line x1={BOGUMLAR[1]} x2={BOGUMLAR[1]} y1={31} y2={NEY_Y - NEY_H / 2 - 4} stroke={INK} stroke-opacity={SOLUK} />
-      <text x={(ON_DELIK_X[0]! + ON_DELIK_X[5]!) / 2 + 6} y={118} font-size={12} text-anchor="middle" fill={INK}>
+      <line x1={212} x2={212} y1={21} y2={NEY_UST - 5} stroke={INK} stroke-opacity={SOLUK} />
+      <line x1={ON_DELIK_X[0]} x2={ON_DELIK_X[5]} y1={98} y2={98} stroke={INK} stroke-opacity={SOLUK} />
+      <text x={(ON_DELIK_X[0]! + ON_DELIK_X[5]!) / 2} y={114} font-size={12} text-anchor="middle" fill={INK}>
         Ön delikler (6)
       </text>
-      <line x1={ON_DELIK_X[0]} x2={ON_DELIK_X[5]} y1={104} y2={104} stroke={INK} stroke-opacity={SOLUK} />
-      <text x={110} y={140} font-size={12} text-anchor="middle" fill={INK}>
+      <text x={ASIRAN_X} y={140} font-size={12} text-anchor="middle" fill={INK}>
         Aşîrân deliği (arkada)
       </text>
-      <line x1={128} x2={128} y1={NEY_Y + 9} y2={128} stroke={INK} stroke-opacity={SOLUK} stroke-dasharray="3 2" />
+      <line x1={ASIRAN_X} x2={ASIRAN_X} y1={NEY_Y + 7} y2={129} stroke={INK} stroke-opacity={SOLUK} />
     </Cerceve>
   )
 }

@@ -201,7 +201,7 @@ describe('App', () => {
       location.hash = '#/ogren'
       render(<App />)
       expect(await screen.findByRole('heading', { name: '📖 Öğren' })).toBeTruthy()
-      expect(screen.getByText('Rota dersi')).toBeTruthy()
+      expect(await screen.findByText('Rota dersi')).toBeTruthy()
     })
 
     it('#/ders/<kodlanmış kimlik> ders sayfasını açar; "Anladım" kaydeder ve ders.alistirma rotasına gider', async () => {
