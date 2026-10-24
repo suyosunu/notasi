@@ -1,7 +1,19 @@
 # Ney Müfredatı ve Notası Yol Haritası
 
 Tarih: 2026-10-25
-Durum: Taslak. Kullanıcının onayı bekleniyor.
+Durum: **Onaylandı** (2026-10-25). Kullanıcı §4'teki üç öneriyi kabul etti ve Aşama A'yı başlattı.
+
+## Kullanıcı kararları ve geri bildirim (2026-10-25)
+
+- **Karar bekleyen konulardaki seçimler (§4):**
+  1. İlk beş seste Bûselik yerine Segâh kullanılacak.
+  2. Seviyeye bağlamada seçenek **b** uygulanacak: hiçbir şey kilitlenmez, ama her şey "Seviye N'de önerilir" etiketi taşır.
+  3. Sayısal hedefler öneri olarak başlıyor: seviye 0'da 5 sn, seviye 1'de 8 sn uzun ses, ±15–20 sent akort payı.
+- **Geri bildirim (öncelikli):** "Uygulama genelde bir şey soruyor ama öğretmiyor. Bir öğretme alanı olmalı." Bu yüzden Aşama A'ya **Öğren** katmanı eklendi (aşağıda A0). Her konu, perde, usul, makam ve etüt önce öğretilir; sorular ve pratik bundan sonra gelir.
+- **Varsayılan sesler:**
+  - Ney sesi: **Shakuhachi**.
+  - Usul sesi: **Tahta**.
+  - Kullanıcı ayarı daha önce hiç bilinçli olarak değiştirmediyse (eski varsayılanlar `mevcut` / `oryantal` olarak duruyorsa) bu cihazda da yeni varsayılanlara geçilir.
 
 Bu belgenin dayandığı kaynaklar:
 - `docs/superpowers/notes/2026-10-25-ney-mufredat-arastirma.md`: kaynaklı müfredat araştırması. MEB ilkokul–ortaokul (1–8) ve güzel sanatlar lisesi (9–12) ney programları, neyzenim.com'un 15 dersi, Mehmet Yücel'in Ney Metodu, dört üniversitenin ney dersleri ve dört ney metodunu karşılaştıran bir çalışma.
@@ -90,11 +102,20 @@ Kaynaklarda sayısal hedef yoktur (saniye, cent, tempo). Tablodaki sayılar öne
 Her aşama tamamlandığında uygulama o seviyeyi eksiksiz destekler. Kullanıcı şu an seviye 1–2 civarında olduğu için öncelik baştaki aşamalarda.
 
 **Aşama A: Müfredat iskeleti ve seviye 0–1'in tamamlanması** (öncelikli)
+0. **Öğren katmanı (A0, kullanıcı geri bildirimi):** Her öğrenme birimine, sorulardan ve pratikten önce gelen bir ders sayfası eklenir. Birimler: nota konusu, ney perdesi, usul, makam, etüt ve seviye 0 konuları. Bir ders sayfasında şunlar bulunur:
+   - Kısa ve sade Türkçe anlatım.
+   - Görsel: porte, parmak şeması ya da vuruş şeması.
+   - Örnekler, her biri "▶ Dinle" ile.
+   - "Kendin dene" adımı.
+   - En sonda "Anladım, alıştırmaya geç" düğmesi.
+   
+   Bir birimin dersi okunmadan o birimin soruları gelmez; ders yalnızca bir kez zorunludur, sonra her zaman tekrar açılabilir. Dersler `src/content/dersler/` altında veri dosyası olarak tutulur. Uygulamanın gündüz ve akşam planı, yeni bir birime geçerken önce o birimin dersini gösterir. Seviye 0 ve seviye 1 birimlerinin dersleri bu aşamada yazılır.
 1. **Seviye yapısı:** Seviyeler ve geçme ölçütleri bir veri dosyasında tanımlanır. Ana ekranda "Seviye N" kartı ve sıradaki hedef görünür. Yeni bir **"Yolum"** ekranı her seviyenin hedeflerini işaretli liste olarak gösterir. Hedeflerin çoğu uygulama verisinden kendiliğinden işaretlenir (konu öğrenildi, perde geçildi, uzun ses süresi). Ölçülemeyenler kullanıcının kendi onayıyla işaretlenir (örneğin "Duruşu aynada kontrol ettim").
 2. **Seviye 0 içeriği:** Neyin bölümleri, duruş ve tutuş sayfası (metin ve basit çizim); zamanlayıcılı 4-4-4 nefes egzersizi; başpare koy-çek alıştırması. Bu son alıştırmada mikrofon, Nevâ'nın kaç denemede ve ne kadar sürede bulunduğunu sayar.
 3. **Perde sırasının düzeltilmesi:** İlk beş ses Nevâ, Çârgâh, **Segâh**, Dügâh, Rast olur. Bûselik seviye 2'ye taşınır. Kullanıcının o ana kadarki ilerlemesi korunur.
 4. **Etüt modülü:** Her perde için iki adım eklenir: önce tek ve iki perde etütleri, sonra rast beşlisi etüdü. Etüt notası gösterilir, dinletilir, metronom eşlik eder (♩ = 60–80). Ardından kullanıcı neyle çalar. Mikrofonla nota nota takip Sürüm 3'teki satır satır çalışma ile birlikte gelir.
 5. **Uzun ses hedefleri:** Seviye 0'da 5 sn, seviye 1'de 8 sn (öneri); akort toleransı seviyeye göre ayarlanır.
+6. **Varsayılan sesler:** Ney sesi Shakuhachi, usul sesi Tahta. Kullanıcının hiç değiştirmediği eski varsayılanlar da bu değerlere taşınır (bkz. kararlar).
 
 **Aşama B: Seviye 2**
 1. Nim Sofyan usulü (vuruş kalıbı kaynaktan doğrulanır). Usulü vurarak çalışma alıştırması: ekrana dokunarak düm-tek vurulur, uygulama zamanlamayı değerlendirir.
