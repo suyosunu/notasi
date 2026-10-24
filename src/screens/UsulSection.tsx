@@ -11,9 +11,65 @@ const BPM_MIN = 40
 const BPM_MAX = 120
 const BPM_DEFAULT = 60
 const DOLAP_NOTE = 'Bu usulün vuruş kalıbı kaynaklarda bulunamadı; yalnızca zaman sayılır (12/8).'
+/**
+ * Vurgu saatinin gecikme payı (ms): Strudel zamanlayıcısı desenleri ~0.1 sn ileriden planlar, yani ilk vuruş
+ * `startUsul` çözüldükten yaklaşık bu kadar sonra duyulur. Vurgu sesle birlikte ilerlesin diye saat bu kadar geç başlar.
+ */
+const HIGHLIGHT_LATENCY_MS = 100
 
-/** Düm ayrı, tek/te/ke ayrı renkte; genişlik süreyle orantılıdır. */
-function VurusDiagram({ usul }: { usul: Usul }) {
+/** Çalan döngünün saati: konum bundan ve bpm'den hesaplanır. */
+interface Clock {
+  usul: Usul
+  bpm: number
+  /** performance.now() cinsinden, ölçünün ilk vuruşunun duyulduğu an. */
+  startedAt: number
+}
+
+/** `pos` (zaman birimi, ölçü içinde) hangi vuruşun [başlangıç, başlangıç + süre) aralığındaysa onun sırası. */
+function strokeAt(u: Usul, pos: number): number | null {
+  if (u.vurus === null) return null
+  let start = 0
+  for (let i = 0; i < u.vurus.length; i++) {
+    const end = start + u.vurus[i]!.sure
+    if (pos >= start && pos < end) return i
+    start = end
+  }
+  return null
+}
+
+/**
+ * Saat varken her karede (requestAnimationFrame) o anki vuruşun sırasını hesaplar:
+ * konum = ((now − startedAt) / 1000 × bpm / 60) mod zaman. Saat kalkınca (durdur, hata, sayfadan çıkış) döngü
+ * iptal edilir ve vurgu kalkar.
+ */
+function useActiveStroke(clock: Clock | null): number | null {
+  const [active, setActive] = useState<number | null>(null)
+  useEffect(() => {
+    if (!clock || clock.usul.vurus === null) {
+      setActive(null)
+      return
+    }
+    let raf = 0
+    let alive = true
+    const tick = () => {
+      if (!alive) return
+      const elapsed = (performance.now() - clock.startedAt) / 1000
+      const pos = (elapsed * clock.bpm) / 60
+      setActive(pos < 0 ? null : strokeAt(clock.usul, pos % clock.usul.zaman))
+      raf = requestAnimationFrame(tick)
+    }
+    tick()
+    return () => {
+      alive = false
+      cancelAnimationFrame(raf)
+      setActive(null)
+    }
+  }, [clock])
+  return active
+}
+
+/** Düm ayrı, tek/te/ke ayrı renkte; genişlik süreyle orantılıdır. Çalan vuruş `data-active` ile vurgulanır. */
+function VurusDiagram({ usul, active }: { usul: Usul; active: number | null }) {
   if (usul.vurus === null) return <p class="notice">{DOLAP_NOTE}</p>
   return (
     <div class="vurus-row" role="img" aria-label={usul.vurus.map((x) => x.ses).join(' ')}>
@@ -21,6 +77,7 @@ function VurusDiagram({ usul }: { usul: Usul }) {
         <span
           key={i}
           data-testid="vurus"
+          data-active={i === active ? 'true' : undefined}
           class={x.ses === 'düm' ? 'vurus vurus-dum' : 'vurus vurus-tek'}
           style={{ width: `${(x.sure / usul.zaman) * 100}%` }}
         >
@@ -38,6 +95,8 @@ export function UsulSection() {
   const [bpm, setBpm] = useState(BPM_DEFAULT)
   const [playing, setPlaying] = useState(false)
   const [warn, setWarn] = useState<string | null>(null)
+  const [clock, setClock] = useState<Clock | null>(null)
+  const active = useActiveStroke(clock)
   /** Hızlı art arda başlatmalarda yalnızca son çağrının hatası/sonucu geçerlidir. */
   const runRef = useRef(0)
 
@@ -66,6 +125,7 @@ export function UsulSection() {
   async function start(u: Usul, speed: number) {
     const run = ++runRef.current
     setWarn(null)
+    setClock(null) // yeni usul/hız: saat ses başlayınca yeniden kurulur
     if (!settings?.soundOn) {
       setPlaying(false)
       setWarn(SOUND_OFF)
@@ -75,8 +135,11 @@ export function UsulSection() {
     void acquireWakeLock() // döngü çalarken ekran kararmasın
     try {
       await startUsul(u, speed)
+      if (run !== runRef.current) return
+      setClock({ usul: u, bpm: speed, startedAt: performance.now() + HIGHLIGHT_LATENCY_MS })
     } catch {
       if (run !== runRef.current) return
+      setClock(null)
       setPlaying(false)
       releaseWakeLock()
       setWarn(SOUND_WARNING)
@@ -87,6 +150,7 @@ export function UsulSection() {
     runRef.current++
     stopUsul()
     releaseWakeLock()
+    setClock(null)
     setPlaying(false)
   }
 
@@ -116,7 +180,7 @@ export function UsulSection() {
       </div>
 
       <h2>{`${usul.name} · ${usul.zaman}/${usul.mertebe}`}</h2>
-      <VurusDiagram usul={usul} />
+      <VurusDiagram usul={usul} active={clock?.usul.id === usul.id ? active : null} />
 
       <label class="usul-speed">
         <span>{`Hız: ${usul.mertebe === 8 ? '♪' : '♩'} = ${bpm}`}</span>

@@ -29,7 +29,16 @@ interface Hit {
   s?: string
   freq?: number
   gain?: number
+  /** Tutma süresi (sorgu-döngüsü; clip dahil). */
+  hold: number
+  decay?: number
+  release?: number
+  bandf?: number
 }
+
+/** Usul sesleri: düm gövdesi 65 Hz sinüs, tek/te/ke tıkı bant geçirenli gürültü. */
+const isDum = (h: Hit) => h.s === 'sine' && h.freq === 65
+const isTekClick = (h: Hit) => h.s === 'white' && h.bandf !== undefined
 
 /**
  * bpm = 60: .cpm(60 / toplamVuruş) = fast(1 / toplamVuruş) ⇒ bir sorgu-döngüsü bir dörtlük vuruştur.
@@ -43,7 +52,7 @@ async function hits(code: string, from: number, to: number): Promise<Hit[]> {
   return pattern
     .queryArc(from, to)
     .filter((h) => h.hasOnset())
-    .map((h) => ({ at: Math.round(Number(h.whole.begin) * 1e6) / 1e6, ...h.value }))
+    .map((h) => ({ at: Math.round(Number(h.whole.begin) * 1e6) / 1e6, hold: Number(h.duration), ...h.value }) as Hit)
     .sort((a, b) => a.at - b.at)
 }
 
@@ -101,12 +110,18 @@ describe('buildPieceCode', () => {
     }
   })
 
-  it('usul eşliği açıkken kod usul desenini (stack, düm ve gürültü) içerir', () => {
+  it('usul eşliği açıkken kod yeni usul seslerini (perde zarfı, bpf, süreye göre sönme) içerir', () => {
     const { code } = buildPieceCode(parca('hak-teala'), DEFAULT_TUNING, 60, true)
     expect(code.startsWith('stack(')).toBe(true)
-    expect(code).toContain('freq("70@2 ~@1 ~@1")')
+    expect(code).toContain('freq("65@2 ~@1 ~@1").s("sine").penv(')
+    expect(code).toContain('.pdecay(')
+    expect(code).toContain('.bpf(3000)')
+    // Sofyan (mertebe 4) ♩ = 60 ⇒ usul birimi 1 sn: sönme 0.9 × süre
+    expect(code).toContain('.decay("1.8@2 0.9@1 0.9@1")')
     expect(code).toContain('white')
     expect(code).toContain('.fast(31)')
+    // Dolap (mertebe 8) ♩ = 60 ⇒ sekizlik 0.5 sn: tık 0.3 × 0.5
+    expect(buildPieceCode(parca('benim-adim-dertli-dolap'), DEFAULT_TUNING, 60, true).code).toContain('.decay(0.15)')
   })
 
   it('geçersiz tempo ya da bilinmeyen usul RangeError fırlatır', () => {
@@ -134,10 +149,15 @@ describe('buildPieceCode: gerçek Strudel çekirdeğiyle', () => {
     const p = parca('hak-teala')
     const { code } = buildPieceCode(p, DEFAULT_TUNING, 60, true)
     const hs = await hits(code, 0, 124)
-    const dum = hs.filter((h) => h.s === 'sine').map((h) => h.at)
-    expect(dum).toEqual(Array.from({ length: 31 }, (_, i) => i * 4))
-    const noise = hs.filter((h) => h.s === 'white').map((h) => h.at)
+    const dum = hs.filter(isDum)
+    expect(dum.map((h) => h.at)).toEqual(Array.from({ length: 31 }, (_, i) => i * 4))
+    const noise = hs.filter(isTekClick).map((h) => h.at)
     expect(noise).toEqual(Array.from({ length: 31 }, (_, i) => [i * 4 + 2, i * 4 + 3]).flat())
+    // ♩ = 60, Sofyan birimi dörtlük: 2 zamanlık düm 1.8 sn söner ve 1.8 sn tutulur (1 sorgu-döngüsü = 1 sn).
+    for (const h of dum) {
+      expect(h.decay).toBeCloseTo(1.8, 6)
+      expect(h.hold).toBeCloseTo(1.8, 6)
+    }
     expect(await hits(code, 124, 600)).toEqual([])
   })
 
@@ -165,15 +185,30 @@ describe('buildPieceCode: gerçek Strudel çekirdeğiyle', () => {
     expect(durationMs).toBe(9000)
     const hs = await hits(code, 0, 9)
     expect(hs.filter((h) => h.s === 'triangle').map((h) => h.at)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8])
-    expect(hs.filter((h) => h.s === 'sine').map((h) => h.at)).toEqual([1, 5])
-    expect(hs.filter((h) => h.s === 'white').map((h) => h.at)).toEqual([3, 4, 7, 8])
+    expect(hs.filter(isDum).map((h) => h.at)).toEqual([1, 5])
+    expect(hs.filter(isTekClick).map((h) => h.at)).toEqual([3, 4, 7, 8])
     expect(await hits(code, 9, 100)).toEqual([])
   })
 
   it('tempo iki katına çıkınca her şey yarı sürede çalar', async () => {
     const { code } = buildPieceCode(anacrusis, DEFAULT_TUNING, 120, true)
     const hs = await hits(code, 0, 4.5)
-    expect(hs.filter((h) => h.s === 'sine').map((h) => h.at)).toEqual([0.5, 2.5])
+    expect(hs.filter(isDum).map((h) => h.at)).toEqual([0.5, 2.5])
     expect(await hits(code, 4.5, 50)).toEqual([])
+  })
+
+  it('en hızlı tempoda (♩ = 100) da usul seslerinin hiçbiri sonraki vuruşa taşmaz (Dolap ve Sofyan)', async () => {
+    for (const id of ['benim-adim-dertli-dolap', 'hak-teala']) {
+      const bpm = 100
+      const { code } = buildPieceCode(parca(id), DEFAULT_TUNING, bpm, true)
+      // Çekirdeğin cpm'i cps = 1 kabul eder: bir sorgu-döngüsü her tempoda 1 sn'dir.
+      const hs = (await hits(code, 0, 24)).filter((h) => h.s === 'white' || (h.s === 'sine' && h.release !== undefined))
+      expect(hs.length).toBeGreaterThan(0)
+      const onsets = [...new Set(hs.map((h) => h.at))].sort((a, b) => a - b)
+      for (const h of hs.filter((x) => x.at < onsets[onsets.length - 1]!)) {
+        const next = onsets.find((t) => t > h.at + 1e-9)!
+        expect(h.at + h.hold + h.release! + 0.01).toBeLessThanOrEqual(next + 1e-6)
+      }
+    }
   })
 })

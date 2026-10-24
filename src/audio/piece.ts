@@ -20,7 +20,8 @@ export function measureBeats(u: Usul): number {
  * bir usul ölçüsü `measureBeats` dörtlük sürer, yani usul dakikada `bpm / measureBeats` ölçü çalar (mertebe
  * biriminde `bpm · mertebe / 4`: mertebe 8 → ×2, mertebe 4 → ×1). İlk ölçü tam usul ölçüsünden kısaysa (anacrusis) usul
  * ilk tam ölçüde başlar: katman `.compress(a / T, 1)` ile döngünün o kısmına sıkıştırılır, öncesi sessizdir.
- * Vuruş kalıbı olmayan usul (Dolap) metronom olarak çalar. Melodi seçilen ney sesiyle (`voice`) çalar.
+ * Usul katmanı usul ekranıyla aynı sesleri kullanır (süreye göre sönme, perde zarfı, bpf). Vuruş kalıbı olmayan usul
+ * (Dolap) metronom olarak çalar. Melodi seçilen ney sesiyle (`voice`) çalar.
  */
 export function buildPieceCode(
   parca: Parca,
@@ -44,6 +45,7 @@ export function buildPieceCode(
   const lead = first < measure ? first : 0
   const repeats = (total - lead) / measure
   const shift = lead > 0 ? `.compress(${lead} / ${total}, 1)` : ''
-  const layer = `${buildUsulBody(usul)}.fast(${repeats})${shift}`
+  // Usul sesleri saniye cinsinden söner: usulün kendi biriminde tempo ♩ · mertebe / 4.
+  const layer = `${buildUsulBody(usul, (bpm * usul.mertebe) / 4)}.fast(${repeats})${shift}`
   return { code: `stack(${melody}, ${layer})${tempo}`, durationMs }
 }

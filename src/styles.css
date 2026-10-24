@@ -595,6 +595,21 @@ h2.setting-label {
   color: var(--ink);
 }
 
+/* Çalan vuruş: daha koyu/doygun zemin ve belirgin çerçeve. */
+.vurus[data-active='true'] {
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.vurus-dum[data-active='true'] {
+  background: #9a6a24;
+}
+
+.vurus-tek[data-active='true'] {
+  background: #d9a441;
+}
+
 .usul-speed {
   display: block;
   margin: 1rem 0;

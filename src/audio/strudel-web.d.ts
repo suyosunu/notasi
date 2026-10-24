@@ -54,6 +54,8 @@ declare module '@strudel/transpiler' {
       ): {
         hasOnset(): boolean
         whole: { begin: { valueOf(): number } }
+        /** Olayın süresi (döngü); `clip` varsa onunla çarpılmış (superdough'un tutma süresi). */
+        duration: { valueOf(): number }
         value: { freq: number; s?: string; gain?: number }
       }[]
     }
