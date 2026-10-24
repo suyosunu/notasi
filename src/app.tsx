@@ -28,6 +28,7 @@ import { Placement } from './screens/Placement'
 import { SessionEnd } from './screens/SessionEnd'
 import { Settings } from './screens/Settings'
 import { UsulSection } from './screens/UsulSection'
+import { Yolum } from './screens/Yolum'
 
 function Placeholder({ title }: { title: string }) {
   return (
@@ -46,6 +47,7 @@ const routes: Record<string, () => ComponentChildren> = {
   '/gunduz': () => <DayPractice />,
   '/aksam': () => <EveningPractice />,
   '/ogren': () => <OgrenSection />,
+  '/yolum': () => <Yolum />,
   '/nota': () => <NotaSection />,
   '/ney': () => <NeySection />,
   '/makam': () => <MakamSection />,

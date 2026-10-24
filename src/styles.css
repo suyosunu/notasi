@@ -5,6 +5,7 @@
   --accent: #c08a2c;
   --card-day: #e7eef7;
   --card-night: #efe6f5;
+  --card-yolum: #f5ecd3;
   color-scheme: light;
 }
 
@@ -69,6 +70,10 @@ a:focus-visible {
 
 .card-night {
   background: var(--card-night);
+}
+
+.card-yolum {
+  background: var(--card-yolum);
 }
 
 .links {
@@ -799,4 +804,105 @@ h2.setting-label {
 .etut-rozet {
   color: #2f6b25;
   font-weight: 700;
+}
+
+/* Seviye etiketi (parça, makam, usul listeleri) */
+.seviye-etiket {
+  flex: none;
+  margin-left: auto;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  background: #f1ead8;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* Yolum ekranı */
+.yolum-mevcut {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: var(--card-yolum);
+  border-radius: 1rem;
+}
+
+.yolum-mevcut h2,
+.yolum-diger {
+  margin-top: 0;
+}
+
+.yolum-mevcut > p {
+  margin: 0.25rem 0;
+}
+
+.yolum-liste {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.yolum-hedef {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+}
+
+.yolum-simge {
+  flex: none;
+  width: 1.5rem;
+  text-align: center;
+}
+
+.yolum-hedef[data-tamam='true'] .yolum-simge {
+  color: #2f6b25;
+}
+
+.yolum-metin {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.5rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+label.yolum-metin {
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  cursor: pointer;
+}
+
+label.yolum-metin input {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0 0.25rem 0 0.125rem;
+}
+
+.yolum-git {
+  flex: none;
+  align-self: center;
+  padding: 0.25rem 0.5rem;
+}
+
+.yolum-seviye {
+  margin: 0.5rem 0;
+  padding: 0.5rem 1rem;
+  background: #fff;
+  border: 1px solid #d8cfbd;
+  border-radius: 0.75rem;
+}
+
+.yolum-seviye summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.5rem;
+  min-height: 2.5rem;
+  padding: 0.5rem 0;
+  cursor: pointer;
 }

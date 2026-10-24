@@ -235,7 +235,7 @@ describe('NeyPerdePractice', () => {
     await waitFor(() => expect(emit).not.toBeNull())
     const hz = soundingHz(NEY_PERDELER[0]!.written, DEFAULT_TUNING)
     act(() => {
-      for (let t = 0; t <= 4500; t += 50) emit!({ t, hz, clarity: 0.99 })
+      for (let t = 0; t <= 5500; t += 50) emit!({ t, hz, clarity: 0.99 })
     })
     expect(await screen.findByText(/Geçtin/)).toBeTruthy()
     await waitFor(async () => expect((await listLongTones('neva')).some((r) => r.passed)).toBe(true))
@@ -278,7 +278,7 @@ describe('NeyPerdePractice', () => {
     const hz = soundingHz(segah.written, DEFAULT_TUNING)
     expect(hz).not.toBeCloseTo(soundingHz({ step: 'B', octave: 4, acc: 0 }, DEFAULT_TUNING), 0)
     act(() => {
-      for (let t = 0; t <= 4500; t += 50) emit!({ t, hz, clarity: 0.99 })
+      for (let t = 0; t <= 5500; t += 50) emit!({ t, hz, clarity: 0.99 })
     })
     expect(await screen.findByText(/Geçtin/)).toBeTruthy()
     await waitFor(async () => expect((await listLongTones('segah')).some((r) => r.passed)).toBe(true))
@@ -324,7 +324,7 @@ describe('NeyPerdePractice', () => {
       fireEvent.click(btn)
       await waitFor(() => expect(emit).not.toBeNull())
     }
-    // 1 geçiş − 1 başarısız = düzey 0: tolerans 25, süre 4 sn.
+    // 1 geçiş − 1 başarısız = düzey 0: tolerans 25, süre 5 sn.
     await start()
     const hz = soundingHz(NEY_PERDELER[0]!.written, DEFAULT_TUNING)
     act(() => {

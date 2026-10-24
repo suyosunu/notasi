@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'preact/hooks'
 import { startUsul, stopUsul } from '../audio/usul'
 import { acquireWakeLock, releaseWakeLock } from '../audio/wakeLock'
 import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
+import { ONERILEN_SEVIYE } from '../content/seviyeler'
 import { USULLER } from '../content/usuller'
 import type { Usul } from '../content/usuller'
 import { getSettings } from '../store/db'
@@ -175,6 +176,9 @@ export function UsulSection() {
           >
             {u.name}
             <small class="muted">{` ${u.zaman}/${u.mertebe}`}</small>
+            {ONERILEN_SEVIYE.usul[u.id] !== undefined && (
+              <small class="seviye-etiket">{`Seviye ${ONERILEN_SEVIYE.usul[u.id]}`}</small>
+            )}
           </button>
         ))}
       </div>

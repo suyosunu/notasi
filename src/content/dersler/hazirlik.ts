@@ -98,6 +98,7 @@ export const HAZIRLIK_DERSLERI: Ders[] = [
       },
     ],
     kaynaklar: [S1, S2, s4(1), s4(2), S5],
+    alistirma: '/yolum',
   },
   {
     id: 's0:nefes',
@@ -251,7 +252,7 @@ export const HAZIRLIK_DERSLERI: Ders[] = [
       },
       {
         tur: 'metin',
-        metin: "Seviye 0 için önerimiz: Nevâ'yı en az 5 sn, ±20 sent içinde tutmak. Bu sayı bir öneridir; kaynaklar kesin süre vermez, sesi akort aletiyle doğru yükseklikte vermeni ister. Uygulamadaki yeşil bant başta biraz daha geniştir (±25 sent) ve sen ilerledikçe daralır.",
+        metin: "Seviye 0 için önerimiz: Nevâ'yı en az 5 sn, ±20 sent içinde tutmak. Bu sayı bir öneridir; kaynaklar kesin süre vermez, sesi akort aletiyle doğru yükseklikte vermeni ister. Uygulamada başta yeşil bant ±25 sent, tutuş süresi 5 sn'dir; sen ilerledikçe bant ±15 sente kadar daralır, süre 10 sn'ye kadar uzar. Bunlar da öneridir.",
       },
       {
         tur: 'metin',

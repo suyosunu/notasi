@@ -46,6 +46,17 @@ describe('UsulSection', () => {
     expect(screen.getByRole('link', { name: 'Ana ekrana dön' }).getAttribute('href')).toBe('#/')
   })
 
+  it('usul düğmelerinde önerilen seviye etiketi; Dolap etiketsiz', () => {
+    render(<UsulSection />)
+    const etiket = (ad: string) =>
+      screen.getByRole('button', { name: new RegExp(`^${ad}`) }).querySelector('.seviye-etiket')?.textContent
+    expect(etiket('Sofyan')).toBe('Seviye 2')
+    expect(etiket('Semâî')).toBe('Seviye 2')
+    expect(etiket('Düyek')).toBe('Seviye 5')
+    expect(etiket('Aksak')).toBe('Seviye 5')
+    expect(etiket('Dolap')).toBeUndefined()
+  })
+
   it('vuruş şeması: kutular süreyle orantılı genişlikte, etiketli, düm ve tek farklı renkte', () => {
     render(<UsulSection />)
     pick(/Düyek/)

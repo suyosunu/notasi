@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'preact/hooks'
 import { NOTA_TOPICS } from '../content/nota-topics'
+import { SEVIYELER } from '../content/seviyeler'
 import type { DayState } from '../learning/day-session'
 import { buildEveningPlan } from '../learning/evening-plan'
 import type { EveningStep } from '../learning/evening-plan'
 import { loadEveningInput } from '../learning/evening-session'
 import { currentTopic, topicStatuses } from '../learning/mastery'
+import { hedefDurumlari, loadIlerleme, mevcutSeviye, siradakiHedef } from '../learning/seviye'
 import { streakDays } from '../learning/streak'
 import { replaceRoute } from '../router'
 import { SECTIONS } from '../sections/registry'
@@ -22,6 +24,7 @@ interface HomeData {
   backupDue: boolean
   hasCompletedSession: boolean
   eveningPlan: EveningStep[]
+  yolum: { no: number; ad: string; siradaki: string }
 }
 
 function greetingFor(now: Date): string {
@@ -35,17 +38,20 @@ async function load(): Promise<HomeData | { redirect: string }> {
   if (!settings.onboarded) return { redirect: '/baslangic' }
   // Yoklama bir kez yapılır; bitince `placementDone` kaydedilir, döngü olmaz.
   if (!settings.placementDone) return { redirect: '/yoklama' }
-  const [attempts, topics, sessions, open, eveningInput] = await Promise.all([
+  const [attempts, topics, sessions, open, eveningInput, ilerleme] = await Promise.all([
     listAttempts(),
     listTopics(),
     listSessions(),
     getOpenSession('gunduz'),
     loadEveningInput(),
+    loadIlerleme(),
   ])
   const now = new Date()
   const today = todayLocal(now)
   const placedOut = new Set(topics.filter((t) => t.placedOut).map((t) => t.id))
   const topic = currentTopic(NOTA_TOPICS, topicStatuses(NOTA_TOPICS, attempts, placedOut))
+  const durumlar = hedefDurumlari(SEVIYELER, ilerleme)
+  const seviye = mevcutSeviye(SEVIYELER, durumlar)
   const completed = sessions.filter((s) => s.completed)
   const state = open?.date === today ? (open.state as DayState) : null
   return {
@@ -60,6 +66,7 @@ async function load(): Promise<HomeData | { redirect: string }> {
     backupDue: needsBackupReminder(settings.lastBackupAt, completed.length > 0, now),
     hasCompletedSession: completed.length > 0,
     eveningPlan: buildEveningPlan(eveningInput),
+    yolum: { no: seviye.no, ad: seviye.ad, siradaki: siradakiHedef(seviye, durumlar)?.metin ?? seviye.ozet },
   }
 }
 
@@ -140,6 +147,10 @@ export function Home() {
       )}
 
       <nav class="cards" aria-label="Çalışma">
+        <a class="card card-yolum" href="#/yolum">
+          <strong>{`🗺️ Yolum · Seviye ${data.yolum.no}: ${data.yolum.ad}`}</strong>
+          <span>{`Sıradaki: ${data.yolum.siradaki}`}</span>
+        </a>
         <a class="card card-day" href="#/gunduz">
           <strong>☀️ Masa başı · 10 dk</strong>
           <span>{data.topicTitle ?? 'Tüm konular öğrenildi 🎉'}</span>

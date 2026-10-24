@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks'
 import { MAKAM_TOPICS } from '../content/makam-topics'
 import { MAKAMLAR } from '../content/makamlar'
+import { ONERILEN_SEVIYE } from '../content/seviyeler'
 import { makeQuestion } from '../learning/questions'
 import type { Question } from '../learning/questions'
 import { seededRng, shuffle } from '../util/rng'
@@ -22,6 +23,9 @@ export function MakamSection() {
             <a class="topic" href={`#/makam/${m.id}`}>
               <span class="topic-title">{m.name}</span>
               <small class="muted">{`Durak: ${m.durak} · Güçlü: ${m.guclu}`}</small>
+              {ONERILEN_SEVIYE.makam[m.id] !== undefined && (
+                <small class="seviye-etiket">{`Seviye ${ONERILEN_SEVIYE.makam[m.id]}`}</small>
+              )}
             </a>
           </li>
         ))}

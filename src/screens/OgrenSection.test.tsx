@@ -19,7 +19,7 @@ const FIXTURE: Ders[] = [
   ders('s0:ney', 0, 'Ney nedir'),
   ders('perde:neva', 1, 'Nevâ'),
   ders('nota:nota-1', 1, 'Re, Do, Si'),
-  ders('etut:uzun ses/1', 7, 'Uzun ses'),
+  ders('etut:uzun ses/1', 9, 'Uzun ses'),
 ]
 let kopya: Ders[] = []
 
@@ -36,11 +36,11 @@ afterEach(() => {
 describe('OgrenSection', () => {
   it('dersler seviyeye göre gruplanır; bilinmeyen seviye "Seviye N" olur', async () => {
     render(<OgrenSection />)
-    await screen.findByRole('heading', { name: 'Seviye 7' })
+    await screen.findByRole('heading', { name: 'Seviye 9' })
     expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual([
       'Seviye 0 · Hazırlık',
       'Seviye 1 · İlk beş ses',
-      'Seviye 7',
+      'Seviye 9',
     ])
     const grup1 = screen.getByRole('heading', { name: 'Seviye 1 · İlk beş ses' }).parentElement!
     expect([...grup1.querySelectorAll('.topic-title')].map((e) => e.textContent)).toEqual(['Nevâ', 'Re, Do, Si'])

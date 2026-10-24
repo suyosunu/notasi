@@ -1,6 +1,7 @@
 import { MAKAMLAR } from '../content/makamlar'
 import { PARCALAR } from '../content/parcalar'
 import type { Parca } from '../content/parcalar'
+import { ONERILEN_SEVIYE } from '../content/seviyeler'
 import { USULLER } from '../content/usuller'
 
 export const makamAdi = (p: Parca): string => MAKAMLAR.find((m) => m.id === p.makam)?.name ?? p.makam
@@ -18,6 +19,9 @@ export function ParcalarSection() {
             <a class="topic" href={`#/parcalar/${p.id}`}>
               <span class="topic-title">{p.title}</span>
               <small class="muted">{`${makamAdi(p)} · ${usulAdi(p)} · ${p.composer}`}</small>
+              {ONERILEN_SEVIYE.parca[p.id] !== undefined && (
+                <small class="seviye-etiket">{`Seviye ${ONERILEN_SEVIYE.parca[p.id]}`}</small>
+              )}
             </a>
           </li>
         ))}

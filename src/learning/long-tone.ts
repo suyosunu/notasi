@@ -35,8 +35,8 @@ export function neyLevel(recs: readonly { passed: boolean; at: string }[]): numb
 export function neyLevelConfig(level: number): LongToneConfig {
   const k = Math.max(0, Math.floor(Number.isFinite(level) ? level : 0))
   return {
-    toleranceCents: Math.max(10, 25 - 5 * k),
-    requiredMs: Math.min(10000, 4000 + 1000 * k),
+    toleranceCents: Math.max(15, 25 - 5 * k),
+    requiredMs: Math.min(10000, 5000 + 1000 * k),
     graceMs: GRACE_MS,
   }
 }

@@ -19,14 +19,18 @@ function series(from: number, to: number, cents: number | null, step = 50): [num
 }
 
 describe('neyLevelConfig', () => {
-  it('başlangıç: ±25 sent, 4000 ms, 250 ms', () => {
-    expect(neyLevelConfig(0)).toEqual({ toleranceCents: 25, requiredMs: 4000, graceMs: 250 })
+  it('başlangıç: ±25 sent, 5000 ms, 250 ms', () => {
+    expect(neyLevelConfig(0)).toEqual({ toleranceCents: 25, requiredMs: 5000, graceMs: 250 })
   })
 
-  it('her geçişte daralır ve uzar; sınırlarda durur', () => {
-    expect(neyLevelConfig(3)).toEqual({ toleranceCents: 10, requiredMs: 7000, graceMs: 250 })
-    expect(neyLevelConfig(10).requiredMs).toBe(10000)
-    expect(neyLevelConfig(10).toleranceCents).toBe(10)
+  it('her geçişte daralır ve uzar: 1 → 20 sent / 6 sn, 3 → 15 sent / 8 sn', () => {
+    expect(neyLevelConfig(1)).toEqual({ toleranceCents: 20, requiredMs: 6000, graceMs: 250 })
+    expect(neyLevelConfig(3)).toEqual({ toleranceCents: 15, requiredMs: 8000, graceMs: 250 })
+  })
+
+  it('sınırlarda durur: en dar ±15 sent, en uzun 10 sn', () => {
+    expect(neyLevelConfig(6)).toMatchObject({ toleranceCents: 15, requiredMs: 10000 })
+    expect(neyLevelConfig(10)).toMatchObject({ toleranceCents: 15, requiredMs: 10000 })
   })
 
   it('ilk ses yapılandırması', () => {
@@ -62,23 +66,23 @@ describe('stepLongTone', () => {
     expect(initialLongTone()).toEqual({ holdStartAt: null, lastGoodAt: null, holdingMs: 0, bestMs: 0, passed: false })
   })
 
-  it('0 sentte 4000 ms tutuş geçer', () => {
-    const s = run(series(0, 4000, 0))
+  it('0 sentte 5000 ms tutuş geçer', () => {
+    const s = run(series(0, 5000, 0))
     expect(s.passed).toBe(true)
-    expect(s.holdingMs).toBeGreaterThanOrEqual(4000)
-    expect(s.bestMs).toBeGreaterThanOrEqual(4000)
+    expect(s.holdingMs).toBeGreaterThanOrEqual(5000)
+    expect(s.bestMs).toBeGreaterThanOrEqual(5000)
   })
 
   it('süre dolmadan geçmez', () => {
-    const s = run(series(0, 3950, 0))
+    const s = run(series(0, 4950, 0))
     expect(s.passed).toBe(false)
-    expect(s.holdingMs).toBe(3950)
+    expect(s.holdingMs).toBe(4950)
   })
 
   it('Review Focus 5: 200 ms null boşluğu tutuşu bozmaz', () => {
-    const s = run([...series(0, 2000, 0), ...series(2050, 2150, null), ...series(2200, 4000, 0)])
+    const s = run([...series(0, 2000, 0), ...series(2050, 2150, null), ...series(2200, 5000, 0)])
     expect(s.passed).toBe(true)
-    expect(s.holdingMs).toBeGreaterThanOrEqual(4000)
+    expect(s.holdingMs).toBeGreaterThanOrEqual(5000)
   })
 
   it('Review Focus 5: 300 ms null boşluğu tutuşu sıfırlar', () => {
@@ -120,14 +124,14 @@ describe('stepLongTone', () => {
   })
 
   it('geçtikten sonra durum donar', () => {
-    const passed = run(series(0, 4000, 0))
+    const passed = run(series(0, 5000, 0))
     const after = stepLongTone(passed, { t: 9000, cents: null }, CFG)
     expect(after).toEqual(passed)
   })
 
-  it('daha sıkı yapılandırmada 15 sent tolerans dışıdır', () => {
-    const s = run(series(0, 8000, 15), neyLevelConfig(3))
-    expect(s.holdStartAt).toBeNull()
+  it('daha sıkı yapılandırmada 18 sent tolerans dışıdır, 15 sent içindedir', () => {
+    expect(run(series(0, 8000, 18), neyLevelConfig(3)).holdStartAt).toBeNull()
+    expect(run(series(0, 8000, 15), neyLevelConfig(3)).passed).toBe(true)
   })
 })
 

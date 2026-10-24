@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/preact'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { addLongTone, saveSession, saveSettings, resetDbForTests } from '../store/db'
+import { addLongTone, isaretEkle, saveSession, saveSettings, resetDbForTests } from '../store/db'
 import type { SessionRec } from '../store/db'
 import { shareOrDownloadBackup } from '../store/backup'
 import { todayLocal } from '../util/date'
@@ -60,6 +60,20 @@ describe('Home', () => {
     expect(screen.getByText('Makam').closest('a')?.getAttribute('href')).toBe('#/makam')
     expect(screen.getByText('Parçalar').closest('[data-status]')?.getAttribute('data-status')).toBe('aktif')
     expect(screen.getByText('Parçalar').closest('a')?.getAttribute('href')).toBe('#/parcalar')
+  })
+
+  it('Yolum kartı mevcut seviyeyi ve sıradaki hedefi gösterir, #/yolum sayfasına gider', async () => {
+    await saveSettings({ onboarded: true, placementDone: true })
+    render(<Home />)
+    const kart = (await screen.findByText('🗺️ Yolum · Seviye 0: Hazırlık')).closest('a')!
+    expect(kart.getAttribute('href')).toBe('#/yolum')
+    expect(kart.textContent).toContain('Sıradaki: Neyin bölümlerini öğrendim')
+    // Çalışma kartlarının üstündedir.
+    expect(kart.nextElementSibling?.textContent).toContain('Masa başı')
+    cleanup()
+    await isaretEkle('okunanDersler', 's0:neyi-tani')
+    render(<Home />)
+    expect(await screen.findByText('Sıradaki: Duruş ve tutuş dersini okudum')).toBeTruthy()
   })
 
   it('links the Masa başı card to /gunduz and the evening card to /aksam', async () => {

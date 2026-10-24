@@ -101,14 +101,14 @@ async function finishTry() {
 }
 
 describe('EveningPractice', () => {
-  it('tolerans içinde 4,5 sn üfleyince Nevâ geçilir ve kaydedilir', async () => {
+  it('tolerans içinde 5,5 sn üfleyince Nevâ geçilir ve kaydedilir', async () => {
     await readyForPerde()
     render(<EveningPractice />)
     expect(await screen.findByRole('heading', { name: /Uzun ses: Nevâ/ })).toBeTruthy()
     expect(screen.getByText(NEVA.tip)).toBeTruthy()
     expect(screen.getByRole('img', { name: /Ney parmak şeması/ })).toBeTruthy()
     await begin()
-    blow(NEVA_HZ, 4500)
+    blow(NEVA_HZ, 5500)
     expect(await screen.findByText(/Geçtin/)).toBeTruthy()
     expect(stopper).toHaveBeenCalled()
     await waitFor(async () => {
@@ -117,7 +117,7 @@ describe('EveningPractice', () => {
     })
     const [rec] = await listLongTones('neva')
     expect(rec).toMatchObject({ passed: true, toleranceCents: 25 })
-    expect(rec!.durationMs).toBeGreaterThanOrEqual(4000)
+    expect(rec!.durationMs).toBeGreaterThanOrEqual(5000)
     expect(screen.queryByText(FINGERING_NOTE)).toBeNull()
   })
 

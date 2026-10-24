@@ -36,7 +36,7 @@ export const ETUT_DERSLERI: Ders[] = [
     bloklar: [
       {
         tur: 'metin',
-        metin: 'Etüt, bir sese ya da birkaç sese alıştıran kısa bir çalışmadır. Melodi çalmazsın; sesin kendisini, geçişleri ve süreleri çalışırsın.',
+        metin: 'Etüt, bir sese ya da birkaç sese alıştıran kısa bir çalışma ezgisidir; bir eser değildir. Sesin kendisini, geçişleri ve süreleri çalışırsın.',
       },
       {
         tur: 'metin',
@@ -70,7 +70,7 @@ export const ETUT_DERSLERI: Ders[] = [
         maddeler: [
           'Önce dinle: "▶ Dinle" ile etüdü baştan sona duy.',
           'Notayı oku: ölçüleri soldan sağa izle, hangi sürenin geldiğine bak.',
-          'Metronomla yavaş çal: "🎵 Metronomla çal" bir ölçü sayar, sonra metronom seninle sürer. Neyle onu izleyerek çal.',
+          'Metronomla yavaş çal: "🎵 Metronomla çal" bir ölçü sayar, sonra metronom seninle sürer. Sonra neyinle aynı ezgiyi çal.',
           'Sonra hızlan: yavaşta hatasız çalınca hızı kaydırıcıyla biraz artır.',
         ],
       },
@@ -122,7 +122,7 @@ export const ETUT_DERSLERI: Ders[] = [
       },
       {
         tur: 'metin',
-        metin: "Nevâ'dan Rast'a inerken her adımda bir parmak eklersin. Yukarı çıkarken parmakları aynı sırayla kaldırırsın. Parmağını eklerken deliği tam kapat; küçük bir aralık sesi bozar.",
+        metin: "Nevâ'dan Rast'a inerken her adımda bir parmak eklersin. Yukarı çıkarken parmakları ters sırayla kaldırırsın. Parmağını eklerken deliği tam kapat; küçük bir aralık sesi bozar.",
       },
       {
         tur: 'metin',

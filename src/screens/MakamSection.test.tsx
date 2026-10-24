@@ -30,6 +30,14 @@ describe('MakamSection', () => {
     expect(screen.getAllByRole('listitem')).toHaveLength(3)
   })
 
+  it('makam kartlarında önerilen seviye etiketi: Rast 3, Uşşak 4, Hicaz 4', () => {
+    render(<MakamSection />)
+    const etiket = (ad: string) => screen.getByText(ad).closest('a')!.querySelector('.seviye-etiket')?.textContent
+    expect(etiket('Rast')).toBe('Seviye 3')
+    expect(etiket('Uşşak')).toBe('Seviye 4')
+    expect(etiket('Hicaz')).toBe('Seviye 4')
+  })
+
   it('sorulara ve ana ekrana bağlantı verir', () => {
     render(<MakamSection />)
     expect(screen.getByRole('link', { name: /Sorularla çalış/ }).getAttribute('href')).toBe('#/makam/sorular')

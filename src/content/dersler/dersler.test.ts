@@ -9,6 +9,7 @@ import { ETUT_DERSLERI } from './etut'
 import { PERDE_DERSLERI } from './perdeler'
 import { ETUTLER } from '../etutler'
 import { cardToEvents } from '../../learning/cards'
+import { neyLevelConfig } from '../../learning/long-tone'
 import type { MusicEvent } from '../../music/notation'
 import type { Ders, DersBlok } from './types'
 
@@ -97,11 +98,11 @@ describe('Seviye 0 (hazırlık) dersleri', () => {
     expect(dersById(id)!.bloklar).toContainEqual(expect.objectContaining({ tur: 'gorsel', ad }))
   })
 
-  it('alıştırma rotaları: nefes ve başpâre kendi sayfalarına, ilk ses akşama, uzun ses Nevâ çalışmasına; duruş henüz yok', () => {
+  it('alıştırma rotaları: nefes ve başpâre kendi sayfalarına, ilk ses akşama, uzun ses Nevâ çalışmasına; duruş Yolum ekranına', () => {
     const rotalar = Object.fromEntries(HAZIRLIK_DERSLERI.map((d) => [d.id, d.alistirma]))
     expect(rotalar).toEqual({
       's0:neyi-tani': undefined,
-      's0:durus': undefined,
+      's0:durus': '/yolum',
       's0:nefes': '/hazirlik/nefes',
       's0:ilk-ses': '/aksam',
       's0:baspare': '/hazirlik/baspare',
@@ -345,5 +346,28 @@ describe('Seviye 1 etüt dersleri', () => {
     )
     expect(metinler(d).join(' ')).toMatch(/sekizlik/)
     expect(metinler(d).join(' ')).toMatch(/S2/)
+  })
+})
+
+describe('uzun ses dersleri uygulamanın bant ve süre eğrisiyle tutarlı', () => {
+  const baslangic = neyLevelConfig(0)
+  const son = neyLevelConfig(99)
+
+  it('eğri: ±25 sent / 5 sn ile başlar, ±15 sent / 10 sn ile biter', () => {
+    expect([baslangic.toleranceCents, baslangic.requiredMs]).toEqual([25, 5000])
+    expect([son.toleranceCents, son.requiredMs]).toEqual([15, 10000])
+  })
+
+  it.each([
+    ['s0:uzun-ses'],
+    ['perde:neva'],
+  ])('%s: başlangıç ve bitiş değerleri eğriyle aynı yazılır, "öneri" sözü kalır', (id) => {
+    const m = metinler(dersById(id)!).join(' ')
+    expect(m).toMatch(new RegExp(`${baslangic.requiredMs / 1000} sn`))
+    expect(m).toMatch(new RegExp(`±${baslangic.toleranceCents} sent`))
+    expect(m).toMatch(new RegExp(`${son.requiredMs / 1000} sn`))
+    expect(m).toMatch(new RegExp(`±${son.toleranceCents} sent`))
+    expect(m).toMatch(/öneri/)
+    expect(m).not.toMatch(/4 sn|±10 sent/)
   })
 })

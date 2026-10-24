@@ -1,15 +1,12 @@
 import { useEffect, useState } from 'preact/hooks'
 import { DERSLER } from '../content/dersler'
+import { SEVIYELER } from '../content/seviyeler'
 import { getSettings } from '../store/db'
 
-/** Seviye başlıkları sabit eşlemedir (Task 40'ın SEVIYELER'ine bağlı değildir). Bilinmeyen seviye `Seviye N` olur. */
-const SEVIYE_BASLIKLARI: Record<number, string> = {
-  0: 'Seviye 0 · Hazırlık',
-  1: 'Seviye 1 · İlk beş ses',
-}
-
+/** `Seviye N · <ad>`; `SEVIYELER`de olmayan seviye yalnız `Seviye N` olur. */
 function seviyeBasligi(seviye: number): string {
-  return SEVIYE_BASLIKLARI[seviye] ?? `Seviye ${seviye}`
+  const s = SEVIYELER.find((x) => x.no === seviye)
+  return s ? `Seviye ${s.no} · ${s.ad}` : `Seviye ${seviye}`
 }
 
 /** Öğren bölümü: dersler seviyeye göre gruplanır; okunanlar ✓, okunmayanlar 📖 ile gösterilir. */

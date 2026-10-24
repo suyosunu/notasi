@@ -19,6 +19,14 @@ describe('ParcalarSection', () => {
     expect(dolap.textContent).toContain('Uşşak · Dolap · Anonim')
   })
 
+  it('önerilen seviye etiketi: Dolap 2, Hak Teâlâ 3, Dağlar ile Taşlar ile 4', () => {
+    render(<ParcalarSection />)
+    const etiket = (ad: string) => screen.getByText(ad).closest('a')!.querySelector('.seviye-etiket')?.textContent
+    expect(etiket('Hak Teâlâ')).toBe('Seviye 3')
+    expect(etiket('Dağlar ile Taşlar ile')).toBe('Seviye 4')
+    expect(etiket('Benim Adım Dertli Dolap')).toBe('Seviye 2')
+  })
+
   it('ana ekrana dönüş bağlantısı', () => {
     render(<ParcalarSection />)
     expect(screen.getByRole('link', { name: 'Ana ekrana dön' }).getAttribute('href')).toBe('#/')
