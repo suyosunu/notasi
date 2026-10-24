@@ -10,10 +10,15 @@ export interface EveningStep {
   perdeId?: PerdeId
   label: string
   tries: number
+  /** Adımdan önce okunması gereken ders (`DersKapisi`). Bu alandan önce açılmış oturumlarda yoktur: kapı atlanır. */
+  dersId?: string
 }
 
 /** "İlk ses" denemeleri bu kimlikle `LongToneRec` olarak saklanır. */
 export const ILK_SES_ID = 'ilk-ses'
+
+/** "İlk ses" adımından önce okunan ders. */
+const ILK_SES_DERS_ID = 's0:ilk-ses'
 
 const OTHER_PASSED_MAX = 3
 
@@ -53,6 +58,10 @@ export function perdeStatuses(
   return out
 }
 
+function ilkSesStep(tries: number): EveningStep {
+  return { kind: 'ilk-ses', label: 'İlk ses', tries, dersId: ILK_SES_DERS_ID }
+}
+
 function perdeStep(p: NeyPerde, tries: number): EveningStep {
   return { kind: 'uzun-ses', perdeId: p.id, label: `Uzun ses: ${p.name}`, tries }
 }
@@ -62,13 +71,8 @@ export function buildEveningPlan(input: {
   calibrated: boolean
   perdeStatus: Record<PerdeId, PerdeStatus>
 }): EveningStep[] {
-  if (!input.ilkSesPassed) return [{ kind: 'ilk-ses', label: 'İlk ses', tries: 3 }]
-  if (!input.calibrated) {
-    return [
-      { kind: 'ilk-ses', label: 'İlk ses', tries: 1 },
-      { kind: 'kalibrasyon', label: 'Kalibrasyon', tries: 1 },
-    ]
-  }
+  if (!input.ilkSesPassed) return [ilkSesStep(3)]
+  if (!input.calibrated) return [ilkSesStep(1), { kind: 'kalibrasyon', label: 'Kalibrasyon', tries: 1 }]
   const passed = NEY_PERDELER.filter((p) => input.perdeStatus[p.id] === 'gecildi')
   const current = NEY_PERDELER.find((p) => input.perdeStatus[p.id] === 'acik')
   const warmup = passed.at(-1)

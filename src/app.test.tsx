@@ -108,10 +108,10 @@ describe('App', () => {
     expect(screen.getByText('Sayfa bulunamadı')).toBeTruthy()
   })
 
-  it('#/aksam rotası akşam pratiğini açar', async () => {
+  it('#/aksam rotası akşam pratiğini açar (yeni kullanıcıda önce ilk ses dersi)', async () => {
     location.hash = '#/aksam'
     render(<App />)
-    expect(await screen.findByRole('heading', { name: /İlk ses/ })).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: /Dudak ve ilk ses/ })).toBeTruthy()
   })
 
   it('#/oturum-sonu rotası oturum sonu ekranını gösterir', async () => {

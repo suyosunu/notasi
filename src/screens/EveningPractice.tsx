@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
 import { NEY_PERDELER } from '../content/ney-perdeler'
+import { DersKapisi } from '../ders/DersKapisi'
 import { isPlanDone, loadOrStartEveningSession, nextTry, saveEveningProgress } from '../learning/evening-session'
 import type { EveningState } from '../learning/evening-session'
 import { ILK_SES_CONFIG, neyLevelConfig } from '../learning/long-tone'
@@ -106,7 +107,7 @@ export function EveningPractice() {
   if (level === null) return <Loading />
   const cfg = step.kind === 'ilk-ses' ? ILK_SES_CONFIG : neyLevelConfig(level)
 
-  return (
+  const ekran = (
     <main class="screen evening">
       <header class="day-head">
         <h1>🌙 {step.label}</h1>
@@ -131,5 +132,13 @@ export function EveningPractice() {
         Ana ekrana dön
       </a>
     </main>
+  )
+  // Ders kuralı: adımın dersi okunmadan alıştırması gelmez. Kapı adım sırasıyla kurulur; aynı adımın sonraki
+  // denemelerinde ders yeniden gelmez. `dersId`'siz (eski oturum, perde) adımda kapı doğrudan ekranı gösterir.
+  // Kalibrasyon adımı yukarıda döndüğü için kapıdan geçmez.
+  return (
+    <DersKapisi key={state.stepIndex} dersId={step.dersId}>
+      {ekran}
+    </DersKapisi>
   )
 }

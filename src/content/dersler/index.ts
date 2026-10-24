@@ -1,7 +1,8 @@
+import { HAZIRLIK_DERSLERI } from './hazirlik'
 import type { Ders } from './types'
 
 /** Tüm dersler; içerik Task 35–37 ve 39'da eklenir. */
-export const DERSLER: Ders[] = []
+export const DERSLER: Ders[] = [...HAZIRLIK_DERSLERI]
 
 export function dersById(id: string): Ders | undefined {
   return DERSLER.find((d) => d.id === id)

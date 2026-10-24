@@ -8,6 +8,7 @@ import {
   addFingeringFlag,
   addLongTone,
   getOpenSession,
+  isaretEkle,
   listLongTones,
   listSessions,
   readAllStores,
@@ -58,6 +59,11 @@ afterEach(() => {
 async function readyForPerde() {
   await addLongTone({ perdeId: 'ilk-ses', durationMs: 3000, passed: true, toleranceCents: 50 })
   await saveSettings({ calibrated: true })
+}
+
+/** İlk ses adımının dersi (s0:ilk-ses) okunmuş sayılır; kapı açılır. */
+async function ilkSesDersiOkundu() {
+  await isaretEkle('okunanDersler', 's0:ilk-ses')
 }
 
 /** `ms` boyunca 50 ms arayla sabit frekans (null = sessizlik). */
@@ -204,6 +210,7 @@ describe('EveningPractice', () => {
   })
 
   it('ilk ses: rehber gösterilir, hedef tutuşun başındaki perdedir', async () => {
+    await ilkSesDersiOkundu()
     render(<EveningPractice />)
     expect(await screen.findByRole('heading', { name: /İlk ses/ })).toBeTruthy()
     expect(screen.getByText(ILK_SES_REHBER[0]!)).toBeTruthy()
@@ -267,6 +274,7 @@ describe('EveningPractice', () => {
 
   it('kalibre değilse ilk sesten sonra kalibrasyon adımı gelir', async () => {
     await addLongTone({ perdeId: 'ilk-ses', durationMs: 3000, passed: true, toleranceCents: 50 })
+    await ilkSesDersiOkundu()
     render(<EveningPractice />)
     expect(await screen.findByText('Deneme 1/1')).toBeTruthy()
     await finishTry()
@@ -275,6 +283,7 @@ describe('EveningPractice', () => {
 
   it('kalibrasyon adımında "Şimdi değil" ana ekrana döner', async () => {
     await addLongTone({ perdeId: 'ilk-ses', durationMs: 3000, passed: true, toleranceCents: 50 })
+    await ilkSesDersiOkundu()
     location.hash = '#/aksam'
     render(<EveningPractice />)
     await finishTry()
@@ -349,11 +358,53 @@ describe('EveningPractice', () => {
     await addLongTone({ perdeId: 'ilk-ses', durationMs: 3000, passed: true, toleranceCents: 50 })
     await addLongTone({ perdeId: 'ilk-ses', durationMs: 3000, passed: true, toleranceCents: 50 })
     await saveSettings({ calibrated: true })
+    await ilkSesDersiOkundu()
     render(<EveningPractice />)
     await begin()
     fireEvent.click(screen.getByRole('button', { name: 'Bitir' }))
     await screen.findByRole('button', { name: 'Devam' })
     const recs = await listLongTones('ilk-ses')
     expect(recs.at(-1)!.toleranceCents).toBe(50)
+  })
+  describe('ilk ses dersi kapısı', () => {
+    it('okunmamış s0:ilk-ses ile akşam açılınca ders görünür, "Başla" görünmez; "Anladım"dan sonra trainer görünür', async () => {
+      render(<EveningPractice />)
+      expect(await screen.findByRole('heading', { name: /Dudak ve ilk ses/ })).toBeTruthy()
+      expect(screen.queryByRole('button', { name: 'Başla' })).toBeNull()
+      expect(startPitchStream).not.toHaveBeenCalled()
+      fireEvent.click(screen.getByRole('button', { name: 'Anladım, alıştırmaya geç' }))
+      expect(await screen.findByRole('heading', { name: /İlk ses/ })).toBeTruthy()
+      expect(screen.queryByRole('heading', { name: /Dudak ve ilk ses/ })).toBeNull()
+      await begin()
+      blow(300, 3200)
+      expect(await screen.findByText(/Geçtin/)).toBeTruthy()
+      // Aynı adımın sonraki denemesinde ders yeniden gelmez.
+      fireEvent.click(await screen.findByRole('button', { name: 'Devam' }))
+      expect(await screen.findByText('Deneme 2/3')).toBeTruthy()
+      expect(screen.queryByRole('heading', { name: /Dudak ve ilk ses/ })).toBeNull()
+    })
+
+    it('ders okunmuşsa doğrudan trainer görünür', async () => {
+      await ilkSesDersiOkundu()
+      render(<EveningPractice />)
+      expect(await screen.findByRole('button', { name: 'Başla' })).toBeTruthy()
+      expect(screen.queryByRole('heading', { name: /Dudak ve ilk ses/ })).toBeNull()
+    })
+
+    it('dersId taşımayan eski açık oturum kapısız açılır', async () => {
+      await saveSession({
+        id: 'eski-bugun',
+        kind: 'aksam',
+        date: todayLocal(),
+        startedAt: new Date().toISOString(),
+        completed: false,
+        elapsedMs: 0,
+        state: { steps: [{ kind: 'ilk-ses', label: 'İlk ses', tries: 3 }], stepIndex: 0, tryIndex: 1 },
+      })
+      render(<EveningPractice />)
+      expect(await screen.findByText('Deneme 2/3')).toBeTruthy()
+      expect(screen.getByRole('button', { name: 'Başla' })).toBeTruthy()
+      expect(screen.queryByRole('heading', { name: /Dudak ve ilk ses/ })).toBeNull()
+    })
   })
 })

@@ -41,7 +41,9 @@ describe('evening session', () => {
   it('bugünün oturumunu açar, ikinci çağrıda aynısını döner; plan bitince tamamlar', async () => {
     const s = await loadOrStartEveningSession(new Date())
     expect(s).toMatchObject({ kind: 'aksam', date: todayLocal(), completed: false })
-    expect((s.state as EveningState).steps).toEqual([{ kind: 'ilk-ses', label: 'İlk ses', tries: 3 }])
+    expect((s.state as EveningState).steps).toEqual([
+      { kind: 'ilk-ses', label: 'İlk ses', tries: 3, dersId: 's0:ilk-ses' },
+    ])
     expect((await loadOrStartEveningSession(new Date())).id).toBe(s.id)
     const done = await saveEveningProgress(s, { ...(s.state as EveningState), stepIndex: 1, tryIndex: 0 })
     expect(done.completed).toBe(true)

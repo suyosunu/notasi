@@ -3,6 +3,7 @@ import { rotaBilinir } from '../../app'
 import { NEY_PERDELER } from '../ney-perdeler'
 import { NOTA_TOPICS } from '../nota-topics'
 import { DERSLER, dersById, notaDersId, perdeDersId } from './index'
+import { HAZIRLIK_DERSLERI } from './hazirlik'
 import type { Ders, DersBlok } from './types'
 
 /** Bir dersteki tüm metinler (başlık, anlatım, açıklamalar, adımlar, kaynaklar). */
@@ -66,5 +67,50 @@ describe('DERSLER değişmezleri', () => {
 
   it.each(DERSLER.map((d) => [d.id, d] as const))('%s: BELİRSİZ işaretli bilgi yazılmaz', (_id, d) => {
     for (const m of metinler(d)) expect(m).not.toMatch(/BELİRSİZ/i)
+  })
+})
+
+describe('Seviye 0 (hazırlık) dersleri', () => {
+  const S0 = ['s0:neyi-tani', 's0:durus', 's0:nefes', 's0:ilk-ses', 's0:baspare', 's0:uzun-ses']
+
+  it('altı s0 dersi bu sırayla var, hepsi seviye 0 ve DERSLER içinde', () => {
+    expect(HAZIRLIK_DERSLERI.map((d) => d.id)).toEqual(S0)
+    expect(HAZIRLIK_DERSLERI.every((d) => d.seviye === 0)).toBe(true)
+    expect(DERSLER.filter((d) => d.id.startsWith('s0:')).map((d) => d.id)).toEqual(S0)
+  })
+
+  it.each(['s0:ilk-ses', 's0:baspare', 's0:uzun-ses'])('%s: Nevâ parmak bloğu içerir', (id) => {
+    expect(dersById(id)!.bloklar).toContainEqual(expect.objectContaining({ tur: 'parmak', perdeId: 'neva' }))
+  })
+
+  it.each([
+    ['s0:neyi-tani', 'ney-bolumleri'],
+    ['s0:durus', 'el-yerlesimi'],
+    ['s0:nefes', 'nefes-444'],
+  ] as const)('%s: %s çizimini gösterir', (id, ad) => {
+    expect(dersById(id)!.bloklar).toContainEqual(expect.objectContaining({ tur: 'gorsel', ad }))
+  })
+
+  it('alıştırma rotaları: ilk ses akşama, uzun ses Nevâ çalışmasına; diğerleri henüz yok', () => {
+    const rotalar = Object.fromEntries(HAZIRLIK_DERSLERI.map((d) => [d.id, d.alistirma]))
+    expect(rotalar).toEqual({
+      's0:neyi-tani': undefined,
+      's0:durus': undefined,
+      's0:nefes': undefined,
+      's0:ilk-ses': '/aksam',
+      's0:baspare': undefined,
+      's0:uzun-ses': '/ney/neva',
+    })
+  })
+
+  it('neyi tanı dersi boğum sayısı vermez (çizim de sayı vermez)', () => {
+    for (const m of metinler(dersById('s0:neyi-tani')!)) expect(m).not.toMatch(/\d+\s*boğum/i)
+  })
+
+  it('uzun ses dersindeki sayısal hedef "öneri" olarak anılır', () => {
+    const metin = metinler(dersById('s0:uzun-ses')!).join(' ')
+    expect(metin).toMatch(/5 sn/)
+    expect(metin).toMatch(/±20 sent/)
+    expect(metin).toMatch(/öneri/i)
   })
 })
