@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/preact'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { playCode, stopAudio, unlockAudio } from '../audio/player'
-import { toToneEvents } from '../audio/pattern'
+import { getNeySesi, playCode, stopAudio, unlockAudio } from '../audio/player'
+import { melodyChain, toToneEvents } from '../audio/pattern'
 import { buildPieceCode } from '../audio/piece'
 import { acquireWakeLock, releaseWakeLock } from '../audio/wakeLock'
 import { PARCALAR } from '../content/parcalar'
@@ -15,6 +15,7 @@ vi.mock('../audio/player', () => ({
   playCode: vi.fn(() => Promise.resolve()),
   playLoop: vi.fn(() => Promise.resolve()),
   stopAudio: vi.fn(),
+  getNeySesi: vi.fn(() => 'mevcut'),
 }))
 
 vi.mock('../audio/wakeLock', () => ({
@@ -97,6 +98,17 @@ describe('ParcaDetail', () => {
     expect(vi.mocked(unlockAudio).mock.invocationCallOrder[0]!).toBeLessThan(
       vi.mocked(playCode).mock.invocationCallOrder[0]!,
     )
+  })
+
+  it('parça seçili ney sesiyle çalar', async () => {
+    vi.mocked(getNeySesi).mockReturnValue('nefesli')
+    render(<ParcaDetail parcaId="hak-teala" />)
+    fireEvent.click(await listenButton())
+    await waitFor(() => expect(playCode).toHaveBeenCalledTimes(1))
+    const [code] = vi.mocked(playCode).mock.calls[0]!
+    expect(code).toBe(buildPieceCode(byId('hak-teala'), DEFAULT_TUNING, 60, true, 'nefesli').code)
+    expect(code).toContain(melodyChain('nefesli'))
+    vi.mocked(getNeySesi).mockReturnValue('mevcut')
   })
 
   it('usul eşliği kapalıyken yalnızca melodi; hız değişince yeni tempoyla çalar', async () => {

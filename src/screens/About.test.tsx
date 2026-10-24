@@ -25,6 +25,15 @@ describe('About', () => {
     expect(screen.getByText('← Ayarlar').closest('a')?.getAttribute('href')).toBe('#/ayarlar')
   })
 
+  it('Shakuhachi sesinin kaynağını ve lisansını gösterir', async () => {
+    const { About } = await import('./About')
+    render(<About />)
+    const line = screen.getByText(/Shakuhachi sesi:/)
+    expect(line.textContent).toBe(
+      'Shakuhachi sesi: Fluid R3 GM SoundFont, © 2000-2002, 2008 Frank Wen, MIT lisansıyla (WebAudioFont dönüşümü, MIT).',
+    )
+  })
+
   it("SOURCE_URL boşken bağlantı yerine '(yakında)' yazar", async () => {
     vi.doMock('../config', () => ({ SOURCE_URL: '' }))
     const { About } = await import('./About')

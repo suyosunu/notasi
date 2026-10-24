@@ -390,6 +390,38 @@ a:focus-visible {
   accent-color: var(--accent);
 }
 
+/* h2 olarak da kullanılır: etiket boyutunda kalsın. */
+h2.setting-label {
+  margin: 0;
+  font-size: inherit;
+}
+
+.voice-options {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.voice-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.radio {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 3rem;
+  flex: 1;
+}
+
+.radio input {
+  width: 1.5rem;
+  height: 1.5rem;
+  accent-color: var(--accent);
+}
+
 .setting .hint,
 .setting .notice {
   margin: 0;

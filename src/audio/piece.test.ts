@@ -3,7 +3,7 @@ import { PARCALAR } from '../content/parcalar'
 import type { Parca } from '../content/parcalar'
 import { DEFAULT_TUNING } from '../music/ahenk'
 import type { MusicEvent } from '../music/notation'
-import { SOUND_CHAIN, toToneEvents } from './pattern'
+import { melodyChain, NEY_SESLERI, SOUND_CHAIN, toToneEvents } from './pattern'
 import { buildPieceCode, measureBeats } from './piece'
 import { USULLER } from '../content/usuller'
 
@@ -58,6 +58,29 @@ describe('measureBeats', () => {
 })
 
 describe('buildPieceCode', () => {
+  it('seçilen ney sesinin zincirini kullanır (usullü ve usulsüz); varsayılan mevcut', () => {
+    const p = parca('hak-teala')
+    expect(buildPieceCode(p, DEFAULT_TUNING, 60, true).code).toContain(SOUND_CHAIN)
+    for (const v of NEY_SESLERI) {
+      for (const withUsul of [false, true]) {
+        const { code } = buildPieceCode(p, DEFAULT_TUNING, 60, withUsul, v)
+        expect(code.startsWith(withUsul ? 'stack(freq("' : 'freq("')).toBe(true)
+        expect(code).toContain(`")${melodyChain(v)}${withUsul ? ', ' : '.mask('}`)
+      }
+    }
+  })
+
+  it('nefesli parça: melodi frekansları mevcut ile aynı, usul katmanı değişmez', async () => {
+    const p = parca('hak-teala')
+    const mevcut = await hits(buildPieceCode(p, DEFAULT_TUNING, 60, true).code, 0, 16)
+    const nefesli = await hits(buildPieceCode(p, DEFAULT_TUNING, 60, true, 'nefesli').code, 0, 16)
+    const melody = (hs: Hit[], s: string) => hs.filter((h) => h.s === s).map((h) => [h.at, h.freq])
+    expect(melody(nefesli, 'triangle')).toEqual(melody(mevcut, 'triangle'))
+    expect(nefesli.filter((h) => h.s === 'pink').map((h) => h.at)).toEqual(melody(mevcut, 'triangle').map(([at]) => at))
+    const usul = (hs: Hit[]) => hs.filter((h) => h.s !== 'triangle' && h.s !== 'pink')
+    expect(usul(nefesli)).toEqual(usul(mevcut))
+  })
+
   it('usulsüz: tüm parça tek freq döngüsü, ses zinciri, cpm = bpm / toplam vuruş; süre toplam vuruştan', () => {
     const p = parca('hak-teala')
     const { code, durationMs } = buildPieceCode(p, DEFAULT_TUNING, 60, false)

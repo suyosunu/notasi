@@ -3,7 +3,8 @@ import { USULLER } from '../content/usuller'
 import type { Usul } from '../content/usuller'
 import type { Tuning } from '../music/ahenk'
 import { beats } from '../music/notation'
-import { ONE_SHOT, SOUND_CHAIN, toneSteps, toToneEvents } from './pattern'
+import { melodyChain, ONE_SHOT, toneSteps, toToneEvents } from './pattern'
+import type { NeySesi } from './pattern'
 import { buildUsulBody } from './usul'
 
 /** Bir usul ölçüsünün dörtlük vuruş cinsinden süresi (Sofyan 4/4 → 4, Dolap 12/8 → 6). */
@@ -19,18 +20,19 @@ export function measureBeats(u: Usul): number {
  * bir usul ölçüsü `measureBeats` dörtlük sürer, yani usul dakikada `bpm / measureBeats` ölçü çalar (mertebe
  * biriminde `bpm · mertebe / 4`: mertebe 8 → ×2, mertebe 4 → ×1). İlk ölçü tam usul ölçüsünden kısaysa (anacrusis) usul
  * ilk tam ölçüde başlar: katman `.compress(a / T, 1)` ile döngünün o kısmına sıkıştırılır, öncesi sessizdir.
- * Vuruş kalıbı olmayan usul (Dolap) metronom olarak çalar.
+ * Vuruş kalıbı olmayan usul (Dolap) metronom olarak çalar. Melodi seçilen ney sesiyle (`voice`) çalar.
  */
 export function buildPieceCode(
   parca: Parca,
   tuning: Tuning,
   bpm: number,
   withUsul: boolean,
+  voice: NeySesi = 'mevcut',
 ): { code: string; durationMs: number } {
   const tones = toToneEvents(parca.olcu.flat(), tuning)
   const total = tones.reduce((sum, e) => sum + e.beats, 0)
   if (!(total > 0) || !(bpm > 0)) throw new RangeError('Çalınacak ses ya da geçerli tempo yok')
-  const melody = `freq("${toneSteps(tones)}")${SOUND_CHAIN}`
+  const melody = `freq("${toneSteps(tones)}")${melodyChain(voice)}`
   const tempo = `${ONE_SHOT}.cpm(${bpm / total})`
   const durationMs = (total * 60000) / bpm
   if (!withUsul) return { code: `${melody}${tempo}`, durationMs }

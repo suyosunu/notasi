@@ -1,15 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { buildPatternCode } from './pattern'
+import { buildPatternCode, melodyChain } from './pattern'
+import { SHAKUHACHI_SOUND, SHAKUHACHI_URL } from './shakuhachi'
 
 const strudel = vi.hoisted(() => ({
   resume: vi.fn(() => Promise.resolve()),
   initStrudel: vi.fn((_options?: { prebake?: unknown }) => Promise.resolve()),
   evaluate: vi.fn((_code: string) => Promise.resolve()),
   hush: vi.fn(),
+  decodeAudioData: vi.fn((_data: ArrayBuffer) => Promise.resolve({ duration: 1 })),
+  registerSound: vi.fn(),
 }))
 
 vi.mock('@strudel/web', () => ({
-  getAudioContext: () => ({ resume: strudel.resume }),
+  getAudioContext: () => ({ resume: strudel.resume, decodeAudioData: strudel.decodeAudioData }),
+  registerSound: strudel.registerSound,
   initStrudel: strudel.initStrudel,
   evaluate: strudel.evaluate,
   hush: strudel.hush,
@@ -33,6 +37,8 @@ beforeEach(() => {
   strudel.initStrudel.mockReset().mockResolvedValue(undefined)
   strudel.evaluate.mockReset().mockResolvedValue(undefined)
   strudel.hush.mockReset()
+  strudel.decodeAudioData.mockClear()
+  strudel.registerSound.mockReset()
 })
 
 afterEach(() => {
@@ -290,5 +296,77 @@ describe('playCode', () => {
     const { playCode } = await freshPlayer()
     strudel.evaluate.mockRejectedValue(new Error('ses yok'))
     await expect(playCode('x', 1000)).rejects.toThrow('ses yok')
+  })
+})
+
+describe('ney sesi (setNeySesi / getNeySesi)', () => {
+  const fetchMock = vi.fn((_url: string) => Promise.resolve(new Response(new ArrayBuffer(8))))
+  beforeEach(() => {
+    fetchMock.mockClear()
+    vi.stubGlobal('fetch', fetchMock)
+  })
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  async function playAndFinish(p: Promise<void>, stopAudio: () => void) {
+    await vi.advanceTimersByTimeAsync(0)
+    stopAudio()
+    await p
+  }
+
+  it("varsayılan 'mevcut'; setNeySesi seçimi değiştirir ve playTones onu kullanır", async () => {
+    const { getNeySesi, setNeySesi, playTones, stopAudio } = await freshPlayer()
+    expect(getNeySesi()).toBe('mevcut')
+    await playAndFinish(playTones(events), stopAudio)
+    expect(strudel.evaluate).toHaveBeenLastCalledWith(buildPatternCode(events, 60, 'mevcut').code)
+    setNeySesi('nefesli')
+    expect(getNeySesi()).toBe('nefesli')
+    await playAndFinish(playTones(events), stopAudio)
+    const code = strudel.evaluate.mock.calls.at(-1)![0]
+    expect(code).toBe(buildPatternCode(events, 60, 'nefesli').code)
+    expect(code).toContain(melodyChain('nefesli'))
+  })
+
+  it('playTones ve playWritten için ses ayrıca verilebilir (Dene düğmesi)', async () => {
+    const { playTones, playWritten, stopAudio } = await freshPlayer()
+    await playAndFinish(playTones(events, 72, 'nefesli'), stopAudio)
+    expect(strudel.evaluate).toHaveBeenLastCalledWith(buildPatternCode(events, 72, 'nefesli').code)
+    const written = [{ kind: 'note', pitch: { step: 'A', octave: 4, acc: 0 }, dur: 'quarter' }] as const
+    const { DEFAULT_TUNING } = await import('../music/ahenk')
+    await playAndFinish(playWritten([...written], DEFAULT_TUNING, 72, 'shakuhachi'), stopAudio)
+    expect(strudel.evaluate.mock.calls.at(-1)![0]).toContain(melodyChain('shakuhachi'))
+  })
+
+  it('mevcut ve nefesli hiçbir dosya istemez', async () => {
+    const { playTones, stopAudio } = await freshPlayer()
+    await playAndFinish(playTones(events, 60, 'mevcut'), stopAudio)
+    await playAndFinish(playTones(events, 60, 'nefesli'), stopAudio)
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(strudel.registerSound).not.toHaveBeenCalled()
+  })
+
+  it('shakuhachi: yerel dosya bir kez yüklenir, ses evaluate öncesi kaydedilir', async () => {
+    const { playTones, stopAudio } = await freshPlayer()
+    await playAndFinish(playTones(events, 60, 'shakuhachi'), stopAudio)
+    await playAndFinish(playTones(events, 60, 'shakuhachi'), stopAudio)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetchMock.mock.calls[0]![0]).toBe(SHAKUHACHI_URL)
+    expect(SHAKUHACHI_URL).not.toMatch(/^[a-z]+:/i)
+    expect(strudel.registerSound).toHaveBeenCalledTimes(1)
+    expect(strudel.registerSound.mock.calls[0]![0]).toBe(SHAKUHACHI_SOUND)
+    expect(strudel.registerSound.mock.invocationCallOrder[0]!).toBeLessThan(
+      strudel.evaluate.mock.invocationCallOrder[0]!,
+    )
+  })
+
+  it('shakuhachi dosyası yüklenemezse çalma reject olur, sonraki denemede yeniden istenir', async () => {
+    const { playTones, stopAudio } = await freshPlayer()
+    fetchMock.mockImplementationOnce(() => Promise.reject(new Error('çevrimdışı')))
+    await expect(playTones(events, 60, 'shakuhachi')).rejects.toThrow()
+    expect(strudel.evaluate).not.toHaveBeenCalled()
+    await playAndFinish(playTones(events, 60, 'shakuhachi'), stopAudio)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(strudel.evaluate).toHaveBeenCalledTimes(1)
   })
 })

@@ -1,12 +1,31 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
+import { playWritten, setNeySesi, stopAudio, unlockAudio } from '../audio/player'
+import type { NeySesi } from '../audio/pattern'
+import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
 import { AHENKLER } from '../music/ahenk'
 import type { AhenkId } from '../music/ahenk'
 import { BackupError, importBackup, shareOrDownloadBackup } from '../store/backup'
 import { getSettings, saveSettings } from '../store/db'
 import type { Settings as SettingsData } from '../store/db'
+import type { MusicEvent } from '../music/notation'
 
 const INVALID_FILE = 'Bu dosya geçerli bir Notası yedeği değil.'
 const CONFIRM_RESTORE = 'Mevcut ilerlemenin yerine yedek yüklenecek. Emin misiniz?'
+
+const NEY_SESI_SECENEKLERI: { id: NeySesi; label: string }[] = [
+  { id: 'mevcut', label: 'Mevcut' },
+  { id: 'nefesli', label: 'Nefesli' },
+  { id: 'shakuhachi', label: 'Shakuhachi' },
+]
+
+/** "▶ Dene" dizisi: Dügâh, Segâh, Çârgâh, Nevâ (Segâh = Si4 koma bemolü), dörtlüklerle. */
+const DENEME_DIZISI: MusicEvent[] = [
+  { kind: 'note', pitch: { step: 'A', octave: 4, acc: 0 }, dur: 'quarter' },
+  { kind: 'note', pitch: { step: 'B', octave: 4, acc: -1 }, dur: 'quarter' },
+  { kind: 'note', pitch: { step: 'C', octave: 5, acc: 0 }, dur: 'quarter' },
+  { kind: 'note', pitch: { step: 'D', octave: 5, acc: 0 }, dur: 'quarter' },
+]
+const DENEME_BPM = 72
 
 interface Message {
   kind: 'ok' | 'error'
@@ -16,6 +35,7 @@ interface Message {
 export function Settings() {
   const [settings, setSettings] = useState<SettingsData | null>(null)
   const [message, setMessage] = useState<Message | null>(null)
+  const [soundWarn, setSoundWarn] = useState<string | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -31,6 +51,30 @@ export function Settings() {
   async function changeAhenk(ahenk: AhenkId) {
     if (!settings || ahenk === settings.tuning.ahenk) return
     setSettings(await saveSettings({ tuning: { ...settings.tuning, ahenk }, calibrated: false }))
+  }
+
+  // Sayfadan çıkınca deneme sesi susar.
+  useEffect(() => () => stopAudio(), [])
+
+  async function changeNeySesi(neySesi: NeySesi) {
+    setNeySesi(neySesi) // hemen uygulanır; kayıt arkadan gelir
+    setSettings(await saveSettings({ neySesi }))
+  }
+
+  async function tryVoice(voice: NeySesi) {
+    if (!settings) return
+    setSoundWarn(null)
+    if (!settings.soundOn) {
+      setSoundWarn(SOUND_OFF)
+      return
+    }
+    try {
+      // unlockAudio dokunuş işleyicisinde, ilk iş olarak çağrılmalıdır (iOS).
+      await unlockAudio()
+      await playWritten(DENEME_DIZISI, settings.tuning, DENEME_BPM, voice)
+    } catch {
+      setSoundWarn(SOUND_WARNING)
+    }
   }
 
   async function changeSound(soundOn: boolean) {
@@ -120,6 +164,41 @@ export function Settings() {
           />
           <span>Sesler açık</span>
         </label>
+      </section>
+
+      <section class="setting" aria-labelledby="ney-sesi">
+        <h2 id="ney-sesi" class="setting-label">
+          Ney sesi
+        </h2>
+        <div class="voice-options" role="radiogroup" aria-labelledby="ney-sesi">
+          {NEY_SESI_SECENEKLERI.map((o) => (
+            <div key={o.id} class="voice-option">
+              <label class="radio">
+                <input
+                  type="radio"
+                  name="neySesi"
+                  value={o.id}
+                  checked={settings.neySesi === o.id}
+                  onChange={() => void changeNeySesi(o.id)}
+                />
+                <span>{o.label}</span>
+              </label>
+              <button
+                type="button"
+                class="tool"
+                aria-label={`▶ Dene (${o.label})`}
+                onClick={() => void tryVoice(o.id)}
+              >
+                ▶ Dene
+              </button>
+            </div>
+          ))}
+        </div>
+        {soundWarn && (
+          <p class="notice" role="alert">
+            {soundWarn}
+          </p>
+        )}
       </section>
 
       <section class="setting setting-actions">

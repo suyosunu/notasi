@@ -1,7 +1,16 @@
 import { describe, expect, it, vi } from 'vitest'
 import { DEFAULT_TUNING } from '../music/ahenk'
 import type { MusicEvent } from '../music/notation'
-import { buildPatternCode, SOUND_CHAIN, toToneEvents } from './pattern'
+import {
+  buildPatternCode,
+  melodyChain,
+  NEFES_SOLUK_CHAIN,
+  NEFES_TON_CHAIN,
+  NEY_SESLERI,
+  SOUND_CHAIN,
+  toToneEvents,
+} from './pattern'
+import { SHAKUHACHI_SOUND } from './shakuhachi'
 
 // Çekirdeğin gerçek (kullanılmayan) kabelsalat bağımlılığı Node'da yüklenmez; yalnızca onu taklit ederiz.
 vi.mock('@kabelsalat/web', () => ({ SalatRepl: class {} }))
@@ -108,5 +117,97 @@ describe('buildPatternCode: tek seferlik çalma (gerçek Strudel çekirdeği)', 
     expect(values(0, 4)).toEqual([440, 494.96])
     expect(values(4, 8)).toEqual([])
     expect(values(8, 40)).toEqual([])
+  })
+})
+
+interface Hit {
+  at: number
+  freq: number
+  s?: string
+  gain?: number
+  /** `.bpf()` çekirdekte `bandf` anahtarına yazılır. */
+  bandf?: number
+  /** `.lpf()` çekirdekte `cutoff` anahtarına yazılır. */
+  cutoff?: number
+}
+
+/** Kodu gerçek Strudel çekirdeğiyle değerlendirip başlangıçlı olayları döner. */
+async function query(code: string, from: number, to: number): Promise<Hit[]> {
+  const { evalScope } = await import('@strudel/core')
+  const { evaluate, transpiler } = await import('@strudel/transpiler')
+  await evalScope(import('@strudel/core'), import('@strudel/mini'))
+  const { pattern } = await evaluate(code, transpiler)
+  return pattern
+    .queryArc(from, to)
+    .filter((h) => h.hasOnset())
+    .map((h) => ({ at: Math.round(Number(h.whole.begin) * 1e6) / 1e6, ...h.value }) as Hit)
+    .sort((a, b) => a.at - b.at || (a.s ?? '').localeCompare(b.s ?? ''))
+}
+
+describe('melodyChain (ney sesi)', () => {
+  it('üç ses vardır; mevcut bugünkü üçgen dalga + vibrato zinciridir', () => {
+    expect(NEY_SESLERI).toEqual(['mevcut', 'nefesli', 'shakuhachi'])
+    expect(melodyChain('mevcut')).toBe(SOUND_CHAIN)
+    expect(SOUND_CHAIN).toBe('.s("triangle").vib(5).vibmod(0.1)')
+  })
+
+  it('nefesli: yumuşak girişli, alçak geçiren filtreli ton ve nefes gürültüsü iki katmandır', () => {
+    const chain = melodyChain('nefesli')
+    expect(chain).toContain(NEFES_TON_CHAIN)
+    expect(chain).toContain(NEFES_SOLUK_CHAIN)
+    expect(NEFES_TON_CHAIN).toMatch(/\.lpf\(/)
+    expect(NEFES_TON_CHAIN).toMatch(/\.attack\(/)
+    expect(NEFES_SOLUK_CHAIN).toMatch(/\.s\("pink"\)/)
+  })
+
+  it('shakuhachi: yerel shakuhachi sesi kullanılır', () => {
+    expect(melodyChain('shakuhachi')).toContain(`.s("${SHAKUHACHI_SOUND}")`)
+  })
+
+  it('buildPatternCode seçilen zinciri kullanır; varsayılan mevcut', () => {
+    const events = [{ hz: 440, beats: 1 }]
+    expect(buildPatternCode(events, 60).code).toContain(SOUND_CHAIN)
+    for (const v of NEY_SESLERI) {
+      const { code } = buildPatternCode(events, 60, v)
+      expect(code).toBe(`freq("440.00@1")${melodyChain(v)}.mask("<1 0@1000000>").cpm(60)`)
+    }
+  })
+})
+
+describe('ney sesleri: gerçek Strudel çekirdeğiyle', () => {
+  // Dügâh, Segâh (koma bemolü), Çârgâh, Nevâ ve bir sus: koma sesleri yuvarlanmadan aynen kalmalı.
+  const events = [
+    { hz: 494.957, beats: 1 },
+    { hz: 527.849, beats: 1 },
+    { hz: null, beats: 1 },
+    { hz: 556.8, beats: 1 },
+    { hz: 742.433, beats: 1 },
+  ]
+
+  it('nefesli: her notada aynı frekansta ton + nefes katmanı; frekanslar mevcut ile birebir aynı', async () => {
+    const mevcut = await query(buildPatternCode(events, 60, 'mevcut').code, 0, 5)
+    const nefesli = await query(buildPatternCode(events, 60, 'nefesli').code, 0, 5)
+    const tone = nefesli.filter((h) => h.s === 'triangle')
+    const breath = nefesli.filter((h) => h.s === 'pink')
+    expect(nefesli).toHaveLength(tone.length + breath.length)
+    expect(mevcut.map((h) => h.freq)).toEqual([494.96, 527.85, 556.8, 742.43])
+    expect(tone.map((h) => [h.at, h.freq])).toEqual(mevcut.map((h) => [h.at, h.freq]))
+    expect(breath.map((h) => h.at)).toEqual(mevcut.map((h) => h.at))
+    expect(tone.every((h) => typeof h.cutoff === 'number')).toBe(true)
+    expect(breath.every((h) => (h.gain ?? 1) < 0.2 && typeof h.bandf === 'number')).toBe(true)
+  })
+
+  it('nefesli: tek seferlik maske iki katmana da uygulanır (2. döngü sessiz)', async () => {
+    const { code } = buildPatternCode(events, 60, 'nefesli')
+    expect(await query(code, 5, 10)).toEqual([])
+    expect(await query(code, 10, 60)).toEqual([])
+  })
+
+  it('shakuhachi: frekanslar mevcut ile aynı, ses adı yerel shakuhachi', async () => {
+    const mevcut = await query(buildPatternCode(events, 60, 'mevcut').code, 0, 5)
+    const shaku = await query(buildPatternCode(events, 60, 'shakuhachi').code, 0, 5)
+    expect(shaku.map((h) => [h.at, h.freq])).toEqual(mevcut.map((h) => [h.at, h.freq]))
+    expect(shaku.every((h) => h.s === SHAKUHACHI_SOUND)).toBe(true)
+    expect(await query(buildPatternCode(events, 60, 'shakuhachi').code, 5, 20)).toEqual([])
   })
 })

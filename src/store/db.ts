@@ -2,6 +2,8 @@ import { deleteDB, openDB } from 'idb'
 import type { DBSchema, IDBPDatabase } from 'idb'
 import { DEFAULT_TUNING } from '../music/ahenk'
 import type { Tuning } from '../music/ahenk'
+import { isNeySesi } from '../audio/pattern'
+import type { NeySesi } from '../audio/pattern'
 
 export const DB_NAME = 'notasi'
 export const DB_VERSION = 1
@@ -56,6 +58,8 @@ export interface Settings {
   onboarded: boolean
   placementDone: boolean
   lastBackupAt: string | null
+  /** Melodi çalımlarının sesi (Ayarlar → "Ney sesi"). */
+  neySesi: NeySesi
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -66,6 +70,7 @@ export const DEFAULT_SETTINGS: Settings = {
   onboarded: false,
   placementDone: false,
   lastBackupAt: null,
+  neySesi: 'mevcut',
 }
 
 /** `settings` deposunda tek kayıt tutulur; anahtarı bu sabittir. */
@@ -148,6 +153,8 @@ function mergeSettings(stored: Partial<SettingsRec> | undefined): Settings {
     ...DEFAULT_SETTINGS,
     ...rest,
     tuning: { ...DEFAULT_SETTINGS.tuning, ...(rest.tuning ?? {}) },
+    // Eski kayıtlarda yoktur; bilinmeyen değer (ör. başka sürümden yedek) varsayılana döner.
+    neySesi: isNeySesi(rest.neySesi) ? rest.neySesi : DEFAULT_SETTINGS.neySesi,
   }
 }
 

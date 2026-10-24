@@ -1,6 +1,7 @@
 import { setPlaybackSession } from './ios'
 import { buildPatternCode, toToneEvents } from './pattern'
-import type { ToneEvent } from './pattern'
+import type { NeySesi, ToneEvent } from './pattern'
+import { loadShakuhachi, SHAKUHACHI_SOUND } from './shakuhachi'
 import type { Tuning } from '../music/ahenk'
 import type { MusicEvent } from '../music/notation'
 
@@ -18,6 +19,16 @@ let finishCurrent: (() => void) | null = null
 let generation = 0
 /** Şu an çalan (ya da başlatılmakta olan) playTones çağrısının belirteci; durdurulunca null. */
 let active: number | null = null
+/** Seçili ney sesi (Ayarlar). Açılışta ayarlardan yüklenir, Ayarlar'da değişince hemen uygulanır. */
+let neySesi: NeySesi = 'mevcut'
+
+export function setNeySesi(v: NeySesi): void {
+  neySesi = v
+}
+
+export function getNeySesi(): NeySesi {
+  return neySesi
+}
 
 /**
  * Strudel'i (büyük paket) arka planda yükler. Kullanıcı hareketi gerekmez;
@@ -81,6 +92,11 @@ export function unlockAudio(): Promise<void> {
   return loadModule().then(startAudio)
 }
 
+/** Kod yerel shakuhachi sesini kullanıyorsa onu (bir kez) yükler; diğer sesler sentezdir, dosya gerekmez. */
+function ensureSounds(m: StrudelWeb, code: string): Promise<void> {
+  return code.includes(`s("${SHAKUHACHI_SOUND}")`) ? loadShakuhachi(m) : Promise.resolve()
+}
+
 function safeHush(): void {
   if (!ready || !strudelModule) return
   try {
@@ -103,12 +119,13 @@ export function stopAudio(): void {
   finish?.()
 }
 
-export async function playTones(events: ToneEvent[], bpm = 60): Promise<void> {
+/** `voice` verilmezse seçili ney sesiyle çalar. */
+export async function playTones(events: ToneEvent[], bpm = 60, voice: NeySesi = neySesi): Promise<void> {
   if (events.length === 0) {
     stopAudio()
     return
   }
-  const { code, durationMs } = buildPatternCode(events, bpm)
+  const { code, durationMs } = buildPatternCode(events, bpm, voice)
   return playCode(code, durationMs)
 }
 
@@ -125,6 +142,8 @@ export async function playCode(code: string, durationMs: number): Promise<void> 
   await ensureInit(m)
   if (mine !== generation) return
   try {
+    await ensureSounds(m, code)
+    if (mine !== generation) return
     await m.evaluate(code)
   } catch (err) {
     if (mine !== generation) return // bayat çağrının hatası kimseyi ilgilendirmez
@@ -172,6 +191,6 @@ export async function playLoop(code: string): Promise<void> {
   if (mine !== generation && active === null) safeHush() // evaluate sürerken durduruldu; başkası devralmadıysa sustur
 }
 
-export function playWritten(events: MusicEvent[], t: Tuning, bpm = 60): Promise<void> {
-  return playTones(toToneEvents(events, t), bpm)
+export function playWritten(events: MusicEvent[], t: Tuning, bpm = 60, voice: NeySesi = neySesi): Promise<void> {
+  return playTones(toToneEvents(events, t), bpm, voice)
 }

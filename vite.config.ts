@@ -25,7 +25,8 @@ export default defineConfig({
       },
       workbox: {
         // Strudel tembel yüklenen ayrı bir parça; çevrimdışı ses için o da önbelleğe alınır.
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // mp3: yerel shakuhachi kaydı (public/sounds), "Shakuhachi" ney sesi çevrimdışı da çalsın.
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2,mp3}'],
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
       },
     }),

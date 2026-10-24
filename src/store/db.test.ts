@@ -40,6 +40,16 @@ function session(over: Partial<SessionRec> = {}): SessionRec {
   }
 }
 
+const noStores = (): Parameters<typeof replaceAllStores>[0] => ({
+  attempts: [],
+  cards: [],
+  sessions: [],
+  longTones: [],
+  fingeringFlags: [],
+  topics: [],
+  settings: [],
+})
+
 describe('settings', () => {
   it('returns defaults on first call', async () => {
     expect(await getSettings()).toEqual(DEFAULT_SETTINGS)
@@ -54,6 +64,28 @@ describe('settings', () => {
     const again = await getSettings()
     expect(again.soundOn).toBe(false)
     expect(again.dailyQuestionCount).toBe(12)
+  })
+
+  it("neySesi varsayılan olarak 'mevcut' olur", async () => {
+    expect(DEFAULT_SETTINGS.neySesi).toBe('mevcut')
+    expect((await getSettings()).neySesi).toBe('mevcut')
+  })
+
+  it('neySesi kaydedilir', async () => {
+    await saveSettings({ neySesi: 'nefesli' })
+    expect((await getSettings()).neySesi).toBe('nefesli')
+  })
+
+  it("neySesi'z eski kayıt ve bilinmeyen değer 'mevcut' olur", async () => {
+    await replaceAllStores({
+      ...noStores(),
+      settings: [{ id: 'settings', soundOn: false }],
+    })
+    const old = await getSettings()
+    expect(old.neySesi).toBe('mevcut')
+    expect(old.soundOn).toBe(false)
+    await replaceAllStores({ ...noStores(), settings: [{ id: 'settings', neySesi: 'davul' }] })
+    expect((await getSettings()).neySesi).toBe('mevcut')
   })
 
   it('accumulates successive patches', async () => {

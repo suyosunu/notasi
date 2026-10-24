@@ -15,6 +15,10 @@ export function About() {
       </p>
       <p>Ses motoru: Strudel (strudel.cc), © Strudel katkıcıları, AGPL-3.0-or-later lisansıyla.</p>
       <p>
+        Shakuhachi sesi: Fluid R3 GM SoundFont, © 2000-2002, 2008 Frank Wen, MIT lisansıyla (WebAudioFont dönüşümü,
+        MIT).
+      </p>
+      <p>
         Bu uygulamanın kaynak kodu AGPL-3.0-or-later lisansıyla açıktır:{' '}
         {SOURCE_URL === '' ? '(yakında)' : <a href={SOURCE_URL}>{SOURCE_URL}</a>}
       </p>
