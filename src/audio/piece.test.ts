@@ -34,9 +34,14 @@ interface Hit {
   decay?: number
   release?: number
   bandf?: number
+  penv?: number
 }
 
-/** Usul sesleri: düm gövdesi 65 Hz sinüs, tek/te/ke tıkı bant geçirenli gürültü. */
+/**
+ * Usul sesleri: düm gövdesi 65 Hz sinüs, tek/te/ke tıkı bant geçirenli gürültü.
+ * Düm'ün orta gövdesi de üçgendir; melodiden perde zarfıyla (penv) ayrılır.
+ */
+const isMelody = (h: Hit, s = 'triangle') => h.s === s && h.penv === undefined
 const isDum = (h: Hit) => h.s === 'sine' && h.freq === 65
 const isTekClick = (h: Hit) => h.s === 'white' && h.bandf === 3000
 
@@ -83,10 +88,11 @@ describe('buildPieceCode', () => {
     const p = parca('hak-teala')
     const mevcut = await hits(buildPieceCode(p, DEFAULT_TUNING, 60, true).code, 0, 16)
     const nefesli = await hits(buildPieceCode(p, DEFAULT_TUNING, 60, true, 'nefesli').code, 0, 16)
-    const melody = (hs: Hit[], s: string) => hs.filter((h) => h.s === s).map((h) => [h.at, h.freq])
+    const melody = (hs: Hit[], s: string) => hs.filter((h) => isMelody(h, s)).map((h) => [h.at, h.freq])
     expect(melody(nefesli, 'triangle')).toEqual(melody(mevcut, 'triangle'))
     expect(nefesli.filter((h) => h.s === 'pink').map((h) => h.at)).toEqual(melody(mevcut, 'triangle').map(([at]) => at))
-    const usul = (hs: Hit[]) => hs.filter((h) => h.s !== 'triangle' && h.s !== 'pink')
+    const usul = (hs: Hit[]) => hs.filter((h) => !isMelody(h) && h.s !== 'pink')
+    expect(usul(mevcut).some((h) => h.s === 'triangle' && h.freq === 250)).toBe(true)
     expect(usul(nefesli)).toEqual(usul(mevcut))
   })
 
@@ -114,7 +120,7 @@ describe('buildPieceCode', () => {
     const { code } = buildPieceCode(parca('hak-teala'), DEFAULT_TUNING, 60, true)
     expect(code.startsWith('stack(')).toBe(true)
     expect(code).toContain('freq("65@2 ~@1 ~@1").s("sine").penv(')
-    expect(code).toContain('freq("200@2 ~@1 ~@1").s("sine").penv(')
+    expect(code).toContain('freq("250@2 ~@1 ~@1").s("triangle").penv(')
     expect(code).toContain('.pdecay(')
     expect(code).toContain('.bpf(3000)')
     // Sofyan (mertebe 4) ♩ = 60 ⇒ usul birimi 1 sn: sönme 0.9 × süre
@@ -135,7 +141,7 @@ describe('buildPieceCode: gerçek Strudel çekirdeğiyle', () => {
   it('Hak Teâlâ: ilk ölçünün melodi başlangıçları ve frekansları', async () => {
     const p = parca('hak-teala')
     const { code } = buildPieceCode(p, DEFAULT_TUNING, 60, true)
-    const melody = (await hits(code, 0, 4)).filter((h) => h.s === 'triangle')
+    const melody = (await hits(code, 0, 4)).filter((h) => isMelody(h))
     const first = toToneEvents(p.olcu[0]!, DEFAULT_TUNING)
     const expected: [number, number][] = []
     let t = 0
@@ -185,7 +191,7 @@ describe('buildPieceCode: gerçek Strudel çekirdeğiyle', () => {
     const { code, durationMs } = buildPieceCode(anacrusis, DEFAULT_TUNING, 60, true)
     expect(durationMs).toBe(9000)
     const hs = await hits(code, 0, 9)
-    expect(hs.filter((h) => h.s === 'triangle').map((h) => h.at)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8])
+    expect(hs.filter((h) => isMelody(h)).map((h) => h.at)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8])
     expect(hs.filter(isDum).map((h) => h.at)).toEqual([1, 5])
     expect(hs.filter(isTekClick).map((h) => h.at)).toEqual([3, 4, 7, 8])
     expect(await hits(code, 9, 100)).toEqual([])

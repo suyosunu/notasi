@@ -1,7 +1,7 @@
 import type { Usul, Vurus, VurusSesi } from '../content/usuller'
 import { playLoop, stopAudio, unlockAudio } from './player'
 
-// Kulakla ayarlanabilir ses parametreleri. Örnek ses dosyası yoktur: yalnızca sentez (sine) ve gürültü (white).
+// Kulakla ayarlanabilir ses parametreleri. Örnek ses dosyası yoktur: yalnızca sentez (sine, triangle) ve gürültü (white).
 // Oryantal (kudüm/darbuka) karakter: düm derin, perdesi hafif aşağı kayan; tek tiz ve kuru; te/ke tekin hafifi.
 
 /**
@@ -23,26 +23,31 @@ const STOP_PAD_S = 0.01
 const MARGIN_S = 0.005
 
 /**
- * Düm: derin, perdesi hafif aşağı kayan iki sinüs gövde + deri vuruşu.
+ * Düm: derin, perdesi hafif aşağı kayan iki gövde (alçak sinüs + orta üçgen) + deri vuruşu.
  * Alçak gövde 65 Hz'dir (kudüm derinliği), ama telefon hoparlörü ~300 Hz'in altını neredeyse hiç vermez; yalnız onunla
- * telefonda sadece deri tıkı duyulurdu. Bu yüzden aynı perde zarfı ve aynı süre zarfıyla ~200 Hz'lik orta gövde eklenir
- * ve küçük hoparlörde baskın olsun diye daha yüksek sesle çalar.
+ * telefonda sadece deri tıkı duyulurdu. Bu yüzden aynı perde zarfı ve aynı süre zarfıyla 250 Hz'lik orta gövde eklenir.
+ * Orta gövde üçgendir: tek harmonikleri (~750 Hz, ~1250 Hz) küçük hoparlörde de çıkar ve kulak perdeyi onlardan çıkarır.
  */
 const DUM_HZ = 65
 const DUM_START_HZ = 110
-/** Orta gövde (telefon hoparlörü için): alçak gövdeyle aynı oranda kayar, ~338 Hz'den 200 Hz'e. */
-const DUM_MID_HZ = 200
+/** Orta gövde (telefon hoparlörü için): alçak gövdeyle aynı oranda kayar, ~423 Hz'den 250 Hz'e. */
+const DUM_MID_HZ = 250
+const DUM_MID_WAVE = 'triangle'
 /** Perde zarfı yarım ton cinsindendir (superdough `penv`): 12 · log2(110 / 65) ≈ 9.11; iki gövdede aynı. */
 const DUM_PENV = Math.round(1200 * Math.log2(DUM_START_HZ / DUM_HZ)) / 100
 const DUM_PDECAY_S = 0.12
 /** Tutma sonundaki düzey: düşük, böylece düm davul gibi baştan sona söner; sonda org gibi kesilmez. */
 const DUM_SUSTAIN = 0.08
-const DUM_LOW_GAIN = 0.7
-const DUM_MID_GAIN = 0.9
+/**
+ * Taşma payı: düm'ün başında üç katman üst üste biner (alçak + orta + deri = 0.4 + 0.55 + 0.25 = 1.2).
+ * Alçak gövde telefonda zaten duyulmadığı için kısıktır; orta gövde en baskın katmandır.
+ */
+const DUM_LOW_GAIN = 0.4
+const DUM_MID_GAIN = 0.55
 /** Düm'ün başındaki gürültü: elin deriye çarpması (~25 ms); 2.5 kHz'e kadar açık, telefonda da duyulsun. */
 const DUM_SKIN_LPF = 2500
 const DUM_SKIN_DECAY_S = 0.025
-const DUM_SKIN_GAIN = 0.5
+const DUM_SKIN_GAIN = 0.25
 
 /** Tek: kısa, tiz rezonans tonu (~450 Hz) + bant geçiren filtreli kuru gürültü tıkı (~3 kHz). */
 const TEK_HZ = 450
@@ -124,7 +129,7 @@ function strokeCode(u: Usul, bpm: number): string {
     `freq(${pat((x) => (isDum(x) ? DUM_HZ : REST))}).s("sine")${pitchDrop}` +
     `${ring}.sustain(${DUM_SUSTAIN}).gain(${DUM_LOW_GAIN})`
   const dumMid =
-    `freq(${pat((x) => (isDum(x) ? DUM_MID_HZ : REST))}).s("sine")${pitchDrop}` +
+    `freq(${pat((x) => (isDum(x) ? DUM_MID_HZ : REST))}).s("${DUM_MID_WAVE}")${pitchDrop}` +
     `${ring}.sustain(${DUM_SUSTAIN}).gain(${DUM_MID_GAIN})`
   const dumSkin =
     `s(${pat((x) => (isDum(x) ? NOISE : REST))}).lpf(${DUM_SKIN_LPF})` +

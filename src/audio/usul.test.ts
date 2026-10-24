@@ -27,7 +27,7 @@ describe('buildUsulPatternCode', () => {
     const code = buildUsulPatternCode(usul('sofyan'), 60)
     expect(code.startsWith('stack(')).toBe(true)
     expect(code).toContain('freq("65@2 ~@1 ~@1").s("sine")')
-    expect(code).toContain('freq("200@2 ~@1 ~@1").s("sine")') // telefonda duyulan orta gövde
+    expect(code).toContain('freq("250@2 ~@1 ~@1").s("triangle")') // telefonda duyulan orta gövde
     expect(code).toContain('s("white@2 ~@1 ~@1")')
     expect(code).toContain('freq("~@2 450@1 450@1").s("sine")')
     expect(code).toContain('s("~@2 white@1 white@1")')
@@ -81,13 +81,13 @@ describe('buildUsulPatternCode', () => {
     expect(() => buildUsulPatternCode(usul('sofyan'), Number.NaN)).toThrow(RangeError)
   })
 
-  it('örnek ses dosyası kullanmaz: yalnızca sine ve white', () => {
+  it('örnek ses dosyası kullanmaz: yalnızca sentez (sine, triangle) ve gürültü (white)', () => {
     for (const u of USULLER) {
       const code = buildUsulPatternCode(u, 60)
       const sounds = [...code.matchAll(/\bs\("([^"]*)"\)/g)]
         .flatMap((m) => m[1]!.split(/[\s@\d~.]+/))
         .filter(Boolean)
-      for (const s of sounds) expect(['sine', 'white']).toContain(s)
+      for (const s of sounds) expect(['sine', 'triangle', 'white']).toContain(s)
     }
   })
 })
@@ -162,13 +162,26 @@ describe('buildUsulPatternCode: gerçek Strudel çekirdeğiyle', () => {
   it('düm, telefon hoparlöründe duyulan ≥ 150 Hz bir bileşen içerir; o da tutma boyunca süreye göre söner', async () => {
     const hs = await haps(usul('aksak'))
     const low = hs.filter((h) => h.freq === 65)
-    const mid = hs.filter((h) => h.s === 'sine' && h.freq! >= 150 && h.penv !== undefined)
+    const mid = hs.filter((h) => h.freq! >= 150 && h.penv !== undefined)
+    expect(mid.every((h) => h.s === 'triangle' && h.freq === 250)).toBe(true)
+    // perde zarfı alçak gövdeyle aynı oranda: ~420 Hz'den 250 Hz'e
+    expect(250 * 2 ** (mid[0]!.penv! / 12)).toBeCloseTo(423, -1)
     expect(mid.map(z)).toEqual(low.map(z)) // her düm'de
     for (const [i, m] of mid.entries()) {
       expect(m.decay).toBeCloseTo(low[i]!.decay!, 6)
       expect(m.hold).toBeCloseTo(low[i]!.hold, 6)
       expect(m.decay).toBeCloseTo(m.hold, 2) // tutmanın tamamı boyunca
       expect(m.gain).toBeGreaterThanOrEqual(low[i]!.gain!) // küçük hoparlörde baskın
+    }
+  })
+
+  it('düm başlangıcında katmanların toplam kazancı (alçak + orta + deri) ≤ 1.3: taşma payı', async () => {
+    for (const u of USULLER.filter((x) => x.vurus !== null)) {
+      const hs = await haps(u)
+      const onset = (hs.find((h) => h.freq === 65)!).at
+      const dumLayers = hs.filter((h) => h.at === onset && (h.penv !== undefined || h.cutoff !== undefined))
+      expect(dumLayers).toHaveLength(3)
+      expect(dumLayers.reduce((sum, h) => sum + h.gain!, 0)).toBeLessThanOrEqual(1.3)
     }
   })
 
@@ -182,7 +195,7 @@ describe('buildUsulPatternCode: gerçek Strudel çekirdeğiyle', () => {
         expect(t.sustain).toBe(0)
       }
       const ring = hs.filter(isRing)
-      const dumMid = hs.find((h) => h.s === 'sine' && h.freq! >= 150 && h.penv !== undefined)!
+      const dumMid = hs.find((h) => h.freq! >= 150 && h.penv !== undefined)!
       for (const r of ring) expect(r.gain).toBeLessThan(dumMid.gain!)
     }
   })
