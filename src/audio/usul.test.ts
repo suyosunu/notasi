@@ -343,14 +343,22 @@ describe('usul sesi: kayıt tabanlı seçenekler (Konga, Tahta, Darbuka)', () =>
     }
   })
 
-  it("seviyeler: tek düm'ün 0.85×'i; te ve ke tek'in 0.7× ve 0.6×'i", async () => {
+  /** Kayıtların ilk 300 ms RMS düzeyi (dBFS; scripts/usul-sesleri.mjs çıktısı, tepe -1 dBFS'e normalleştirilmiş). */
+  const RMS_DB = { konga: { dum: -14.7, tek: -16.3 }, tahta: { dum: -22.6, tek: -21.8 }, darbuka: { dum: -12.4, tek: -21.6 } }
+
+  it("seviyeler: tek, düm'den 4-6 dB (RMS) kısık; te ve ke tek'in 0.7× ve 0.6×'i; kazançlar ≤ 1", async () => {
     for (const ses of KAYITLI) {
       const hs = await sampleHaps(usul('aksak'), 60, ses) // düm te ke düm tek tek
       const dum = hs[0]!.gain!
       const [te, ke, tek] = [hs[1]!.gain!, hs[2]!.gain!, hs[4]!.gain!]
-      expect(dum).toBeGreaterThan(0)
-      expect(dum).toBeLessThanOrEqual(1)
-      expect(tek / dum).toBeCloseTo(0.85, 3)
+      for (const g of [dum, te, ke, tek]) {
+        expect(g).toBeGreaterThan(0)
+        expect(g).toBeLessThanOrEqual(1)
+      }
+      const dB = (g: number) => 20 * Math.log10(g)
+      const under = RMS_DB[ses].dum + dB(dum) - (RMS_DB[ses].tek + dB(tek))
+      expect(under).toBeGreaterThanOrEqual(4)
+      expect(under).toBeLessThanOrEqual(6)
       expect(te / tek).toBeCloseTo(0.7, 3)
       expect(ke / tek).toBeCloseTo(0.6, 3)
       expect(hs[3]!.gain).toBe(dum)

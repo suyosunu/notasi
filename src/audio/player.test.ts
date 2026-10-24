@@ -7,7 +7,9 @@ const strudel = vi.hoisted(() => ({
   initStrudel: vi.fn((_options?: { prebake?: unknown }) => Promise.resolve()),
   evaluate: vi.fn((_code: string) => Promise.resolve()),
   hush: vi.fn(),
-  decodeAudioData: vi.fn((_data: ArrayBuffer) => Promise.resolve({ duration: 1 })),
+  decodeAudioData: vi.fn((_data: ArrayBuffer) =>
+    Promise.resolve({ duration: 1, sampleRate: 44100, getChannelData: (_c: number) => new Float32Array(16) }),
+  ),
   registerSound: vi.fn(),
 }))
 

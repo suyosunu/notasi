@@ -64,6 +64,31 @@ export function usulSesiInCode(code: string): KayitSesi | null {
 /** superdough'un 10 ms durdurma payıyla aynı: ses bırakmadan bu kadar sonra durur (usul.ts zarf hesabı buna göre). */
 const STOP_PAD_S = 0.01
 
+/**
+ * mp3 kodlayıcısı (LAME) kaydın başına ~25 ms (1105 örnek) dolgu ekler. Chrome bunu çözerken LAME başlığına bakarak
+ * atar; atmayan bir tarayıcıda (Safari'de doğrulanmadı) her vuruş melodiden ve vurgudan geç duyulurdu. Bu yüzden
+ * çözülen kaydın başındaki sessizlik ölçülür ve çalma o noktadan başlar. Kayıtlar üretilirken -60 dB'de kırpıldığı
+ * için eşiği aşan ilk örnek vuruşun başıdır; Chrome'da kaydırma ≈ 0 çıkar.
+ */
+const ONSET_THRESHOLD = 0.003
+/** Kaydırmanın üst sınırı (sn): kayıt bozuk ya da sessizse bile vuruşun gövdesi atlanmasın. */
+const MAX_START_OFFSET_S = 0.06
+
+interface DecodedSample {
+  buffer: AudioBuffer
+  /** Kaydın içinde çalmanın başladığı yer (sn). */
+  offset: number
+}
+
+/** İlk kanalda |değer| > eşik olan ilk örneğin zamanı (sn), en çok MAX_START_OFFSET_S. */
+export function leadingSilence(buffer: Pick<AudioBuffer, 'getChannelData' | 'sampleRate'>): number {
+  const data = buffer.getChannelData(0)
+  const max = Math.min(data.length, Math.ceil(MAX_START_OFFSET_S * buffer.sampleRate))
+  let i = 0
+  while (i < max && Math.abs(data[i]!) <= ONSET_THRESHOLD) i++
+  return Math.min(i / buffer.sampleRate, MAX_START_OFFSET_S)
+}
+
 interface TriggerValue {
   duration: number
   attack?: number
@@ -116,12 +141,13 @@ export function loadUsulSamples(
         Object.entries(usulSampleUrls(ses)).map(async ([name, url]) => {
           const res = await fetchFn(url)
           if (!res.ok) throw new Error(`Usul sesi yüklenemedi: ${url} (${res.status})`)
-          return [name, await ctx.decodeAudioData(await res.arrayBuffer())] as const
+          const buffer = await ctx.decodeAudioData(await res.arrayBuffer())
+          return [name, { buffer, offset: leadingSilence(buffer) }] as const
         }),
       )
       // Hepsi çözülünce kaydedilir: yarım yüklenmiş ses kümesi kalmaz.
-      for (const [name, buffer] of decoded) {
-        host.registerSound(name, (time, value, onended) => trigger(host, buffer, time, value, onended), {
+      for (const [name, sample] of decoded) {
+        host.registerSound(name, (time, value, onended) => trigger(host, sample, time, value, onended), {
           type: 'sample',
         })
       }
@@ -140,7 +166,7 @@ export function loadUsulSamples(
  * duyulur. Kayıt vuruştan uzunsa tutma sonunda (`clip`) bırakmayla (`release`) kesilir: usul.ts `envelope(d)`.
  * Düzey (`gain`) superdough zincirinde uygulanır.
  */
-function trigger(host: SampleHost, buffer: AudioBuffer, time: number, value: TriggerValue, onended: () => void) {
+function trigger(host: SampleHost, sample: DecodedSample, time: number, value: TriggerValue, onended: () => void) {
   const [attack, decay, sustain, release] = host.getADSRValues([
     value.attack,
     value.decay,
@@ -149,8 +175,9 @@ function trigger(host: SampleHost, buffer: AudioBuffer, time: number, value: Tri
   ]) as [number, number, number, number]
   const ctx = host.getAudioContext()
   const src = ctx.createBufferSource()
-  src.buffer = buffer
-  src.start(time)
+  src.buffer = sample.buffer
+  // Kayıt baştaki sessizlik (kodlayıcı dolgusu) atlanarak tam vuruş anında başlar; durma zamanı bundan bağımsızdır.
+  src.start(time, sample.offset)
   const env = ctx.createGain()
   const node = src.connect(env) as GainNode
   const holdEnd = time + value.duration

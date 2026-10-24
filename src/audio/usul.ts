@@ -151,16 +151,25 @@ function strokeCode(u: Usul, bpm: number): string {
 }
 
 /**
- * Kayıt seçeneklerinde vuruş düzeyleri: tek düm'ün 0.85'i; te ve ke, tek kaydının 0.7× ve 0.6× düzeyi.
- * Kayıtlar tepe düzeyi -1 dBFS'e normalleştirilmiştir.
+ * Kayıt seçeneklerinde düm ve tek kazancı (sese özgü; kulakla ayarlanabilir). Kayıtlar tepe -1 dBFS'e
+ * normalleştirilmiştir; ilk 300 ms RMS düzeyleri (scripts/usul-sesleri.mjs çıktısı):
+ *   konga düm -14.7, tek -16.3 · tahta düm -22.6, tek -21.8 · darbuka düm -12.4, tek -21.6 dBFS.
+ * - düm: gürlük oryantal sesle yakın olsun diye, oryantal düm'ün kestirilen ~-18.6 dBFS RMS'ine göre
+ *   (konga 0.65 ⇒ -18.4, darbuka 0.5 ⇒ -18.4); tahta 1'de sınırlandı (ahşap tık tiz olduğundan belirgin duyulur).
+ * - tek: RMS'i düm'den ~5 dB kısık olacak biçimde: konga 0.44 ⇒ -23.4 (düm -18.4), tahta 0.51 ⇒ -27.7 (düm -22.6),
+ *   darbuka 0.81 ⇒ -23.4 (düm -18.4). Kazançlar ≤ 1, tepe aşılmaz.
  */
-const SAMPLE_LEVEL: Record<VurusSesi, number> = { düm: 1, tek: 0.85, te: 0.85 * 0.7, ke: 0.85 * 0.6 }
-/**
- * Sese özgü genel düzey: gürlük oryantal sesle yakın olsun diye. Kulakla ayarlanabilir. Başlangıç değerleri düm
- * kayıtlarının ilk 300 ms RMS düzeyinden (konga -14.7, darbuka -12.4, tahta -22.6 dBFS) oryantal düm'ün kestirilen
- * ~-18.6 dBFS düzeyine göre hesaplandı; tahta 1'de sınırlandı (ahşap tık tiz olduğundan zaten belirgin duyulur).
- */
-const SAMPLE_GAIN: Record<KayitSesi, number> = { konga: 0.65, tahta: 1, darbuka: 0.5 }
+const SAMPLE_GAIN: Record<KayitSesi, { dum: number; tek: number }> = {
+  konga: { dum: 0.65, tek: 0.44 },
+  tahta: { dum: 1, tek: 0.51 },
+  darbuka: { dum: 0.5, tek: 0.81 },
+}
+/** te ve ke, tek'in 0.7× ve 0.6× düzeyinde çalar. */
+const TEKE_LEVEL = { te: 0.7, ke: 0.6 } as const
+function sampleGain(ses: KayitSesi, v: VurusSesi): number {
+  const g = SAMPLE_GAIN[ses]
+  return v === 'düm' ? g.dum : v === 'tek' ? g.tek : g.tek * TEKE_LEVEL[v]
+}
 /** Düzey oranları (0.7, 0.6) yuvarlamada bozulmasın. */
 const gainRound = (x: number) => Math.round(x * 10000) / 10000
 
@@ -176,7 +185,7 @@ function sampleCode(u: Usul, bpm: number, ses: KayitSesi): string {
   return (
     `s(${pat((x) => strokeSound(ses, x.ses))})` +
     `.clip(${pat((x) => env(x).clip)}).release(${pat((x) => env(x).release)})` +
-    `.gain(${pat((x) => gainRound(SAMPLE_GAIN[ses] * SAMPLE_LEVEL[x.ses]))})`
+    `.gain(${pat((x) => gainRound(sampleGain(ses, x.ses)))})`
   )
 }
 

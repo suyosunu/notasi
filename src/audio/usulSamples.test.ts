@@ -91,7 +91,16 @@ describe('usul kayıt dosyaları', () => {
   })
 })
 
-function fakeHost() {
+const SR = 44100
+/** Başında `lead` örnek sessizlik (0), sonra ses olan bir kanal. */
+function channel(lead: number, length = lead + 2000): Float32Array {
+  const data = new Float32Array(length)
+  for (let i = lead; i < length; i++) data[i] = 0.5 * Math.sin(i / 10)
+  data[lead] = 0.5
+  return data
+}
+
+function fakeHost(data: Float32Array = channel(0)) {
   const sources: {
     buffer: unknown
     playbackRate: { value: number }
@@ -101,7 +110,9 @@ function fakeHost() {
     connect: (n: unknown) => unknown
   }[] = []
   const ctx = {
-    decodeAudioData: vi.fn((data: ArrayBuffer) => Promise.resolve({ duration: 0.5, bytes: data.byteLength })),
+    decodeAudioData: vi.fn((_d: ArrayBuffer) =>
+      Promise.resolve({ duration: data.length / SR, sampleRate: SR, getChannelData: (_c: number) => data }),
+    ),
     createBufferSource: vi.fn(() => {
       const src = {
         buffer: null as unknown,
@@ -181,11 +192,47 @@ describe('loadUsulSamples', () => {
     expect(src.buffer).toBeTruthy()
     expect(src.playbackRate.value).toBe(1)
     expect(src.loop).toBe(false)
-    expect(src.start).toHaveBeenCalledWith(5)
+    expect(src.start).toHaveBeenCalledWith(5, 0) // başta sessizlik yok: kaydırma 0
     expect(src.stop.mock.calls[0]![0]).toBeCloseTo(5 + 0.9 + 0.02 + 0.01, 9)
     // Zarf: tutma süresince tam düzey, sonra bırakma ile sıfıra (kaydın kendi sönüşü korunur).
     const [, a, d, s, r, min, max, begin, end] = raw.getParamADSR.mock.calls[0]!
     expect([a, d, s, r, min, max, begin]).toEqual([0.001, 0.001, 1, 0.02, 0, 1, 5])
     expect(end).toBeCloseTo(5.9, 9)
+  })
+})
+
+describe('loadUsulSamples: mp3 kodlayıcı gecikmesi (baştaki sessizlik)', () => {
+  beforeEach(() => resetUsulSamplesForTests())
+
+  async function startOffset(data: Float32Array): Promise<number> {
+    resetUsulSamplesForTests()
+    const { host, raw, sources } = fakeHost(data)
+    await loadUsulSamples(host, 'konga', okFetch())
+    const onTrigger = raw.registerSound.mock.calls[0]![1] as (t: number, v: Record<string, unknown>, e: () => void) => unknown
+    onTrigger(2, { duration: 0.3, release: 0.02 }, () => {})
+    const src = sources[0]!
+    expect(src.start.mock.calls[0]![0]).toBe(2)
+    // durma zamanı kaydırmadan bağımsızdır (tutma + bırakma + 10 ms)
+    expect(src.stop.mock.calls[0]![0]).toBeCloseTo(2 + 0.3 + 0.02 + 0.01, 9)
+    return src.start.mock.calls[0]![1] as number
+  }
+
+  it('başındaki 1100 sessiz örnek (LAME dolgusu, ~25 ms) atlanır: kayıt o noktadan başlar', async () => {
+    expect(await startOffset(channel(1100))).toBeCloseTo(1100 / SR, 6) // ≈ 0.0249 sn
+  })
+
+  it('eşiğin (0.003) altındaki gürültü sessizlik sayılır', async () => {
+    const data = channel(500)
+    for (let i = 0; i < 500; i++) data[i] = i % 2 ? 0.002 : -0.002
+    expect(await startOffset(data)).toBeCloseTo(500 / SR, 6)
+  })
+
+  it('başta sessizlik yoksa kaydırma 0', async () => {
+    expect(await startOffset(channel(0))).toBe(0)
+  })
+
+  it('kaydırma en çok 60 ms (sınır)', async () => {
+    expect(await startOffset(channel(10000))).toBeCloseTo(0.06, 9)
+    expect(await startOffset(new Float32Array(20000))).toBeCloseTo(0.06, 9) // tamamen sessiz
   })
 })

@@ -20,6 +20,10 @@ Kaynak / Source:
   tahta-dum.mp3   GM 77 Low Wood Block https://surikov.github.io/webaudiofontdata/sound/12877_0_FluidR3_GM_sf2_file.js
   tahta-tek.mp3   GM 76 Hi Wood Block  https://surikov.github.io/webaudiofontdata/sound/12876_0_FluidR3_GM_sf2_file.js
 
+  Not: Debian'ın FluidR3 Mono telif dosyası (https://people.debian.org/~tg/sf/FluidR3Mono_GM/copyright)
+  "Temple Blocks: Ethan Winer (2002)" katkısını aynı MIT koşullarıyla anar; Tahta (ahşap blok) örnekleri
+  bundan türemiş olabilir (doğrulanmadı).
+
 Fluid (R3) SoundFont
 --------------------
 
