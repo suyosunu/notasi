@@ -93,8 +93,14 @@ export function scoreLayout(
  * Ölçüleri satırlara böler: her satır (genellikle) `olcuPerSatir` ölçülük bir porte, ölçüler arasında ve satır
  * sonunda ölçü çizgisi vardır. Donanım yazılmaz (işaretler nota yanında). Heceler nota altında yazılır.
  */
-export function ScoreView(props: { olcu: MusicEvent[][]; soz?: string[][]; olcuPerSatir?: number }) {
-  const { olcu, soz, olcuPerSatir = 2 } = props
+export function ScoreView(props: {
+  olcu: MusicEvent[][]
+  soz?: string[][]
+  olcuPerSatir?: number
+  /** Kiriş vuruş birimi (dörtlük cinsinden; bkz. `beamBeatsFor`). Verilmezse kiriş çizilmez. */
+  beamBeats?: number
+}) {
+  const { olcu, soz, olcuPerSatir = 2, beamBeats } = props
   const perRow = Math.max(1, Math.floor(olcuPerSatir))
   // Hız kaydırıcısı gibi üst bileşen güncellemelerinde yerleşim yeniden hesaplanmaz.
   const { rows } = useMemo(() => scoreLayout(olcu, soz, perRow), [olcu, soz, perRow])
@@ -107,6 +113,7 @@ export function ScoreView(props: { olcu: MusicEvent[][]; soz?: string[][]; olcuP
             width={row.baseWidth}
             barlinesAfter={row.barlinesAfter}
             syllables={row.syllables}
+            beamBeats={beamBeats}
           />
         </div>
       ))}

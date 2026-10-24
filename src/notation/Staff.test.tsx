@@ -443,3 +443,238 @@ describe('Staff: ölçü çizgileri ve heceler', () => {
     }
   })
 })
+
+describe('Staff: kirişler', () => {
+  type Step = 'C' | 'D' | 'E' | 'F' | 'G' | 'A' | 'B'
+  const ev = (step: Step, octave: number, dur: 'eighth' | 'sixteenth' | 'quarter', extra: object = {}): MusicEvent => ({
+    kind: 'note',
+    pitch: { step, octave, acc: 0 },
+    dur,
+    ...extra,
+  })
+  const nums = (d: string) => d.match(/-?\d+(?:\.\d+)?/g)!.map(Number)
+  /** Kiriş yolunun dış kenarı: ilk iki nokta. */
+  const beamLine = (b: Element) => {
+    const [x1, y1, x2, y2] = nums(b.getAttribute('d')!)
+    return { x1: x1!, y1: y1!, x2: x2!, y2: y2! }
+  }
+  const at = (l: ReturnType<typeof beamLine>, x: number) => l.y1 + ((l.y2 - l.y1) * (x - l.x1)) / (l.x2 - l.x1)
+  const stems = (c: Element) =>
+    [...c.querySelectorAll('line[data-stem]')].map((s) => ({
+      x: Number(s.getAttribute('x1')),
+      y1: Number(s.getAttribute('y1')),
+      y2: Number(s.getAttribute('y2')),
+      dir: s.getAttribute('data-stem'),
+      beamed: s.hasAttribute('data-beamed'),
+    }))
+  /** Bugünkü çizimi yakalamak için seçilmiş karışık porte. */
+  const mixed: MusicEvent[] = [
+    ev('G', 4, 'eighth'),
+    ev('A', 4, 'eighth', { tie: true }),
+    ev('A', 4, 'eighth'),
+    ev('D', 5, 'eighth'),
+    ev('E', 5, 'sixteenth'),
+    ev('D', 5, 'sixteenth'),
+    ev('C', 5, 'sixteenth'),
+    ev('B', 4, 'sixteenth'),
+    ev('G', 4, 'eighth', { dotted: true }),
+    ev('F', 4, 'sixteenth'),
+    { kind: 'rest', dur: 'eighth' },
+    ev('E', 4, 'eighth'),
+  ]
+
+  it('beamBeats verilmeyen Staff eski çizimi korur (sap, bayrak ve bağ geometrisi)', () => {
+    const { container } = render(<Staff events={mixed} barlinesAfter={[11]} syllables={mixed.map(() => 'la')} />)
+    expect(container.querySelectorAll('[data-beam]')).toHaveLength(0)
+    expect(container.querySelectorAll('[data-beamed]')).toHaveLength(0)
+    const geo = {
+      stems: [...container.querySelectorAll('line[data-stem]')].map(
+        (s) => ['x1', 'y1', 'y2'].map((a) => s.getAttribute(a)).join(' ') + ' ' + s.getAttribute('data-stem'),
+      ),
+      flags: [...container.querySelectorAll('[data-flag]')].map((f) => f.getAttribute('d')),
+      ties: [...container.querySelectorAll('[data-tie]')].map((t) => t.getAttribute('d')),
+      dots: container.querySelectorAll('[data-dot]').length,
+    }
+    expect(geo).toMatchInlineSnapshot(`
+      {
+        "dots": 1,
+        "flags": [
+          "M 66.6 27 q 9 6 7 16",
+          "M 83.80000000000001 22 q 9 6 7 16",
+          "M 101 22 q 9 6 7 16",
+          "M 106.20000000000002 73 q 9 -6 7 -16",
+          "M 123.4 68 q 9 -6 7 -16",
+          "M 123.4 61 q 9 -6 7 -16",
+          "M 140.6 73 q 9 -6 7 -16",
+          "M 140.6 66 q 9 -6 7 -16",
+          "M 157.79999999999998 78 q 9 -6 7 -16",
+          "M 157.79999999999998 71 q 9 -6 7 -16",
+          "M 174.99999999999997 83 q 9 -6 7 -16",
+          "M 174.99999999999997 76 q 9 -6 7 -16",
+          "M 204.19999999999996 27 q 9 6 7 16",
+          "M 221.39999999999995 32 q 9 6 7 16",
+          "M 221.39999999999995 39 q 9 6 7 16",
+          "M 255.79999999999995 37 q 9 6 7 16",
+        ],
+        "stems": [
+          "66.6 60 27 up",
+          "83.80000000000001 55 22 up",
+          "101 55 22 up",
+          "106.20000000000002 40 73 down",
+          "123.4 35 68 down",
+          "140.6 40 73 down",
+          "157.79999999999998 45 78 down",
+          "174.99999999999997 50 83 down",
+          "204.19999999999996 60 27 up",
+          "221.39999999999995 65 32 up",
+          "255.79999999999995 70 37 up",
+        ],
+        "ties": [
+          "M 83.30000000000001 61 Q 86.4 67 89.5 61",
+        ],
+      }
+    `)
+  })
+
+  it('kirişlenecek grup yoksa beamBeats çizimi değiştirmez', () => {
+    const quarters = [ev('G', 4, 'quarter'), ev('A', 4, 'eighth'), ev('B', 4, 'quarter'), ev('C', 5, 'eighth')]
+    const a = render(<Staff events={quarters} />).container.innerHTML
+    cleanup()
+    const b = render(<Staff events={quarters} beamBeats={1} />).container.innerHTML
+    expect(b).toBe(a)
+  })
+
+  it('gruplu notalarda bayrak yoktur ve data-beam çizgisi vardır; tek kalan sekizlik bayraklıdır', () => {
+    const events = [
+      ev('G', 4, 'eighth'),
+      ev('A', 4, 'eighth'),
+      ev('B', 4, 'eighth'),
+      ev('C', 5, 'eighth'),
+      ev('D', 5, 'eighth'),
+    ]
+    const { container } = render(<Staff events={events} beamBeats={1} />)
+    expect(container.querySelectorAll('[data-beam="1"]')).toHaveLength(2)
+    expect(container.querySelectorAll('[data-beam="2"]')).toHaveLength(0)
+    expect(container.querySelectorAll('[data-flag]')).toHaveLength(1)
+    expect(container.querySelectorAll('g[data-event="4"] [data-flag]')).toHaveLength(1)
+    expect(container.querySelectorAll('line[data-beamed]')).toHaveLength(4)
+  })
+
+  it('onaltılık grubunda iki kiriş vardır; ikincisi nota başlarına doğru kaydırılır', () => {
+    const events = [ev('G', 4, 'sixteenth'), ev('A', 4, 'sixteenth'), ev('G', 4, 'sixteenth'), ev('A', 4, 'sixteenth')]
+    const { container } = render(<Staff events={events} beamBeats={1} />)
+    const primary = container.querySelectorAll('[data-beam="1"]')
+    const secondary = container.querySelectorAll('[data-beam="2"]')
+    expect(primary).toHaveLength(1)
+    expect(secondary).toHaveLength(1)
+    expect(container.querySelectorAll('[data-flag]')).toHaveLength(0)
+    const p = beamLine(primary[0]!)
+    const s = beamLine(secondary[0]!)
+    // Saplar yukarı (notalar orta çizginin altında): ikinci kiriş birincinin altındadır.
+    expect(stems(container).every((st) => st.dir === 'up')).toBe(true)
+    expect(at(s, p.x1) - at(p, p.x1)).toBeCloseTo(7.5, 5)
+    expect(s.x1).toBeCloseTo(p.x1, 5)
+    expect(s.x2).toBeCloseTo(p.x2, 5)
+  })
+
+  it('noktalı sekizlik + onaltılık: onaltılıkta komşusuna doğru, baş genişliğinde kısa ikinci kiriş', () => {
+    const events = [
+      ev('G', 4, 'eighth', { dotted: true }),
+      ev('A', 4, 'sixteenth'),
+      ev('A', 4, 'sixteenth'),
+      ev('G', 4, 'eighth', { dotted: true }),
+    ]
+    const { container } = render(<Staff events={events} beamBeats={1} />)
+    expect(container.querySelectorAll('[data-beam="1"]')).toHaveLength(2)
+    const stubs = [...container.querySelectorAll('[data-beam="2"]')].map(beamLine)
+    expect(stubs).toHaveLength(2)
+    const st = stems(container)
+    // 1. grup (e. s): kısa kiriş onaltılığın sapından sola, 2. grup (s e.): sağa uzanır.
+    expect(Math.max(stubs[0]!.x1, stubs[0]!.x2)).toBeCloseTo(st[1]!.x + 0.75, 5)
+    expect(Math.abs(stubs[0]!.x2 - stubs[0]!.x1)).toBeCloseTo(13, 5)
+    expect(Math.min(stubs[1]!.x1, stubs[1]!.x2)).toBeCloseTo(st[2]!.x - 0.75, 5)
+    expect(Math.abs(stubs[1]!.x2 - stubs[1]!.x1)).toBeCloseTo(13, 5)
+    expect(container.querySelectorAll('[data-flag]')).toHaveLength(0)
+    expect(container.querySelectorAll('[data-dot]')).toHaveLength(2)
+  })
+
+  it('gruptaki sapların uçları kiriş üzerindedir; saplar en az 2,5 aralık uzunluğundadır', () => {
+    // [olaylar, en kısa sap]: 2. grupta (Mi4…Fa5, saplar aşağı) kiriş hecelere inmesin diye Mi4'ün sapı
+    // 2 aralığa (20 px) dek kısalır; diğerlerinde her sap en az 2,5 aralıktır.
+    const cases: [MusicEvent[], number][] = [
+      [[ev('G', 4, 'eighth'), ev('D', 5, 'eighth')], 25],
+      [[ev('E', 4, 'sixteenth'), ev('A', 4, 'sixteenth'), ev('C', 5, 'sixteenth'), ev('F', 5, 'sixteenth')], 20],
+      [[ev('A', 5, 'eighth'), ev('C', 5, 'eighth'), ev('E', 5, 'eighth')], 25],
+      [[ev('E', 4, 'eighth'), ev('B', 4, 'eighth'), ev('D', 4, 'eighth')], 25],
+    ]
+    for (const [events, minStem] of cases) {
+      const { container, unmount } = render(<Staff events={events} beamBeats={1.5} />)
+      const l = beamLine(container.querySelector('[data-beam="1"]')!)
+      const st = stems(container)
+      expect(st.every((s) => s.beamed)).toBe(true)
+      for (const s of st) {
+        expect(s.y2).toBeCloseTo(at(l, s.x), 5)
+        expect(Math.abs(s.y2 - s.y1)).toBeGreaterThanOrEqual(minStem - 1e-9)
+        expect(s.y2).toBeLessThanOrEqual(90 + 1e-9)
+      }
+      // Kiriş ilk sapın solundan son sapın sağına uzanır (sap kalınlığının yarısı kadar).
+      expect(l.x1).toBeCloseTo(st[0]!.x - 0.75, 5)
+      expect(l.x2).toBeCloseTo(st.at(-1)!.x + 0.75, 5)
+      // Eğim en fazla bir porte aralığı.
+      expect(Math.abs(l.y2 - l.y1)).toBeLessThanOrEqual(10 + 1e-9)
+      unmount()
+    }
+  })
+
+  it('ortak sap yönü: orta çizgiden en uzak nota belirler, eşitlikte aşağı', () => {
+    const dirs = (events: MusicEvent[]) => {
+      const { container, unmount } = render(<Staff events={events} beamBeats={1} />)
+      const d = stems(container).map((s) => s.dir)
+      unmount()
+      return d
+    }
+    // Mi4 (4 adım aşağıda) Do5'ten (1 adım yukarıda) uzak → yukarı.
+    expect(dirs([ev('E', 4, 'eighth'), ev('C', 5, 'eighth')])).toEqual(['up', 'up'])
+    // Sol4 (2 aşağı) ile Re5 (2 yukarı) eşit → aşağı.
+    expect(dirs([ev('G', 4, 'eighth'), ev('D', 5, 'eighth')])).toEqual(['down', 'down'])
+    // Fa5 (4 yukarı) La4'ten (1 aşağı) uzak → aşağı.
+    expect(dirs([ev('A', 4, 'eighth'), ev('F', 5, 'eighth')])).toEqual(['down', 'down'])
+  })
+
+  it('kiriş eğimi en fazla bir porte aralığıyla sınırlanır', () => {
+    const { container } = render(<Staff events={[ev('E', 4, 'eighth'), ev('A', 5, 'eighth')]} beamBeats={1} />)
+    const l = beamLine(container.querySelector('[data-beam="1"]')!)
+    expect(Math.abs(l.y2 - l.y1)).toBeLessThanOrEqual(10 + 1e-9)
+    expect(l.y2).toBeLessThan(l.y1) // yükselen ezgi → yükselen kiriş
+  })
+
+  it('bağ yayı ortak sap yönünün karşı tarafındadır; heceler etkilenmez', () => {
+    // Sol4 tek başına yukarı saplıdır; Mi5 grubu aşağı saplı yapar → Sol4'teki bağ yayı yukarıda.
+    const events = [ev('G', 4, 'eighth', { tie: true }), ev('G', 4, 'eighth'), ev('E', 5, 'eighth')]
+    const syl = ['a', '', 'b']
+    const { container } = render(<Staff events={events} beamBeats={1.5} syllables={syl} />)
+    const [, y1, , cy] = nums(container.querySelector('[data-tie]')!.getAttribute('d')!)
+    const headY = Number(container.querySelector('[data-testid="notehead"]')!.getAttribute('cy'))
+    expect(y1!).toBeLessThan(headY)
+    expect(cy!).toBeLessThan(y1!)
+    const sx = (c: Element) =>
+      [...c.querySelectorAll('text[data-syllable]')].map((t) => `${t.getAttribute('x')},${t.getAttribute('y')}`)
+    const beamed = sx(container)
+    cleanup()
+    expect(sx(render(<Staff events={events} syllables={syl} />).container)).toEqual(beamed)
+  })
+
+  it('kiriş hecelere inmez ve görünüm kutusunun üstünden taşmaz', () => {
+    const events = [ev('G', 4, 'eighth'), ev('A', 5, 'eighth'), ev('C', 4, 'eighth'), ev('G', 5, 'eighth')]
+    const { container } = render(<Staff events={events} beamBeats={1} />)
+    expect(container.querySelectorAll('[data-beam]').length).toBeGreaterThan(0)
+    for (const b of container.querySelectorAll('[data-beam]')) {
+      nums(b.getAttribute('d')!).forEach((v, i) => {
+        if (i % 2 === 1) {
+          expect(v).toBeLessThanOrEqual(90)
+          expect(v).toBeGreaterThanOrEqual(0)
+        }
+      })
+    }
+  })
+})

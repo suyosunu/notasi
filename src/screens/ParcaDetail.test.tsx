@@ -59,6 +59,21 @@ describe('ParcaDetail', () => {
     expect(document.querySelectorAll('text[data-syllable]').length).toBeGreaterThan(0)
   })
 
+  it('kiriş vuruş birimi usulden gelir: Dolap (12/8) üçlü, Sofyan (4/4) ikili gruplar', () => {
+    render(<ParcaDetail parcaId="benim-adim-dertli-dolap" />)
+    // Her ölçü "e e e q e q e. s q": 12/8'de yalnızca ilk üç sekizlik bir grup olur.
+    const dolap = byId('benim-adim-dertli-dolap')
+    expect(document.querySelectorAll('[data-beam="1"]')).toHaveLength(dolap.olcu.length)
+    expect(document.querySelectorAll('line[data-beamed]')).toHaveLength(3 * dolap.olcu.length)
+    cleanup()
+    render(<ParcaDetail parcaId="hak-teala" />)
+    // Hak Teâlâ 1. ölçü "q q e e e e": iki ayrı ikili grup.
+    const firstRow = document.querySelector('[data-testid="score-row"]')!
+    const beamed = [...firstRow.querySelectorAll('line[data-beamed]')]
+    expect(beamed.length).toBeGreaterThanOrEqual(4)
+    expect(firstRow.querySelectorAll('[data-beam="1"]').length).toBeGreaterThanOrEqual(2)
+  })
+
   it('Dolap parçasında usul bağlantısı Dolap adını gösterir; parmak şeması yoktur', () => {
     render(<ParcaDetail parcaId="benim-adim-dertli-dolap" />)
     expect(screen.getByRole('link', { name: 'Dolap' }).getAttribute('href')).toBe('#/usul')

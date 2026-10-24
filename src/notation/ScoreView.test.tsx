@@ -100,6 +100,20 @@ describe('ScoreView', () => {
     }
   })
 
+  it('beamBeats satırlara geçer: gruplar her satırda ölçü başından sayılır', () => {
+    const e = (): MusicEvent => ({ kind: 'note', pitch: { step: 'G', octave: 4, acc: 0 }, dur: 'eighth' })
+    const olcu = Array.from({ length: 3 }, () => Array.from({ length: 6 }, e))
+    const plain = render(<ScoreView olcu={olcu} />).container
+    expect(plain.querySelectorAll('[data-beam]')).toHaveLength(0)
+    cleanup()
+    const four = render(<ScoreView olcu={olcu} beamBeats={1} />).container
+    expect(four.querySelectorAll('[data-beam="1"]')).toHaveLength(9)
+    cleanup()
+    const twelve = render(<ScoreView olcu={olcu} beamBeats={1.5} />).container
+    expect(twelve.querySelectorAll('[data-beam="1"]')).toHaveLength(6)
+    expect(twelve.querySelectorAll('[data-flag]')).toHaveLength(0)
+  })
+
   it('tüm olaylar çizilir (bağlı notalar dahil)', () => {
     const p = PARCALAR.find((x) => x.id === 'daglar-ile-taslar-ile')!
     const { container } = render(<ScoreView olcu={p.olcu} />)

@@ -1,4 +1,5 @@
 import type { DurationKind, MusicEvent, NoteEvent, RestEvent } from '../music/notation'
+import { beamGroups } from './beams'
 import { accidentalWidth, AccidentalGlyph, CLEF_GLYPH, MUSIC_FONT } from './glyphs'
 import { indexY, ledgerLineYs, LINE_GAP, noteY, staffIndex, STAFF_TOP } from './geometry'
 
@@ -40,14 +41,136 @@ function isHollow(dur: DurationKind): boolean {
   return dur === 'whole' || dur === 'half'
 }
 
-function NoteShape(props: { event: NoteEvent; x: number; index: number }) {
-  const { event, x, index } = props
+/** Sapın x konumu: aşağı saplıda başın solunda, yukarı saplıda sağında. */
+function stemXFor(x: number, down: boolean): number {
+  return down ? x - HEAD_RX + 0.5 : x + HEAD_RX - 0.5
+}
+
+/** Tek başına çizilen notanın sap yönü: orta çizgi ve üstü aşağı. */
+function soloDown(n: NoteEvent): boolean {
+  return staffIndex(n.pitch) >= 4
+}
+
+/** Kirişli notanın ortak sap yönü ve kiriş üzerindeki sap ucu. */
+interface BeamTip {
+  down: boolean
+  y: number
+}
+
+interface BeamSegment {
+  level: 1 | 2
+  x1: number
+  x2: number
+}
+
+interface BeamLayout {
+  down: boolean
+  /** Olay sırası → sap ucu (kirişin dış kenarı). */
+  tips: Map<number, number>
+  segments: BeamSegment[]
+  /** Kirişin dış kenarının (1. kiriş) x'teki y'si. */
+  lineAt: (x: number) => number
+}
+
+/** Kiriş kalınlığı (0,45 aralık). */
+const BEAM_THICK = 4.5
+/** İkinci kirişin birinciye göre nota başlarına doğru kayması (0,75 aralık). */
+const BEAM_STEP = 7.5
+/** Kirişli notada en kısa sap (2,5 aralık). */
+const MIN_BEAM_STEM = 25
+/** Kiriş hecelere ya da görünüm kutusunun dışına taşacaksa sap en çok bu boya (2 aralık) dek kısalabilir. */
+const EDGE_MIN_STEM = 20
+/** Kirişin dış kenarı bu aralıkta kalır: heceler (taban 103) ve görünüm kutusunun üstü korunur. */
+const BEAM_MIN_Y = 2
+const BEAM_MAX_Y = 88
+/** Sap kalınlığının yarısı: kiriş sapların dış kenarına dek uzanır. */
+const HALF_STEM = 0.75
+/** Tek onaltılıktaki kısa kiriş parçasının boyu: bir nota başı genişliği. */
+const STUB_LEN = 2 * HEAD_RX
+
+/**
+ * Bir kiriş grubunun geometrisi. Ortak sap yönü orta çizgiden (Si4) en uzak notaya göredir (eşitlikte aşağı).
+ * Kiriş ilk ve son notanın olağan sap uçlarından geçen doğrudur; eğimi en fazla ±1 aralığa kısılır, sonra her
+ * sap en az 2,5 aralık olacak biçimde dışa kaydırılır. Hecelere ya da görünüm kutusunun üstüne taşacaksa, sap
+ * boyları izin verdiği ölçüde başlara doğru çekilir.
+ */
+function layoutBeam(group: number[], events: MusicEvent[], xs: number[]): BeamLayout {
+  const notes = group.map((i) => events[i] as NoteEvent)
+  const idxs = notes.map((n) => staffIndex(n.pitch))
+  const down = Math.max(...idxs.map((v) => v - 4)) >= Math.max(...idxs.map((v) => 4 - v))
+  const sign = down ? 1 : -1
+  const sxs = group.map((i) => stemXFor(xs[i]!, down))
+  const ys = notes.map((n) => noteY(n.pitch))
+  const first = sxs[0]!
+  const span = sxs.at(-1)! - first
+  const t0 = ys[0]! + sign * STEM_LEN
+  const t1 = ys.at(-1)! + sign * STEM_LEN
+  // Eğim, çizilen kiriş boyunca (sap kalınlığı dahil) en fazla bir aralık yükselecek biçimde kısılır.
+  const maxSlope = LINE_GAP / (span + 2 * HALF_STEM)
+  const slope = span > 0 ? Math.max(-maxSlope, Math.min(maxSlope, (t1 - t0) / span)) : 0
+  // Kısılan eğimli doğru, iki ucun ortasından geçer.
+  let b = (t0 + t1) / 2 - (slope * span) / 2
+  const lineAt = (x: number) => b + slope * (x - first)
+  const stemLen = (j: number) => sign * (lineAt(sxs[j]!) - ys[j]!)
+  const shortest = () => Math.min(...sxs.map((_, j) => stemLen(j)))
+  const need = MIN_BEAM_STEM - shortest()
+  if (need > 0) b += sign * need
+  const ends = [lineAt(first - HALF_STEM), lineAt(first + span + HALF_STEM)]
+  const overflow = down ? Math.max(...ends) - BEAM_MAX_Y : BEAM_MIN_Y - Math.min(...ends)
+  if (overflow > 0) b -= sign * Math.min(overflow, Math.max(0, shortest() - EDGE_MIN_STEM))
+
+  const tips = new Map(group.map((i, j) => [i, lineAt(sxs[j]!)]))
+  const segments: BeamSegment[] = [{ level: 1, x1: first - HALF_STEM, x2: first + span + HALF_STEM }]
+  // Onaltılıklar: ardışık olanlar tam ikinci kirişle, tek kalan komşusuna doğru kısa parçayla bağlanır.
+  let j = 0
+  while (j < notes.length) {
+    if (notes[j]!.dur !== 'sixteenth') {
+      j++
+      continue
+    }
+    let k = j
+    while (k + 1 < notes.length && notes[k + 1]!.dur === 'sixteenth') k++
+    if (k > j) {
+      segments.push({ level: 2, x1: sxs[j]! - HALF_STEM, x2: sxs[k]! + HALF_STEM })
+    } else {
+      const left = j === notes.length - 1 || (j > 0 && notes[j - 1]!.dotted === true)
+      const sx = sxs[j]!
+      segments.push(
+        left
+          ? { level: 2, x1: sx + HALF_STEM - STUB_LEN, x2: sx + HALF_STEM }
+          : { level: 2, x1: sx - HALF_STEM, x2: sx - HALF_STEM + STUB_LEN },
+      )
+    }
+    j = k + 1
+  }
+  return { down, tips, segments, lineAt }
+}
+
+/** Kiriş parçası: dış kenarı kiriş doğrusunda (ikincisi başlara doğru kaydırılmış), kalınlığı başlara doğru. */
+function BeamPath(props: { layout: BeamLayout; segment: BeamSegment }) {
+  const { layout, segment } = props
+  const inward = layout.down ? -1 : 1
+  const off = segment.level === 2 ? inward * BEAM_STEP : 0
+  const ya = layout.lineAt(segment.x1) + off
+  const yb = layout.lineAt(segment.x2) + off
+  const t = inward * BEAM_THICK
+  return (
+    <path
+      data-beam={String(segment.level)}
+      d={`M ${segment.x1} ${ya} L ${segment.x2} ${yb} L ${segment.x2} ${yb + t} L ${segment.x1} ${ya + t} Z`}
+      fill={INK}
+    />
+  )
+}
+
+function NoteShape(props: { event: NoteEvent; x: number; index: number; beam?: BeamTip }) {
+  const { event, x, index, beam } = props
   const { pitch, dur } = event
   const idx = staffIndex(pitch)
   const y = noteY(pitch)
-  const down = idx >= 4
-  const stemX = down ? x - HEAD_RX + 0.5 : x + HEAD_RX - 0.5
-  const stemEnd = down ? y + STEM_LEN : y - STEM_LEN
+  const down = beam ? beam.down : soloDown(event)
+  const stemX = stemXFor(x, down)
+  const stemEnd = beam ? beam.y : down ? y + STEM_LEN : y - STEM_LEN
   // Çizgi üzerindeki notada nokta bir sonraki boşluğa yukarı kaydırılır.
   const dotY = idx % 2 === 0 ? y - LINE_GAP / 2 : y
 
@@ -81,6 +204,7 @@ function NoteShape(props: { event: NoteEvent; x: number; index: number }) {
       {dur !== 'whole' && (
         <line
           data-stem={down ? 'down' : 'up'}
+          data-beamed={beam ? '' : undefined}
           x1={stemX}
           x2={stemX}
           y1={y}
@@ -89,7 +213,7 @@ function NoteShape(props: { event: NoteEvent; x: number; index: number }) {
           stroke-width={1.5}
         />
       )}
-      {Array.from({ length: flagCount(dur) }, (_, i) => {
+      {Array.from({ length: beam ? 0 : flagCount(dur) }, (_, i) => {
         // İkinci bayrak sap boyunca nota başına doğru kaydırılır.
         const fy = down ? stemEnd - i * FLAG_STEP : stemEnd + i * FLAG_STEP
         return (
@@ -112,10 +236,10 @@ function NoteShape(props: { event: NoteEvent; x: number; index: number }) {
  * Bağ yayı: bu notanın başından sonraki notanın başına, sapın karşı tarafında ince bir eğri.
  * Sonraki nota bu portede yoksa `x2` sağ kenardır.
  */
-function TieArc(props: { event: NoteEvent; x1: number; x2: number }) {
-  const { event, x1, x2 } = props
+function TieArc(props: { event: NoteEvent; x1: number; x2: number; stemDown: boolean }) {
+  const { event, x1, x2, stemDown } = props
   const y = noteY(event.pitch)
-  const below = staffIndex(event.pitch) < 4 // sap yukarı → yay aşağıda
+  const below = !stemDown // sap yukarı → yay aşağıda
   const sign = below ? 1 : -1
   const y0 = y + sign * (HEAD_RY + 1)
   const start = x1 + HEAD_RX - 1
@@ -237,9 +361,20 @@ export function Staff(props: {
   barlinesAfter?: number[]
   /** Olaylarla hizalı heceler; nota altında küçük yazılır, boş dizgiler atlanır. */
   syllables?: string[]
+  /**
+   * Verilirse bir vuruş (dörtlük cinsinden; 4/4: 1, 12/8: 1,5) içindeki sekizlik ve onaltılıklar kirişlenir.
+   * Verilmezse her nota bayrağıyla, bugünkü gibi çizilir.
+   */
+  beamBeats?: number
 }) {
-  const { events, width: baseWidth = DEFAULT_WIDTH, highlightIndex, barlinesAfter, syllables } = props
+  const { events, width: baseWidth = DEFAULT_WIDTH, highlightIndex, barlinesAfter, syllables, beamBeats } = props
   const { xs, ends, viewWidth: width } = layoutEvents(events, baseWidth, syllables)
+  const beams =
+    beamBeats === undefined
+      ? []
+      : beamGroups(events, beamBeats, barlinesAfter).map((g) => layoutBeam(g, events, xs))
+  const beamTips = new Map<number, BeamTip>()
+  for (const b of beams) for (const [i, y] of b.tips) beamTips.set(i, { down: b.down, y })
   const last = events.length - 1
   const barXs = barlinesAfter
     ? [...barlinesAfter.filter((i) => i >= 0 && i < last).map((i) => ends[i]!), width - 2]
@@ -311,13 +446,29 @@ export function Staff(props: {
             data-highlight={highlighted ? '' : undefined}
             style={highlighted ? { color: 'var(--accent, #d9480f)' } : undefined}
           >
-            {e.kind === 'note' ? <NoteShape event={e} x={x} index={i} /> : <RestShape event={e} x={x} />}
+            {e.kind === 'note' ? (
+              <NoteShape event={e} x={x} index={i} beam={beamTips.get(i)} />
+            ) : (
+              <RestShape event={e} x={x} />
+            )}
             {e.kind === 'note' && e.tie && (
-              <TieArc event={e} x1={x} x2={xs[i + 1] ?? width - RIGHT_MARGIN + HEAD_RX} />
+              <TieArc
+                event={e}
+                x1={x}
+                x2={xs[i + 1] ?? width - RIGHT_MARGIN + HEAD_RX}
+                stemDown={beamTips.get(i)?.down ?? soloDown(e)}
+              />
             )}
           </g>
         )
       })}
+      {beams.map((b, k) => (
+        <g key={`b${k}`} data-beam-group>
+          {b.segments.map((s, j) => (
+            <BeamPath key={j} layout={b} segment={s} />
+          ))}
+        </g>
+      ))}
     </svg>
   )
 }

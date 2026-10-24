@@ -5,6 +5,7 @@ import { acquireWakeLock, releaseWakeLock } from '../audio/wakeLock'
 import { PARCALAR } from '../content/parcalar'
 import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
 import { USULLER } from '../content/usuller'
+import { beamBeatsFor } from '../notation/beams'
 import { ScoreView } from '../notation/ScoreView'
 import { getSettings } from '../store/db'
 import type { Settings } from '../store/db'
@@ -119,7 +120,7 @@ export function ParcaDetail({ parcaId }: { parcaId: string }) {
         </div>
       </dl>
 
-      <ScoreView olcu={piece.olcu} soz={piece.soz} />
+      <ScoreView olcu={piece.olcu} soz={piece.soz} beamBeats={beamBeatsFor(usul)} />
 
       <label class="usul-speed">
         <span>{`Hız: ♩ = ${bpm}`}</span>
