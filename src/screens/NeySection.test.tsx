@@ -43,6 +43,7 @@ function row(name: string): HTMLElement {
 /** Dersi olan beş perde; trainer testlerinde dersleri okunmuş sayılır, kapı açılır. */
 const DERSLI = ['neva', 'cargah', 'segah', 'dugah', 'rast']
 async function perdeDersleriOkundu() {
+  await isaretEkle('okunanDersler', 's0:uzun-ses')
   for (const id of DERSLI) await isaretEkle('okunanDersler', `perde:${id}`)
 }
 
@@ -179,8 +180,29 @@ describe('NeySection', () => {
 })
 
 describe('NeyPerdePractice ders kapısı', () => {
+  it('/ney/neva taze: önce gösterge dersi, sonra Nevâ dersi, sonra trainer; s0:uzun-ses okunmuşsa yalnız Nevâ dersi', async () => {
+    await saveSettings({ calibrated: true })
+    render(<NeyPerdePractice perdeId="neva" />)
+    expect(await screen.findByRole('heading', { name: /Uzun ses ve akort göstergesi/ })).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: /Nevâ perdesi/ })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Anladım, alıştırmaya geç' }))
+    expect(await screen.findByRole('heading', { name: /Nevâ perdesi/ })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Başla' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Anladım, alıştırmaya geç' }))
+    expect(await screen.findByRole('button', { name: 'Başla' })).toBeTruthy()
+  })
+
+  it('/ney/neva: s0:uzun-ses okunmuşsa yalnız Nevâ dersi gelir', async () => {
+    await saveSettings({ calibrated: true })
+    await isaretEkle('okunanDersler', 's0:uzun-ses')
+    render(<NeyPerdePractice perdeId="neva" />)
+    expect(await screen.findByRole('heading', { name: /Nevâ perdesi/ })).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: /Uzun ses ve akort göstergesi/ })).toBeNull()
+  })
+
   it('/ney/neva okunmamış derste önce ders gelir; "Anladım"dan sonra trainer görünür', async () => {
     await saveSettings({ calibrated: true })
+    await isaretEkle('okunanDersler', 's0:uzun-ses')
     render(<NeyPerdePractice perdeId="neva" />)
     expect(await screen.findByRole('heading', { name: /Nevâ perdesi/ })).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Başla' })).toBeNull()
@@ -193,6 +215,7 @@ describe('NeyPerdePractice ders kapısı', () => {
 
   it('ders okunmuşsa doğrudan trainer görünür', async () => {
     await saveSettings({ calibrated: true })
+    await isaretEkle('okunanDersler', 's0:uzun-ses')
     await isaretEkle('okunanDersler', 'perde:neva')
     render(<NeyPerdePractice perdeId="neva" />)
     expect(await screen.findByRole('button', { name: 'Başla' })).toBeTruthy()

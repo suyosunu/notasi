@@ -62,6 +62,7 @@ afterEach(() => {
 /** İlk ses geçilmiş, kalibre; perde adımlarının dersleri okunmuş sayılır (kapı açılır). */
 async function readyForPerde() {
   await readyForPerdeDerssiz()
+  await isaretEkle('okunanDersler', 's0:uzun-ses')
   for (const id of ['neva', 'cargah', 'segah', 'dugah', 'rast']) await isaretEkle('okunanDersler', `perde:${id}`)
 }
 
@@ -347,17 +348,19 @@ describe('EveningPractice', () => {
     expect(await screen.findByText(SOUND_WARNING)).toBeTruthy()
   })
 
-  it('düzey son denemelere göre belirlenir: 3 geçiş + 1 başarısız → düzey 2, tolerans 15', async () => {
+  it('düzey son denemelere göre belirlenir: 5 geçiş + 1 başarısız → düzey 4, tolerans 15', async () => {
     await readyForPerde()
     await addLongTone({ perdeId: 'neva', durationMs: 4000, passed: true, toleranceCents: 25 })
     await addLongTone({ perdeId: 'neva', durationMs: 5000, passed: true, toleranceCents: 20 })
-    await addLongTone({ perdeId: 'neva', durationMs: 6000, passed: true, toleranceCents: 15 })
+    await addLongTone({ perdeId: 'neva', durationMs: 6000, passed: true, toleranceCents: 20 })
+    await addLongTone({ perdeId: 'neva', durationMs: 7000, passed: true, toleranceCents: 20 })
+    await addLongTone({ perdeId: 'neva', durationMs: 8000, passed: true, toleranceCents: 20 })
     await addLongTone({ perdeId: 'neva', durationMs: 900, passed: false, toleranceCents: 10 })
     render(<EveningPractice />)
     await begin()
     // 18 sent sapma: 15 sent toleransın dışında, 20'nin içinde. Tolerans 15 ise tutuş hiç başlamaz.
     blow(NEVA_HZ * 2 ** (18 / 1200), 1500)
-    expect(await screen.findByText('Süre: 0,0 sn (en iyi 6,0 sn)')).toBeTruthy()
+    expect(await screen.findByText('Süre: 0,0 sn (en iyi 8,0 sn)')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Bitir' }))
     await screen.findByRole('button', { name: 'Devam' })
     const last = (await listLongTones('neva')).filter((r) => !r.passed).at(-1)!
@@ -369,6 +372,7 @@ describe('EveningPractice', () => {
     await addLongTone({ perdeId: 'ilk-ses', durationMs: 3000, passed: true, toleranceCents: 50 })
     await saveSettings({ calibrated: true })
     await ilkSesDersiOkundu()
+    await isaretEkle('okunanDersler', 's0:uzun-ses')
     await isaretEkle('okunanDersler', 'perde:neva')
     render(<EveningPractice />)
     await begin()
@@ -440,6 +444,16 @@ describe('EveningPractice', () => {
       expect(await screen.findByRole('button', { name: 'Başla' })).toBeTruthy()
     })
 
+    it('"Sonra yaparım" kayıt yazmadan sonraki adıma geçer', async () => {
+      await saveSettings({ calibrated: true })
+      await isaretEkle('okunanDersler', 's0:baspare')
+      await oturumKur([BASPARE_ADIMI, { kind: 'uzun-ses', perdeId: 'neva', label: 'Uzun ses: Nevâ', tries: 1 }])
+      render(<EveningPractice />)
+      fireEvent.click(await screen.findByRole('button', { name: 'Sonra yaparım' }))
+      expect(await screen.findByRole('heading', { name: /Uzun ses: Nevâ/ })).toBeTruthy()
+      expect(await listLongTones('baspare')).toHaveLength(0)
+    })
+
     it('kalibre değilse önce kalibrasyon gösterilir', async () => {
       await oturumKur([BASPARE_ADIMI])
       render(<EveningPractice />)
@@ -474,7 +488,7 @@ describe('EveningPractice', () => {
   })
 
   describe('etüt adımı', () => {
-    const ETUT_ADIMI = { kind: 'etut', etutId: 'tek-neva', label: 'Etüt: Tek perde: Nevâ', tries: 1, dersId: 'etut:giris' } as const
+    const ETUT_ADIMI = { kind: 'etut', etutId: 'tek-neva', label: 'Etüt · Tek perde: Nevâ', tries: 1, dersId: 'etut:giris' } as const
     const SONRAKI = { kind: 'uzun-ses', perdeId: 'neva', label: 'Uzun ses: Nevâ', tries: 1 } as const
 
     async function oturumKur(steps: object[]) {
@@ -494,7 +508,7 @@ describe('EveningPractice', () => {
       await isaretEkle('okunanDersler', 'etut:giris')
       await oturumKur([ETUT_ADIMI, SONRAKI])
       render(<EveningPractice />)
-      expect(await screen.findByRole('heading', { name: /Etüt: Tek perde: Nevâ/ })).toBeTruthy()
+      expect(await screen.findByRole('heading', { name: /Etüt · Tek perde: Nevâ/ })).toBeTruthy()
       expect(screen.getAllByRole('heading')).toHaveLength(1)
       expect(screen.getByText('Adım 1/2')).toBeTruthy()
       expect(screen.queryByText('Deneme 1/1')).toBeNull()
@@ -634,6 +648,7 @@ describe('EveningPractice', () => {
 
     it('güncel perde adımında ders kapısı çıkar; "Anladım"dan sonra trainer gelir, sonraki denemede ders gelmez', async () => {
       await readyForPerdeDerssiz()
+      await isaretEkle('okunanDersler', 's0:uzun-ses')
       render(<EveningPractice />)
       expect(await screen.findByRole('heading', { name: /Nevâ perdesi/ })).toBeTruthy()
       expect(screen.queryByRole('button', { name: 'Başla' })).toBeNull()
@@ -643,6 +658,44 @@ describe('EveningPractice', () => {
       await finishTry()
       expect(await screen.findByText('Deneme 2/3')).toBeTruthy()
       expect(screen.queryByRole('heading', { name: /Nevâ perdesi/ })).toBeNull()
+    })
+
+    it('taze Nevâ adımı önce gösterge dersini, sonra Nevâ dersini, sonra alıştırmayı gösterir', async () => {
+      await readyForPerdeDerssiz()
+      render(<EveningPractice />)
+      expect(await screen.findByRole('heading', { name: /Uzun ses ve akort göstergesi/ })).toBeTruthy()
+      expect(screen.queryByRole('button', { name: 'Başla' })).toBeNull()
+      fireEvent.click(screen.getByRole('button', { name: 'Anladım, alıştırmaya geç' }))
+      expect(await screen.findByRole('heading', { name: /Nevâ perdesi/ })).toBeTruthy()
+      expect(screen.queryByRole('heading', { name: /Uzun ses ve akort göstergesi/ })).toBeNull()
+      expect(screen.queryByRole('button', { name: 'Başla' })).toBeNull()
+      fireEvent.click(screen.getByRole('button', { name: 'Anladım, alıştırmaya geç' }))
+      expect(await screen.findByRole('heading', { name: /Uzun ses: Nevâ/ })).toBeTruthy()
+      expect(await screen.findByRole('button', { name: 'Başla' })).toBeTruthy()
+    })
+
+    it('s0:uzun-ses okunmuşsa Nevâ adımında yalnız Nevâ dersi gelir', async () => {
+      await readyForPerdeDerssiz()
+      await isaretEkle('okunanDersler', 's0:uzun-ses')
+      render(<EveningPractice />)
+      expect(await screen.findByRole('heading', { name: /Nevâ perdesi/ })).toBeTruthy()
+      expect(screen.queryByRole('heading', { name: /Uzun ses ve akort göstergesi/ })).toBeNull()
+    })
+
+    it('dersIdler taşımayan eski Nevâ adımı yalnız dersId alanını ister', async () => {
+      await readyForPerdeDerssiz()
+      await saveSession({
+        id: 'eski-neva',
+        kind: 'aksam',
+        date: todayLocal(),
+        startedAt: new Date().toISOString(),
+        completed: false,
+        elapsedMs: 0,
+        state: { steps: [{ kind: 'uzun-ses', perdeId: 'neva', label: 'Uzun ses: Nevâ', tries: 3, dersId: 'perde:neva' }], stepIndex: 0, tryIndex: 0 },
+      })
+      render(<EveningPractice />)
+      expect(await screen.findByRole('heading', { name: /Nevâ perdesi/ })).toBeTruthy()
+      expect(screen.queryByRole('heading', { name: /Uzun ses ve akort göstergesi/ })).toBeNull()
     })
 
     it('ısınma adımı (geçilmiş perde) ders göstermez; sonraki güncel perde adımı kendi dersini gösterir', async () => {

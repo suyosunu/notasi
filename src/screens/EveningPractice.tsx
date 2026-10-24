@@ -104,7 +104,7 @@ export function EveningPractice() {
       )
     }
     return (
-      <DersKapisi key={state.stepIndex} dersId={step.dersId}>
+      <DersKapisi key={state.stepIndex} dersId={step.dersIdler ?? step.dersId}>
         <main class="screen evening">
           <header class="day-head">
             <h1>🌙 {step.label}</h1>
@@ -115,6 +115,11 @@ export function EveningPractice() {
             </p>
           </header>
           <BaspareTur key={state.stepIndex} settings={settings} nextLabel="Devam" onNext={() => void advance()} />
+          <div class="tools">
+            <button type="button" class="tool" onClick={() => void advance()}>
+              Sonra yaparım
+            </button>
+          </div>
           <a class="back" href="#/">
             Ana ekrana dön
           </a>
@@ -137,7 +142,7 @@ export function EveningPractice() {
     }
     // Etüt mikrofon kullanmaz: kalibrasyon gerekmez. "Çaldım" işaretler ve geçer, "Sonra çalarım" işaretlemeden geçer.
     return (
-      <DersKapisi key={state.stepIndex} dersId={step.dersId}>
+      <DersKapisi key={state.stepIndex} dersId={step.dersIdler ?? step.dersId}>
         <main class="screen evening">
           <header class="day-head">
             <h1>🌙 {step.label}</h1>
@@ -221,7 +226,7 @@ export function EveningPractice() {
   // denemelerinde ders yeniden gelmez. `dersId`'siz (eski oturum, ısınma ya da tekrar) adımda kapı doğrudan ekranı gösterir.
   // Kalibrasyon adımı yukarıda döndüğü için kapıdan geçmez.
   return (
-    <DersKapisi key={state.stepIndex} dersId={step.dersId}>
+    <DersKapisi key={state.stepIndex} dersId={step.dersIdler ?? step.dersId}>
       {ekran}
     </DersKapisi>
   )

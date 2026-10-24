@@ -5,7 +5,7 @@ export type Hole = 'kapali' | 'acik' | 'yarim'
 /**
  * Parmak pozisyonu. `thumb` arkadaki aşîrân deliğidir (üstteki elin başparmağı).
  * `front` ön delikler, yukarıdan (başpâreye en yakın) aşağıya:
- * 1 nevâ, 2 nîm hicâz, 3 çârgâh (üstteki elin işaret, orta, yüzük parmağı),
+ * (klasik delik adları, S13) 1 nevâ, 2 hicaz, 3 çârgâh (üstteki elin işaret, orta, yüzük parmağı),
  * 4 segâh, 5 kürdî, 6 dügâh (alttaki elin işaret, orta, yüzük parmağı).
  * Parmak pozisyonları neyin ahengine (Kız, Mansur…) göre değişmez.
  */
@@ -132,7 +132,7 @@ export const NEY_PERDELER: NeyPerde[] = [
     fingering: { thumb: 'kapali', front: ['kapali', 'kapali', 'kapali', 'kapali', 'kapali', 'kapali'] },
     verified: true,
     source: SRC_TEMEL,
-    tip: 'Bütün delikler kapalı. Parmak yastıklarıyla delikleri tam kapat; hava kaçarsa ses çıkmaz.',
+    tip: 'Bütün delikler kapalı. Parmaklarının orta bölümüyle delikleri tam kapat; hava kaçarsa ses çıkmaz.',
     notaTopicId: 'nota-2',
   },
   {

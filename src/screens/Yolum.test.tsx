@@ -86,7 +86,7 @@ describe('Yolum', () => {
     await waitFor(() => expect(yeni.checked).toBe(false))
   })
 
-  it('"Git" bağlantıları hedefin rotasına gider; rotasız hedefte bağlantı yoktur', async () => {
+  it('"Git" bağlantıları hedefin rotasına gider; ders hedefleri ders sayfasına götürür', async () => {
     render(<Yolum />)
     await screen.findByText('Neyin bölümlerini öğrendim')
     expect(within(satir('4-4-4 nefes egzersizini tamamladım')).getByRole('link', { name: 'Git' }).getAttribute('href')).toBe(
@@ -96,7 +96,10 @@ describe('Yolum', () => {
     expect(within(satir(/Başpâreyi koyunca/)).getByRole('link', { name: 'Git' }).getAttribute('href')).toBe(
       '#/hazirlik/baspare',
     )
-    expect(within(satir('Neyin bölümlerini öğrendim')).queryByRole('link')).toBeNull()
+    const git = (ad: string) => within(satir(ad)).getByRole('link', { name: 'Git' }).getAttribute('href')
+    expect(git('Neyin bölümlerini öğrendim')).toBe('#/ders/s0%3Aneyi-tani')
+    expect(git('Duruş ve tutuş dersini okudum')).toBe('#/ders/s0%3Adurus')
+    expect(git('Duruşumu ve tutuşumu aynada kontrol ettim')).toBe('#/ders/s0%3Adurus')
   })
 
   it('hedefsiz seviyede özet ve "sonraki aşamalarda" metni görünür', async () => {

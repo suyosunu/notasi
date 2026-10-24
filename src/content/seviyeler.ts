@@ -38,10 +38,27 @@ const BES_SES: { id: PerdeId; ad: string }[] = [
   { id: 'rast', ad: 'Rast' },
 ]
 
+const dersRotasi = (dersId: string): string => '/ders/' + encodeURIComponent(dersId)
+
 const SEVIYE_0: Hedef[] = [
-  { id: 's0-tani', metin: 'Neyin bölümlerini öğrendim', olcut: { tur: 'ders', dersId: 's0:neyi-tani' } },
-  { id: 's0-durus', metin: 'Duruş ve tutuş dersini okudum', olcut: { tur: 'ders', dersId: 's0:durus' } },
-  { id: 's0-ayna', metin: 'Duruşumu ve tutuşumu aynada kontrol ettim', olcut: { tur: 'onay' } },
+  {
+    id: 's0-tani',
+    metin: 'Neyin bölümlerini öğrendim',
+    olcut: { tur: 'ders', dersId: 's0:neyi-tani' },
+    rota: dersRotasi('s0:neyi-tani'),
+  },
+  {
+    id: 's0-durus',
+    metin: 'Duruş ve tutuş dersini okudum',
+    olcut: { tur: 'ders', dersId: 's0:durus' },
+    rota: dersRotasi('s0:durus'),
+  },
+  {
+    id: 's0-ayna',
+    metin: 'Duruşumu ve tutuşumu aynada kontrol ettim',
+    olcut: { tur: 'onay' },
+    rota: dersRotasi('s0:durus'),
+  },
   {
     id: NEFES_HEDEF_ID,
     metin: '4-4-4 nefes egzersizini tamamladım',

@@ -1,10 +1,18 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/preact'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { acquireWakeLock, releaseWakeLock } from '../audio/wakeLock'
 import { NEFES_HEDEF_ID } from '../learning/baspare'
 import { getSettings, isaretEkle, resetDbForTests } from '../store/db'
 import { NefesEgzersizi } from './NefesEgzersizi'
 
+vi.mock('../audio/wakeLock', () => ({
+  acquireWakeLock: vi.fn(() => Promise.resolve()),
+  releaseWakeLock: vi.fn(),
+}))
+
 beforeEach(async () => {
+  vi.mocked(acquireWakeLock).mockClear()
+  vi.mocked(releaseWakeLock).mockClear()
   await resetDbForTests()
   location.hash = ''
 })
@@ -130,5 +138,31 @@ describe('NefesEgzersizi', () => {
     expect(screen.queryByRole('button', { name: 'Başla' })).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Anladım, alıştırmaya geç' }))
     expect(await screen.findByRole('button', { name: 'Başla' })).toBeTruthy()
+  })
+
+  it('ekran uyanık kilidi çalışırken alınır, "Durdur"da bırakılır; başlamadan alınmaz', async () => {
+    const btn = await hazirla()
+    expect(acquireWakeLock).not.toHaveBeenCalled()
+    fireEvent.click(btn)
+    expect(acquireWakeLock).toHaveBeenCalledTimes(1)
+    expect(releaseWakeLock).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Durdur' }))
+    expect(releaseWakeLock).toHaveBeenCalledTimes(1)
+  })
+
+  it('48 sn sonra bitince kilit bırakılır', async () => {
+    const btn = await hazirla()
+    fireEvent.click(btn)
+    gec(48)
+    expect(screen.getByText('Tamamlandı ✓')).toBeTruthy()
+    expect(releaseWakeLock).toHaveBeenCalled()
+  })
+
+  it('çalışırken sayfadan çıkılınca kilit bırakılır', async () => {
+    const btn = await hazirla()
+    fireEvent.click(btn)
+    expect(acquireWakeLock).toHaveBeenCalledTimes(1)
+    act(() => cleanup())
+    expect(releaseWakeLock).toHaveBeenCalledTimes(1)
   })
 })

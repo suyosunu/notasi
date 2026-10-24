@@ -1,4 +1,4 @@
-import { perdeDersId } from '../content/dersler'
+import { perdeDersId, perdeDersleri } from '../content/dersler'
 import { ETUTLER } from '../content/etutler'
 import { NEY_PERDELER, visibleFingering } from '../content/ney-perdeler'
 import type { NeyPerde, PerdeId } from '../content/ney-perdeler'
@@ -16,6 +16,11 @@ export interface EveningStep {
   tries: number
   /** Adımdan önce okunması gereken ders (`DersKapisi`). Bu alandan önce açılmış oturumlarda yoktur: kapı atlanır. */
   dersId?: string
+  /**
+   * Birden çok dersli adım (Nevâ: önce gösterge dersi, sonra Nevâ dersi); sırayla okunur. Varsa `dersId`'ye
+   * üstündür; bu alandan önce açılmış oturumlarda yoktur, o zaman `dersId` okunur.
+   */
+  dersIdler?: string[]
 }
 
 /** "İlk ses" denemeleri bu kimlikle `LongToneRec` olarak saklanır. */
@@ -72,7 +77,11 @@ function ilkSesStep(tries: number): EveningStep {
 /** `ders`: güncel (yeni çalışılan) perdenin adımı o perdenin dersini taşır; ısınma ve tekrar adımları taşımaz. */
 function perdeStep(p: NeyPerde, tries: number, ders = false): EveningStep {
   const step: EveningStep = { kind: 'uzun-ses', perdeId: p.id, label: `Uzun ses: ${p.name}`, tries }
-  if (ders) step.dersId = perdeDersId(p.id)
+  if (ders) {
+    step.dersId = perdeDersId(p.id)
+    const idler = perdeDersleri(p.id)
+    if (idler.length > 1) step.dersIdler = idler
+  }
   return step
 }
 
@@ -84,7 +93,7 @@ function baspareStep(): EveningStep {
 function etutStep(perdeStatus: Record<PerdeId, PerdeStatus>, calinan: ReadonlySet<string>): EveningStep | null {
   const etut = ETUTLER.find((e) => !calinan.has(e.id) && e.perdeler.every((id) => perdeStatus[id] === 'gecildi'))
   if (!etut) return null
-  return { kind: 'etut', etutId: etut.id, label: `Etüt: ${etut.baslik}`, tries: 1, dersId: etut.dersId }
+  return { kind: 'etut', etutId: etut.id, label: `Etüt · ${etut.baslik}`, tries: 1, dersId: etut.dersId }
 }
 
 export function buildEveningPlan(input: {
@@ -100,7 +109,10 @@ export function buildEveningPlan(input: {
   if (!input.calibrated) return [ilkSesStep(1), { kind: 'kalibrasyon', label: 'Kalibrasyon', tries: 1 }]
   const passed = NEY_PERDELER.filter((p) => input.perdeStatus[p.id] === 'gecildi')
   const current = NEY_PERDELER.find((p) => input.perdeStatus[p.id] === 'acik')
-  const warmup = passed.at(-1)
+  // Isınma: güncel perdeden hemen önceki geçilmiş perde (taşınmış eski kullanıcıda son geçilen perde güncelin
+  // ilerisinde olabilir); güncel perde yoksa ya da öncesinde geçilmiş perde yoksa son geçilen.
+  const onceki = current ? passed.filter((p) => NEY_PERDELER.indexOf(p) < NEY_PERDELER.indexOf(current)) : []
+  const warmup = onceki.at(-1) ?? passed.at(-1)
   const plan: EveningStep[] = []
   if (warmup) plan.push(perdeStep(warmup, 1))
   if (current) plan.push(perdeStep(current, 3, true))
@@ -110,6 +122,6 @@ export function buildEveningPlan(input: {
   const etut = etutStep(input.perdeStatus, input.calinanEtutler)
   if (etut) plan.push(etut)
   // Diğer geçilenler: güncel perdeye en yakın olandan geriye doğru.
-  for (const p of passed.slice(0, -1).reverse().slice(0, OTHER_PASSED_MAX)) plan.push(perdeStep(p, 1))
+  for (const p of passed.filter((x) => x !== warmup).reverse().slice(0, OTHER_PASSED_MAX)) plan.push(perdeStep(p, 1))
   return plan
 }

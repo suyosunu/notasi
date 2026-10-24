@@ -102,7 +102,7 @@ describe('Home', () => {
       .getAllByRole('listitem')
       .map((li) => li.querySelector('.plan-label')?.textContent)
     // Nevâ geçilmişken etüt de planda: başpâre adımından sonra, tek perde Nevâ etüdü.
-    expect(labels).toEqual(['Uzun ses: Nevâ', 'Uzun ses: Çârgâh', 'Başpâre koy-çek', 'Etüt: Tek perde: Nevâ'])
+    expect(labels).toEqual(['Uzun ses: Nevâ', 'Uzun ses: Çârgâh', 'Başpâre koy-çek', 'Etüt · Tek perde: Nevâ'])
     cleanup()
     await addLongTone({ perdeId: 'baspare', durationMs: 300, passed: true, toleranceCents: 25 })
     render(<Home />)

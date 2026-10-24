@@ -130,7 +130,7 @@ export const ETUT_DERSLERI: Ders[] = [
       },
       {
         tur: 'metin',
-        metin: 'İki etüt vardır. Birinci etütte yalnız dörtlükler ve ikilikler çalarsın. İkinci etütte sekizlikler girer: iki sekizlik bir dörtlük kadar sürer, yani aynı sürede iki ses çıkarırsın.',
+        metin: 'İki etüt vardır. Birinci etütte dörtlükler, ikilikler ve birlikler çalarsın. İkinci etütte sekizlikler girer: iki sekizlik bir dörtlük kadar sürer, yani aynı sürede iki ses çıkarırsın.',
       },
       {
         tur: 'metin',

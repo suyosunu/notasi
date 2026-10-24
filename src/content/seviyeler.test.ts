@@ -66,6 +66,9 @@ describe('SEVIYELER', () => {
     expect(h('s0-neva-5').olcut).toEqual({ tur: 'uzun-ses', perdeId: 'neva', ms: 5000, cent: 20 })
     expect(h('s0-nefes').rota).toBe('/hazirlik/nefes')
     expect(h('s0-baspare').olcut).toEqual({ tur: 'baspare' })
+    expect(h('s0-tani').rota).toBe('/ders/s0%3Aneyi-tani')
+    expect(h('s0-durus').rota).toBe('/ders/s0%3Adurus')
+    expect(h('s0-ayna').rota).toBe('/ders/s0%3Adurus')
     for (const p of ['neva', 'cargah', 'segah', 'dugah', 'rast']) {
       expect(h(`s1-${p}-8`).olcut).toEqual({ tur: 'uzun-ses', perdeId: p, ms: 8000, cent: 20 })
       expect(h(`s1-${p}-8`).rota).toBe(`/ney/${p}`)

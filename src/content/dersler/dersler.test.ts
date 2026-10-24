@@ -352,9 +352,11 @@ describe('Seviye 1 etüt dersleri', () => {
 describe('uzun ses dersleri uygulamanın bant ve süre eğrisiyle tutarlı', () => {
   const baslangic = neyLevelConfig(0)
   const son = neyLevelConfig(99)
+  const ONERI_CENT = 20
 
-  it('eğri: ±25 sent / 5 sn ile başlar, ±15 sent / 10 sn ile biter', () => {
+  it('eğri: ±25 sent / 5 sn ile başlar, sonra ±20, en sonda ±15 sent / 10 sn', () => {
     expect([baslangic.toleranceCents, baslangic.requiredMs]).toEqual([25, 5000])
+    expect(neyLevelConfig(1).toleranceCents).toBe(ONERI_CENT)
     expect([son.toleranceCents, son.requiredMs]).toEqual([15, 10000])
   })
 
@@ -367,6 +369,7 @@ describe('uzun ses dersleri uygulamanın bant ve süre eğrisiyle tutarlı', () 
     expect(m).toMatch(new RegExp(`±${baslangic.toleranceCents} sent`))
     expect(m).toMatch(new RegExp(`${son.requiredMs / 1000} sn`))
     expect(m).toMatch(new RegExp(`±${son.toleranceCents} sent`))
+    expect(m).toMatch(new RegExp(`öneri ±${ONERI_CENT} sent`, 'i'))
     expect(m).toMatch(/öneri/)
     expect(m).not.toMatch(/4 sn|±10 sent/)
   })

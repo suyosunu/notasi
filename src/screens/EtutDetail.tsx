@@ -187,7 +187,7 @@ export function EtutDetail({ etutId }: { etutId: string }) {
     )
   }
   return (
-    <DersKapisi dersId={etut.dersId}>
+    <DersKapisi dersId={etut.dersId} geri={{ href: '#/ney', label: 'Ney bölümüne dön' }}>
       <main class="screen">
         <EtutCalisma etut={etut} />
         <div class="links">

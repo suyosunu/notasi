@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'preact/hooks'
+import { acquireWakeLock, releaseWakeLock } from '../audio/wakeLock'
 import { DersKapisi } from '../ders/DersKapisi'
 import { NEFES_HEDEF_ID } from '../learning/baspare'
 import { isaretEkle } from '../store/db'
@@ -16,8 +17,8 @@ const TIK_MS = 250
 type Durum = 'hazir' | 'calisiyor' | 'bitti'
 
 /**
- * 4-4-4 nefes çalışması: 4 tur, her turda 4 sn al, 4 sn tut, 4 sn ver. Ses kullanılmaz; zamanlayıcı yalnız
- * çalışırken kurulur, "Durdur"da ve sayfadan çıkınca temizlenir. Dördüncü tur bitince hedef işaretlenir.
+ * 4-4-4 nefes çalışması: 4 tur, her turda 4 sn al, 4 sn tut, 4 sn ver. Ses kullanılmaz; zamanlayıcı ve ekran uyanık
+ * kilidi yalnız çalışırken kurulur, "Durdur"da, bitişte ve sayfadan çıkınca temizlenir. Dördüncü tur bitince hedef işaretlenir.
  */
 export function NefesEgzersizi() {
   const [durum, setDurum] = useState<Durum>('hazir')
@@ -26,6 +27,8 @@ export function NefesEgzersizi() {
 
   useEffect(() => {
     if (durum !== 'calisiyor') return
+    // Çalışırken ekran kararmasın; durdurma, bitiş ve sayfadan çıkışta temizlikle bırakılır.
+    void acquireWakeLock()
     // Süre tik sayısından değil duvar saatinden hesaplanır: iOS zamanlayıcıyı yavaşlatsa da 48 sn gerçek süredir.
     const baslangic = Date.now()
     const id = setInterval(() => {
@@ -38,7 +41,10 @@ export function NefesEgzersizi() {
         void isaretEkle('onaylananHedefler', NEFES_HEDEF_ID).catch(() => undefined)
       }
     }, TIK_MS)
-    return () => clearInterval(id)
+    return () => {
+      clearInterval(id)
+      releaseWakeLock()
+    }
   }, [durum])
 
   function basla() {
@@ -51,7 +57,7 @@ export function NefesEgzersizi() {
   const kalan = FAZ_SN - (saniye % FAZ_SN)
 
   return (
-    <DersKapisi dersId="s0:nefes">
+    <DersKapisi dersId="s0:nefes" geri={{ href: '#/ogren', label: 'Öğren bölümüne dön' }}>
       <main class="screen nefes">
         <h1>🫁 4-4-4 nefes</h1>
         {durum === 'hazir' && (

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks'
-import { dersById, perdeDersId } from '../content/dersler'
+import { dersById, perdeDersId, perdeDersleri } from '../content/dersler'
 import { ETUTLER } from '../content/etutler'
 import { NEY_PERDELER } from '../content/ney-perdeler'
 import type { PerdeId } from '../content/ney-perdeler'
@@ -187,7 +187,7 @@ export function NeyPerdePractice({ perdeId }: { perdeId: string }) {
 
   // Ders kuralı: perdenin dersi okunmadan alıştırması gelmez (kilitli perdede ve kalibrasyonda kapı yok).
   return (
-    <DersKapisi dersId={perdeDersId(perde.id)}>
+    <DersKapisi dersId={perdeDersleri(perde.id)} geri={{ href: '#/ney', label: 'Ney bölümüne dön' }}>
       <main class="screen evening">
         <header class="day-head">
           <h1>🪈 Uzun ses: {perde.name}</h1>

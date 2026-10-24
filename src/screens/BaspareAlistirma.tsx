@@ -203,7 +203,7 @@ export function BaspareAlistirma() {
   }
 
   return (
-    <DersKapisi dersId="s0:baspare">
+    <DersKapisi dersId="s0:baspare" geri={{ href: '#/ogren', label: 'Öğren bölümüne dön' }}>
       <main class="screen evening">
         <header class="day-head">
           <h1>🪈 Başpâreyi koy, çek</h1>

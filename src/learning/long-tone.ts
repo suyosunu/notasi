@@ -31,11 +31,14 @@ export function neyLevel(recs: readonly { passed: boolean; at: string }[]): numb
   return Math.max(0, passes - (recent.length - passes))
 }
 
-/** `level`: `neyLevel` ile bulunan perde düzeyi. */
+/**
+ * `level`: `neyLevel` ile bulunan perde düzeyi. Bant: 0 → ±25, 1–3 → ±20, 4+ → ±15 sent;
+ * süre 5 sn'den 10 sn'ye. Böylece ±20 sentle 8 sn (Seviye 1 hedefi) 3. düzeyde ulaşılır.
+ */
 export function neyLevelConfig(level: number): LongToneConfig {
   const k = Math.max(0, Math.floor(Number.isFinite(level) ? level : 0))
   return {
-    toleranceCents: Math.max(15, 25 - 5 * k),
+    toleranceCents: k === 0 ? 25 : k <= 3 ? 20 : 15,
     requiredMs: Math.min(10000, 5000 + 1000 * k),
     graceMs: GRACE_MS,
   }

@@ -104,4 +104,45 @@ describe('DersKapisi', () => {
     expect(screen.queryByText('Alıştırma burada')).toBeNull()
     expect(await screen.findByText('Diğer ders metni.')).toBeTruthy()
   })
+
+  it('kapıdaki ders "Ana ekrana dön" bağlantısı gösterir; bağlantı dersi okundu işaretlemez', async () => {
+    render(<DersKapisi dersId="s0:kapi">{cocuk()}</DersKapisi>)
+    const geri = await screen.findByRole('link', { name: 'Ana ekrana dön' })
+    expect(geri.getAttribute('href')).toBe('#/')
+    fireEvent.click(geri)
+    expect((await getSettings()).okunanDersler).toEqual([])
+    expect(screen.queryByText('Alıştırma burada')).toBeNull()
+  })
+
+  it('özel geri bağlantısı verilirse o gösterilir', async () => {
+    render(
+      <DersKapisi dersId="s0:kapi" geri={{ href: '#/ney', label: 'Ney bölümüne dön' }}>
+        {cocuk()}
+      </DersKapisi>,
+    )
+    expect((await screen.findByRole('link', { name: 'Ney bölümüne dön' })).getAttribute('href')).toBe('#/ney')
+  })
+
+  it('dersId dizisi: dersler sırayla, yalnız okunmamış olanlar gösterilir', async () => {
+    const { unmount } = render(<DersKapisi dersId={['s0:kapi', 's0:diger']}>{cocuk()}</DersKapisi>)
+    expect(await screen.findByText('Ders metni.')).toBeTruthy()
+    expect(screen.queryByText('Diğer ders metni.')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Anladım, alıştırmaya geç' }))
+    expect(await screen.findByText('Diğer ders metni.')).toBeTruthy()
+    expect(screen.queryByText('Alıştırma burada')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Anladım, alıştırmaya geç' }))
+    expect(await screen.findByText('Alıştırma burada')).toBeTruthy()
+    unmount()
+
+    // İkisi de okunduktan sonra doğrudan çocuk görünür.
+    render(<DersKapisi dersId={['s0:kapi', 's0:diger']}>{cocuk()}</DersKapisi>)
+    expect(await screen.findByText('Alıştırma burada')).toBeTruthy()
+  })
+
+  it('dersId dizisinde ilki okunmuşsa yalnız ikinci ders gelir', async () => {
+    await isaretEkle('okunanDersler', 's0:kapi')
+    render(<DersKapisi dersId={['s0:kapi', 's0:diger']}>{cocuk()}</DersKapisi>)
+    expect(await screen.findByText('Diğer ders metni.')).toBeTruthy()
+    expect(screen.queryByText('Ders metni.')).toBeNull()
+  })
 })

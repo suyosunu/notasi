@@ -23,9 +23,16 @@ describe('neyLevelConfig', () => {
     expect(neyLevelConfig(0)).toEqual({ toleranceCents: 25, requiredMs: 5000, graceMs: 250 })
   })
 
-  it('her geçişte daralır ve uzar: 1 → 20 sent / 6 sn, 3 → 15 sent / 8 sn', () => {
+  it('süre her geçişte uzar, bant ±20 sentte 3. düzeye kadar kalır: 1 → 20 / 6 sn, 3 → 20 / 8 sn, 4 → 15 / 9 sn', () => {
     expect(neyLevelConfig(1)).toEqual({ toleranceCents: 20, requiredMs: 6000, graceMs: 250 })
-    expect(neyLevelConfig(3)).toEqual({ toleranceCents: 15, requiredMs: 8000, graceMs: 250 })
+    expect(neyLevelConfig(3)).toEqual({ toleranceCents: 20, requiredMs: 8000, graceMs: 250 })
+    expect(neyLevelConfig(4)).toEqual({ toleranceCents: 15, requiredMs: 9000, graceMs: 250 })
+  })
+
+  it('Seviye 1 hedefi (8 sn, ±20 sent) 3. düzeyde ulaşılabilir', () => {
+    const c = neyLevelConfig(3)
+    expect(c.requiredMs).toBeGreaterThanOrEqual(8000)
+    expect(c.toleranceCents).toBeGreaterThanOrEqual(20)
   })
 
   it('sınırlarda durur: en dar ±15 sent, en uzun 10 sn', () => {
@@ -130,8 +137,8 @@ describe('stepLongTone', () => {
   })
 
   it('daha sıkı yapılandırmada 18 sent tolerans dışıdır, 15 sent içindedir', () => {
-    expect(run(series(0, 8000, 18), neyLevelConfig(3)).holdStartAt).toBeNull()
-    expect(run(series(0, 8000, 15), neyLevelConfig(3)).passed).toBe(true)
+    expect(run(series(0, 9000, 18), neyLevelConfig(4)).holdStartAt).toBeNull()
+    expect(run(series(0, 9000, 15), neyLevelConfig(4)).passed).toBe(true)
   })
 })
 

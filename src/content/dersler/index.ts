@@ -18,3 +18,11 @@ export function notaDersId(topicId: string): string {
 export function perdeDersId(perdeId: string): string {
   return `perde:${perdeId}`
 }
+
+/** Akort göstergesini öğreten ders; ilk uzun ses (Nevâ) alıştırmasından önce okunur. */
+export const UZUN_SES_DERS_ID = 's0:uzun-ses'
+
+/** Perde alıştırmasından önce sırayla okunacak dersler: Nevâ'da önce gösterge dersi, sonra perde dersi. */
+export function perdeDersleri(perdeId: string): string[] {
+  return perdeId === 'neva' ? [UZUN_SES_DERS_ID, perdeDersId(perdeId)] : [perdeDersId(perdeId)]
+}

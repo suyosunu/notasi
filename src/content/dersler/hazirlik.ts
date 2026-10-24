@@ -29,7 +29,7 @@ export const HAZIRLIK_DERSLERI: Ders[] = [
           'Başpâre: neyin üst ucuna takılan ağızlıktır. Dudağını buna yaslayıp üflersin.',
           'Parazvane: kamışın iki ucuna geçirilen metal halkalardır.',
           'Boğumlar: kamışın doğal eklem yerleridir; gövde boyunca sıralanırlar.',
-          'Ön delikler: neyin önünde altı delik vardır. Yukarıdan aşağıya adları nevâ, nîm hicâz, çârgâh, segâh, kürdî ve dügâhtır.',
+          'Ön delikler: neyin önünde altı delik vardır. Yukarıdan aşağıya klasik adları nevâ, hicaz, çârgâh, segâh, kürdî ve dügâhtır.',
           'Aşîrân deliği: neyin arkasındaki tek deliktir. Onu üstteki elinin başparmağıyla kapatırsın.',
         ],
       },
@@ -252,7 +252,7 @@ export const HAZIRLIK_DERSLERI: Ders[] = [
       },
       {
         tur: 'metin',
-        metin: "Seviye 0 için önerimiz: Nevâ'yı en az 5 sn, ±20 sent içinde tutmak. Bu sayı bir öneridir; kaynaklar kesin süre vermez, sesi akort aletiyle doğru yükseklikte vermeni ister. Uygulamada başta yeşil bant ±25 sent, tutuş süresi 5 sn'dir; sen ilerledikçe bant ±15 sente kadar daralır, süre 10 sn'ye kadar uzar. Öneri ±20 senttir; daha dar bant fazladan alıştırmadır.",
+        metin: "Seviye 0 için önerimiz: Nevâ'yı en az 5 sn, ±20 sent içinde tutmak. Bu sayı bir öneridir; kaynaklar kesin süre vermez, sesi akort aletiyle doğru yükseklikte vermeni ister. Uygulamada başta yeşil bant ±25 sent, tutuş süresi 5 sn'dir; sen ilerledikçe önce bant ±20 sente iner, sonra ±15 sente kadar daralır, süre 10 sn'ye kadar uzar. Öneri ±20 senttir; ±15 sent fazladan alıştırmadır.",
       },
       {
         tur: 'metin',
