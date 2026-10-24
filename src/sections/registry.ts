@@ -1,5 +1,5 @@
 export interface SectionDef {
-  id: 'nota' | 'ney' | 'makam' | 'usul' | 'parcalar' | 'piyano'
+  id: 'ogren' | 'nota' | 'ney' | 'makam' | 'usul' | 'parcalar' | 'piyano'
   title: string
   icon: string
   status: 'aktif' | 'yakinda' | 'ileride'
@@ -7,6 +7,7 @@ export interface SectionDef {
 }
 
 export const SECTIONS: SectionDef[] = [
+  { id: 'ogren', title: 'Öğren', icon: '📖', status: 'aktif', route: '/ogren' },
   { id: 'nota', title: 'Nota', icon: '🎼', status: 'aktif', route: '/nota' },
   { id: 'ney', title: 'Ney', icon: '🪈', status: 'aktif', route: '/ney' },
   { id: 'makam', title: 'Makam', icon: '🧭', status: 'aktif', route: '/makam' },

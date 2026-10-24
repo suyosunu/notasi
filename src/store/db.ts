@@ -66,7 +66,17 @@ export interface Settings {
   usulSesi: UsulSesi
   /** Varsayılan seslerin hangi sürümde taşındığı; 2'den küçük kayıtta eski varsayılanlar bir kez taşınır. */
   varsayilanSesSurumu: number
+  /** Okunmuş ders kimlikleri (ders kapısı bir kez zorunludur). */
+  okunanDersler: string[]
+  /** Kullanıcının "hedefi geçtim" diye onayladığı birimler (ör. Seviye 0–1 hedefi). */
+  onaylananHedefler: string[]
+  /** Çalınmış etüt kimlikleri. */
+  calinanEtutler: string[]
 }
+
+/** `Settings` içindeki kimlik listeleri; `isaretEkle`/`isaretKaldir` bunlar üzerinde çalışır. */
+export type IsaretAlani = 'okunanDersler' | 'onaylananHedefler' | 'calinanEtutler'
+const ISARET_ALANLARI: IsaretAlani[] = ['okunanDersler', 'onaylananHedefler', 'calinanEtutler']
 
 export const DEFAULT_SETTINGS: Settings = {
   tuning: DEFAULT_TUNING,
@@ -79,6 +89,9 @@ export const DEFAULT_SETTINGS: Settings = {
   neySesi: 'shakuhachi',
   usulSesi: 'tahta',
   varsayilanSesSurumu: 2,
+  okunanDersler: [],
+  onaylananHedefler: [],
+  calinanEtutler: [],
 }
 
 /** `settings` deposunda tek kayıt tutulur; anahtarı bu sabittir. */
@@ -171,6 +184,16 @@ function tasiSesler(rest: Partial<Settings>): Pick<Settings, 'neySesi' | 'usulSe
   }
 }
 
+/** Eski kayıtta yoktur; bozuk değer (dizi olmayan) boşa, string olmayan öğeler atılır. */
+function temizIsaretler(rest: Partial<Settings>): Pick<Settings, IsaretAlani> {
+  const temiz = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [])
+  return {
+    okunanDersler: temiz(rest.okunanDersler),
+    onaylananHedefler: temiz(rest.onaylananHedefler),
+    calinanEtutler: temiz(rest.calinanEtutler),
+  }
+}
+
 function mergeSettings(stored: Partial<SettingsRec> | undefined): Settings {
   if (!stored) return { ...DEFAULT_SETTINGS, tuning: { ...DEFAULT_SETTINGS.tuning } }
   const { id: _id, ...rest } = stored
@@ -179,6 +202,7 @@ function mergeSettings(stored: Partial<SettingsRec> | undefined): Settings {
     ...rest,
     tuning: { ...DEFAULT_SETTINGS.tuning, ...(rest.tuning ?? {}) },
     ...tasiSesler(rest),
+    ...temizIsaretler(rest),
   }
 }
 
@@ -194,6 +218,26 @@ export async function saveSettings(patch: Partial<Settings>): Promise<Settings> 
   const next: Settings = { ...merged, ...patch }
   await Promise.all([tx.store.put({ id: SETTINGS_KEY, ...next }), tx.done])
   return next
+}
+
+/** Tek readwrite işleminde okuma-değiştirme-yazma; eşzamanlı işaretler birbirini ezmez. */
+async function isaretDegistir(alan: IsaretAlani, degistir: (liste: string[]) => string[]): Promise<Settings> {
+  if (!ISARET_ALANLARI.includes(alan)) throw new Error(`Bilinmeyen işaret alanı: ${alan}`)
+  const db = await getDb()
+  const tx = db.transaction('settings', 'readwrite')
+  const merged = mergeSettings(await tx.store.get(SETTINGS_KEY))
+  const next: Settings = { ...merged, [alan]: degistir(merged[alan]) }
+  await Promise.all([tx.store.put({ id: SETTINGS_KEY, ...next }), tx.done])
+  return next
+}
+
+/** `id`'yi listeye ekler; zaten varsa değişmez (idempotent). */
+export function isaretEkle(alan: IsaretAlani, id: string): Promise<Settings> {
+  return isaretDegistir(alan, (l) => (l.includes(id) ? l : [...l, id]))
+}
+
+export function isaretKaldir(alan: IsaretAlani, id: string): Promise<Settings> {
+  return isaretDegistir(alan, (l) => l.filter((x) => x !== id))
 }
 
 // --- attempts ---------------------------------------------------------

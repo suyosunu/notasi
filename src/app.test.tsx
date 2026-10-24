@@ -1,7 +1,9 @@
-import { cleanup, render, screen } from '@testing-library/preact'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/preact'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { App } from './app'
-import { resetDbForTests, saveSettings, setPlacedOut } from './store/db'
+import { App, rotaBilinir } from './app'
+import { DERSLER } from './content/dersler'
+import type { Ders } from './content/dersler/types'
+import { getSettings, resetDbForTests, saveSettings, setPlacedOut } from './store/db'
 
 beforeEach(async () => {
   await resetDbForTests()
@@ -173,5 +175,82 @@ describe('App', () => {
       expect(screen.getByText('Sayfa bulunamadı')).toBeTruthy()
       cleanup()
     }
+  })
+
+  describe('Öğren ve ders rotaları', () => {
+    const FIXTURE: Ders = {
+      id: 's0:rota deneme',
+      seviye: 0,
+      baslik: 'Rota dersi',
+      bloklar: [
+        { tur: 'metin', metin: 'Rota dersi metni.' },
+        { tur: 'gorsel', ad: 'nefes-444' },
+        { tur: 'dene', adimlar: ['Dene'] },
+      ],
+      kaynaklar: ['test'],
+      alistirma: '/hakkinda',
+    }
+    beforeEach(() => {
+      DERSLER.push(FIXTURE)
+    })
+    afterEach(() => {
+      DERSLER.splice(DERSLER.indexOf(FIXTURE), 1)
+    })
+
+    it('#/ogren rotası Öğren bölümünü gösterir', async () => {
+      location.hash = '#/ogren'
+      render(<App />)
+      expect(await screen.findByRole('heading', { name: '📖 Öğren' })).toBeTruthy()
+      expect(screen.getByText('Rota dersi')).toBeTruthy()
+    })
+
+    it('#/ders/<kodlanmış kimlik> ders sayfasını açar; "Anladım" kaydeder ve ders.alistirma rotasına gider', async () => {
+      location.hash = '#/ders/' + encodeURIComponent(FIXTURE.id)
+      render(<App />)
+      expect(await screen.findByText('Rota dersi metni.')).toBeTruthy()
+      expect(screen.getByRole('link', { name: 'Öğren bölümüne dön' }).getAttribute('href')).toBe('#/ogren')
+      fireEvent.click(screen.getByRole('button', { name: 'Anladım, alıştırmaya geç' }))
+      await waitFor(() => expect(location.hash).toBe('#/hakkinda'))
+      expect((await getSettings()).okunanDersler).toEqual([FIXTURE.id])
+    })
+
+    it('alıştırması olmayan ders sonunda /ogren sayfasına gider', async () => {
+      const yalin: Ders = { ...FIXTURE, id: 's0:yalin', alistirma: undefined }
+      DERSLER.push(yalin)
+      try {
+        location.hash = '#/ders/s0%3Ayalin'
+        render(<App />)
+        fireEvent.click(await screen.findByRole('button', { name: 'Anladım, alıştırmaya geç' }))
+        await waitFor(() => expect(location.hash).toBe('#/ogren'))
+      } finally {
+        DERSLER.splice(DERSLER.indexOf(yalin), 1)
+      }
+    })
+
+    it('bilinmeyen ders kimliğinde "Ders bulunamadı" ve geri bağlantısı çıkar', () => {
+      location.hash = '#/ders/yok%3Ayok'
+      render(<App />)
+      expect(screen.getByText('Ders bulunamadı')).toBeTruthy()
+      expect(screen.getByRole('link', { name: 'Öğren bölümüne dön' }).getAttribute('href')).toBe('#/ogren')
+    })
+
+    it('bozuk kodlanmış kimlik de çökmeden "Ders bulunamadı" gösterir', () => {
+      location.hash = '#/ders/%E0%A4%A'
+      render(<App />)
+      expect(screen.getByText('Ders bulunamadı')).toBeTruthy()
+    })
+
+    it('rotaBilinir: sabit rotalar, önek + var olan kimlik; bilinmeyenler false', () => {
+      expect(rotaBilinir('/')).toBe(true)
+      expect(rotaBilinir('/ogren')).toBe(true)
+      expect(rotaBilinir('/nota/nota-1')).toBe(true)
+      expect(rotaBilinir('/nota/karisik')).toBe(true)
+      expect(rotaBilinir('/ney/neva')).toBe(true)
+      expect(rotaBilinir('/ders/' + encodeURIComponent(FIXTURE.id))).toBe(true)
+      expect(rotaBilinir('/ders/yok')).toBe(false)
+      expect(rotaBilinir('/nota/yok')).toBe(false)
+      expect(rotaBilinir('/yok')).toBe(false)
+      expect(rotaBilinir('/constructor')).toBe(false)
+    })
   })
 })

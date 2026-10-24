@@ -44,17 +44,18 @@ afterEach(() => {
 })
 
 describe('Home', () => {
-  it('shows the Masa başı card and six section chips, Piyano being ileride', async () => {
+  it('shows the Masa başı card and seven section chips, Piyano being ileride', async () => {
     await saveSettings({ onboarded: true, placementDone: true })
     render(<Home />)
     expect(await screen.findByText('☀️ Masa başı · 10 dk')).toBeTruthy()
     expect(screen.getByText('Re, Do, Si')).toBeTruthy()
-    expect(document.querySelectorAll('[data-status]')).toHaveLength(6)
+    expect(document.querySelectorAll('[data-status]')).toHaveLength(7)
     expect(screen.getByText('Piyano').closest('[data-status]')?.getAttribute('data-status')).toBe('ileride')
     expect(screen.getByText('Makam').closest('[data-status]')?.getAttribute('data-status')).toBe('aktif')
     expect(screen.getByText('Usul').closest('[data-status]')?.getAttribute('data-status')).toBe('aktif')
     expect(screen.getByText('Usul').closest('a')?.getAttribute('href')).toBe('#/usul')
     expect(screen.getByText('Nota').closest('a')?.getAttribute('href')).toBe('#/nota')
+    expect(screen.getByText('Öğren').closest('a')?.getAttribute('href')).toBe('#/ogren')
     expect(screen.getByText('Piyano').closest('a')).toBeNull()
     expect(screen.getByText('Makam').closest('a')?.getAttribute('href')).toBe('#/makam')
     expect(screen.getByText('Parçalar').closest('[data-status]')?.getAttribute('data-status')).toBe('aktif')

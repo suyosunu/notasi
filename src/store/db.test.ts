@@ -7,6 +7,8 @@ import {
   getCard,
   getOpenSession,
   getSettings,
+  isaretEkle,
+  isaretKaldir,
   listAttempts,
   listCards,
   listFingeringFlags,
@@ -152,6 +154,58 @@ describe('settings', () => {
     // Kullanıcı sonradan "mevcut"i bilinçli seçerse bir daha taşınmaz.
     await saveSettings({ neySesi: 'mevcut' })
     expect((await getSettings()).neySesi).toBe('mevcut')
+  })
+
+  it('isaretEkle idempotent, isaretKaldir siler, eski kayıtta alanlar []', async () => {
+    await replaceAllStores({ ...noStores(), settings: [{ id: 'settings', soundOn: false }] })
+    const eski = await getSettings()
+    expect(eski.okunanDersler).toEqual([])
+    expect(eski.onaylananHedefler).toEqual([])
+    expect(eski.calinanEtutler).toEqual([])
+    await isaretEkle('okunanDersler', 's0:a')
+    const s = await isaretEkle('okunanDersler', 's0:a')
+    expect(s.okunanDersler).toEqual(['s0:a'])
+    await isaretEkle('okunanDersler', 's0:b')
+    await isaretEkle('calinanEtutler', 'etut:x')
+    expect((await getSettings()).okunanDersler).toEqual(['s0:a', 's0:b'])
+    expect((await getSettings()).calinanEtutler).toEqual(['etut:x'])
+    expect((await getSettings()).soundOn).toBe(false)
+    const kalan = await isaretKaldir('okunanDersler', 's0:a')
+    expect(kalan.okunanDersler).toEqual(['s0:b'])
+    expect((await isaretKaldir('okunanDersler', 'yok')).okunanDersler).toEqual(['s0:b'])
+    expect((await getSettings()).okunanDersler).toEqual(['s0:b'])
+  })
+
+  it('eşzamanlı isaretEkle çağrıları birbirini ezmez', async () => {
+    await Promise.all([isaretEkle('okunanDersler', 'a'), isaretEkle('okunanDersler', 'b'), isaretEkle('onaylananHedefler', 'h')])
+    const s = await getSettings()
+    expect([...s.okunanDersler].sort()).toEqual(['a', 'b'])
+    expect(s.onaylananHedefler).toEqual(['h'])
+  })
+
+  it('bozuk değer (string, sayı dizisi) [] ya da yalnız stringler olur', async () => {
+    await replaceAllStores({
+      ...noStores(),
+      settings: [{ id: 'settings', okunanDersler: 'x', onaylananHedefler: [1, 2], calinanEtutler: ['a', 3, 'b', null] }],
+    })
+    const s = await getSettings()
+    expect(s.okunanDersler).toEqual([])
+    expect(s.onaylananHedefler).toEqual([])
+    expect(s.calinanEtutler).toEqual(['a', 'b'])
+  })
+
+  it('eski yedek (alanlar yok) içe aktarılınca getSettings boş dizilerle döner', async () => {
+    await replaceAllStores({
+      ...noStores(),
+      settings: [{ id: 'settings', onboarded: true, neySesi: 'nefesli', usulSesi: 'konga', varsayilanSesSurumu: 2 }],
+    })
+    const s = await getSettings()
+    expect(s.onboarded).toBe(true)
+    expect(s.okunanDersler).toEqual([])
+    expect(s.onaylananHedefler).toEqual([])
+    expect(s.calinanEtutler).toEqual([])
+    // Alan yokken yazılan ilk işaret de çalışır.
+    expect((await isaretEkle('okunanDersler', 'd')).okunanDersler).toEqual(['d'])
   })
 
   it('accumulates successive patches', async () => {

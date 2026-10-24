@@ -650,3 +650,75 @@ h2.setting-label {
   height: 1.25rem;
   accent-color: var(--accent);
 }
+
+/* Ders sayfaları ve Öğren bölümü */
+.ders h2 {
+  margin: 1.5rem 0 0.5rem;
+  font-size: 1.15rem;
+}
+
+.ders > .primary {
+  display: block;
+  width: 100%;
+  margin-top: 1.5rem;
+}
+
+.ders-liste {
+  margin: 0.5rem 0;
+  padding-left: 1.25rem;
+}
+
+.ders-figur {
+  margin: 1rem 0;
+  padding: 0;
+}
+
+.ders-figur figcaption {
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.ders-parmak {
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem 0;
+  background: #fff;
+  border-radius: 1rem;
+  border: 1px solid #e6dfd1;
+  color: var(--ink);
+}
+
+.gorsel {
+  width: 100%;
+  height: auto;
+  margin: 0 auto;
+  padding: 0.5rem;
+  background: #fff;
+  border-radius: 1rem;
+  border: 1px solid #e6dfd1;
+  color: var(--ink);
+}
+
+.ders-dene {
+  margin: 1.5rem 0 0;
+  padding: 0.25rem 1rem 0.75rem;
+  background: #f3ecdc;
+  border-left: 4px solid var(--accent);
+  border-radius: 0.5rem;
+}
+
+.ders-dene h2 {
+  margin-top: 0.75rem;
+}
+
+.ders-dene ol {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.ders-kaynak {
+  margin: 1.5rem 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
