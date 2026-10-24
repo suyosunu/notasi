@@ -7,6 +7,7 @@ import {
   NEFES_SOLUK_CHAIN,
   NEFES_TON_CHAIN,
   NEY_SESLERI,
+  SHAKUHACHI_CHAIN,
   SOUND_CHAIN,
   toToneEvents,
 } from './pattern'
@@ -25,7 +26,7 @@ describe('buildPatternCode', () => {
   it('freq mini-notasyonu, ses zinciri ve cpm üretir', () => {
     const { code, durationMs } = buildPatternCode(events, 60)
     expect(code.startsWith('freq("440.00@2 ~@1 494.96@1")')).toBe(true)
-    expect(code).toContain(SOUND_CHAIN)
+    expect(code).toContain(melodyChain('shakuhachi'))
     expect(code).toContain('.cpm(15)')
     expect(durationMs).toBe(4000)
   })
@@ -164,9 +165,10 @@ describe('melodyChain (ney sesi)', () => {
     expect(melodyChain('shakuhachi')).toContain(`.s("${SHAKUHACHI_SOUND}")`)
   })
 
-  it('buildPatternCode seçilen zinciri kullanır; varsayılan mevcut', () => {
+  it('buildPatternCode seçilen zinciri kullanır; varsayılan shakuhachi', () => {
     const events = [{ hz: 440, beats: 1 }]
-    expect(buildPatternCode(events, 60).code).toContain(SOUND_CHAIN)
+    expect(buildPatternCode(events, 60).code).toContain(SHAKUHACHI_CHAIN)
+    expect(buildPatternCode(events, 60).code).toBe(buildPatternCode(events, 60, 'shakuhachi').code)
     for (const v of NEY_SESLERI) {
       const { code } = buildPatternCode(events, 60, v)
       expect(code).toBe(`freq("440.00@1")${melodyChain(v)}.mask("<1 0@1000000>").cpm(60)`)

@@ -83,9 +83,9 @@ describe('preloadAudio / unlockAudio', () => {
 describe('playTones', () => {
   it('üretilen kodla evaluate çağırır ve 4150 ms sonra hush çağırıp resolve olur', async () => {
     const { playTones } = await freshPlayer()
-    const { code } = buildPatternCode(events, 60)
+    const { code } = buildPatternCode(events, 60, 'mevcut')
     let done = false
-    const p = playTones(events).then(() => {
+    const p = playTones(events, 60, 'mevcut').then(() => {
       done = true
     })
     await vi.advanceTimersByTimeAsync(0)
@@ -103,18 +103,18 @@ describe('playTones', () => {
   it('evaluate hata fırlatırsa reject olur', async () => {
     const { playTones } = await freshPlayer()
     strudel.evaluate.mockRejectedValue(new Error('ses yok'))
-    await expect(playTones(events)).rejects.toThrow('ses yok')
+    await expect(playTones(events, 60, 'mevcut')).rejects.toThrow('ses yok')
   })
 
   it('yeni çalma öncekini durdurur: eski söz çözülür, eski zamanlayıcı iptal olur', async () => {
     const { playTones, stopAudio } = await freshPlayer()
     let firstDone = false
-    const first = playTones(events).then(() => {
+    const first = playTones(events, 60, 'mevcut').then(() => {
       firstDone = true
     })
     await vi.advanceTimersByTimeAsync(0)
     const before = strudel.hush.mock.calls.length
-    const second = playTones(events)
+    const second = playTones(events, 60, 'mevcut')
     await vi.advanceTimersByTimeAsync(0)
     expect(strudel.hush.mock.calls.length).toBeGreaterThan(before)
     await first
@@ -130,7 +130,7 @@ describe('playTones', () => {
       () => new Promise<void>((resolve) => (finishEvaluate = resolve)),
     )
     let settled = false
-    const p = playTones(events).then(() => {
+    const p = playTones(events, 60, 'mevcut').then(() => {
       settled = true
     })
     await vi.advanceTimersByTimeAsync(0)
@@ -153,11 +153,11 @@ describe('playTones', () => {
       () => new Promise<void>((resolve) => (finishFirst = resolve)),
     )
     let firstSettled = false
-    const first = playTones(events).then(() => {
+    const first = playTones(events, 60, 'mevcut').then(() => {
       firstSettled = true
     })
     await vi.advanceTimersByTimeAsync(0)
-    const second = playTones(events)
+    const second = playTones(events, 60, 'mevcut')
     await vi.advanceTimersByTimeAsync(0)
     strudel.hush.mockClear()
     finishFirst()
@@ -202,7 +202,7 @@ describe('playLoop', () => {
   it('çalan playTones varsa playLoop onu durdurur ve eski söz çözülür', async () => {
     const { playLoop, playTones } = await freshPlayer()
     let toneDone = false
-    const tone = playTones(events).then(() => {
+    const tone = playTones(events, 60, 'mevcut').then(() => {
       toneDone = true
     })
     await vi.advanceTimersByTimeAsync(0)
@@ -317,11 +317,11 @@ describe('ney sesi (setNeySesi / getNeySesi)', () => {
     await p
   }
 
-  it("varsayılan 'mevcut'; setNeySesi seçimi değiştirir ve playTones onu kullanır", async () => {
+  it("varsayılan 'shakuhachi'; setNeySesi seçimi değiştirir ve playTones onu kullanır", async () => {
     const { getNeySesi, setNeySesi, playTones, stopAudio } = await freshPlayer()
-    expect(getNeySesi()).toBe('mevcut')
+    expect(getNeySesi()).toBe('shakuhachi')
     await playAndFinish(playTones(events), stopAudio)
-    expect(strudel.evaluate).toHaveBeenLastCalledWith(buildPatternCode(events, 60, 'mevcut').code)
+    expect(strudel.evaluate).toHaveBeenLastCalledWith(buildPatternCode(events, 60, 'shakuhachi').code)
     setNeySesi('nefesli')
     expect(getNeySesi()).toBe('nefesli')
     await playAndFinish(playTones(events), stopAudio)
@@ -385,11 +385,11 @@ describe('usul sesi (setUsulSesi / getUsulSesi) ve kayıt yükleme', () => {
 
   const konga = 's("usul_konga_dum@2 usul_konga_teke@1 usul_konga_teke@1").clip("0.9@2 0.9@1 0.9@1").cpm(15)'
 
-  it("varsayılan 'oryantal'; setUsulSesi seçimi değiştirir", async () => {
+  it("varsayılan 'tahta'; setUsulSesi seçimi değiştirir", async () => {
     const { getUsulSesi, setUsulSesi } = await freshPlayer()
-    expect(getUsulSesi()).toBe('oryantal')
-    setUsulSesi('tahta')
     expect(getUsulSesi()).toBe('tahta')
+    setUsulSesi('darbuka')
+    expect(getUsulSesi()).toBe('darbuka')
   })
 
   it('oryantal (sentez) usul kodu hiçbir dosya istemez', async () => {

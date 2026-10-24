@@ -21,7 +21,7 @@ export function isUsulSesi(v: unknown): v is UsulSesi {
 }
 
 /** Seçili usul sesi. Açılışta ayarlardan yüklenir, Ayarlar'da değişince ve yedek geri yüklenince hemen uygulanır. */
-let usulSesi: UsulSesi = 'oryantal'
+let usulSesi: UsulSesi = 'tahta'
 
 export function setUsulSesi(v: UsulSesi): void {
   usulSesi = v

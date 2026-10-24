@@ -18,13 +18,13 @@ import type { SampleHost } from './usulSamples'
 const root = resolve(__dirname, '../..')
 
 describe('usul sesi seçimi', () => {
-  it("dört seçenek; varsayılan 'oryantal'; setUsulSesi değiştirir", () => {
+  it("dört seçenek; varsayılan 'tahta'; setUsulSesi değiştirir", () => {
     expect(USUL_SESLERI).toEqual(['oryantal', 'konga', 'tahta', 'darbuka'])
     expect(KAYIT_SESLERI).toEqual(['konga', 'tahta', 'darbuka'])
-    expect(getUsulSesi()).toBe('oryantal')
+    expect(getUsulSesi()).toBe('tahta')
     setUsulSesi('darbuka')
     expect(getUsulSesi()).toBe('darbuka')
-    setUsulSesi('oryantal')
+    setUsulSesi('tahta')
   })
 
   it('isUsulSesi yalnızca bilinen değerleri kabul eder', () => {

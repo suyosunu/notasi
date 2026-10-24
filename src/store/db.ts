@@ -64,6 +64,8 @@ export interface Settings {
   neySesi: NeySesi
   /** Usul vuruşlarının sesi (Ayarlar → "Usul sesi"); usul bölümünde ve parça eşliğinde. */
   usulSesi: UsulSesi
+  /** Varsayılan seslerin hangi sürümde taşındığı; 2'den küçük kayıtta eski varsayılanlar bir kez taşınır. */
+  varsayilanSesSurumu: number
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -74,8 +76,9 @@ export const DEFAULT_SETTINGS: Settings = {
   onboarded: false,
   placementDone: false,
   lastBackupAt: null,
-  neySesi: 'mevcut',
-  usulSesi: 'oryantal',
+  neySesi: 'shakuhachi',
+  usulSesi: 'tahta',
+  varsayilanSesSurumu: 2,
 }
 
 /** `settings` deposunda tek kayıt tutulur; anahtarı bu sabittir. */
@@ -151,6 +154,23 @@ function byAt<T extends { at: string }>(list: T[]): T[] {
 
 // --- settings ---------------------------------------------------------
 
+/**
+ * Sürümü 2'den küçük (ya da hiç olmayan) kayıtta eski varsayılan sesler yeni varsayılanlara taşınır;
+ * başka bir ses bilinçli seçimdir ve değişmez. Sürüm 2'ye çekilince "mevcut"/"oryantal" bilinçli seçim sayılır.
+ */
+function tasiSesler(rest: Partial<Settings>): Pick<Settings, 'neySesi' | 'usulSesi' | 'varsayilanSesSurumu'> {
+  const surum = typeof rest.varsayilanSesSurumu === 'number' ? rest.varsayilanSesSurumu : 0
+  const eski = surum < DEFAULT_SETTINGS.varsayilanSesSurumu
+  const ney = eski && rest.neySesi === 'mevcut' ? DEFAULT_SETTINGS.neySesi : rest.neySesi
+  const usul = eski && rest.usulSesi === 'oryantal' ? DEFAULT_SETTINGS.usulSesi : rest.usulSesi
+  return {
+    // Eski kayıtlarda yoktur; bilinmeyen değer (ör. başka sürümden yedek) varsayılana döner.
+    neySesi: isNeySesi(ney) ? ney : DEFAULT_SETTINGS.neySesi,
+    usulSesi: isUsulSesi(usul) ? usul : DEFAULT_SETTINGS.usulSesi,
+    varsayilanSesSurumu: Math.max(surum, DEFAULT_SETTINGS.varsayilanSesSurumu), // yeni sürümden yedek düşürülmez
+  }
+}
+
 function mergeSettings(stored: Partial<SettingsRec> | undefined): Settings {
   if (!stored) return { ...DEFAULT_SETTINGS, tuning: { ...DEFAULT_SETTINGS.tuning } }
   const { id: _id, ...rest } = stored
@@ -158,9 +178,7 @@ function mergeSettings(stored: Partial<SettingsRec> | undefined): Settings {
     ...DEFAULT_SETTINGS,
     ...rest,
     tuning: { ...DEFAULT_SETTINGS.tuning, ...(rest.tuning ?? {}) },
-    // Eski kayıtlarda yoktur; bilinmeyen değer (ör. başka sürümden yedek) varsayılana döner.
-    neySesi: isNeySesi(rest.neySesi) ? rest.neySesi : DEFAULT_SETTINGS.neySesi,
-    usulSesi: isUsulSesi(rest.usulSesi) ? rest.usulSesi : DEFAULT_SETTINGS.usulSesi,
+    ...tasiSesler(rest),
   }
 }
 

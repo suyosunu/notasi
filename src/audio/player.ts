@@ -21,7 +21,7 @@ let generation = 0
 /** Şu an çalan (ya da başlatılmakta olan) playTones çağrısının belirteci; durdurulunca null. */
 let active: number | null = null
 /** Seçili ney sesi (Ayarlar). Açılışta ayarlardan yüklenir, Ayarlar'da değişince hemen uygulanır. */
-let neySesi: NeySesi = 'mevcut'
+let neySesi: NeySesi = 'shakuhachi'
 
 export function setNeySesi(v: NeySesi): void {
   neySesi = v

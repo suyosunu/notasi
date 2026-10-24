@@ -15,7 +15,7 @@ vi.mock('../audio/player', () => ({
   playCode: vi.fn(() => Promise.resolve()),
   playLoop: vi.fn(() => Promise.resolve()),
   stopAudio: vi.fn(),
-  getNeySesi: vi.fn(() => 'mevcut'),
+  getNeySesi: vi.fn(() => 'shakuhachi'),
 }))
 
 vi.mock('../audio/wakeLock', () => ({
@@ -111,7 +111,7 @@ describe('ParcaDetail', () => {
     expect(durationMs).toBe(expected.durationMs)
     const steps = /freq\("([^"]*)"\)/.exec(code)![1]!.split(' ')
     expect(steps).toHaveLength(toToneEvents(p.olcu.flat(), tuning).length)
-    expect(code).toContain('white') // usul deseni
+    expect(code).toContain('usul_tahta') // usul deseni (varsayılan usul sesi)
     expect(vi.mocked(unlockAudio).mock.invocationCallOrder[0]!).toBeLessThan(
       vi.mocked(playCode).mock.invocationCallOrder[0]!,
     )
@@ -125,7 +125,7 @@ describe('ParcaDetail', () => {
     const [code] = vi.mocked(playCode).mock.calls[0]!
     expect(code).toBe(buildPieceCode(byId('hak-teala'), DEFAULT_TUNING, 60, true, 'nefesli').code)
     expect(code).toContain(melodyChain('nefesli'))
-    vi.mocked(getNeySesi).mockReturnValue('mevcut')
+    vi.mocked(getNeySesi).mockReturnValue('shakuhachi')
   })
 
   it('usul eşliği kapalıyken yalnızca melodi; hız değişince yeni tempoyla çalar', async () => {
@@ -139,7 +139,7 @@ describe('ParcaDetail', () => {
     await waitFor(() => expect(playCode).toHaveBeenCalledTimes(1))
     const [code] = vi.mocked(playCode).mock.calls[0]!
     expect(code).toBe(buildPieceCode(byId('hak-teala'), DEFAULT_TUNING, 90, false).code)
-    expect(code).not.toContain('white')
+    expect(code).not.toContain('usul_')
   })
 
   it('çalarken Durdur gösterir; Durdur sesi keser ve Dinle geri gelir', async () => {

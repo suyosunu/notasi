@@ -27,7 +27,7 @@ beforeEach(() => {
 
 describe('buildUsulPatternCode', () => {
   it('Sofyan: düm (gövde + deri), te/ke (ton + tık) katmanları; cpm = bpm / zaman', () => {
-    const code = buildUsulPatternCode(usul('sofyan'), 60)
+    const code = buildUsulPatternCode(usul('sofyan'), 60, 'oryantal')
     expect(code.startsWith('stack(')).toBe(true)
     expect(code).toContain('freq("65@2 ~@1 ~@1").s("sine")')
     expect(code).toContain('freq("250@2 ~@1 ~@1").s("triangle")') // telefonda duyulan orta gövde
@@ -41,7 +41,7 @@ describe('buildUsulPatternCode', () => {
   })
 
   it('düm için perde zarfı (penv/pattack/pdecay), tek için bant geçiren filtre (bpf/bpq) kullanılır', () => {
-    const code = buildUsulPatternCode(usul('duyek'), 80)
+    const code = buildUsulPatternCode(usul('duyek'), 80, 'oryantal')
     expect(code).toMatch(
       /freq\("65@1 [^"]*"\)\.s\("sine"\)\.penv\(9\.11\)\.pattack\([\d.]+\)\.pdecay\(0\.12\)\.psustain\(0\)/,
     )
@@ -51,7 +51,7 @@ describe('buildUsulPatternCode', () => {
   })
 
   it('tek, te ve ke aynı ses; te 0.7×, ke 0.6× tek', () => {
-    const code = buildUsulPatternCode(usul('aksak'), 60)
+    const code = buildUsulPatternCode(usul('aksak'), 60, 'oryantal')
     const gains = [...code.matchAll(/\.gain\("([^"]*)"\)/g)].map((m) => m[1]!.split(' '))
     expect(gains).toHaveLength(3) // ton, tık ve tını katmanı
     for (const g of gains) {
@@ -62,18 +62,18 @@ describe('buildUsulPatternCode', () => {
   })
 
   it('bpm mertebe birimine göredir: cpm = bpm / zaman', () => {
-    expect(buildUsulPatternCode(usul('aksak'), 90).endsWith('.cpm(10)')).toBe(true)
-    expect(buildUsulPatternCode(usul('semai'), 60).endsWith('.cpm(20)')).toBe(true)
+    expect(buildUsulPatternCode(usul('aksak'), 90, 'oryantal').endsWith('.cpm(10)')).toBe(true)
+    expect(buildUsulPatternCode(usul('semai'), 60, 'oryantal').endsWith('.cpm(20)')).toBe(true)
   })
 
   it('Dolap (vuruş yok): zaman sayısı kadar tık, ilki vurgulu; tık süresi zaman birimine göre', () => {
-    const code = buildUsulPatternCode(usul('dolap'), 60)
+    const code = buildUsulPatternCode(usul('dolap'), 60, 'oryantal')
     expect(code.match(/800@1/g)).toHaveLength(11)
     expect(code).toContain('freq("1200@1 800@1')
     expect(code).toContain('.gain("0.9@1 0.5@1')
     expect(code).toContain('.s("sine")')
     expect(code).toContain('.decay(0.3)') // 0.3 × 1 sn
-    expect(buildUsulPatternCode(usul('dolap'), 120)).toContain('.decay(0.15)')
+    expect(buildUsulPatternCode(usul('dolap'), 120, 'oryantal')).toContain('.decay(0.15)')
     expect(code.endsWith('.cpm(5)')).toBe(true)
     expect(code).not.toContain('white')
     expect(code).not.toContain('stack(')
@@ -86,7 +86,7 @@ describe('buildUsulPatternCode', () => {
 
   it('örnek ses dosyası kullanmaz: yalnızca sentez (sine, triangle) ve gürültü (white)', () => {
     for (const u of USULLER) {
-      const code = buildUsulPatternCode(u, 60)
+      const code = buildUsulPatternCode(u, 60, 'oryantal')
       const sounds = [...code.matchAll(/\bs\("([^"]*)"\)/g)]
         .flatMap((m) => m[1]!.split(/[\s@\d~.]+/))
         .filter(Boolean)
@@ -121,7 +121,7 @@ describe('buildUsulPatternCode: gerçek Strudel çekirdeğiyle', () => {
     const { evalScope } = await import('@strudel/core')
     const { evaluate, transpiler } = await import('@strudel/transpiler')
     await evalScope(import('@strudel/core'), import('@strudel/mini'))
-    const { pattern } = await evaluate(buildUsulPatternCode(u, bpm), transpiler)
+    const { pattern } = await evaluate(buildUsulPatternCode(u, bpm, 'oryantal'), transpiler)
     return pattern
       .queryArc(0, (u.zaman * 60) / bpm)
       .filter((h) => h.hasOnset())
@@ -295,7 +295,7 @@ describe('startUsul / stopUsul', () => {
 
 describe('usul sesi: kayıt tabanlı seçenekler (Konga, Tahta, Darbuka)', () => {
   const KAYITLI = ['konga', 'tahta', 'darbuka'] as const
-  afterEach(() => setUsulSesi('oryantal'))
+  afterEach(() => setUsulSesi('tahta'))
 
   /** Bir ölçünün vuruşları; bir sorgu-döngüsü 1 sn (bkz. yukarıdaki haps). */
   async function sampleHaps(u: Usul, bpm: number, ses: UsulSesi): Promise<UsulHit[]> {
@@ -310,8 +310,12 @@ describe('usul sesi: kayıt tabanlı seçenekler (Konga, Tahta, Darbuka)', () =>
       .sort((a, b) => a.at - b.at)
   }
 
-  it("varsayılan ses 'oryantal': bugünkü sentez kodu aynen üretilir", () => {
-    expect(getUsulSesi()).toBe('oryantal')
+  it("varsayılan ses 'tahta'; 'oryantal' seçilince bugünkü sentez kodu aynen üretilir", () => {
+    expect(getUsulSesi()).toBe('tahta')
+    for (const u of USULLER) {
+      expect(buildUsulPatternCode(u, 60)).toBe(buildUsulPatternCode(u, 60, 'tahta'))
+    }
+    setUsulSesi('oryantal')
     for (const u of USULLER) {
       expect(buildUsulPatternCode(u, 60)).toBe(buildUsulPatternCode(u, 60, 'oryantal'))
     }

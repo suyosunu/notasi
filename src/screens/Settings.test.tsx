@@ -48,13 +48,13 @@ beforeEach(async () => {
   vi.mocked(unlockAudio).mockReset().mockImplementation(() => Promise.resolve())
   vi.mocked(playWritten).mockReset().mockImplementation(() => Promise.resolve())
   vi.mocked(stopAudio).mockReset()
-  let voice: NeySesi = 'mevcut'
+  let voice: NeySesi = 'shakuhachi'
   vi.mocked(setNeySesi).mockReset().mockImplementation((v) => {
     voice = v
   })
   vi.mocked(getNeySesi).mockReset().mockImplementation(() => voice)
   vi.mocked(playCode).mockReset().mockImplementation(() => Promise.resolve())
-  let usulVoice: UsulSesi = 'oryantal'
+  let usulVoice: UsulSesi = 'tahta'
   vi.mocked(setUsulSesi).mockReset().mockImplementation((v) => {
     usulVoice = v
   })
@@ -206,16 +206,16 @@ describe('Settings', () => {
   })
 
   it('geri yüklemeden sonra player sesi yedekteki ney sesine ayarlanır', async () => {
-    await saveSettings({ neySesi: 'shakuhachi' })
-    const backup = await exportBackup()
     await saveSettings({ neySesi: 'nefesli' })
+    const backup = await exportBackup()
+    await saveSettings({ neySesi: 'mevcut' })
     render(<Settings />)
     await screen.findByRole('button', { name: 'Yedeği geri yükle' })
-    expect(getNeySesi()).toBe('mevcut')
+    expect(getNeySesi()).toBe('shakuhachi')
     pickFile(JSON.stringify(backup))
     await screen.findByText('Yedek yüklendi.')
-    expect(getNeySesi()).toBe('shakuhachi')
-    expect((screen.getByRole('radio', { name: 'Shakuhachi' }) as HTMLInputElement).checked).toBe(true)
+    expect(getNeySesi()).toBe('nefesli')
+    expect((screen.getByRole('radio', { name: 'Nefesli' }) as HTMLInputElement).checked).toBe(true)
   })
 
   it('Hakkında ve Ana ekran bağlantıları vardır', async () => {
@@ -228,22 +228,23 @@ describe('Settings', () => {
 describe('Settings: Ney sesi', () => {
   const radio = (name: string) => screen.getByRole('radio', { name }) as HTMLInputElement
 
-  it('başlık ve üç seçenek; varsayılan Mevcut seçilidir; her birinin Dene düğmesi vardır', async () => {
+  it('başlık ve üç seçenek; varsayılan Shakuhachi seçilidir; her birinin Dene düğmesi vardır', async () => {
     render(<Settings />)
     expect(await screen.findByRole('heading', { name: 'Ney sesi' })).toBeTruthy()
-    expect(radio('Mevcut').checked).toBe(true)
+    expect(radio('Mevcut').checked).toBe(false)
     expect(radio('Nefesli').checked).toBe(false)
-    expect(radio('Shakuhachi').checked).toBe(false)
+    expect(radio('Shakuhachi').checked).toBe(true)
     const group = screen.getByRole('radiogroup', { name: 'Ney sesi' })
     const dene = within(group).getAllByRole('button', { name: /▶ Dene/ })
     expect(dene.map((b) => b.textContent)).toEqual(['▶ Dene', '▶ Dene', '▶ Dene'])
   })
 
   it('kayıtlı ses seçili görünür', async () => {
-    await saveSettings({ neySesi: 'shakuhachi' })
+    await saveSettings({ neySesi: 'nefesli' })
     render(<Settings />)
     await screen.findByRole('heading', { name: 'Ney sesi' })
-    expect(radio('Shakuhachi').checked).toBe(true)
+    expect(radio('Nefesli').checked).toBe(true)
+    expect(radio('Shakuhachi').checked).toBe(false)
   })
 
   it("seçim kaydedilir ve hemen player'a uygulanır", async () => {
@@ -260,7 +261,7 @@ describe('Settings: Ney sesi', () => {
     await saveSettings({ tuning })
     render(<Settings />)
     await screen.findByRole('heading', { name: 'Ney sesi' })
-    fireEvent.click(screen.getByRole('button', { name: '▶ Dene (Shakuhachi)' }))
+    fireEvent.click(screen.getByRole('button', { name: '▶ Dene (Nefesli)' }))
     await waitFor(() => expect(playWritten).toHaveBeenCalledTimes(1))
     expect(vi.mocked(unlockAudio).mock.invocationCallOrder[0]!).toBeLessThan(
       vi.mocked(playWritten).mock.invocationCallOrder[0]!,
@@ -268,7 +269,7 @@ describe('Settings: Ney sesi', () => {
     const [events, t, bpm, voice] = vi.mocked(playWritten).mock.calls[0]!
     expect(t).toEqual(tuning)
     expect(bpm).toBe(72)
-    expect(voice).toBe('shakuhachi')
+    expect(voice).toBe('nefesli')
     expect(events).toEqual([
       { kind: 'note', pitch: { step: 'A', octave: 4, acc: 0 }, dur: 'quarter' },
       { kind: 'note', pitch: { step: 'B', octave: 4, acc: -1 }, dur: 'quarter' },
@@ -281,7 +282,7 @@ describe('Settings: Ney sesi', () => {
     )
     // Dene seçimi değiştirmez.
     expect(setNeySesi).not.toHaveBeenCalled()
-    expect((await getSettings()).neySesi).toBe('mevcut')
+    expect((await getSettings()).neySesi).toBe('shakuhachi')
   })
 
   it('ses kapalıyken Dene çalmaz, SOUND_OFF gösterir', async () => {
@@ -343,7 +344,7 @@ describe('Settings: Usul sesi', () => {
   const radio = (name: string) => screen.getByRole('radio', { name }) as HTMLInputElement
   const sofyan = USULLER.find((u) => u.id === 'sofyan')!
 
-  it('başlık ve dört seçenek; varsayılan Oryantal seçilidir; her birinin Dene düğmesi vardır', async () => {
+  it('başlık ve dört seçenek; varsayılan Tahta seçilidir; her birinin Dene düğmesi vardır', async () => {
     render(<Settings />)
     expect(await screen.findByRole('heading', { name: 'Usul sesi' })).toBeTruthy()
     const group = screen.getByRole('radiogroup', { name: 'Usul sesi' })
@@ -353,7 +354,8 @@ describe('Settings: Usul sesi', () => {
       'Tahta',
       'Darbuka',
     ])
-    expect(radio('Oryantal').checked).toBe(true)
+    expect(radio('Tahta').checked).toBe(true)
+    expect(radio('Oryantal').checked).toBe(false)
     expect(within(group).getAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual([
       '▶ Dene (Oryantal)',
       '▶ Dene (Konga)',
@@ -372,10 +374,11 @@ describe('Settings: Usul sesi', () => {
   })
 
   it('kayıtlı ses seçili görünür', async () => {
-    await saveSettings({ usulSesi: 'tahta' })
+    await saveSettings({ usulSesi: 'konga' })
     render(<Settings />)
     await screen.findByRole('heading', { name: 'Usul sesi' })
-    expect(radio('Tahta').checked).toBe(true)
+    expect(radio('Konga').checked).toBe(true)
+    expect(radio('Tahta').checked).toBe(false)
   })
 
   it('Dene: önce unlockAudio, sonra Sofyan\'ın bir ölçüsü ♩ = 80\'de o sesle tek seferlik çalar', async () => {
@@ -396,7 +399,7 @@ describe('Settings: Usul sesi', () => {
     }
     // Dene seçimi değiştirmez.
     expect(setUsulSesi).not.toHaveBeenCalled()
-    expect((await getSettings()).usulSesi).toBe('oryantal')
+    expect((await getSettings()).usulSesi).toBe('tahta')
   })
 
   it('ses kapalıyken Dene çalmaz, SOUND_OFF gösterir', async () => {
@@ -453,10 +456,10 @@ describe('Settings: Usul sesi', () => {
   it('geri yüklemeden sonra player usul sesi yedekteki sese ayarlanır', async () => {
     await saveSettings({ usulSesi: 'konga' })
     const backup = await exportBackup()
-    await saveSettings({ usulSesi: 'tahta' })
+    await saveSettings({ usulSesi: 'oryantal' })
     render(<Settings />)
     await screen.findByRole('button', { name: 'Yedeği geri yükle' })
-    expect(getUsulSesi()).toBe('oryantal')
+    expect(getUsulSesi()).toBe('tahta')
     pickFile(JSON.stringify(backup))
     await screen.findByText('Yedek yüklendi.')
     expect(getUsulSesi()).toBe('konga')

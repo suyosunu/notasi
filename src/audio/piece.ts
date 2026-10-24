@@ -31,7 +31,7 @@ export function buildPieceCode(
   tuning: Tuning,
   bpm: number,
   withUsul: boolean,
-  voice: NeySesi = 'mevcut',
+  voice: NeySesi = 'shakuhachi',
   usulSesi: UsulSesi = getUsulSesi(),
 ): { code: string; durationMs: number } {
   const tones = toToneEvents(parca.olcu.flat(), tuning)

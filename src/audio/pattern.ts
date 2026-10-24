@@ -59,7 +59,7 @@ export function toneSteps(events: ToneEvent[]): string {
 export function buildPatternCode(
   events: ToneEvent[],
   bpm: number,
-  voice: NeySesi = 'mevcut',
+  voice: NeySesi = 'shakuhachi',
 ): { code: string; durationMs: number } {
   const totalBeats = events.reduce((sum, e) => sum + e.beats, 0)
   if (!(totalBeats > 0) || !(bpm > 0)) {

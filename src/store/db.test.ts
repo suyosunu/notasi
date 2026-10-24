@@ -66,9 +66,14 @@ describe('settings', () => {
     expect(again.dailyQuestionCount).toBe(12)
   })
 
-  it("neySesi varsayılan olarak 'mevcut' olur", async () => {
-    expect(DEFAULT_SETTINGS.neySesi).toBe('mevcut')
-    expect((await getSettings()).neySesi).toBe('mevcut')
+  it('yeni kurulumda ney sesi shakuhachi, usul sesi tahta', async () => {
+    expect(DEFAULT_SETTINGS.neySesi).toBe('shakuhachi')
+    expect(DEFAULT_SETTINGS.usulSesi).toBe('tahta')
+    expect(DEFAULT_SETTINGS.varsayilanSesSurumu).toBe(2)
+    const s = await getSettings()
+    expect(s.neySesi).toBe('shakuhachi')
+    expect(s.usulSesi).toBe('tahta')
+    expect(s.varsayilanSesSurumu).toBe(2)
   })
 
   it('neySesi kaydedilir', async () => {
@@ -76,32 +81,77 @@ describe('settings', () => {
     expect((await getSettings()).neySesi).toBe('nefesli')
   })
 
-  it("neySesi'z eski kayıt ve bilinmeyen değer 'mevcut' olur", async () => {
+  it("neySesi'z eski kayıt ve bilinmeyen değer varsayılana (shakuhachi) döner", async () => {
     await replaceAllStores({
       ...noStores(),
       settings: [{ id: 'settings', soundOn: false }],
     })
     const old = await getSettings()
-    expect(old.neySesi).toBe('mevcut')
+    expect(old.neySesi).toBe('shakuhachi')
     expect(old.soundOn).toBe(false)
-    await replaceAllStores({ ...noStores(), settings: [{ id: 'settings', neySesi: 'davul' }] })
-    expect((await getSettings()).neySesi).toBe('mevcut')
+    await replaceAllStores({ ...noStores(), settings: [{ id: 'settings', neySesi: 'davul', varsayilanSesSurumu: 2 }] })
+    expect((await getSettings()).neySesi).toBe('shakuhachi')
   })
 
-  it("usulSesi varsayılan olarak 'oryantal' olur ve kaydedilir", async () => {
-    expect(DEFAULT_SETTINGS.usulSesi).toBe('oryantal')
-    expect((await getSettings()).usulSesi).toBe('oryantal')
+  it('usulSesi kaydedilir', async () => {
     await saveSettings({ usulSesi: 'darbuka' })
     expect((await getSettings()).usulSesi).toBe('darbuka')
   })
 
-  it("usulSesi'z eski kayıt ve bilinmeyen değer 'oryantal' olur", async () => {
+  it("usulSesi'z eski kayıt ve bilinmeyen değer varsayılana (tahta) döner", async () => {
     await replaceAllStores({ ...noStores(), settings: [{ id: 'settings', neySesi: 'nefesli' }] })
     const old = await getSettings()
-    expect(old.usulSesi).toBe('oryantal')
+    expect(old.usulSesi).toBe('tahta')
     expect(old.neySesi).toBe('nefesli')
-    await replaceAllStores({ ...noStores(), settings: [{ id: 'settings', usulSesi: 'bongo' }] })
-    expect((await getSettings()).usulSesi).toBe('oryantal')
+    await replaceAllStores({ ...noStores(), settings: [{ id: 'settings', usulSesi: 'bongo', varsayilanSesSurumu: 2 }] })
+    expect((await getSettings()).usulSesi).toBe('tahta')
+  })
+
+  it('eski varsayılanlar (mevcut/oryantal, sürüm alanı yok) yeni varsayılanlara taşınır', async () => {
+    await replaceAllStores({
+      ...noStores(),
+      settings: [{ id: 'settings', soundOn: false, dailyQuestionCount: 8, neySesi: 'mevcut', usulSesi: 'oryantal' }],
+    })
+    const s = await getSettings()
+    expect(s.neySesi).toBe('shakuhachi')
+    expect(s.usulSesi).toBe('tahta')
+    expect(s.varsayilanSesSurumu).toBe(2)
+    expect(s.soundOn).toBe(false)
+    expect(s.dailyQuestionCount).toBe(8)
+  })
+
+  it('bilinçli seçim korunur', async () => {
+    await replaceAllStores({
+      ...noStores(),
+      settings: [{ id: 'settings', neySesi: 'nefesli', usulSesi: 'konga' }],
+    })
+    const secili = await getSettings()
+    expect(secili.neySesi).toBe('nefesli')
+    expect(secili.usulSesi).toBe('konga')
+    expect(secili.varsayilanSesSurumu).toBe(2)
+    // Sürüm 2 kaydında "mevcut" artık bilinçli seçimdir.
+    await replaceAllStores({
+      ...noStores(),
+      settings: [{ id: 'settings', neySesi: 'mevcut', usulSesi: 'oryantal', varsayilanSesSurumu: 2 }],
+    })
+    const yeni = await getSettings()
+    expect(yeni.neySesi).toBe('mevcut')
+    expect(yeni.usulSesi).toBe('oryantal')
+  })
+
+  it('taşınan ayar ilk kayıtta kalıcı olur', async () => {
+    await replaceAllStores({
+      ...noStores(),
+      settings: [{ id: 'settings', neySesi: 'mevcut', usulSesi: 'oryantal' }],
+    })
+    await saveSettings({ soundOn: false })
+    const raw = (await readAllStores()).settings[0] as Record<string, unknown>
+    expect(raw.varsayilanSesSurumu).toBe(2)
+    expect(raw.neySesi).toBe('shakuhachi')
+    expect(raw.usulSesi).toBe('tahta')
+    // Kullanıcı sonradan "mevcut"i bilinçli seçerse bir daha taşınmaz.
+    await saveSettings({ neySesi: 'mevcut' })
+    expect((await getSettings()).neySesi).toBe('mevcut')
   })
 
   it('accumulates successive patches', async () => {
