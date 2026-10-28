@@ -131,6 +131,17 @@ describe('DersView', () => {
     expect(calan).toEqual([...NOTALAR, ...NOTALAR])
   })
 
+  it('olcuCizgileri verilen portede ölçü çizgileri ve satır sonu çizgisi çizilir; verilmeyende çizgi yok', () => {
+    const dortluk = (step: 'D' | 'C'): MusicEvent => ({ kind: 'note', pitch: { step, octave: 5, acc: 0 }, dur: 'quarter' })
+    const olaylar = [dortluk('D'), dortluk('C'), dortluk('D'), dortluk('C')]
+    const ders: Ders = { ...DERS, bloklar: [{ tur: 'porte', olaylar, olcuCizgileri: [1] }] }
+    const { container } = render(<DersView ders={ders} onDone={() => undefined} />)
+    expect(container.querySelectorAll('[data-barline]')).toHaveLength(2)
+    cleanup()
+    const duz = render(<DersView ders={{ ...DERS, bloklar: [{ tur: 'porte', olaylar }] }} onDone={() => undefined} />)
+    expect(duz.container.querySelectorAll('[data-barline]')).toHaveLength(0)
+  })
+
   it('röprizsiz porte çizgisiz ve bir kez çalar', async () => {
     const ders: Ders = { ...DERS, bloklar: [{ tur: 'porte', olaylar: NOTALAR }] }
     const { container } = render(<DersView ders={ders} onDone={() => undefined} />)

@@ -5,11 +5,15 @@ import { NOTA_TOPICS } from '../nota-topics'
 import { DERSLER, dersById, notaDersId, perdeDersId } from './index'
 import { HAZIRLIK_DERSLERI } from './hazirlik'
 import { NOTA_DERSLERI } from './nota'
+import { NOTA_2_DERSLERI } from './nota-2'
 import { ETUT_DERSLERI } from './etut'
 import { PERDE_DERSLERI } from './perdeler'
 import { ETUTLER } from '../etutler'
-import { cardToEvents } from '../../learning/cards'
+import { PERDE_ADLARI } from '../perde-adlari'
+import { cardToEvents, perdeKey } from '../../learning/cards'
 import { neyLevelConfig } from '../../learning/long-tone'
+import { ACCIDENTAL_NAMES } from '../../music/accidentals'
+import { beats } from '../../music/notation'
 import type { MusicEvent } from '../../music/notation'
 import type { Ders, DersBlok } from './types'
 
@@ -204,6 +208,143 @@ describe('Seviye 1 nota dersleri', () => {
     expect(m).toMatch(/Segâh[^.]*Si'nin biraz pesti/)
     expect(m).toMatch(/koma bemolü/)
     expect(m).toMatch(/koma konularında/)
+  })
+})
+
+describe('Seviye 2 okuma dersleri', () => {
+  const SEVIYE: Record<string, number> = {
+    'nota:koma-1': 2,
+    'nota:koma-2': 2,
+    'nota:perde-3': 2,
+    'nota:perde-4': 2,
+    'nota:sure-4': 2,
+    'okuma:olcu': 1,
+    'okuma:ropriz': 2,
+  }
+  const IDS = Object.keys(SEVIYE)
+  const ders = (id: string) => dersById(id)!
+  const metin = (id: string) => metinler(ders(id)).join(' ')
+  const porteBloklari = (id: string) => ders(id).bloklar.flatMap((b) => (b.tur === 'porte' ? [b] : []))
+  const porteler = (id: string) => porteBloklari(id).map((b) => b.olaylar)
+  const anahtar = (e: MusicEvent) =>
+    e.kind === 'note'
+      ? `${e.pitch.step}${e.pitch.octave}${e.pitch.acc === 0 ? '' : `${e.pitch.acc < 0 ? 'b' : '#'}${Math.abs(e.pitch.acc)}`}`
+      : 'sus'
+  /** Süre izi: nota/sus, süre, noktalı, üçleme. */
+  const sureIzi = (e: MusicEvent) => `${e.kind}:${e.dur}${e.dotted ? '.' : ''}${e.uclu ? '3' : ''}`
+
+  it('yedi ders bu sırayla var; seviyeleri tablodaki gibi, DERSLER içinde', () => {
+    expect(NOTA_2_DERSLERI.map((d) => d.id)).toEqual(IDS)
+    for (const id of IDS) {
+      expect(dersById(id), id).toBeDefined()
+      expect(ders(id).seviye, id).toBe(SEVIYE[id])
+    }
+  })
+
+  it.each(IDS)('%s: görsel/porte blok, dene bloğu ve dolu kaynaklar', (id) => {
+    const d = ders(id)
+    expect(d.bloklar.some((b) => b.tur === 'porte' || b.tur === 'parmak' || b.tur === 'gorsel')).toBe(true)
+    expect(d.bloklar.some((b) => b.tur === 'dene')).toBe(true)
+    expect(d.kaynaklar.length).toBeGreaterThan(0)
+  })
+
+  it.each(IDS)('%s: her porte telefona sığar (en çok 8 olay) ve en az bir portede nota var', (id) => {
+    for (const o of porteler(id)) expect(o.length).toBeLessThanOrEqual(8)
+    expect(porteler(id).some((o) => o.some((e) => e.kind === 'note'))).toBe(true)
+  })
+
+  it.each(IDS)('%s: alıştırma nota derslerinde konunun turu, okuma derslerinde yok', (id) => {
+    expect(ders(id).alistirma).toBe(id.startsWith('nota:') ? `/nota/${id.slice('nota:'.length)}` : undefined)
+  })
+
+  it('koma dersleri konu kartlarındaki her işareti gösterir', () => {
+    const goster = (id: string) => new Set(porteler(id).flat().map(anahtar))
+    for (const k of ['B4b1', 'B4b4', 'B4b5', 'B4b8']) expect(goster('nota:koma-1')).toContain(k)
+    for (const k of ['C5#1', 'C5#4', 'C5#5', 'C5#8']) expect(goster('nota:koma-2')).toContain(k)
+  })
+
+  it('koma dersleri işaret adlarını ACCIDENTAL_NAMES ile aynı yazar; 9 koma, sık kullanılanlar, natürel, tanini, artık ikili', () => {
+    const m1 = metin('nota:koma-1')
+    const m2 = metin('nota:koma-2')
+    for (const [acc, ad] of Object.entries(ACCIDENTAL_NAMES)) expect(Number(acc) < 0 ? m1 : m2).toContain(ad)
+    expect(m1).toMatch(/[Dd]iyez[^.]*tizleştirir/)
+    expect(m1).toMatch(/9 koma/)
+    expect(m1).toMatch(/1, 4 ve 5/)
+    expect(m2).toMatch(/[Nn]atürel/)
+    expect(m2).toMatch(/[Tt]anini/)
+    expect(m2).toMatch(/artık ikili/)
+    expect(`${m1} ${m2}`).not.toMatch(/mücennep/)
+  })
+
+  it('perde-3/perde-4 dersleri konu kartlarındaki perdelerin hepsini anar (PERDE_ADLARI adlarıyla) ve portede gösterir', () => {
+    for (const t of ['perde-3', 'perde-4']) {
+      const id = notaDersId(t)
+      const goster = new Set(porteler(id).flat().map(anahtar))
+      for (const kart of NOTA_TOPICS.find((x) => x.id === t)!.cards) {
+        const key = perdeKey(kart)
+        expect(metin(id)).toContain(PERDE_ADLARI[key])
+        expect(goster).toContain(key)
+      }
+    }
+  })
+
+  it("perde-3 Segâh ile karşılaştırır; perde-4 Eviç'in Seviye 3'te çalınacağını söyler", () => {
+    expect(metin('nota:perde-3')).toMatch(/Segâh/)
+    expect(porteler('nota:perde-3').some((o) => ['B4', 'B4b1', 'B4b4', 'B4b5'].every((k) => o.map(anahtar).includes(k)))).toBe(
+      true,
+    )
+    expect(metin('nota:perde-4')).toMatch(/Eviç[^.]*Seviye 3/)
+  })
+
+  it('Seviye 2 nota konularının kartlarındaki her nota ya da süre bir porte bloğunda gösterilir', () => {
+    for (const t of ['koma-1', 'koma-2', 'perde-3', 'perde-4', 'sure-4']) {
+      const topic = NOTA_TOPICS.find((x) => x.id === t)!
+      const iz = topic.kind === 'duration' ? sureIzi : anahtar
+      const goster = new Set(porteler(notaDersId(t)).flat().map(iz))
+      for (const kart of topic.cards) for (const e of cardToEvents(kart)) expect(goster, `${t} ${kart}`).toContain(iz(e))
+    }
+  })
+
+  it('sure-4 dersinde en az bir üçleme ve bir onaltılık porte örneği var; metronom değerleri öneri olarak', () => {
+    const p = porteler('nota:sure-4')
+    expect(p.some((o) => o.some((e) => e.kind === 'note' && e.uclu))).toBe(true)
+    expect(p.some((o) => o.some((e) => e.kind === 'note' && e.dur === 'sixteenth'))).toBe(true)
+    const m = metin('nota:sure-4')
+    expect(m).toMatch(/65–70/)
+    expect(m).toMatch(/50–75/)
+    expect(m).toMatch(/öneri/)
+    expect(m).toMatch(/"3"/)
+    expect(m).toMatch(/kiriş/)
+  })
+
+  it('okuma:ropriz dersinde ropriz: true porte ve bag içeren porte var; uzatma bağı (tie) da gösterilir', () => {
+    const b = porteBloklari('okuma:ropriz')
+    expect(b.some((x) => x.ropriz === true)).toBe(true)
+    expect(b.some((x) => x.olaylar.some((e) => e.kind === 'note' && e.bag))).toBe(true)
+    expect(b.some((x) => x.olaylar.some((e) => e.kind === 'note' && e.tie))).toBe(true)
+    const m = metin('okuma:ropriz')
+    expect(m).toMatch(/iki kez/)
+    expect(m).toMatch(/dil/)
+    expect(m).toMatch(/[Uu]zatma bağı/)
+  })
+
+  it('okuma:olcu dersinde nefes içeren porte ve ölçü çizgili porteler var; 2/4, 3/4, 4/4 anlatılır', () => {
+    const b = porteBloklari('okuma:olcu')
+    expect(b.some((x) => x.olaylar.some((e) => e.nefes))).toBe(true)
+    expect(b.some((x) => (x.olcuCizgileri?.length ?? 0) > 0)).toBe(true)
+    const m = metin('okuma:olcu')
+    for (const s of ['2/4', '3/4', '4/4', 'ölçü çizgisi', 'bitiş çizgisi', 'nefes işareti']) expect(m).toContain(s)
+  })
+
+  it('ölçü çizgili portelerde her ölçü ölçü sayısını doldurur (çizgiler geçerli olay sıralarında)', () => {
+    for (const id of IDS)
+      for (const x of porteBloklari(id)) {
+        if (!x.olcuCizgileri) continue
+        const sinirlar = [-1, ...x.olcuCizgileri, x.olaylar.length - 1]
+        const olculer = sinirlar.slice(1).map((son, k) => x.olaylar.slice(sinirlar[k]! + 1, son + 1))
+        const vuruslar = olculer.map((o) => o.reduce((t, e) => t + beats(e), 0))
+        for (const v of vuruslar) expect(Math.abs(v - vuruslar[0]!), id).toBeLessThan(1e-6)
+      }
   })
 })
 

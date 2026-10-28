@@ -7,7 +7,8 @@ export type DersBlok =
   | { tur: 'metin'; metin: string }
   | { tur: 'liste'; maddeler: string[] }
   // Staff + notası varsa ▶ Dinle. `ropriz`: iki röpriz çizgisi çizilir, Dinle bölümü iki kez çalar.
-  | { tur: 'porte'; olaylar: MusicEvent[]; aciklama?: string; bpm?: number; ropriz?: boolean }
+  // `olcuCizgileri`: bu olay sıralarından sonra ölçü çizgisi; verilirse satır sonuna da çizgi çizilir.
+  | { tur: 'porte'; olaylar: MusicEvent[]; aciklama?: string; bpm?: number; ropriz?: boolean; olcuCizgileri?: number[] }
   | { tur: 'parmak'; perdeId: PerdeId; aciklama?: string } // FingeringDiagram + ▶ Dinle (yarımlık)
   | { tur: 'gorsel'; ad: GorselAdi; aciklama?: string }
   | { tur: 'dene'; adimlar: string[] } // "Kendin dene" kutusu

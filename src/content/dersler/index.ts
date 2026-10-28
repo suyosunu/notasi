@@ -1,11 +1,12 @@
 import { ETUT_DERSLERI } from './etut'
 import { HAZIRLIK_DERSLERI } from './hazirlik'
 import { NOTA_DERSLERI } from './nota'
+import { NOTA_2_DERSLERI } from './nota-2'
 import { PERDE_DERSLERI } from './perdeler'
 import type { Ders } from './types'
 
 /** Tüm dersler; içerik Task 35–37 ve 39'da eklenir. */
-export const DERSLER: Ders[] = [...HAZIRLIK_DERSLERI, ...NOTA_DERSLERI, ...PERDE_DERSLERI, ...ETUT_DERSLERI]
+export const DERSLER: Ders[] = [...HAZIRLIK_DERSLERI, ...NOTA_DERSLERI, ...NOTA_2_DERSLERI, ...PERDE_DERSLERI, ...ETUT_DERSLERI]
 
 export function dersById(id: string): Ders | undefined {
   return DERSLER.find((d) => d.id === id)

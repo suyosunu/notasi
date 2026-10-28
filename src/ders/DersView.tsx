@@ -118,6 +118,7 @@ export function DersView(props: { ders: Ders; onDone: () => void; geri?: { href:
                 events={b.olaylar}
                 width={STAFF_WIDTH}
                 beamBeats={DERS_VURUS}
+                barlinesAfter={b.olcuCizgileri}
                 ropriz={b.ropriz ? { bas: true, son: true } : undefined}
               />
             </div>

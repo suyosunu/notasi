@@ -6,21 +6,21 @@ import type { Ders } from './types'
 // (docs/superpowers/notes/2026-10-25-ney-mufredat-arastirma.md; S3 1–2, S4 d2–4 ve d7, S6 h1–2) ve genel nota
 // bilgisinden gelir. Porte örnekleri konunun kartlarındaki notaları gösterir (kart kuralları: learning/cards.ts).
 
-const S2 =
+export const S2 =
   'S2 MEB, Çalgı Eğitimi Ney Dersi Öğretim Programı (GSL 9–12, 2022): https://mufredat.meb.gov.tr/Dosyalar/2024118143640484-2022%20%C3%87ALGI%20E%C4%9E%C4%B0T%C4%B0M%C4%B0%20NEY.pdf'
-const S3 =
+export const S3 =
   'S3 MEB TYMM, Müzik Okulları Türk Müziği Teori ve Uygulaması Dersi (1–8): https://tymm.meb.gov.tr/assets/pdf/muzik-okullari-turk-muzigi-teori-uygulamasi-dersi.pdf'
-const s4 = (n: number) => `S4 neyzenim.com, Zeki Sözen, Ney Dersleri ${n}: https://www.neyzenim.com/neydersleri_${n}.html`
-const S6 = 'S6 Bursa Uludağ Üniv., NEY I ders bilgi paketi: https://bilgipaketi.uludag.edu.tr/DersProgramiRapor/DersIcerikRapor/915137?Dil=0'
+export const s4 = (n: number) => `S4 neyzenim.com, Zeki Sözen, Ney Dersleri ${n}: https://www.neyzenim.com/neydersleri_${n}.html`
+export const S6 = 'S6 Bursa Uludağ Üniv., NEY I ders bilgi paketi: https://bilgipaketi.uludag.edu.tr/DersProgramiRapor/DersIcerikRapor/915137?Dil=0'
 
 /** 'D5' → Re5; 'B4b1' → Si4 koma bemolü. Süre verilmezse dörtlük (soru kartlarındaki gibi). */
-function n(key: string, dur: DurationKind = 'quarter', dotted = false): MusicEvent {
+export function n(key: string, dur: DurationKind = 'quarter', dotted = false): MusicEvent {
   const pitch = parseNoteKey(key)
   if (!pitch) throw new Error(`Geçersiz nota anahtarı: ${key}`)
   return { kind: 'note', pitch, dur, ...(dotted ? { dotted: true } : {}) }
 }
 
-function sus(dur: DurationKind): MusicEvent {
+export function sus(dur: DurationKind): MusicEvent {
   return { kind: 'rest', dur }
 }
 
