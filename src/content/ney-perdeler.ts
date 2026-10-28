@@ -69,7 +69,7 @@ const SRC_HICAZ = 'https://www.neyzenim.com/neydersleri_10.html'
 const SRC_ORTA = 'https://www.neyzenim.com/neydersleri_6.html'
 
 const SERT = 'Daha sert üfle: '
-const KOMA_FARKI = 'aradaki koma farkını dudak ve baş açısıyla verirsin.'
+export const KOMA_FARKI = 'aradaki koma farkını dudak ve baş açısıyla verirsin.'
 
 /**
  * İlk beş perde Nevâ, Çârgâh, Segâh, Dügâh, Rast sırasıyla öğretilir (2. kademe; araştırma §4.1,

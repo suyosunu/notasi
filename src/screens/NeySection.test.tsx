@@ -121,6 +121,17 @@ describe('NeySection', () => {
     expect(within(row('Hüseynî')).queryByRole('link')).toBeNull()
   })
 
+  it('Bûselik satırında ders bağlantısı görünür; Kürdî, Dik Kürdî ve Nim Hicaz için de', async () => {
+    render(<NeySection />)
+    await screen.findByText('Nevâ')
+    const link = within(row('Bûselik')).getByRole('link', { name: 'Bûselik dersi' })
+    expect(link.textContent).toBe('📖')
+    expect(link.getAttribute('href')).toBe('#/ders/perde%3Abuselik')
+    expect(within(row('Kürdî')).getByRole('link', { name: 'Kürdî dersi' }).getAttribute('href')).toBe('#/ders/perde%3Akurdi')
+    expect(within(row('Dik Kürdî')).getByRole('link', { name: 'Dik Kürdî dersi' }).getAttribute('href')).toBe('#/ders/perde%3Adik-kurdi')
+    expect(within(row('Nim Hicaz')).getByRole('link', { name: 'Nim Hicaz dersi' }).getAttribute('href')).toBe('#/ders/perde%3Anim-hicaz')
+  })
+
   describe('Etütler', () => {
     /** Başlığı tam eşleşen etüt bağlantısı (✓ ve başlık aynı bağlantıdadır). */
     const etutSatiri = (baslik: string) => {

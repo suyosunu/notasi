@@ -1,5 +1,5 @@
 import type { MusicEvent } from '../../music/notation'
-import { NEY_PERDELER } from '../ney-perdeler'
+import { KOMA_FARKI, NEY_PERDELER } from '../ney-perdeler'
 import type { NeyPerde, PerdeId } from '../ney-perdeler'
 import type { Ders, DersBlok } from './types'
 
@@ -8,6 +8,8 @@ import type { Ders, DersBlok } from './types'
 // S2 9.3.1, S4 d2, S5 s.033), ney-perdeler.ts'teki doğrulanmış şemalardan ve genel nota bilgisinden gelir.
 // Parmak anlatımı perdenin `tip` metniyle çelişmez; bir sonraki perde her zaman tek bir delik daha kapatır
 // (dersler.test.ts bunu şemalar üzerinden denetler). Sayısal hedef (8 sn, ±20 sent) "öneri" diye anılır.
+// Seviye 2 ara ses dersleri (Bûselik, Kürdî, Dik Kürdî, Nim Hicaz; S4 Ney Dersleri 5 ve 10, S2, S5 s.033) listenin sonundadır;
+// onlarda bir sonraki perdenin tek delik kapatması kuralı geçerli değildir (Kürdî ve Dik Kürdî aynı parmaktır).
 
 const S2 =
   'S2 MEB, Çalgı Eğitimi Ney Dersi Öğretim Programı (GSL 9–12, 2022): https://mufredat.meb.gov.tr/Dosyalar/2024118143640484-2022%20%C3%87ALGI%20E%C4%9E%C4%B0T%C4%B0M%C4%B0%20NEY.pdf'
@@ -19,9 +21,10 @@ function perde(id: PerdeId): NeyPerde {
   return p
 }
 
-/** Perdenin şema kaynağı (neyzenim.com Ney Dersleri 2) künyesiyle. */
+/** Perdenin şema kaynağı (neyzenim.com Ney Dersleri <no>) künyesiyle; ders numarası adresten okunur. */
 function semaKaynagi(p: NeyPerde): string {
-  return `S4 neyzenim.com, Zeki Sözen, Ney Dersleri 2: ${p.source}`
+  const no = p.source?.match(/neydersleri_(\d+)/)?.[1] ?? '2'
+  return `S4 neyzenim.com, Zeki Sözen, Ney Dersleri ${no}: ${p.source}`
 }
 
 /** Perdenin yazılı notası, birlik (♩ = 60'ta 4 sn). */
@@ -48,16 +51,37 @@ const HAFTA = 'Mehmet Yücel her yeni sese ortalama bir hafta, hatta on gün uzu
 const HEDEF =
   "Seviye 1 için önerimiz: her perdeyi en az 8 sn, ±20 sent içinde tutmak. Bu sayı bir öneridir; kaynaklar kesin süre vermez. Uygulama başta 5 sn'lik bir tutuşu ve ±25 sentlik bir bandı kabul eder; sen ilerledikçe süre 10 sn'ye çıkar, bant önce ±20 sente, sonra ±15 sente daralır. Öneri ±20 senttir; ±15 sent fazladan alıştırmadır."
 
-/** Her dersin "Kendin dene" adımları: uzun ses, ▶ Dinle ile kulakla karşılaştırma, akort göstergesi. */
-function deneAdimlari(ad: { belirtme: string }, onceki?: { ad: string; gecis: string }): DersBlok {
+const HEDEF_2 =
+  "Seviye 2 için önerimiz: her ara sesi en az 8 sn, ±20 sent içinde tutmak; Seviye 1'deki ölçüt aynen sürer. Bu sayı bir öneridir; kaynaklar kesin süre vermez. Uygulama süreyi ve bandı sen ilerledikçe sıkılaştırır; ±15 sent fazladan alıştırmadır."
+
+const KADEME_2_NEFES =
+  'Bu ses de ikinci kademedendir: Seviye 1\'deki gibi ılık, orta güçte nefesle çıkar. Daha sert üflersen ses yukarı kayar.'
+
+/**
+ * Her dersin "Kendin dene" adımları: uzun ses, ▶ Dinle ile kulakla karşılaştırma, akort göstergesi.
+ * `onceki.hareket` geçişte parmağın ne yaptığını söyler (öntanımlı: parmak eklenir); `ekAdimlar` ▶ Dinle'den sonra eklenir.
+ */
+function deneAdimlari(
+  ad: { belirtme: string },
+  onceki?: { ad: string; gecis: string; hareket?: string },
+  ekAdimlar: string[] = [],
+): DersBlok {
   const adimlar = [
     'Parmaklarını şemadaki gibi yerleştir; deliklerin tam kapandığını kontrol et.',
     `▶ Dinle ile ${ad.belirtme} dinle.`,
+    ...ekAdimlar,
     `Ilık nefesle uzun ses çal: ${ad.belirtme} nefesin bitene kadar aynı güçte, dalgalanmadan tut.`,
     'Kendi sesini kulağınla dinlediğin sesle karşılaştır: aynı mı, daha pes mi, daha tiz mi?',
     'Akort göstergesine bak; ibreyi yeşil bantta tut ve saniyeleri say.',
   ]
-  if (onceki) adimlar.splice(3, 0, `Önce ${onceki.ad} çal, sonra parmağını ekleyip ${onceki.gecis} geç.`)
+  if (onceki) {
+    const hareket = onceki.hareket ?? 'parmağını ekleyip'
+    adimlar.splice(
+      3 + ekAdimlar.length,
+      0,
+      `Önce ${onceki.ad} çal, sonra ${hareket} ${onceki.gecis} geç.`,
+    )
+  }
   adimlar.push('Önerilen hedef: 8 sn, ±20 sent.')
   return { tur: 'dene', adimlar }
 }
@@ -67,6 +91,10 @@ const CARGAH = perde('cargah')
 const SEGAH = perde('segah')
 const DUGAH = perde('dugah')
 const RAST = perde('rast')
+const BUSELIK = perde('buselik')
+const KURDI = perde('kurdi')
+const DIK_KURDI = perde('dik-kurdi')
+const NIM_HICAZ = perde('nim-hicaz')
 
 export const PERDE_DERSLERI: Ders[] = [
   {
@@ -260,5 +288,212 @@ export const PERDE_DERSLERI: Ders[] = [
     ],
     kaynaklar: [semaKaynagi(RAST), S2, S5],
     alistirma: '/ney/rast',
+  },
+  // Seviye 2: ara sesler. Sıra nota konularının açılma sırasını izler (perde-3: Bûselik, Kürdî, Dik Kürdî; perde-4: Nim Hicaz).
+  // Şema ve parmak anlatımı ney-perdeler.ts'teki `tip` metinleriyle aynıdır. Nim Hicaz'da üstteki elin orta parmağı,
+  // Kürdî ve Dik Kürdî'de alttaki elin orta parmağı açıktır; bu yüzden Seviye 1'deki "orta parmaklar hep kapalı"
+  // cümlesi (ORTA_PARMAKLAR) yalnız Bûselik dersinde tekrarlanır.
+  {
+    id: 'perde:buselik',
+    seviye: 2,
+    baslik: 'Bûselik perdesi',
+    bloklar: [
+      {
+        tur: 'metin',
+        metin:
+          "Seviye 2'de dört ara ses öğreneceksin: Bûselik, Kürdî, Dik Kürdî ve Nim Hicaz. Ara sesler iki ana sesin arasında kalan seslerdir; aralarındaki farklar komayla ölçülür. Önce Bûselik gelir.",
+      },
+      {
+        tur: 'metin',
+        metin:
+          "Bûselik işaretsiz Si'dir. Segâh, Si'nin 1 koma pesiydi; Bûselik tam Si'dir, yani Segâh'tan 1 koma tizdir. Segâh duruşunu biliyorsun; yalnız üçüncü deliği yarım açacaksın.",
+      },
+      {
+        tur: 'parmak',
+        perdeId: 'buselik',
+        aciklama:
+          'Bûselik: Segâh duruşunda üçüncü delik yarım açık (üstteki elin yüzük parmağı yarım). Başparmak arkada kapalı; ilk iki delik kapalı, dördüncü delik açık, alttaki elin orta parmağı kapalı.',
+      },
+      { tur: 'metin', metin: ORTA_PARMAKLAR },
+      {
+        tur: 'porte',
+        olaylar: birlik(BUSELIK),
+        aciklama: 'Bûselik = Si: 3. çizgi, önünde işaret yok. Birlik, 4 vuruş.',
+      },
+      {
+        tur: 'porte',
+        olaylar: gecis(SEGAH, BUSELIK),
+        aciklama: "Segâh'tan Bûselik'e: aynı çizgi, yalnız koma bemolü kalkar. Ses 1 koma yükselir.",
+      },
+      {
+        tur: 'metin',
+        metin: `Yarım deliğin ne kadar açılacağını kural değil, kulağın söyler: ▶ Dinle ile Bûselik'i dinle, kendi sesini onunla ve Segâh'la karşılaştır. Yarım delik sesi Segâh'tan 1 koma yukarı çıkarır; ince ayarda ${KOMA_FARKI}`,
+      },
+      { tur: 'metin', metin: KADEME_2_NEFES },
+      { tur: 'metin', metin: HAFTA },
+      { tur: 'metin', metin: HEDEF_2 },
+      deneAdimlari(
+        { belirtme: "Bûselik'i" },
+        { ad: "Segâh'ı", gecis: "Bûselik'e", hareket: 'üçüncü deliği yarım açıp' },
+      ),
+    ],
+    kaynaklar: [semaKaynagi(BUSELIK), S2, S5],
+    alistirma: '/ney/buselik',
+  },
+  {
+    id: 'perde:kurdi',
+    seviye: 2,
+    baslik: 'Kürdî perdesi',
+    bloklar: [
+      {
+        tur: 'metin',
+        metin:
+          "Kürdî, Si küçük mücenneb bemolüdür: Si'nin 5 koma pesi. Portede Bûselik ile aynı yerdedir (3. çizgi), yalnız önünde düz bemol vardır. Dügâh'tan (La) 4 koma tizdir.",
+      },
+      {
+        tur: 'parmak',
+        perdeId: 'kurdi',
+        aciklama:
+          'Kürdî: başparmak arkada kapalı; üstten ilk dört delik kapalı, alttaki iki delik açık. Dügâh duruşunda alttaki elin orta parmağı kalkar.',
+      },
+      {
+        tur: 'metin',
+        metin:
+          "Dikkat: Seviye 1'de iki elin orta parmağı hep kapalıydı. Kürdî'de alttaki elin orta parmağı açıktır; Dügâh'tan tek farkı budur.",
+      },
+      {
+        tur: 'porte',
+        olaylar: birlik(KURDI),
+        aciklama: 'Kürdî = Si küçük mücenneb bemolü: 3. çizgi, önünde düz bemol. Birlik, 4 vuruş.',
+      },
+      {
+        tur: 'porte',
+        olaylar: gecis(DUGAH, KURDI),
+        aciklama: "Dügâh'tan Kürdî'ye: La'dan Si küçük mücenneb bemolüne, 4 koma yukarı.",
+      },
+      {
+        tur: 'metin',
+        metin: `Kürdî ile Dik Kürdî aynı parmakla çalınır. Aralarında yalnız 1 koma var: Dik Kürdî, Kürdî'den 1 koma tizdir. Parmak değişmediği için bu küçük farkı kulağınla yakalarsın; ${KOMA_FARKI}`,
+      },
+      {
+        tur: 'porte',
+        olaylar: gecis(KURDI, DIK_KURDI),
+        aciklama: 'Kürdî, sonra Dik Kürdî. ▶ Dinle ile art arda dinle: ikisi de aynı parmakla çalınır, fark 1 komadır.',
+      },
+      { tur: 'metin', metin: KADEME_2_NEFES },
+      {
+        tur: 'metin',
+        metin: 'Aynı parmakla daha sert üflersen Acem çıkar; onu ileride göreceksin. Şimdi nefesi ılık tut.',
+      },
+      {
+        tur: 'metin',
+        metin:
+          "Mehmet Yücel Kürdî'yi ikinci devre sesler arasında sayar (Nevâ, Nîm Hicâz, Çârgâh, Segâh, Kürdî, Dügâh, Rast) ve bu yedi sese 2–3 ay çalışmadan eser çalmamayı önerir.",
+      },
+      { tur: 'metin', metin: HAFTA },
+      { tur: 'metin', metin: HEDEF_2 },
+      deneAdimlari(
+        { belirtme: "Kürdî'yi" },
+        { ad: "Dügâh'ı", gecis: "Kürdî'ye", hareket: 'alttaki elin orta parmağını kaldırıp' },
+        ["Sonra ▶ Dinle ile önce Kürdî'yi, ardından Dik Kürdî'yi dinle; 1 komalık farkı duy."],
+      ),
+    ],
+    kaynaklar: [semaKaynagi(KURDI), S2, S5],
+    alistirma: '/ney/kurdi',
+  },
+  {
+    id: 'perde:dik-kurdi',
+    seviye: 2,
+    baslik: 'Dik Kürdî perdesi',
+    bloklar: [
+      {
+        tur: 'metin',
+        metin:
+          "Dik Kürdî, Si bakiye bemolüdür: Si'nin 4 koma pesi. Kürdî'den 1 koma tizdir; adındaki \"dik\" bunu anlatır. Dügâh'tan (La) 5 koma tizdir.",
+      },
+      {
+        tur: 'parmak',
+        perdeId: 'dik-kurdi',
+        aciklama:
+          'Dik Kürdî: Kürdî ile aynı parmak. Başparmak arkada kapalı; üstten ilk dört delik kapalı, alttaki iki delik açık.',
+      },
+      {
+        tur: 'metin',
+        metin: `Kürdî ve Dik Kürdî aynı parmakla çalınır; parmağını Kürdî'ye göre hiç değiştirmezsin. Fark 1 komadır: ${KOMA_FARKI} Kulağınla ayarla.`,
+      },
+      {
+        tur: 'porte',
+        olaylar: birlik(DIK_KURDI),
+        aciklama: 'Dik Kürdî = Si bakiye bemolü: 3. çizgi, önünde bakiye bemolü. Birlik, 4 vuruş.',
+      },
+      {
+        tur: 'porte',
+        olaylar: gecis(KURDI, DIK_KURDI),
+        aciklama:
+          "Kürdî'den Dik Kürdî'ye: aynı çizgi, aynı parmak. Yalnız bemolün işareti değişir, ses 1 koma yükselir. ▶ Dinle ile art arda dinle.",
+      },
+      { tur: 'metin', metin: KADEME_2_NEFES },
+      { tur: 'metin', metin: HAFTA },
+      { tur: 'metin', metin: HEDEF_2 },
+      deneAdimlari(
+        { belirtme: "Dik Kürdî'yi" },
+        { ad: "Kürdî'yi", gecis: "Dik Kürdî'ye", hareket: 'parmaklarını değiştirmeden, dudak ve baş açısıyla' },
+        ["Sonra ▶ Dinle ile önce Kürdî'yi, ardından Dik Kürdî'yi dinle; ikisi aynı parmakla çalınır."],
+      ),
+    ],
+    kaynaklar: [semaKaynagi(DIK_KURDI), S2, S5],
+    alistirma: '/ney/dik-kurdi',
+  },
+  {
+    id: 'perde:nim-hicaz',
+    seviye: 2,
+    baslik: 'Nim Hicaz perdesi',
+    bloklar: [
+      {
+        tur: 'metin',
+        metin:
+          "Nim Hicaz, Do bakiye diyezidir: Çârgâh'tan 4 koma tizdir. \"Nim\" yarım demektir; Nim Hicaz, Hicaz'dan 1 koma pestir. Hicaz dörtlüsünde de çalarsın: Dügâh, Dik Kürdî, Nim Hicaz, Nevâ.",
+      },
+      {
+        tur: 'parmak',
+        perdeId: 'nim-hicaz',
+        aciklama:
+          'Nim Hicaz: başparmak arkada kapalı; yalnız ilk delik ve alttaki elin orta parmağı kapalı, öteki ön delikler açık. Çârgâh duruşunda üstteki elin orta parmağı kalkar.',
+      },
+      {
+        tur: 'metin',
+        metin:
+          "Dikkat: Çârgâh'ta üstteki elin işaret ve orta parmağı kapalıydı. Nim Hicaz'da orta parmak kalkar, yalnız işaret parmağı kapalı kalır.",
+      },
+      {
+        tur: 'porte',
+        olaylar: birlik(NIM_HICAZ),
+        aciklama:
+          'Nim Hicaz = Do bakiye diyezi: Çârgâh ile aynı aralıkta (3. aralık), önünde bakiye diyezi. Birlik, 4 vuruş.',
+      },
+      {
+        tur: 'porte',
+        olaylar: gecis(CARGAH, NIM_HICAZ),
+        aciklama: "Çârgâh'tan Nim Hicaz'a: aynı aralık, önüne bakiye diyezi gelir. Ses 4 koma yükselir.",
+      },
+      {
+        tur: 'metin',
+        metin: `Parmak sesi yaklaştırır; son ayarı kulağın yapar. ▶ Dinle ile Nim Hicaz'ı dinle, kendi sesini onunla ve Çârgâh'la karşılaştır. İnce ayarda ${KOMA_FARKI}`,
+      },
+      { tur: 'metin', metin: KADEME_2_NEFES },
+      {
+        tur: 'metin',
+        metin:
+          "Mehmet Yücel Nîm Hicâz'ı ikinci devre sesler arasında sayar (Nevâ, Nîm Hicâz, Çârgâh, Segâh, Kürdî, Dügâh, Rast) ve bu yedi sese 2–3 ay çalışmadan eser çalmamayı önerir.",
+      },
+      { tur: 'metin', metin: HAFTA },
+      { tur: 'metin', metin: HEDEF_2 },
+      deneAdimlari(
+        { belirtme: "Nim Hicaz'ı" },
+        { ad: "Çârgâh'ı", gecis: "Nim Hicaz'a", hareket: 'üstteki elin orta parmağını kaldırıp' },
+      ),
+    ],
+    kaynaklar: [semaKaynagi(NIM_HICAZ), S2, S5],
+    alistirma: '/ney/nim-hicaz',
   },
 ]

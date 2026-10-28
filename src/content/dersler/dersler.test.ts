@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { rotaBilinir } from '../../app'
-import { NEY_PERDELER } from '../ney-perdeler'
+import { KOMA_FARKI, NEY_PERDELER } from '../ney-perdeler'
 import { NOTA_TOPICS } from '../nota-topics'
 import { DERSLER, dersById, notaDersId, perdeDersId } from './index'
 import { HAZIRLIK_DERSLERI } from './hazirlik'
@@ -356,7 +356,7 @@ describe('Seviye 1 perde dersleri', () => {
   const yukseklik = (e: MusicEvent) => (e.kind === 'note' ? e.pitch : null)
 
   it('beş perde dersi bu sırayla var; seviye 1, kimlik perde:<id>, alıştırması /ney/<id>, DERSLER içinde', () => {
-    expect(PERDE_DERSLERI.map((d) => d.id)).toEqual(PERDELER.map(perdeDersId))
+    expect(PERDE_DERSLERI.slice(0, 5).map((d) => d.id)).toEqual(PERDELER.map(perdeDersId))
     for (const id of PERDELER) {
       const d = dersById(perdeDersId(id))
       expect(d).toBeDefined()
@@ -441,6 +441,118 @@ describe('Seviye 1 perde dersleri', () => {
 
   it.each(PERDELER)('%s: orta parmakların (2. ve 5. delik) destek için kapalı olduğu söylenir', (id) => {
     expect(metinler(ders(id)).join(' ')).toMatch(/orta parma/)
+  })
+})
+
+describe('Seviye 2 ara ses perde dersleri', () => {
+  const ARA = ['buselik', 'kurdi', 'dik-kurdi', 'nim-hicaz'] as const
+  const ONCEKI = { buselik: 'segah', kurdi: 'dugah', 'dik-kurdi': 'kurdi', 'nim-hicaz': 'cargah' } as const
+  const perde = (id: string) => NEY_PERDELER.find((p) => p.id === id)!
+  const ders = (id: string) => dersById(perdeDersId(id))!
+  const porteler = (id: string) => ders(id).bloklar.flatMap((b) => (b.tur === 'porte' ? [b.olaylar] : []))
+  const tumMetin = (id: string) => metinler(ders(id)).join(' ')
+
+  it('dört ara ses dersi var, parmak bloğu doğru perdeyi gösterir, seviye 2', () => {
+    expect(PERDE_DERSLERI.slice(5).map((d) => d.id)).toEqual(ARA.map(perdeDersId))
+    for (const id of ARA) {
+      const d = ders(id)
+      expect(d.seviye).toBe(2)
+      expect(d.alistirma).toBe(`/ney/${id}`)
+      expect(DERSLER).toContain(d)
+      const parmaklar = d.bloklar.filter((b) => b.tur === 'parmak')
+      expect(parmaklar.length).toBeGreaterThan(0)
+      for (const b of parmaklar) expect(b.tur === 'parmak' && b.perdeId).toBe(id)
+    }
+  })
+
+  it.each(ARA)('%s: kendi yazılı notası tek başına, önceki komşudan geçiş iki notalık portede gösterilir', (id) => {
+    expect(porteler(id)).toContainEqual([{ kind: 'note', pitch: perde(id).written, dur: 'whole' }])
+    const gecisler = porteler(id).filter((o) => o.length === 2 && o.every((e) => e.kind === 'note'))
+    expect(gecisler.map((o) => o.map((e) => (e.kind === 'note' ? e.pitch : null)))).toContainEqual([
+      perde(ONCEKI[id]).written,
+      perde(id).written,
+    ])
+  })
+
+  it.each(ARA)('%s: kaynaklar perdenin şema kaynağını ve ders numarasını içerir; S2 ve S5 anılır', (id) => {
+    const k = ders(id).kaynaklar
+    expect(k.some((x) => x.includes(perde(id).source!))).toBe(true)
+    const no = perde(id).source!.match(/neydersleri_(\d+)/)![1]
+    expect(k.some((x) => x.includes(`Ney Dersleri ${no}:`))).toBe(true)
+    expect(k.some((x) => x.startsWith('S2'))).toBe(true)
+    expect(k.some((x) => x.startsWith('S5'))).toBe(true)
+  })
+
+  it.each(ARA)('%s: koma farkı kulakla ve dudak / baş açısıyla verilir (KOMA_FARKI)', (id) => {
+    const m = tumMetin(id)
+    expect(m).toContain(KOMA_FARKI)
+    expect(m).toMatch(/kulağ/)
+  })
+
+  it.each(ARA)('%s: "Kendin dene" uzun ses, ▶ Dinle, kulak, akort göstergesi ve 8 sn / ±20 sent öneri hedefi içerir', (id) => {
+    const dene = ders(id).bloklar.find((b) => b.tur === 'dene')!
+    const adimlar = dene.tur === 'dene' ? dene.adimlar.join(' ') : ''
+    expect(adimlar).toMatch(/uzun ses/i)
+    expect(adimlar).toMatch(/▶ Dinle/)
+    expect(adimlar).toMatch(/kulağın/)
+    expect(adimlar).toMatch(/akort göstergesi/i)
+    const m = tumMetin(id)
+    expect(m).toMatch(/Seviye 2/)
+    expect(m).toMatch(/8 sn/)
+    expect(m).toMatch(/±20 sent/)
+    expect(m).toMatch(/öneri/i)
+  })
+
+  it.each(ARA)('%s: perdenin adı derste geçer', (id) => {
+    expect(tumMetin(id)).toContain(perde(id).name)
+  })
+
+  it('Kürdî ve Dik Kürdî derslerinde ikisinin aynı parmakla çalındığı yazılı', () => {
+    expect(perde('kurdi').fingering).toEqual(perde('dik-kurdi').fingering)
+    expect(tumMetin('kurdi')).toMatch(/aynı parmak/)
+    expect(tumMetin('kurdi')).toContain('Dik Kürdî')
+    expect(tumMetin('dik-kurdi')).toMatch(/aynı parmak/)
+    expect(tumMetin('dik-kurdi')).toContain('Kürdî')
+  })
+
+  it('Kürdî ve Dik Kürdî derslerinde iki perde art arda ▶ Dinle ile karşılaştırılır', () => {
+    for (const id of ['kurdi', 'dik-kurdi'] as const) {
+      const ikili = porteler(id).filter(
+        (o) => o.length === 2 && o.every((e) => e.kind === 'note' && e.dur === 'half'),
+      )
+      expect(ikili.map((o) => o.map((e) => (e.kind === 'note' ? e.pitch : null)))).toContainEqual([
+        perde('kurdi').written,
+        perde('dik-kurdi').written,
+      ])
+      const dene = ders(id).bloklar.find((b) => b.tur === 'dene')!
+      expect(dene.tur === 'dene' && dene.adimlar.join(' ')).toMatch(/▶ Dinle ile .*Kürdî.*Dik Kürdî/)
+    }
+  })
+
+  it('parmak anlatımı perdenin şemasıyla çelişmez', () => {
+    const aciklama = (id: string) => {
+      const b = ders(id).bloklar.find((x) => x.tur === 'parmak')!
+      return b.tur === 'parmak' ? (b.aciklama ?? '') : ''
+    }
+    // Bûselik: Segâh duruşu, üçüncü delik yarım.
+    expect(perde('buselik').fingering!.front[2]).toBe('yarim')
+    expect(aciklama('buselik')).toMatch(/yarım/)
+    expect(aciklama('buselik')).toMatch(/Segâh/)
+    // Kürdî ve Dik Kürdî: alttaki iki delik açık, ötekiler kapalı.
+    for (const id of ['kurdi', 'dik-kurdi']) {
+      expect(aciklama(id)).toMatch(/alttaki iki delik açık/)
+    }
+    // Nim Hicaz: yalnız ilk delik ve alttaki elin orta parmağı kapalı.
+    expect(aciklama('nim-hicaz')).toMatch(/yalnız(ca)? ilk delik ve alttaki elin orta parmağı kapalı/)
+  })
+
+  it('"iki elin orta parmağı kapalı" cümlesi yalnız şemada gerçekten doğruysa geçer (Kürdî ve Nim Hicaz\'da geçmez)', () => {
+    for (const id of ARA) {
+      const f = perde(id).fingering!
+      const ikisiKapali = f.front[1] === 'kapali' && f.front[4] === 'kapali'
+      const m = tumMetin(id)
+      if (!ikisiKapali) expect(m, id).not.toMatch(/iki elinin orta parmağı/)
+    }
   })
 })
 
