@@ -576,8 +576,10 @@ describe('Seviye 1 etüt dersleri', () => {
     expect(ders('etut:rast-besli').alistirma).toBe('/etut/rast-besli-1')
   })
 
-  it('her etüdün dersi vardır', () => {
-    for (const e of ETUTLER) expect(dersById(e.dersId), e.id).toBeDefined()
+  it('her etüdün dersi vardır (dörtlü ve dil dersleri Task 49 ile gelir)', () => {
+    const sonra = (id: string) => id.startsWith('dortlu:') || id === 'dil:tu-bag'
+    for (const e of ETUTLER.filter((x) => !sonra(x.dersId))) expect(dersById(e.dersId), e.id).toBeDefined()
+    expect(ETUTLER.filter((x) => x.tur === 'usul').every((x) => dersById(x.dersId))).toBe(true)
   })
 
   it('etut:giris: tek-neva etüdünün ilk iki ölçüsü porte olarak gösterilir', () => {

@@ -6,6 +6,7 @@ import { SHAKUHACHI_SOUND } from '../audio/shakuhachi'
 import { acquireWakeLock, releaseWakeLock } from '../audio/wakeLock'
 import { ETUTLER } from '../content/etutler'
 import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
+import { USULLER } from '../content/usuller'
 import { DEFAULT_TUNING } from '../music/ahenk'
 import { getSettings, isaretEkle, resetDbForTests, saveSettings } from '../store/db'
 import { EtutCalisma, EtutDetail } from './EtutDetail'
@@ -273,6 +274,43 @@ describe('EtutCalisma', () => {
     await isaretEkle('calinanEtutler', 'tek-neva')
     render(<EtutCalisma etut={NEVA} />)
     expect(await screen.findByText('Çalındı ✓')).toBeTruthy()
+  })
+
+  it('usullü etütte anahtar "Usul (Semâî)" ve "Usulle çal"; usulsüzde eski etiketler', async () => {
+    const semaiEtut = etut('usul-semai')
+    const semai = USULLER.find((u) => u.id === 'semai')!
+    render(<EtutCalisma etut={semaiEtut} />)
+    const box = screen.getByRole('checkbox', { name: '🥁 Usul (Semâî)' }) as HTMLInputElement
+    expect(box.checked).toBe(true)
+    expect(screen.queryByRole('checkbox', { name: '🥁 Metronom' })).toBeNull()
+    expect(screen.queryByRole('button', { name: '🎵 Metronomla çal' })).toBeNull()
+    fireEvent.click(await dinleBtn())
+    await waitFor(() => expect(playCode).toHaveBeenCalledTimes(1))
+    const dinle = buildEtutCode(semaiEtut.olcu, DEFAULT_TUNING, 60, { ...SES, usul: semai })
+    expect(vi.mocked(playCode).mock.calls[0]).toEqual([dinle.code, dinle.durationMs])
+    fireEvent.click(screen.getByRole('button', { name: '⏹ Durdur' }))
+    fireEvent.click(await screen.findByRole('button', { name: '🥁 Usulle çal' }))
+    await waitFor(() => expect(playCode).toHaveBeenCalledTimes(2))
+    const usulle = buildEtutCode(semaiEtut.olcu, DEFAULT_TUNING, 60, { ...SES, melodi: false, usul: semai })
+    expect(vi.mocked(playCode).mock.calls[1]).toEqual([usulle.code, usulle.durationMs])
+    // 3/4: satırda üç ölçü (8 ölçü → 3 satır).
+    expect(document.querySelectorAll('[data-testid="score-row"]')).toHaveLength(3)
+    cleanup()
+    render(<EtutCalisma etut={etut('dortlu-cargah')} />)
+    expect(metronomBox().checked).toBe(true)
+    expect(metronomlaBtn()).toBeTruthy()
+    expect(screen.queryByRole('button', { name: '🥁 Usulle çal' })).toBeNull()
+    expect(document.querySelectorAll('[data-testid="score-row"]')).toHaveLength(4)
+  })
+
+  it('Nim Sofyan (2/4) satırda üç ölçü, Sofyan (4/4) satırda iki ölçü', () => {
+    render(<EtutCalisma etut={etut('usul-nim-sofyan')} />)
+    expect(screen.getByRole('checkbox', { name: '🥁 Usul (Nim Sofyan)' })).toBeTruthy()
+    expect(document.querySelectorAll('[data-testid="score-row"]')).toHaveLength(3)
+    cleanup()
+    render(<EtutCalisma etut={etut('usul-sofyan')} />)
+    expect(screen.getByRole('checkbox', { name: '🥁 Usul (Sofyan)' })).toBeTruthy()
+    expect(document.querySelectorAll('[data-testid="score-row"]')).toHaveLength(4)
   })
 
   it('baslikGizle: başlık çizilmez (akşam adımında üst başlık vardır)', () => {

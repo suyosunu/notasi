@@ -61,6 +61,14 @@ describe('SEVIYELER', () => {
     }
   })
 
+  it('s1-etut-iki yalnız tek ve iki perde etütlerini sayar', () => {
+    const o = hedefler.find((x) => x.id === 's1-etut-iki')!.olcut
+    if (o.tur !== 'etutler') throw new Error('etütler ölçütü bekleniyordu')
+    expect(o.etutIds).toHaveLength(9)
+    for (const id of o.etutIds) expect(['tek', 'iki'], id).toContain(ETUTLER.find((e) => e.id === id)!.tur)
+    for (const id of ['rast-besli-1', 'usul-nim-sofyan', 'dortlu-cargah', 'dil-1']) expect(o.etutIds).not.toContain(id)
+  })
+
   it('seviye 0 ve 1 hedefleri kararlaştırılan sayılarla', () => {
     const h = (id: string) => hedefler.find((x) => x.id === id)!
     expect(h('s0-neva-5').olcut).toEqual({ tur: 'uzun-ses', perdeId: 'neva', ms: 5000, cent: 20 })
@@ -76,6 +84,9 @@ describe('SEVIYELER', () => {
     expect(h('s1-nota').olcut).toMatchObject({ tur: 'konular' })
     const etutler = h('s1-etut-iki').olcut
     expect(etutler.tur === 'etutler' && etutler.etutIds).toHaveLength(9)
+    expect(etutler.tur === 'etutler' && etutler.etutIds).toEqual(
+      ETUTLER.filter((e) => e.tur === 'tek' || e.tur === 'iki').map((e) => e.id),
+    )
     expect(h('s1-rast-besli').olcut).toEqual({ tur: 'etutler', etutIds: ['rast-besli-1', 'rast-besli-2'] })
   })
 })

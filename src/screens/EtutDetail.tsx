@@ -5,6 +5,7 @@ import { acquireWakeLock, releaseWakeLock } from '../audio/wakeLock'
 import { ETUTLER } from '../content/etutler'
 import type { Etut } from '../content/etutler'
 import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
+import { USULLER } from '../content/usuller'
 import { DersKapisi } from '../ders/DersKapisi'
 import { ScoreView } from '../notation/ScoreView'
 import { DEFAULT_SETTINGS, getSettings, isaretEkle } from '../store/db'
@@ -12,16 +13,19 @@ import type { Settings } from '../store/db'
 
 const BPM_MIN = 40
 const BPM_MAX = 90
-/** Etütler 4/4'tür: dörtlük içindeki sekizlikler kirişlenir. */
+/** Etütlerin mertebesi 4'tür: dörtlük içindeki sekizlikler kirişlenir. */
 const KIRIS_VURUSU = 1
-const OLCU_PER_SATIR = 2
+/** Satırdaki ölçü sayısı: 2/4 ve 3/4'te kısa ölçüler üçer, diğerlerinde ikişer (telefon genişliği). */
+const olcuPerSatir = (zaman: number) => (zaman === 2 || zaman === 3 ? 3 : 2)
 
 /**
- * Etüdün çalışma bölümü (etüt ekranında ve akşam planında ortak): nota, hız, metronom anahtarı, dinle / metronomla çal /
- * durdur ve "Çaldım" işareti. `baslikGizle`: başlığı üst ekran gösteriyorsa (akşam adımı) çizilmez.
+ * Etüdün çalışma bölümü (etüt ekranında ve akşam planında ortak): nota, hız, metronom (usullü etütte usul) anahtarı,
+ * dinle / metronomla (usulle) çal / durdur ve "Çaldım" işareti. `baslikGizle`: başlığı üst ekran gösteriyorsa (akşam adımı) çizilmez.
  */
 export function EtutCalisma(props: { etut: Etut; onDone?: () => void; baslikGizle?: boolean }) {
   const { etut, onDone, baslikGizle } = props
+  /** Usullü etütte eşlik usul sesidir; usulsüzde (ya da usul bulunamazsa) 4/4 metronom. */
+  const usul = etut.usulId ? USULLER.find((u) => u.id === etut.usulId) : undefined
   const [settings, setSettings] = useState<Settings | null>(null)
   const [bpm, setBpm] = useState(etut.bpm)
   const [metronom, setMetronom] = useState(true)
@@ -70,11 +74,12 @@ export function EtutCalisma(props: { etut: Etut; onDone?: () => void; baslikGizl
     try {
       const unlocked = unlockAudio()
       unlocked.catch(() => {}) // kod üretimi fırlatırsa işlenmemiş ret kalmasın; hata aşağıda await ile yakalanır
-      // "Metronomla çal": yalnız metronom; melodi kapalıyken anahtar anlamsızdır.
+      // "Metronomla çal" / "Usulle çal": yalnız eşlik; melodi kapalıyken anahtar anlamsızdır.
       const { code, durationMs } = buildEtutCode(etut.olcu, settings.tuning, bpm, {
         melodi,
         metronom: melodi ? metronom : true,
         voice: getNeySesi(),
+        ...(usul ? { usul } : {}),
       })
       await unlocked
       if (run !== runRef.current) return
@@ -110,7 +115,7 @@ export function EtutCalisma(props: { etut: Etut; onDone?: () => void; baslikGizl
   return (
     <>
       {!baslikGizle && <h1>🎼 {etut.baslik}</h1>}
-      <ScoreView olcu={etut.olcu} olcuPerSatir={OLCU_PER_SATIR} beamBeats={KIRIS_VURUSU} />
+      <ScoreView olcu={etut.olcu} olcuPerSatir={olcuPerSatir(usul?.zaman ?? 4)} beamBeats={KIRIS_VURUSU} />
 
       <label class="usul-speed">
         <span>{`Hız: ♩ = ${bpm}`}</span>
@@ -138,7 +143,7 @@ export function EtutCalisma(props: { etut: Etut; onDone?: () => void; baslikGizl
             if (playing) stop()
           }}
         />
-        {' 🥁 Metronom'}
+        {usul ? ` 🥁 Usul (${usul.name})` : ' 🥁 Metronom'}
       </label>
 
       <div class="tools">
@@ -152,7 +157,7 @@ export function EtutCalisma(props: { etut: Etut; onDone?: () => void; baslikGizl
               ▶ Dinle
             </button>
             <button type="button" class="tool" disabled={!settings} onClick={() => void calis(false)}>
-              🎵 Metronomla çal
+              {usul ? '🥁 Usulle çal' : '🎵 Metronomla çal'}
             </button>
           </>
         )}

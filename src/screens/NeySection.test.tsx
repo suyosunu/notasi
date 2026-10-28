@@ -140,17 +140,22 @@ describe('NeySection', () => {
       return a
     }
 
-    it('perde listesinin altında "Etütler" başlığı ve ETUTLER sırasıyla 11 bağlantı vardır', async () => {
+    it('perde listesinin altında "Etütler" başlığı vardır; etütler Seviye 1 ve Seviye 2 başlıkları altında', async () => {
       render(<NeySection />)
       const baslik = await screen.findByRole('heading', { name: 'Etütler' })
-      const liste = baslik.nextElementSibling as HTMLElement
-      const linkler = within(liste).getAllByRole('link')
-      expect(linkler).toHaveLength(ETUTLER.length)
-      expect(linkler.map((a) => a.getAttribute('href'))).toEqual(ETUTLER.map((e) => `#/etut/${e.id}`))
-      for (const [i, e] of ETUTLER.entries()) expect(linkler[i]!.textContent).toContain(e.baslik)
       // Etütler perde listesinin altındadır.
       const perdeListesi = screen.getAllByRole('list')[0]!
       expect(perdeListesi.compareDocumentPosition(baslik) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      for (const seviye of [1, 2] as const) {
+        const alt = screen.getByRole('heading', { name: `Seviye ${seviye} etütleri` })
+        expect(baslik.compareDocumentPosition(alt) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+        const liste = alt.nextElementSibling as HTMLElement
+        const linkler = within(liste).getAllByRole('link')
+        const beklenen = ETUTLER.filter((e) => e.seviye === seviye)
+        expect(linkler).toHaveLength(seviye === 1 ? 11 : 7)
+        expect(linkler.map((a) => a.getAttribute('href'))).toEqual(beklenen.map((e) => `#/etut/${e.id}`))
+        for (const [i, e] of beklenen.entries()) expect(linkler[i]!.textContent).toContain(e.baslik)
+      }
     })
 
     it('çalınan etütte ✓ vardır, çalınmayanda yoktur', async () => {
@@ -174,13 +179,18 @@ describe('NeySection', () => {
       }
     })
 
-    it('bütün perdeleri geçilmiş etütler soluk değildir', async () => {
+    it('bütün perdeleri geçilmiş etütler soluk değildir; ara sesleri geçilmemiş dörtlü etüdü soluktur', async () => {
       for (const id of ['neva', 'cargah', 'segah', 'dugah', 'rast']) {
         await addLongTone({ perdeId: id, durationMs: 4000, passed: true, toleranceCents: 25 })
       }
       render(<NeySection />)
       await screen.findByRole('heading', { name: 'Etütler' })
-      for (const e of ETUTLER) expect(etutSatiri(e.baslik).getAttribute('data-soluk')).toBe('false')
+      for (const e of ETUTLER.filter((x) => x.seviye === 1 || x.tur === 'usul' || x.tur === 'dil')) {
+        expect(etutSatiri(e.baslik).getAttribute('data-soluk'), e.id).toBe('false')
+      }
+      for (const e of ETUTLER.filter((x) => x.tur === 'dortlu')) {
+        expect(etutSatiri(e.baslik).getAttribute('data-soluk'), e.id).toBe('true')
+      }
     })
   })
 

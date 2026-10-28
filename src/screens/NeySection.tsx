@@ -1,6 +1,8 @@
+import { Fragment } from 'preact'
 import { useEffect, useState } from 'preact/hooks'
 import { dersById, perdeDersId, perdeDersleri } from '../content/dersler'
 import { ETUTLER } from '../content/etutler'
+import type { Etut } from '../content/etutler'
 import { NEY_PERDELER } from '../content/ney-perdeler'
 import type { PerdeId } from '../content/ney-perdeler'
 import { perdeEtiketi } from '../content/perde-adlari'
@@ -18,13 +20,16 @@ import { Calibration } from './Calibration'
 
 const ICONS: Record<PerdeStatus, string> = { kilitli: '🔒', acik: '▶', gecildi: '✓' }
 const LABELS: Record<PerdeStatus, string> = { kilitli: 'kilitli', acik: 'açık', gecildi: 'geçildi' }
+/** Etüt listesi bu seviye başlıkları altında gruplanır. */
+const ETUT_SEVIYELERI: readonly Etut['seviye'][] = [1, 2]
 /** Tek perde sayfasında gösterilen son deneme sayısı. */
 const HISTORY_SIZE = 5
 
 /**
  * Ney bölümü: perdeler durumlarıyla; açık ya da geçilmiş perde tek başına çalışılabilir. Dersi olan perdenin
  * yanında 📖 bağlantısı vardır; ders okumak serbest olduğu için kilitli perdede de görünür. Perde listesinin
- * altında etütler: çalınanlar ✓, perdeleri henüz geçilmemiş olanlar soluk (ama kilit yok, hepsi açılır).
+ * altında etütler seviyeye göre gruplu: çalınanlar ✓, perdeleri henüz geçilmemiş olanlar soluk (ama kilit yok, hepsi
+ * açılır).
  */
 export function NeySection() {
   const [statuses, setStatuses] = useState<Record<PerdeId, PerdeStatus> | null>(null)
@@ -89,22 +94,27 @@ export function NeySection() {
       {statuses && (
         <section>
           <h2>Etütler</h2>
-          <ul class="topic-list">
-            {ETUTLER.map((e) => {
-              const calindi = calinan.has(e.id)
-              const soluk = !e.perdeler.every((id) => statuses[id] === 'gecildi')
-              return (
-                <li key={e.id}>
-                  <a class="topic" href={`#/etut/${e.id}`} data-soluk={soluk} data-calindi={calindi}>
-                    <span class="topic-icon" role="img" aria-label={calindi ? 'çalındı' : 'çalınmadı'}>
-                      {calindi ? '✓' : '🎼'}
-                    </span>
-                    <span class="topic-title">{e.baslik}</span>
-                  </a>
-                </li>
-              )
-            })}
-          </ul>
+          {ETUT_SEVIYELERI.map((seviye) => (
+            <Fragment key={seviye}>
+              <h3>{`Seviye ${seviye} etütleri`}</h3>
+              <ul class="topic-list">
+                {ETUTLER.filter((e) => e.seviye === seviye).map((e) => {
+                  const calindi = calinan.has(e.id)
+                  const soluk = !e.perdeler.every((id) => statuses[id] === 'gecildi')
+                  return (
+                    <li key={e.id}>
+                      <a class="topic" href={`#/etut/${e.id}`} data-soluk={soluk} data-calindi={calindi}>
+                        <span class="topic-icon" role="img" aria-label={calindi ? 'çalındı' : 'çalınmadı'}>
+                          {calindi ? '✓' : '🎼'}
+                        </span>
+                        <span class="topic-title">{e.baslik}</span>
+                      </a>
+                    </li>
+                  )
+                })}
+              </ul>
+            </Fragment>
+          ))}
         </section>
       )}
       <div class="links">

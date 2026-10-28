@@ -3,21 +3,26 @@ import type { Accidental, Step, WrittenPitch } from '../music/pitch'
 import { NEY_PERDELER } from './ney-perdeler'
 import type { PerdeId } from './ney-perdeler'
 
-// Özgün etütler (kaynak etüt kopyalanmadı): tek perde, iki perde ve rast beşlisi. Üçü de ♩ = 60'ta 4/4'tür.
+// Özgün etütler (kaynak etüt kopyalanmadı), hepsi ♩ = 60.
+// - Seviye 1: tek perde, iki perde ve rast beşlisi (4/4).
+// - Seviye 2: usul (Nim Sofyan 2/4, Semâî 3/4, Sofyan 4/4), dörtlü (Çârgâh, Kürdî, Hicaz; 4/4) ve dil (tu ve bağ; 4/4).
+//   Yalnız birlik, ikilik, dörtlük ve sekizlik (noktalısı da) kullanılır; onaltılık ve üçleme yoktur.
 // Çalış sırası: uzun ses → etüt → eser (araştırma notu, ortak kalıp S1, S2, S5; etüt tempoları S4 ders 3–4).
 
 export interface Etut {
   id: string
   baslik: string
-  tur: 'tek' | 'iki' | 'besli'
+  tur: 'tek' | 'iki' | 'besli' | 'usul' | 'dortlu' | 'dil'
   /** Hepsi geçilince etüt akşam planına girer. */
   perdeler: PerdeId[]
-  /** 4/4 ölçüler. */
+  /** Ölçüler: usulsüz etütte 4/4, usullü etütte `usul.zaman`/4. */
   olcu: MusicEvent[][]
   bpm: number
   /** Etütten önce okunan ders. */
   dersId: string
-  seviye: 1
+  seviye: 1 | 2
+  /** `USULLER` kimliği: eşlik usul sesiyle çalar. Yoksa 4/4 metronom. */
+  usulId?: string
 }
 
 const SURELER: Record<string, DurationKind> = { '1': 'whole', '2': 'half', '4': 'quarter', '8': 'eighth' }
@@ -67,8 +72,21 @@ export function parseEtut(s: string): MusicEvent[][] {
   })
 }
 
-/** Perdenin etütlerde yazıldığı belirteç (Nevâ D5, Çârgâh C5, Segâh B4b1, Dügâh A4, Rast G4). */
-const YAZIM: Partial<Record<PerdeId, string>> = { neva: 'D5', cargah: 'C5', segah: 'B4b1', dugah: 'A4', rast: 'G4' }
+/**
+ * Perdenin etütlerde yazıldığı belirteç (Nevâ D5, Çârgâh C5, Segâh B4b1, Dügâh A4, Rast G4; ara sesler Bûselik B4,
+ * Kürdî B4b5, Dik Kürdî B4b4, Nim Hicaz C5#4).
+ */
+const YAZIM: Partial<Record<PerdeId, string>> = {
+  neva: 'D5',
+  cargah: 'C5',
+  segah: 'B4b1',
+  dugah: 'A4',
+  rast: 'G4',
+  buselik: 'B4',
+  kurdi: 'B4b5',
+  'dik-kurdi': 'B4b4',
+  'nim-hicaz': 'C5#4',
+}
 
 function perdeAdi(id: PerdeId): string {
   return NEY_PERDELER.find((p) => p.id === id)!.name
@@ -122,6 +140,100 @@ function besli(n: number, baslik: string, notasyon: string): Etut {
   }
 }
 
+/** Seviye 2 etüdü: ♩ = 60. */
+function seviye2(e: Omit<Etut, 'olcu' | 'bpm' | 'seviye'> & { notasyon: string }): Etut {
+  const { notasyon, ...rest } = e
+  return { ...rest, olcu: parseEtut(notasyon), bpm: 60, seviye: 2 }
+}
+
+/**
+ * Usul etütleri: her ölçünün ilk notası düm'e denk gelir ve ölçünün en uzun sesidir (Nim Sofyan ve Semâî'de düm
+ * 1. vuruşta, Sofyan'da 1–2. vuruşlarda).
+ */
+const USUL_ETUTLERI: Etut[] = [
+  seviye2({
+    id: 'usul-nim-sofyan',
+    baslik: 'Usul: Nim Sofyan',
+    tur: 'usul',
+    usulId: 'nim-sofyan',
+    perdeler: ['neva', 'cargah', 'segah'],
+    dersId: 'usul:nim-sofyan',
+    // 2/4: ikilik ölçüler düm'ü tutar; dörtlüklü ölçülerde ilk dörtlük düm'de, ikincisi tek'te. Nevâ'da durur.
+    notasyon: 'D5:2 | C5:4 B4b1:4 | C5:2 | B4b1:4 C5:4 | B4b1:2 | C5:4 D5:4 | C5:4 D5:4 | D5:2',
+  }),
+  seviye2({
+    id: 'usul-semai',
+    baslik: 'Usul: Semâî',
+    tur: 'usul',
+    usulId: 'semai',
+    perdeler: ['cargah', 'segah', 'dugah'],
+    dersId: 'usul:semai',
+    // 3/4: noktalı ikilik bütün ölçüyü, ikilik düm ile ilk tek'i tutar. Dügâh'ta durur.
+    notasyon: 'C5:2. | B4b1:2 A4:4 | B4b1:2. | C5:2 B4b1:4 | A4:2 B4b1:4 | C5:4 B4b1:4 C5:4 | B4b1:2 A4:4 | A4:2.',
+  }),
+  seviye2({
+    id: 'usul-sofyan',
+    baslik: 'Usul: Sofyan',
+    tur: 'usul',
+    usulId: 'sofyan',
+    perdeler: ['segah', 'dugah', 'rast'],
+    dersId: 'usul:sofyan',
+    // 4/4: ikilik ya da birlik iki zamanlık düm'ü tutar; her iki ölçüde bir nefes. Rast'ta durur.
+    notasyon:
+      'B4b1:2 A4:2 | G4:2 A4:2 , | B4b1:2 A4:4 B4b1:4 | A4:1 , | A4:2 G4:4 A4:4 | B4b1:2 A4:2 , | ' +
+      'A4:2 B4b1:4 A4:4 | G4:1',
+  }),
+]
+
+/** Dörtlü etütleri: önce dörtlü dörtlüklerle çıkılıp inilir, sonra dörtlük ve sekizliklerle; durak perdesinde biter. */
+const DORTLU_ETUTLERI: Etut[] = [
+  seviye2({
+    id: 'dortlu-cargah',
+    baslik: "Çârgâh dörtlüsü (Rast'ta)",
+    tur: 'dortlu',
+    perdeler: ['rast', 'dugah', 'buselik', 'cargah'],
+    dersId: 'dortlu:cargah',
+    notasyon:
+      'G4:4 A4:4 B4:4 C5:4 | C5:1 | C5:4 B4:4 A4:4 G4:4 | G4:1 | G4:8 A4:8 B4:4 C5:2 | C5:8 B4:8 A4:4 B4:2 | ' +
+      'A4:8 B4:8 C5:4 B4:4 A4:4 | G4:1',
+  }),
+  seviye2({
+    id: 'dortlu-kurdi',
+    baslik: "Kürdî dörtlüsü (Dügâh'ta)",
+    tur: 'dortlu',
+    perdeler: ['dugah', 'kurdi', 'cargah', 'neva'],
+    dersId: 'dortlu:kurdi',
+    notasyon:
+      'A4:4 B4b5:4 C5:4 D5:4 | D5:1 | D5:4 C5:4 B4b5:4 A4:4 | A4:1 | A4:8 B4b5:8 C5:4 D5:2 | ' +
+      'D5:8 C5:8 B4b5:4 C5:2 | C5:4 B4b5:8 C5:8 B4b5:4 A4:4 | A4:1',
+  }),
+  seviye2({
+    id: 'dortlu-hicaz',
+    baslik: "Hicaz dörtlüsü (Dügâh'ta)",
+    tur: 'dortlu',
+    perdeler: ['dugah', 'dik-kurdi', 'nim-hicaz', 'neva'],
+    dersId: 'dortlu:hicaz',
+    notasyon:
+      'A4:4 B4b4:4 C5#4:4 D5:4 | D5:1 | D5:4 C5#4:4 B4b4:4 A4:4 | A4:1 | B4b4:8 C5#4:8 D5:4 C5#4:2 | ' +
+      'B4b4:8 C5#4:8 B4b4:4 A4:2 | A4:8 B4b4:8 C5#4:4 B4b4:2 | A4:1',
+  }),
+]
+
+/** Dil etüdünün ezgisi (4 ölçü): önce her nota ayrı "tu" ile, sonra aynı ezgi ikişer bağlı. */
+const DIL_EZGI = 'D5:4 C5:4 B4b1:4 C5:4 | D5:4 C5:4 D5:2 | C5:4 B4b1:4 C5:4 D5:4 | C5:2 D5:2'
+const DIL_BAGLI = 'D5:4_ C5:4 B4b1:4_ C5:4 | D5:4_ C5:4 D5:2 | C5:4_ B4b1:4 C5:4_ D5:4 | C5:2_ D5:2'
+
+const DIL_ETUTLERI: Etut[] = [
+  seviye2({
+    id: 'dil-1',
+    baslik: 'Dil: tu ve bağ',
+    tur: 'dil',
+    perdeler: ['neva', 'cargah', 'segah'],
+    dersId: 'dil:tu-bag',
+    notasyon: `${DIL_EZGI} | ${DIL_BAGLI}`,
+  }),
+]
+
 export const ETUTLER: Etut[] = [
   tek('neva'),
   tek('cargah'),
@@ -144,4 +256,7 @@ export const ETUTLER: Etut[] = [
     'G4:8 A4:8 B4b1:8 C5:8 D5:2 | D5:8 C5:8 B4b1:8 A4:8 G4:2 | G4:8 A4:8 B4b1:4 A4:8 B4b1:8 C5:4 | ' +
       'B4b1:8 C5:8 D5:4 C5:8 B4b1:8 A4:4 | G4:1',
   ),
+  ...USUL_ETUTLERI,
+  ...DORTLU_ETUTLERI,
+  ...DIL_ETUTLERI,
 ]

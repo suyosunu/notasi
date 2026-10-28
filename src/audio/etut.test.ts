@@ -8,7 +8,9 @@ import { DEFAULT_TUNING, soundingHz } from '../music/ahenk'
 vi.mock('@kabelsalat/web', () => ({ SalatRepl: class {} }))
 vi.mock('./player', () => ({ unlockAudio: vi.fn(), playLoop: vi.fn(), stopAudio: vi.fn() }))
 
+import { USULLER } from '../content/usuller'
 import { buildEtutCode } from './etut'
+import { buildUsulBody } from './usul'
 import { melodyChain, ONE_SHOT } from './pattern'
 import { SHAKUHACHI_SOUND } from './shakuhachi'
 
@@ -104,6 +106,60 @@ describe('buildEtutCode', () => {
     expect(code).toContain(melodyChain('shakuhachi'))
     expect(buildEtutCode(tekNeva.olcu, DEFAULT_TUNING, 60, opts).code).toContain('.decay(0.3)')
     expect(buildEtutCode(tekNeva.olcu, DEFAULT_TUNING, 40, opts).code).toContain('.decay(0.45)')
+  })
+
+  describe('usul verilince', () => {
+    const semai = USULLER.find((u) => u.id === 'semai')!
+    const sofyan = USULLER.find((u) => u.id === 'sofyan')!
+    const usulSemai = ETUTLER.find((e) => e.id === 'usul-semai')!
+    const usulSofyan = ETUTLER.find((e) => e.id === 'usul-sofyan')!
+    const usulHits = (hs: Hit[]) => hs.filter((h) => typeof h.s === 'string' && h.s.startsWith('usul_'))
+
+    it('durationMs = (zaman + toplam) × 60000 / bpm; cpm = bpm / (zaman + toplam)', () => {
+      const total = toplam(usulSemai.olcu)
+      expect(total).toBe(24)
+      const r = buildEtutCode(usulSemai.olcu, DEFAULT_TUNING, 60, { ...opts, usul: semai })
+      expect(r.durationMs).toBe(27000)
+      expect(r.code.endsWith(`${ONE_SHOT}.cpm(${60 / 27})`)).toBe(true)
+      expect(buildEtutCode(usulSemai.olcu, DEFAULT_TUNING, 40, { ...opts, metronom: false, usul: semai }).durationMs).toBe(
+        (27 * 60000) / 40,
+      )
+    })
+
+    it('metronom kapalıyken: giriş sayımı usul.zaman tık, usul sesi yok, melodi sayımdan sonra', async () => {
+      const { code, durationMs } = buildEtutCode(usulSemai.olcu, DEFAULT_TUNING, 60, { ...opts, metronom: false, usul: semai })
+      const hs = await haps(code, 0, durationMs / 1000)
+      expect(clicks(hs).map((h) => h.at)).toEqual([0, 1, 2])
+      expect(clicks(hs).map((h) => h.freq)).toEqual([1200, 800, 800])
+      expect(usulHits(hs)).toHaveLength(0)
+      expect(code).not.toContain('usul_')
+      const m = melody(hs).filter((h) => h.s === undefined || !h.s.startsWith('usul_'))
+      expect(m[0]!.at).toBe(3)
+    })
+
+    it('metronom açıkken: giriş sayımı tık, sonra döngü boyunca usul sesi (her ölçü düm tek tek); başka tık yok', async () => {
+      const { code, durationMs } = buildEtutCode(usulSemai.olcu, DEFAULT_TUNING, 60, { ...opts, usul: semai })
+      expect(code).toContain(buildUsulBody(semai, 60))
+      const hs = await haps(code, 0, durationMs / 1000)
+      expect(clicks(hs).map((h) => h.at)).toEqual([0, 1, 2])
+      const u = usulHits(hs)
+      // 8 ölçü × 3 vuruş; vuruşlar giriş sayımından sonra başlar.
+      expect(u.map((h) => h.at)).toEqual(Array.from({ length: 24 }, (_, i) => 3 + i))
+      expect(u.map((h) => h.s)).toEqual(
+        Array.from({ length: 24 }, (_, i) => (i % 3 === 0 ? 'usul_tahta_dum' : 'usul_tahta_tek')),
+      )
+      expect(await haps(code, durationMs / 1000, (3 * durationMs) / 1000)).toHaveLength(0)
+    })
+
+    it('Sofyan: giriş 4 tık; düm 2 zaman sürer (her ölçüde düm, te, ke)', async () => {
+      const { code, durationMs } = buildEtutCode(usulSofyan.olcu, DEFAULT_TUNING, 60, { ...opts, melodi: false, usul: sofyan })
+      expect(durationMs).toBe((4 + 32) * 1000)
+      const hs = await haps(code, 0, durationMs / 1000)
+      expect(clicks(hs).map((h) => h.at)).toEqual([0, 1, 2, 3])
+      const u = usulHits(hs)
+      expect(u.map((h) => h.at)).toEqual(Array.from({ length: 8 }, (_, i) => [4 + 4 * i, 6 + 4 * i, 7 + 4 * i]).flat())
+      expect(melody(hs).filter((h) => h.s === undefined || !h.s.startsWith('usul_'))).toHaveLength(0)
+    })
   })
 
   it('ikisi de kapalıysa ya da tempo geçersizse RangeError', () => {

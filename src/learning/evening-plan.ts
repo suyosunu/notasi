@@ -89,9 +89,19 @@ function baspareStep(): EveningStep {
   return { kind: 'baspare', label: 'Başpâre koy-çek', tries: 1, dersId: BASPARE_DERS_ID }
 }
 
-/** `ETUTLER` sırasında, bütün perdeleri geçilmiş ve henüz çalınmamış ilk etüt; yoksa adım da yoktur. */
+/**
+ * `ETUTLER` sırasında, bütün perdeleri geçilmiş ve henüz çalınmamış ilk etüt; yoksa adım da yoktur. Seviye 2 etütleri
+ * (usul, dörtlü, dil) Seviye 1 etütlerinin hepsi çalınınca önerilir: perdeleri Seviye 1 perdeleri olsa da Rast
+ * geçilmeden araya girmezler. Ney bölümünde hepsi her zaman açıktır (kilit yok).
+ */
 function etutStep(perdeStatus: Record<PerdeId, PerdeStatus>, calinan: ReadonlySet<string>): EveningStep | null {
-  const etut = ETUTLER.find((e) => !calinan.has(e.id) && e.perdeler.every((id) => perdeStatus[id] === 'gecildi'))
+  const seviye1Bitti = ETUTLER.every((e) => e.seviye !== 1 || calinan.has(e.id))
+  const etut = ETUTLER.find(
+    (e) =>
+      (e.seviye === 1 || seviye1Bitti) &&
+      !calinan.has(e.id) &&
+      e.perdeler.every((id) => perdeStatus[id] === 'gecildi'),
+  )
   if (!etut) return null
   return { kind: 'etut', etutId: etut.id, label: `Etüt · ${etut.baslik}`, tries: 1, dersId: etut.dersId }
 }

@@ -407,6 +407,29 @@ describe('etüt adımı', () => {
     expect(etutAdimlari(plan).map((s) => [s.etutId, s.dersId])).toEqual([['rast-besli-1', 'etut:rast-besli']])
   })
 
+  it('Seviye 1 etütleri çalınmış, beş ses geçilmiş → sıradaki etüt adımı usul-nim-sofyan, dersId usul:nim-sofyan', () => {
+    const bes = statuses({ neva: 'gecildi', cargah: 'gecildi', segah: 'gecildi', dugah: 'gecildi', rast: 'gecildi' })
+    const s1 = new Set(ETUTLER.filter((e) => e.seviye === 1).map((e) => e.id))
+    expect(s1.size).toBe(11)
+    const plan = buildEveningPlan(girdi({ perdeStatus: bes, calinanEtutler: s1 }))
+    expect(etutAdimlari(plan)).toEqual([
+      { kind: 'etut', etutId: 'usul-nim-sofyan', label: 'Etüt · Usul: Nim Sofyan', tries: 1, dersId: 'usul:nim-sofyan' },
+    ])
+    // Seviye 1 etütlerinden biri çalınmamışken Seviye 2 etüdü önerilmez; o etüt gelir.
+    const eksik = new Set([...s1].filter((id) => id !== 'rast-besli-2'))
+    expect(etutAdimlari(buildEveningPlan(girdi({ perdeStatus: bes, calinanEtutler: eksik }))).map((s) => s.etutId)).toEqual([
+      'rast-besli-2',
+    ])
+    // Usul ve dil etütleri çalınınca, ara sesleri geçilmemiş dörtlü etütleri gelmez.
+    const usulDil = new Set([...s1, 'usul-nim-sofyan', 'usul-semai', 'usul-sofyan', 'dil-1'])
+    expect(etutAdimlari(buildEveningPlan(girdi({ perdeStatus: bes, calinanEtutler: usulDil })))).toEqual([])
+    // Bûselik de geçilince Çârgâh dörtlüsü etüdü gelir.
+    const buselik = { ...bes, buselik: 'gecildi' as const }
+    expect(
+      etutAdimlari(buildEveningPlan(girdi({ perdeStatus: buselik, calinanEtutler: usulDil }))).map((s) => [s.etutId, s.dersId]),
+    ).toEqual([['dortlu-cargah', 'dortlu:cargah']])
+  })
+
   it('sıra: ısınma, güncel perde ×3, başpâre, etüt, diğer geçilen perdeler', () => {
     const plan = buildEveningPlan(
       girdi({

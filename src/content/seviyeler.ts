@@ -101,7 +101,7 @@ const SEVIYE_1: Hedef[] = [
   {
     id: 's1-etut-iki',
     metin: 'Tek ve iki perde etütleri',
-    olcut: { tur: 'etutler', etutIds: ETUTLER.filter((e) => e.tur !== 'besli').map((e) => e.id) },
+    olcut: { tur: 'etutler', etutIds: ETUTLER.filter((e) => e.tur === 'tek' || e.tur === 'iki').map((e) => e.id) },
     rota: '/ney',
   },
   {
