@@ -208,6 +208,41 @@ describe('settings', () => {
     expect((await isaretEkle('okunanDersler', 'd')).okunanDersler).toEqual(['d'])
   })
 
+  it('vurulanUsuller yoksa []', async () => {
+    expect((await getSettings()).vurulanUsuller).toEqual([])
+    await replaceAllStores({ ...noStores(), settings: [{ id: 'settings', calinanEtutler: ['tek-neva'] }] })
+    const s = await getSettings()
+    expect(s.vurulanUsuller).toEqual([])
+    expect(s.calinanEtutler).toEqual(['tek-neva'])
+    // Bozuk değer temizlenir.
+    await replaceAllStores({ ...noStores(), settings: [{ id: 'settings', vurulanUsuller: ['semai', 7, null] }] })
+    expect((await getSettings()).vurulanUsuller).toEqual(['semai'])
+    await replaceAllStores({ ...noStores(), settings: [{ id: 'settings', vurulanUsuller: 'semai' }] })
+    expect((await getSettings()).vurulanUsuller).toEqual([])
+  })
+
+  it("isaretEkle('vurulanUsuller','semai') kalıcı", async () => {
+    await isaretEkle('vurulanUsuller', 'semai')
+    await isaretEkle('vurulanUsuller', 'semai')
+    expect((await getSettings()).vurulanUsuller).toEqual(['semai'])
+    const raw = (await readAllStores()).settings[0] as Record<string, unknown>
+    expect(raw.vurulanUsuller).toEqual(['semai'])
+    expect((await isaretKaldir('vurulanUsuller', 'semai')).vurulanUsuller).toEqual([])
+  })
+
+  it('eski yedek vurulanUsuller olmadan içe aktarılır', async () => {
+    await replaceAllStores({
+      ...noStores(),
+      settings: [{ id: 'settings', onboarded: true, okunanDersler: ['usul:giris'], calinanEtutler: ['tek-neva'] }],
+    })
+    const s = await getSettings()
+    expect(s.onboarded).toBe(true)
+    expect(s.okunanDersler).toEqual(['usul:giris'])
+    expect(s.vurulanUsuller).toEqual([])
+    expect((await isaretEkle('vurulanUsuller', 'nim-sofyan')).vurulanUsuller).toEqual(['nim-sofyan'])
+    expect((await getSettings()).calinanEtutler).toEqual(['tek-neva'])
+  })
+
   it('accumulates successive patches', async () => {
     await saveSettings({ onboarded: true })
     await saveSettings({ calibrated: true })

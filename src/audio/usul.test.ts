@@ -13,7 +13,15 @@ const player = vi.hoisted(() => ({
 vi.mock('./player', () => player)
 
 import { ONE_SHOT } from './pattern'
-import { buildUsulBody, buildUsulOnceCode, buildUsulPatternCode, metronomeBody, startUsul, stopUsul } from './usul'
+import {
+  buildUsulBody,
+  buildUsulOnceCode,
+  buildUsulPatternCode,
+  buildVurmaCode,
+  metronomeBody,
+  startUsul,
+  stopUsul,
+} from './usul'
 import { getUsulSesi, setUsulSesi, strokeSound } from './usulSamples'
 import type { UsulSesi } from './usulSamples'
 
@@ -463,5 +471,81 @@ describe('buildUsulOnceCode: bir ölçü, tek seferlik (Ayarlar → Dene)', () =
 
   it.each([0, 1.5, -1, Number.NaN])('olcu = %s: RangeError', (olcu) => {
     expect(() => buildUsulOnceCode(usul('sofyan'), 60, 'konga', olcu)).toThrow(RangeError)
+  })
+})
+
+describe('buildVurmaCode: giriş ölçüsü + vurma ölçüleri, tek seferlik', () => {
+  afterEach(() => setUsulSesi('tahta'))
+
+  /** Kodu Strudel'de çalıştırıp başlangıcı olan olayları zamana göre sıralar (sorgu-döngüsü, cps = 1 kabulü). */
+  async function onsets(code: string, from: number, to: number) {
+    const { evalScope } = await import('@strudel/core')
+    const { evaluate, transpiler } = await import('@strudel/transpiler')
+    await evalScope(import('@strudel/core'), import('@strudel/mini'))
+    const { pattern } = await evaluate(code, transpiler)
+    return pattern
+      .queryArc(from, to)
+      .filter((h) => h.hasOnset())
+      .map((h) => ({ t: Number(h.whole!.begin), v: h.value as { s?: string; freq?: number } }))
+      .sort((a, b) => a.t - b.t)
+  }
+
+  it('girisMs = zaman × 60000 / bpm, durationMs = (1 + olcuSayisi) × girisMs', () => {
+    expect(buildVurmaCode(usul('nim-sofyan'), 60, { usulSesi: false })).toMatchObject({ girisMs: 2000, durationMs: 10_000 })
+    expect(buildVurmaCode(usul('sofyan'), 80, { usulSesi: true, olcuSayisi: 2 })).toMatchObject({
+      girisMs: 3000,
+      durationMs: 9000,
+    })
+    const semai = buildVurmaCode(usul('semai'), 45, { usulSesi: false, olcuSayisi: 4 })
+    expect(semai.girisMs).toBeCloseTo(4000, 6)
+    expect(semai.durationMs).toBeCloseTo(20_000, 6)
+  })
+
+  it('kod ONE_SHOT içerir ve .cpm ile biter', () => {
+    for (const usulSesi of [false, true]) {
+      const { code } = buildVurmaCode(usul('semai'), 60, { usulSesi })
+      expect(code).toContain(ONE_SHOT)
+      expect(code).toMatch(/\.cpm\([\d.]+\)$/)
+    }
+  })
+
+  it('usulSesi: false iken kodda usul vuruş sesi yok: yalnız metronom, giriş dahil 5 ölçü', async () => {
+    const u = usul('nim-sofyan')
+    const { code } = buildVurmaCode(u, 60, { usulSesi: false })
+    expect(code).not.toContain(buildUsulBody(u, 60, 'tahta'))
+    expect(code).not.toMatch(/usul_tahta_/)
+    expect(code).toContain(metronomeBody(2, 60))
+    // ♩ = 60, Nim Sofyan ⇒ 10 sn sürer; cpm ölçeği sorgu-döngüsünü 1 sn yapar.
+    const hs = await onsets(code, 0, 10)
+    expect(hs.map((h) => h.t)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+    expect(hs.map((h) => h.v.freq)).toEqual([1200, 800, 1200, 800, 1200, 800, 1200, 800, 1200, 800])
+    expect(await onsets(code, 10, 300)).toEqual([])
+  })
+
+  it('usulSesi: true iken var: giriş ölçüsünde yok, sonraki 4 ölçüde var', async () => {
+    const u = usul('nim-sofyan')
+    const { code } = buildVurmaCode(u, 60, { usulSesi: true })
+    expect(code).toContain(buildUsulBody(u, 60, 'tahta'))
+    const hs = await onsets(code, 0, 10)
+    const vurus = hs.filter((h) => h.v.s?.startsWith('usul_tahta_'))
+    expect(vurus.map((h) => h.t)).toEqual([2, 3, 4, 5, 6, 7, 8, 9])
+    expect(vurus.map((h) => h.v.s)).toEqual([
+      'usul_tahta_dum', 'usul_tahta_tek', 'usul_tahta_dum', 'usul_tahta_tek',
+      'usul_tahta_dum', 'usul_tahta_tek', 'usul_tahta_dum', 'usul_tahta_tek',
+    ])
+    expect(hs.filter((h) => h.v.freq !== undefined)).toHaveLength(10)
+    expect(await onsets(code, 10, 300)).toEqual([])
+  })
+
+  it('seçili usul sesini kullanır (oryantal sentez)', () => {
+    setUsulSesi('oryantal')
+    const u = usul('semai')
+    expect(buildVurmaCode(u, 60, { usulSesi: true }).code).toContain(buildUsulBody(u, 60, 'oryantal'))
+  })
+
+  it('geçersiz tempo, vuruşsuz usul ya da ölçü sayısı: RangeError', () => {
+    expect(() => buildVurmaCode(usul('sofyan'), 0, { usulSesi: false })).toThrow(RangeError)
+    expect(() => buildVurmaCode(usul('dolap'), 60, { usulSesi: false })).toThrow(RangeError)
+    expect(() => buildVurmaCode(usul('sofyan'), 60, { usulSesi: false, olcuSayisi: 0 })).toThrow(RangeError)
   })
 })

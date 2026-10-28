@@ -22,3 +22,22 @@ describe('styles.css: vuruş kutuları', () => {
     expect(luminance(bg)).toBeLessThan(luminance(normalBg))
   })
 })
+
+describe('styles.css: usul vurma düğmeleri', () => {
+  /** `.ad { ... }` kuralının gövdesi (ad sınıf adıdır, özel karakter içermez). */
+  const kural = (ad: string) => new RegExp(`\\.${ad}\\s*\\{([^}]*)\\}`).exec(css)![1]!
+
+  it("iki düğme yan yana eşit sütunlarda; daralabilir (375 pt'de yatay kaydırma yok)", () => {
+    const pad = kural('vurma-pad')
+    expect(pad).toMatch(/display:\s*grid/)
+    expect(pad).toMatch(/grid-template-columns:\s*1fr 1fr/)
+    expect(kural('vurma-btn')).toMatch(/min-width:\s*0/)
+  })
+
+  it('düğmeler en az 44 pt yüksek; dokunuşta yakınlaştırma yok', () => {
+    const btn = kural('vurma-btn')
+    const m = /min-height:\s*([\d.]+)(rem|px)/.exec(btn)!
+    expect(Number(m[1]) * (m[2] === 'rem' ? 16 : 1)).toBeGreaterThanOrEqual(44)
+    expect(btn).toMatch(/touch-action:\s*manipulation/)
+  })
+})

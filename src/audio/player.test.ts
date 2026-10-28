@@ -299,6 +299,60 @@ describe('playCode', () => {
     strudel.evaluate.mockRejectedValue(new Error('ses yok'))
     await expect(playCode('x', 1000)).rejects.toThrow('ses yok')
   })
+  it("onStart evaluate'ten sonra bir kez; durdurulan çağrıda hiç", async () => {
+    const { playCode, stopAudio } = await freshPlayer()
+    let resolveEval: () => void = () => {}
+    strudel.evaluate.mockImplementation(() => new Promise<void>((r) => (resolveEval = r)))
+    const onStart = vi.fn(() => {
+      // evaluate bittikten sonra çağrılır
+      expect(strudel.evaluate).toHaveBeenCalledTimes(1)
+    })
+    const p = playCode('x', 1000, onStart)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(strudel.evaluate).toHaveBeenCalledWith('x')
+    expect(onStart).not.toHaveBeenCalled()
+    resolveEval()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(onStart).toHaveBeenCalledTimes(1)
+    await vi.advanceTimersByTimeAsync(1150)
+    await p
+    expect(onStart).toHaveBeenCalledTimes(1)
+
+    // evaluate sürerken durdurulan çağrı onStart'ı hiç çağırmaz.
+    const bayat = vi.fn()
+    const q = playCode('y', 1000, bayat)
+    await vi.advanceTimersByTimeAsync(0)
+    stopAudio()
+    resolveEval()
+    await q
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(bayat).not.toHaveBeenCalled()
+
+    // Yenisi devralınca eskisi de çağırmaz; yalnız güncel çağrınınki bir kez.
+    const eski = vi.fn()
+    const yeni = vi.fn()
+    const r1 = playCode('a', 1000, eski)
+    await vi.advanceTimersByTimeAsync(0)
+    const ilkEval = resolveEval
+    const r2 = playCode('b', 1000, yeni)
+    await vi.advanceTimersByTimeAsync(0)
+    ilkEval()
+    resolveEval()
+    await vi.advanceTimersByTimeAsync(0)
+    await r1
+    expect(eski).not.toHaveBeenCalled()
+    expect(yeni).toHaveBeenCalledTimes(1)
+    await vi.advanceTimersByTimeAsync(1150)
+    await r2
+  })
+
+  it('evaluate hata fırlatırsa onStart çağrılmaz', async () => {
+    const { playCode } = await freshPlayer()
+    strudel.evaluate.mockRejectedValue(new Error('ses yok'))
+    const onStart = vi.fn()
+    await expect(playCode('x', 1000, onStart)).rejects.toThrow('ses yok')
+    expect(onStart).not.toHaveBeenCalled()
+  })
 })
 
 describe('ney sesi (setNeySesi / getNeySesi)', () => {

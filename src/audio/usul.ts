@@ -235,6 +235,36 @@ export function buildUsulOnceCode(
   }
 }
 
+/**
+ * Usul vurma alıştırmasının sesi (tek seferlik, `playCode` ile): önce 1 ölçü giriş sayımı (metronom), ardından
+ * `olcuSayisi` (varsayılan 4) ölçü metronom. `usulSesi` açıksa bu ölçülere seçili usul sesi eklenir; giriş ölçüsünde
+ * usul sesi yoktur. `bpm` mertebe birimidir.
+ * Bir döngü = bütün alıştırma: ölçü deseni `.fast(1 + olcuSayisi)` ile döngüye sığar, usul sesi ilk ölçüde maskelenir;
+ * böylece tek seferlik maske (`ONE_SHOT`) ilk döngüden sonrasını susturur. `girisMs` ilk vuruşun, sesin başlangıcından
+ * kaç ms sonra geldiğidir.
+ */
+export function buildVurmaCode(
+  u: Usul,
+  bpm: number,
+  opts: { usulSesi: boolean; olcuSayisi?: number },
+): { code: string; durationMs: number; girisMs: number } {
+  const olcuSayisi = opts.olcuSayisi ?? 4 // = VURMA_OLCU (learning/usul-vurma.ts); ses katmanı öğrenme katmanına bağlanmaz
+  if (!(bpm > 0) || !(u.zaman > 0)) throw new RangeError('Geçerli tempo yok')
+  if (u.vurus === null) throw new RangeError('Usulün vuruş kalıbı yok')
+  if (!Number.isInteger(olcuSayisi) || olcuSayisi < 1) throw new RangeError('Ölçü sayısı 1 ya da daha çok olmalı')
+  const toplamOlcu = 1 + olcuSayisi
+  const metronom = metronomeBody(u.zaman, bpm)
+  const govde = opts.usulSesi
+    ? `stack(${metronom}, ${buildUsulBody(u, bpm)}.mask("<0 1@${olcuSayisi}>"))`
+    : metronom
+  const girisMs = (u.zaman * 60000) / bpm
+  return {
+    code: `${govde}.fast(${toplamOlcu})${ONE_SHOT}.cpm(${bpm / (toplamOlcu * u.zaman)})`,
+    durationMs: toplamOlcu * girisMs,
+    girisMs,
+  }
+}
+
 /** Her başlatma/durdurmada artar; sesi açmayı beklerken durdurulan ya da yenisi başlatılan çağrı bayatlığını anlar. */
 let token = 0
 

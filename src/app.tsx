@@ -4,6 +4,7 @@ import { NEY_PERDELER } from './content/ney-perdeler'
 import { ETUTLER } from './content/etutler'
 import { NOTA_TOPICS } from './content/nota-topics'
 import { PARCALAR } from './content/parcalar'
+import { USULLER } from './content/usuller'
 import { dersById } from './content/dersler'
 import { DersView } from './ders/DersView'
 import { navigate, useRoute } from './router'
@@ -28,6 +29,7 @@ import { Placement } from './screens/Placement'
 import { SessionEnd } from './screens/SessionEnd'
 import { Settings } from './screens/Settings'
 import { UsulSection } from './screens/UsulSection'
+import { UsulVurma } from './screens/UsulVurma'
 import { Yolum } from './screens/Yolum'
 
 function Placeholder({ title }: { title: string }) {
@@ -71,6 +73,7 @@ const MAKAM_PREFIX = '/makam/'
 const PARCA_PREFIX = '/parcalar/'
 const DERS_PREFIX = '/ders/'
 const ETUT_PREFIX = '/etut/'
+const USUL_VUR_PREFIX = '/usul/vur/'
 
 /** `/ders/<kodlanmış kimlik>` yolundaki kimlik; bozuk kodlama (ör. `%E0%A4%A`) kimliksiz sayılır. */
 function dersKimligi(route: string): string | null {
@@ -108,6 +111,11 @@ function cozumle(route: string): (() => ComponentChildren) | null {
   if (route.startsWith(ETUT_PREFIX)) {
     const etutId = route.slice(ETUT_PREFIX.length)
     if (ETUTLER.some((e) => e.id === etutId)) return () => <EtutDetail key={etutId} etutId={etutId} />
+  }
+  if (route.startsWith(USUL_VUR_PREFIX)) {
+    const usulId = route.slice(USUL_VUR_PREFIX.length)
+    // Vuruş kalıbı olmayan usul (Dolap) vurulamaz: bilinmeyen sayılır.
+    if (USULLER.some((u) => u.id === usulId && u.vurus !== null)) return () => <UsulVurma key={usulId} usulId={usulId} />
   }
   if (route.startsWith(DERS_PREFIX)) {
     const dersId = dersKimligi(route)
@@ -150,5 +158,7 @@ export function App() {
   const screen = cozumle(route)
   if (screen) return screen()
   if (route.startsWith(DERS_PREFIX)) return <DersBulunamadi />
+  // Bilinmeyen ya da vuruşsuz usul: UsulVurma kendi "Usul bulunamadı" ekranını gösterir.
+  if (route.startsWith(USUL_VUR_PREFIX)) return <UsulVurma usulId={route.slice(USUL_VUR_PREFIX.length)} />
   return <Placeholder title="Sayfa bulunamadı" />
 }

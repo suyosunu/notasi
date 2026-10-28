@@ -195,6 +195,25 @@ describe('App', () => {
     expect(rotaBilinir('/etut/yok')).toBe(false)
   })
 
+  it('/usul/vur/nim-sofyan rotası bilinir, /usul/vur/dolap bilinmeyen usul ekranı', async () => {
+    location.hash = '#/usul/vur/nim-sofyan'
+    render(<App />)
+    // Yeni kullanıcıda önce usul dersi (ders kapısı).
+    expect(await screen.findByRole('heading', { name: /Usul nedir\?/ })).toBeTruthy()
+    cleanup()
+    expect(rotaBilinir('/usul/vur/nim-sofyan')).toBe(true)
+    expect(rotaBilinir('/usul/vur/semai')).toBe(true)
+    expect(rotaBilinir('/usul')).toBe(true)
+    for (const id of ['dolap', 'yok', '', '__proto__']) {
+      expect(rotaBilinir(`/usul/vur/${id}`)).toBe(false)
+      location.hash = `#/usul/vur/${id}`
+      render(<App />)
+      expect(screen.getByRole('heading', { name: 'Usul bulunamadı' })).toBeTruthy()
+      expect(screen.getByRole('link', { name: 'Usul bölümüne dön' }).getAttribute('href')).toBe('#/usul')
+      cleanup()
+    }
+  })
+
   describe('Öğren ve ders rotaları', () => {
     const FIXTURE: Ders = {
       id: 's0:rota deneme',

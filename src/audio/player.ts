@@ -144,8 +144,10 @@ export async function playTones(events: ToneEvent[], bpm = 60, voice: NeySesi = 
  * Tek seferlik çalma: önce çalan her şeyi durdurur (aynı anda yalnızca bir ses), kodu evaluate eder ve
  * `durationMs` + kuyruk sonra susturur; bitince ya da durdurulunca çözülür. Kod kendi tek seferlik maskesini
  * ve `.cpm()`'ini taşır (bkz. buildPatternCode, buildPieceCode).
+ * `onStart`: evaluate başarıyla bitince ve çağrı hâlâ güncelse (durdurulmadı, yenisi devralmadı) bir kez çağrılır;
+ * desenin ilk sesi bundan yaklaşık zamanlayıcının ileri bakışı kadar (~0.1 sn) sonra duyulur (bkz. UsulVurma).
  */
-export async function playCode(code: string, durationMs: number): Promise<void> {
+export async function playCode(code: string, durationMs: number, onStart?: () => void): Promise<void> {
   stopAudio()
   const mine = generation
   active = mine
@@ -178,6 +180,8 @@ export async function playCode(code: string, durationMs: number): Promise<void> 
         resolve()
       }
     }, durationMs + TAIL_MS)
+    // Zamanlayıcı kurulduktan sonra: onStart fırlatırsa söz reddedilir ama ses yine süresinde susar.
+    onStart?.()
   })
 }
 

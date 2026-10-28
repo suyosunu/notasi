@@ -72,11 +72,13 @@ export interface Settings {
   onaylananHedefler: string[]
   /** Çalınmış etüt kimlikleri. */
   calinanEtutler: string[]
+  /** Usul vurma alıştırmasında (usul sesi kapalıyken, yalnız metronomla) geçilmiş usul kimlikleri. */
+  vurulanUsuller: string[]
 }
 
 /** `Settings` içindeki kimlik listeleri; `isaretEkle`/`isaretKaldir` bunlar üzerinde çalışır. */
-export type IsaretAlani = 'okunanDersler' | 'onaylananHedefler' | 'calinanEtutler'
-const ISARET_ALANLARI: IsaretAlani[] = ['okunanDersler', 'onaylananHedefler', 'calinanEtutler']
+export type IsaretAlani = 'okunanDersler' | 'onaylananHedefler' | 'calinanEtutler' | 'vurulanUsuller'
+const ISARET_ALANLARI: IsaretAlani[] = ['okunanDersler', 'onaylananHedefler', 'calinanEtutler', 'vurulanUsuller']
 
 export const DEFAULT_SETTINGS: Settings = {
   tuning: DEFAULT_TUNING,
@@ -92,6 +94,7 @@ export const DEFAULT_SETTINGS: Settings = {
   okunanDersler: [],
   onaylananHedefler: [],
   calinanEtutler: [],
+  vurulanUsuller: [],
 }
 
 /** `settings` deposunda tek kayıt tutulur; anahtarı bu sabittir. */
@@ -191,6 +194,7 @@ function temizIsaretler(rest: Partial<Settings>): Pick<Settings, IsaretAlani> {
     okunanDersler: temiz(rest.okunanDersler),
     onaylananHedefler: temiz(rest.onaylananHedefler),
     calinanEtutler: temiz(rest.calinanEtutler),
+    vurulanUsuller: temiz(rest.vurulanUsuller),
   }
 }
 
