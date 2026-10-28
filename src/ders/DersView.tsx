@@ -108,16 +108,24 @@ export function DersView(props: { ders: Ders; onDone: () => void; geri?: { href:
             ))}
           </ul>
         )
-      case 'porte':
+      case 'porte': {
+        // Röprizli bölüm iki kez çalınır.
+        const calinan = b.ropriz ? [...b.olaylar, ...b.olaylar] : b.olaylar
         return (
           <figure key={i} class="ders-figur">
             <div class="staff-wrap">
-              <Staff events={b.olaylar} width={STAFF_WIDTH} beamBeats={DERS_VURUS} />
+              <Staff
+                events={b.olaylar}
+                width={STAFF_WIDTH}
+                beamBeats={DERS_VURUS}
+                ropriz={b.ropriz ? { bas: true, son: true } : undefined}
+              />
             </div>
             {b.aciklama && <figcaption class="muted">{b.aciklama}</figcaption>}
-            {sesliMi(b.olaylar) && dinleDugmesi(i, b.olaylar, b.bpm ?? VARSAYILAN_BPM)}
+            {sesliMi(b.olaylar) && dinleDugmesi(i, calinan, b.bpm ?? VARSAYILAN_BPM)}
           </figure>
         )
+      }
       case 'parmak': {
         const perde = NEY_PERDELER.find((p) => p.id === b.perdeId)
         const fingering = perde ? visibleFingering(perde) : null

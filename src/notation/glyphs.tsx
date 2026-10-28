@@ -5,6 +5,9 @@ export const MUSIC_FONT = "'Noto Music', 'Bravura Text', 'Apple Symbols', 'Segoe
 
 export const CLEF_GLYPH = '𝄞'
 
+/** Nefes işareti: düz "’" (U+1D112 her telefonun yazı tipinde yok; bu her yerde çizilir). */
+export const BREATH_GLYPH = '’'
+
 const INK = 'currentColor'
 
 /**

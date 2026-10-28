@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from '@testing-library/preact'
 import { afterEach, describe, expect, it } from 'vitest'
-import type { MusicEvent } from '../music/notation'
+import type { DurationKind, MusicEvent, NoteEvent } from '../music/notation'
 import type { Accidental } from '../music/pitch'
 import { AccidentalGlyph } from './glyphs'
 import { Staff, SYLLABLE_SIZE, syllableWidth } from './Staff'
@@ -676,5 +676,104 @@ describe('Staff: kirişler', () => {
         }
       })
     }
+  })
+})
+
+describe('Staff: üçleme, bağ, nefes işareti, röpriz', () => {
+  const nt = (step: 'G' | 'A' | 'B' | 'C' | 'D', octave: number, dur: DurationKind, extra: Partial<NoteEvent> = {}) =>
+    ({ kind: 'note', pitch: { step, octave, acc: 0 }, dur, ...extra }) as NoteEvent
+  const nums = (d: string) => d.match(/-?\d+(?:\.\d+)?/g)!.map(Number)
+  const viewWidthOf = (c: Element) => Number(c.querySelector('svg')!.getAttribute('viewBox')!.split(' ')[2])
+
+  it('üçleme grubunun üstünde tek "3"', () => {
+    const steps = ['G', 'A', 'B', 'C', 'B', 'A'] as const
+    const events = steps.map((s) => nt(s, s === 'C' ? 5 : 4, 'eighth', { uclu: true }))
+    const { container } = render(<Staff events={events} beamBeats={1} />)
+    const marks = [...container.querySelectorAll('[data-uclu]')]
+    expect(marks).toHaveLength(2)
+    expect(marks.map((m) => m.textContent)).toEqual(['3', '3'])
+    // "3" grubun ortasında ve nota başlarının üstündedir.
+    const heads = [...container.querySelectorAll('[data-testid="notehead"]')]
+    const cx = heads.map((h) => Number(h.getAttribute('cx')))
+    const x0 = Number(marks[0]!.getAttribute('x'))
+    expect(x0).toBeGreaterThan(cx[0]!)
+    expect(x0).toBeLessThan(cx[2]!)
+    const minHeadY = Math.min(...heads.slice(0, 3).map((h) => Number(h.getAttribute('cy'))))
+    expect(Number(marks[0]!.getAttribute('y'))).toBeLessThan(minHeadY)
+    expect(Number(marks[0]!.getAttribute('y'))).toBeGreaterThan(0)
+  })
+
+  it('bağ yay çizer', () => {
+    const events = [
+      nt('G', 4, 'quarter', { bag: true }),
+      nt('D', 5, 'quarter', { bag: true }),
+      nt('A', 4, 'quarter'),
+      nt('B', 4, 'quarter', { bag: true }),
+    ]
+    const { container } = render(<Staff events={events} />)
+    // Son notadaki bag sonraki nota olmadığı için yay çizmez.
+    const arcs = [...container.querySelectorAll('[data-bag]')]
+    expect(arcs).toHaveLength(2)
+    // Uçlar iki notanın yüksekliğine göredir: Sol4'ten Re5'e giden yayın uçları farklı yükseklikte.
+    const [x1, y1, , , x2, y2] = nums(arcs[0]!.getAttribute('d')!)
+    const heads = [...container.querySelectorAll('[data-testid="notehead"]')]
+    const cx = heads.map((h) => Number(h.getAttribute('cx')))
+    expect(x1!).toBeGreaterThan(cx[0]!)
+    expect(x2!).toBeLessThan(cx[1]!)
+    expect(y2!).toBeLessThan(y1!)
+  })
+
+  it('nefes işareti çizilir', () => {
+    const events = [nt('G', 4, 'quarter', { nefes: true }), nt('A', 4, 'quarter')]
+    const { container } = render(<Staff events={events} />)
+    const marks = [...container.querySelectorAll('[data-nefes]')]
+    expect(marks).toHaveLength(1)
+    const cx = [...container.querySelectorAll('[data-testid="notehead"]')].map((h) => Number(h.getAttribute('cx')))
+    const x = Number(marks[0]!.getAttribute('x'))
+    expect(x).toBeGreaterThan(cx[0]!)
+    expect(x).toBeLessThan(cx[1]!)
+    expect(Number(marks[0]!.getAttribute('y'))).toBeLessThanOrEqual(34) // portenin üstünde
+  })
+
+  it('röpriz çizgileri', () => {
+    const events = [nt('G', 4, 'quarter'), nt('A', 4, 'quarter')]
+    const a = render(<Staff events={events} barlinesAfter={[1]} ropriz={{ bas: true, son: true }} />)
+    const bas = a.container.querySelector('[data-ropriz="bas"]')!
+    const son = a.container.querySelector('[data-ropriz="son"]')!
+    expect(bas).toBeTruthy()
+    expect(son).toBeTruthy()
+    expect(bas.querySelectorAll('circle')).toHaveLength(2)
+    expect(son.querySelectorAll('circle')).toHaveLength(2)
+    // Satır sonundaki ince ölçü çizgisinin yerini röpriz alır.
+    expect(a.container.querySelectorAll('line[data-barline]')).toHaveLength(0)
+    const cx = [...a.container.querySelectorAll('[data-testid="notehead"]')].map((h) => Number(h.getAttribute('cx')))
+    const basXs = [...bas.querySelectorAll('circle')].map((c) => Number(c.getAttribute('cx')))
+    const sonXs = [...son.querySelectorAll('circle')].map((c) => Number(c.getAttribute('cx')))
+    expect(Math.max(...basXs)).toBeLessThan(cx[0]! - 6.5)
+    expect(Math.min(...sonXs)).toBeGreaterThan(cx[1]! + 6.5)
+    a.unmount()
+    const b = render(<Staff events={events} ropriz={{ son: true }} />)
+    expect(b.container.querySelector('[data-ropriz="bas"]')).toBeNull()
+    expect(b.container.querySelector('[data-ropriz="son"]')).toBeTruthy()
+  })
+
+  it('375 genişlikte viewBox kırpılmaz', () => {
+    const steps = ['G', 'A', 'B', 'C', 'D', 'C', 'B', 'A'] as const
+    const events = steps.map((s) => nt(s, s === 'C' || s === 'D' ? 5 : 4, 'eighth', { uclu: true }))
+    const { container } = render(
+      <Staff events={events} width={375} beamBeats={1} ropriz={{ bas: true, son: true }} />,
+    )
+    const viewWidth = viewWidthOf(container)
+    const cx = [...container.querySelectorAll('[data-testid="notehead"]')].map((h) => Number(h.getAttribute('cx')))
+    expect(cx.at(-1)!).toBeLessThan(viewWidth)
+    const sonXs = [...container.querySelectorAll('[data-ropriz="son"] circle')].map((c) => Number(c.getAttribute('cx')))
+    expect(sonXs).toHaveLength(2)
+    expect(Math.min(...sonXs)).toBeGreaterThan(cx.at(-1)! + 6.5)
+    expect(container.querySelectorAll('[data-uclu]').length).toBeGreaterThan(0)
+    for (const l of container.querySelectorAll('[data-ropriz] line, [data-ropriz] rect')) {
+      const x = Number(l.getAttribute('x1') ?? l.getAttribute('x'))
+      expect(x).toBeLessThanOrEqual(viewWidth)
+    }
+    expect(container.querySelector('svg')!.getAttribute('width')).toBe('100%')
   })
 })

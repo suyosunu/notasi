@@ -51,9 +51,12 @@ export function melodyChain(v: NeySesi): string {
  */
 export const ONE_SHOT = '.mask("<1 0@1000000>")'
 
-/** ToneEvent dizisi → freq mini-notasyonu adımları (`~` sus, `@n` vuruş sayısı). */
+/**
+ * ToneEvent dizisi → freq mini-notasyonu adımları (`~` sus, `@n` vuruş sayısı). Ağırlıklar 6 ondalığa
+ * yuvarlanır (üçleme 1/3 → 0.333333); sondaki sıfırlar yazılmaz (`@2`, `@0.5`).
+ */
 export function toneSteps(events: ToneEvent[]): string {
-  return events.map((e) => `${e.hz === null ? '~' : e.hz.toFixed(2)}@${e.beats}`).join(' ')
+  return events.map((e) => `${e.hz === null ? '~' : e.hz.toFixed(2)}@${Number(e.beats.toFixed(6))}`).join(' ')
 }
 
 export function buildPatternCode(
@@ -74,7 +77,7 @@ export function buildPatternCode(
 const samePitch = (a: WrittenPitch, b: WrittenPitch): boolean =>
   a.step === b.step && a.octave === b.octave && a.acc === b.acc
 
-/** Bağlı nota dizisi (aynı perde) tek ses olur; süreleri toplanır. */
+/** Bağlı nota dizisi (aynı perde, `tie`) tek ses olur; süreleri toplanır. `bag` yalnız çizilir, sesler ayrı kalır. */
 export function toToneEvents(events: MusicEvent[], t: Tuning): ToneEvent[] {
   const out: ToneEvent[] = []
   for (const [i, e] of events.entries()) {

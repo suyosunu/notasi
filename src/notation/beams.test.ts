@@ -123,6 +123,19 @@ describe('beamGroups', () => {
     expect(beamGroups(ev, 1)).toEqual([])
   })
 
+  it('üçlemeli sekizlikler bir vuruşta tek kiriş', () => {
+    const u = (): MusicEvent => ({ ...n('eighth'), uclu: true })
+    expect(beamGroups([u(), u(), u(), n('quarter')], 1)).toEqual([[0, 1, 2]])
+  })
+
+  it('3 üçleme + 2 sekizlik: iki ayrı grup', () => {
+    const u = (): MusicEvent => ({ ...n('eighth'), uclu: true })
+    expect(beamGroups([u(), u(), u(), n('eighth'), n('eighth')], 1)).toEqual([
+      [0, 1, 2],
+      [3, 4],
+    ])
+  })
+
   it('usulden vuruş birimi: mertebe 8 → 1,5, aksi halde 1', () => {
     expect(beamBeatsFor(USULLER.find((u) => u.id === 'dolap'))).toBe(1.5)
     expect(beamBeatsFor(USULLER.find((u) => u.id === 'sofyan'))).toBe(1)

@@ -119,6 +119,27 @@ describe('DersView', () => {
     expect(vi.mocked(playWritten).mock.calls[0]![2]).toBe(60)
   })
 
+  it('röprizli porte iki kez çalar', async () => {
+    const ders: Ders = { ...DERS, bloklar: [{ tur: 'porte', olaylar: NOTALAR, ropriz: true }] }
+    const { container } = render(<DersView ders={ders} onDone={() => undefined} />)
+    expect(container.querySelector('[data-ropriz="bas"]')).toBeTruthy()
+    expect(container.querySelector('[data-ropriz="son"]')).toBeTruthy()
+    await dinle(0)
+    await waitFor(() => expect(playWritten).toHaveBeenCalledTimes(1))
+    const calan = vi.mocked(playWritten).mock.calls[0]![0]
+    expect(calan).toHaveLength(NOTALAR.length * 2)
+    expect(calan).toEqual([...NOTALAR, ...NOTALAR])
+  })
+
+  it('röprizsiz porte çizgisiz ve bir kez çalar', async () => {
+    const ders: Ders = { ...DERS, bloklar: [{ tur: 'porte', olaylar: NOTALAR }] }
+    const { container } = render(<DersView ders={ders} onDone={() => undefined} />)
+    expect(container.querySelector('[data-ropriz]')).toBeNull()
+    await dinle(0)
+    await waitFor(() => expect(playWritten).toHaveBeenCalledTimes(1))
+    expect(vi.mocked(playWritten).mock.calls[0]![0]).toEqual(NOTALAR)
+  })
+
   it('parmak Dinle: perdenin yazılı notasını yarımlık çalar', async () => {
     render(<DersView ders={DERS} onDone={() => undefined} />)
     await dinle(1)

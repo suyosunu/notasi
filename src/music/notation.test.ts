@@ -28,6 +28,22 @@ describe('beats', () => {
   })
 })
 
+describe('üçleme', () => {
+  it('üç sekizlik üçleme toplam 1 vuruş', () => {
+    const e: MusicEvent = { kind: 'note', pitch, dur: 'eighth', uclu: true }
+    const sum = beats(e) + beats(e) + beats(e)
+    expect(Math.abs(sum - 1) < 1e-6).toBe(true)
+  })
+  it('noktalı üçleme 1,5 × 2/3 sürer', () => {
+    expect(beats({ kind: 'note', pitch, dur: 'quarter', dotted: true, uclu: true })).toBeCloseTo(1, 9)
+  })
+  it('üçleme adı', () => {
+    expect(durationName({ kind: 'note', dur: 'eighth', uclu: true, pitch })).toBe('Sekizlik üçleme')
+    expect(durationName({ kind: 'rest', dur: 'eighth', uclu: true })).toBe('Sekizlik üçleme sus')
+    expect(durationName({ kind: 'note', dur: 'quarter', dotted: true, uclu: true, pitch })).toBe('Noktalı dörtlük üçleme')
+  })
+})
+
 describe('durationName', () => {
   it('nota adları', () => {
     expect(durationName(note('whole'))).toBe('Birlik')

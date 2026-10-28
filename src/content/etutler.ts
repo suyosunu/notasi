@@ -23,7 +23,7 @@ export interface Etut {
 const SURELER: Record<string, DurationKind> = { '1': 'whole', '2': 'half', '4': 'quarter', '8': 'eighth' }
 /** Uygulamanın kullandığı koma değiştirgeçleri (`Accidental`). */
 const KOMALAR: readonly number[] = [1, 4, 5, 8, 9]
-const NOTA = /^([A-G])(\d)(?:([b#])(\d+))?:([1248])(\.)?$/
+const NOTA = /^([A-G])(\d)(?:([b#])(\d+))?:([1248])(\.)?(_)?$/
 const SUS = /^r:([1248])(\.)?$/
 
 function parseToken(token: string): MusicEvent {
@@ -40,19 +40,30 @@ function parseToken(token: string): MusicEvent {
     throw new Error(`Geçersiz etüt belirteci: "${token}"`)
   }
   const pitch: WrittenPitch = { step: m[1] as Step, octave: Number(m[2]), acc: acc as Accidental }
-  return { kind: 'note', pitch, dur: SURELER[m[5]!]!, ...(m[6] ? { dotted: true } : {}) }
+  return { kind: 'note', pitch, dur: SURELER[m[5]!]!, ...(m[6] ? { dotted: true } : {}), ...(m[7] ? { bag: true } : {}) }
 }
 
 /**
  * Kısa etüt gösterimi: ölçüler `|` ile, notalar boşlukla ayrılır.
- * Nota `<Harf><Oktav>[b<koma>|#<koma>]:<1|2|4|8>[.]` (ör. `B4b1:4`, `D5:2.`), sus `r:<süre>`.
- * Geçersiz belirteç ya da boş ölçü `Error` fırlatır.
+ * Nota `<Harf><Oktav>[b<koma>|#<koma>]:<1|2|4|8>[.][_]` (ör. `B4b1:4`, `D5:2.`, `G4:4_`), sus `r:<süre>`.
+ * Nota sonundaki `_` sonraki notaya bağdır; tek başına `,` bir önceki olaydan sonra nefes işaretidir.
+ * Geçersiz belirteç, boş ölçü ya da `,` ile başlayan ölçü `Error` fırlatır.
  */
 export function parseEtut(s: string): MusicEvent[][] {
   return s.split('|').map((olcu) => {
     const tokens = olcu.trim().split(/\s+/).filter(Boolean)
     if (tokens.length === 0) throw new Error('Boş ölçü')
-    return tokens.map(parseToken)
+    const olaylar: MusicEvent[] = []
+    for (const token of tokens) {
+      if (token === ',') {
+        const onceki = olaylar.at(-1)
+        if (!onceki) throw new Error('Ölçü nefes işaretiyle (,) başlayamaz')
+        onceki.nefes = true
+      } else {
+        olaylar.push(parseToken(token))
+      }
+    }
+    return olaylar
   })
 }
 

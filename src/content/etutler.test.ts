@@ -39,6 +39,20 @@ describe('parseEtut', () => {
     expect(noktali).toEqual({ kind: 'rest', dur: 'half', dotted: true })
   })
 
+  it('bağ ve nefes işareti: nota sonundaki _ ve tek başına ,', () => {
+    const [olcu] = parseEtut('G4:4_ A4:4 , B4b1:2')
+    expect(olcu).toHaveLength(3)
+    expect(olcu![0]).toEqual({ kind: 'note', pitch: { step: 'G', octave: 4, acc: 0 }, dur: 'quarter', bag: true })
+    expect(olcu![1]).toEqual({ kind: 'note', pitch: { step: 'A', octave: 4, acc: 0 }, dur: 'quarter', nefes: true })
+    expect(olcu![2]).toEqual({ kind: 'note', pitch: { step: 'B', octave: 4, acc: -1 }, dur: 'half' })
+    expect(parseEtut('D5:2._')[0]![0]).toMatchObject({ dur: 'half', dotted: true, bag: true })
+    expect(parseEtut('r:4 ,')[0]![0]).toEqual({ kind: 'rest', dur: 'quarter', nefes: true })
+  })
+
+  it.each([', G4:4', 'G4:4 | , A4:4', 'r:4_', 'G4:4._.'])('ölçü , ile başlayamaz; bağ yalnız notada: %s', (s) => {
+    expect(() => parseEtut(s)).toThrow(Error)
+  })
+
   it.each(['X4:4', 'D:4', 'D5', 'D5:3', 'D5:16', 'D5:4:', 'D5b2:4', 'r', 'r:5', 'D5:4 | | D5:4', '', 'd5:4', 'D5:4,'])(
     'geçersiz belirteç Error fırlatır: %s',
     (s) => {

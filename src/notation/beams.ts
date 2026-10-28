@@ -1,6 +1,9 @@
 import { beats, type MusicEvent } from '../music/notation'
 
-/** Süreler dörtlüğün 1/48'i cinsinden tamsayıya çevrilir (noktalı onaltılık = 18): kayan nokta hatası olmaz. */
+/**
+ * Süreler dörtlüğün 1/48'i cinsinden tamsayıya çevrilir (noktalı onaltılık = 18, sekizlik üçleme = 16): kayan
+ * nokta hatası olmaz. Yuvarlama 1e-6'dan çok daha geniş bir pay bırakır; vuruş sınırı karşılaştırmaları tamsayıdır.
+ */
 const UNIT = 48
 
 /**

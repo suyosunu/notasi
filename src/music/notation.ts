@@ -8,11 +8,21 @@ export interface NoteEvent {
   dotted?: boolean
   /** true: sonraki notaya (aynı perde) bağlıdır; çalarken süreleri birleşir. */
   tie?: boolean
+  /** true: sonraki notaya bağ (legato; perde farklı olabilir). Yalnız çizilir; çalma değişmez. */
+  bag?: boolean
+  /** true: üçleme üyesi; süre × 2/3. */
+  uclu?: boolean
+  /** true: bu olaydan sonra nefes işareti. */
+  nefes?: boolean
 }
 export interface RestEvent {
   kind: 'rest'
   dur: DurationKind
   dotted?: boolean
+  /** true: üçleme üyesi; süre × 2/3. */
+  uclu?: boolean
+  /** true: bu olaydan sonra nefes işareti. */
+  nefes?: boolean
 }
 export type MusicEvent = NoteEvent | RestEvent
 
@@ -25,11 +35,13 @@ const NAMES: Record<DurationKind, string> = {
   sixteenth: 'Onaltılık',
 }
 
+/** Süre (dörtlük cinsinden). Üçlemede kesirlidir (üç sekizlik üçleme = 1); karşılaştırmalar 1e-6 payıyla yapılır. */
 export function beats(e: MusicEvent): number {
-  return BEATS[e.dur] * (e.dotted ? 1.5 : 1)
+  return BEATS[e.dur] * (e.dotted ? 1.5 : 1) * (e.uclu ? 2 / 3 : 1)
 }
 
 export function durationName(e: MusicEvent): string {
   const base = e.dotted ? `Noktalı ${NAMES[e.dur].toLocaleLowerCase('tr')}` : NAMES[e.dur]
-  return e.kind === 'rest' ? `${base} sus` : base
+  const ad = e.uclu ? `${base} üçleme` : base
+  return e.kind === 'rest' ? `${ad} sus` : ad
 }

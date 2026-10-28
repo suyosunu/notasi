@@ -6,7 +6,8 @@ export type GorselAdi = 'ney-bolumleri' | 'el-yerlesimi' | 'nefes-444'
 export type DersBlok =
   | { tur: 'metin'; metin: string }
   | { tur: 'liste'; maddeler: string[] }
-  | { tur: 'porte'; olaylar: MusicEvent[]; aciklama?: string; bpm?: number } // Staff + notası varsa ▶ Dinle
+  // Staff + notası varsa ▶ Dinle. `ropriz`: iki röpriz çizgisi çizilir, Dinle bölümü iki kez çalar.
+  | { tur: 'porte'; olaylar: MusicEvent[]; aciklama?: string; bpm?: number; ropriz?: boolean }
   | { tur: 'parmak'; perdeId: PerdeId; aciklama?: string } // FingeringDiagram + ▶ Dinle (yarımlık)
   | { tur: 'gorsel'; ad: GorselAdi; aciklama?: string }
   | { tur: 'dene'; adimlar: string[] } // "Kendin dene" kutusu

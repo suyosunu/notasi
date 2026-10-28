@@ -9,6 +9,7 @@ import {
   NEY_SESLERI,
   SHAKUHACHI_CHAIN,
   SOUND_CHAIN,
+  toneSteps,
   toToneEvents,
 } from './pattern'
 import { SHAKUHACHI_SOUND } from './shakuhachi'
@@ -52,6 +53,21 @@ describe('toToneEvents', () => {
   it('sus hz: null olur, noktalı süre vuruşa yansır', () => {
     const written: MusicEvent[] = [{ kind: 'rest', dur: 'half', dotted: true }]
     expect(toToneEvents(written, DEFAULT_TUNING)).toEqual([{ hz: null, beats: 3 }])
+  })
+
+  it('üçleme süreleri ölçü toplamını bozmaz', () => {
+    const u: MusicEvent = { kind: 'note', pitch: { step: 'A', octave: 4, acc: 0 }, dur: 'eighth', uclu: true }
+    const written: MusicEvent[] = [u, u, u, { kind: 'note', pitch: { step: 'G', octave: 4, acc: 0 }, dur: 'quarter' }]
+    const sum = toToneEvents(written, DEFAULT_TUNING).reduce((s, t) => s + t.beats, 0)
+    expect(Math.abs(sum - 2)).toBeLessThan(1e-6)
+  })
+
+  it('bag çalmayı değiştirmez: farklı perdeler ayrı ses kalır', () => {
+    const written: MusicEvent[] = [
+      { kind: 'note', pitch: { step: 'G', octave: 4, acc: 0 }, dur: 'quarter', bag: true },
+      { kind: 'note', pitch: { step: 'A', octave: 4, acc: 0 }, dur: 'quarter' },
+    ]
+    expect(toToneEvents(written, DEFAULT_TUNING).map((t) => t.beats)).toEqual([1, 1])
   })
 
   describe('bağlı notalar', () => {
@@ -144,6 +160,28 @@ async function query(code: string, from: number, to: number): Promise<Hit[]> {
     .map((h) => ({ at: Math.round(Number(h.whole.begin) * 1e6) / 1e6, ...h.value }) as Hit)
     .sort((a, b) => a.at - b.at || (a.s ?? '').localeCompare(b.s ?? ''))
 }
+
+describe('toneSteps: üçleme', () => {
+  it('ağırlıklar 6 ondalıkla yazılır; tam sayılar olduğu gibi kalır', () => {
+    expect(toneSteps([{ hz: 440, beats: 1 / 3 }, { hz: null, beats: 2 }])).toBe('440.00@0.333333 ~@2')
+  })
+
+  it('üçlemeli ezgide vuruşlar Strudel çekirdeğinde kaymaz', async () => {
+    const third = 0.5 * (2 / 3)
+    const events = [
+      { hz: 440, beats: third },
+      { hz: 494.96, beats: third },
+      { hz: 556.8, beats: third },
+      { hz: 440, beats: 1 },
+    ]
+    const { code } = buildPatternCode(events, 60, 'mevcut')
+    // ♩ = 60: zaman saniye = vuruş. Dörtlük tam 1. vuruşta başlar (6 ondalık yuvarlaması 1e-6 içinde kalır).
+    const hits = await query(code, 0, 2)
+    const want = [0, 1 / 3, 2 / 3, 1]
+    expect(hits).toHaveLength(4)
+    hits.forEach((h, i) => expect(Math.abs(h.at - want[i]!)).toBeLessThan(2e-6))
+  })
+})
 
 describe('melodyChain (ney sesi)', () => {
   it('üç ses vardır; mevcut bugünkü üçgen dalga + vibrato zinciridir', () => {

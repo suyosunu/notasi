@@ -1,6 +1,6 @@
 import type { DurationKind, MusicEvent, NoteEvent, RestEvent } from '../music/notation'
 import { beamGroups } from './beams'
-import { accidentalWidth, AccidentalGlyph, CLEF_GLYPH, MUSIC_FONT } from './glyphs'
+import { accidentalWidth, AccidentalGlyph, BREATH_GLYPH, CLEF_GLYPH, MUSIC_FONT } from './glyphs'
 import { indexY, ledgerLineYs, LINE_GAP, noteY, staffIndex, STAFF_TOP } from './geometry'
 
 const HEIGHT = 110
@@ -30,6 +30,22 @@ const SYLLABLE_PAD = 4
 export function syllableWidth(s: string): number {
   return [...s].length * 0.55 * SYLLABLE_SIZE
 }
+/** Bağ (legato) yayının denetim noktasının yüksek uca göre uzaklığı (px). */
+const BAG_BULGE = 8
+/** Üçleme "3"ünün boyu ve grubun en üst noktasına uzaklığı (px). */
+const UCLU_SIZE = 11
+const UCLU_GAP = 4
+/** Nefes işaretinin boyu ve nota başının sağ kenarına uzaklığı (px). */
+const NEFES_SIZE = 24
+const NEFES_GAP = 6
+/** Röpriz işaretine ayrılan yatay yer (px); kalın-ince çizgi ve iki nokta bu yere sığar. */
+const ROPRIZ_W = 14
+const ROPRIZ_THICK = 3
+/** Kalın çizginin iç kenarından ince çizgiye ve ince çizgiden noktaların merkezine (px). */
+const ROPRIZ_LINE_GAP = 3
+const ROPRIZ_DOT_GAP = 4.5
+const ROPRIZ_DOT_R = 1.8
+
 /** Onaltılıkta iki bayrak arasındaki uzaklık (px). */
 const FLAG_STEP = 7
 
@@ -256,6 +272,79 @@ function TieArc(props: { event: NoteEvent; x1: number; x2: number; stemDown: boo
   )
 }
 
+/**
+ * Bağ (legato) yayı: iki nota başının arasında. İki nota da yukarı saplıysa yay altta, değilse üstte.
+ * Uçlar her notanın kendi yüksekliğinden alınır; perde farklı olabilir.
+ */
+function BagArc(props: { from: NoteEvent; to: NoteEvent; x1: number; x2: number; bothUp: boolean }) {
+  const { from, to, x1, x2, bothUp } = props
+  const sign = bothUp ? 1 : -1
+  const y1 = noteY(from.pitch) + sign * (HEAD_RY + 1)
+  const y2 = noteY(to.pitch) + sign * (HEAD_RY + 1)
+  const peak = (bothUp ? Math.max(y1, y2) : Math.min(y1, y2)) + sign * BAG_BULGE
+  const start = x1 + 2
+  const end = Math.max(x2 - 2, start + 6)
+  return (
+    <path
+      data-bag
+      d={`M ${start} ${y1} Q ${(start + end) / 2} ${peak} ${end} ${y2}`}
+      fill="none"
+      stroke={INK}
+      stroke-width={1.2}
+      stroke-linecap="round"
+    />
+  )
+}
+
+/**
+ * Ardışık üçleme olayları (ölçü çizgisi diziyi böler) üçerli gruplanır; sonda kalan bir ya da iki olay da
+ * kendi grubunu kurar.
+ */
+function ucluGroups(events: MusicEvent[], bars: Set<number>): number[][] {
+  const groups: number[][] = []
+  let cur: number[] = []
+  const close = () => {
+    if (cur.length > 0) groups.push(cur)
+    cur = []
+  }
+  events.forEach((e, i) => {
+    if (!e.uclu) {
+      close()
+      return
+    }
+    cur.push(i)
+    if (cur.length === 3 || bars.has(i)) close()
+  })
+  close()
+  return groups
+}
+
+/** Olayın en üst noktası (px): yukarı saplı notada sap ucu, aksi halde baş; sus için üst çizgi. */
+function eventTop(e: MusicEvent, beam: BeamTip | undefined): number {
+  if (e.kind === 'rest') return STAFF_TOP
+  const y = noteY(e.pitch)
+  const down = beam ? beam.down : soloDown(e)
+  if (down || e.dur === 'whole') return y - HEAD_RY
+  return Math.min(y - HEAD_RY, beam ? beam.y : y - STEM_LEN)
+}
+
+/** Röpriz: `bas` kalın-ince çizgi ve iki nokta (`x` sol kenar); `son` aynası, iki nokta ve ince-kalın (`x` sağ kenar). */
+function RoprizSign(props: { side: 'bas' | 'son'; x: number }) {
+  const { side, x } = props
+  const dir = side === 'bas' ? 1 : -1
+  const thickX = side === 'bas' ? x : x - ROPRIZ_THICK
+  const thinX = x + dir * (ROPRIZ_THICK + ROPRIZ_LINE_GAP)
+  const dotX = thinX + dir * ROPRIZ_DOT_GAP
+  return (
+    <g data-ropriz={side}>
+      <rect x={thickX} y={STAFF_TOP} width={ROPRIZ_THICK} height={4 * LINE_GAP} fill={INK} />
+      <line x1={thinX} x2={thinX} y1={STAFF_TOP} y2={STAFF_TOP + 4 * LINE_GAP} stroke={INK} stroke-width={1.2} />
+      <circle cx={dotX} cy={STAFF_TOP + 1.5 * LINE_GAP} r={ROPRIZ_DOT_R} fill={INK} />
+      <circle cx={dotX} cy={STAFF_TOP + 2.5 * LINE_GAP} r={ROPRIZ_DOT_R} fill={INK} />
+    </g>
+  )
+}
+
 function RestShape(props: { event: RestEvent; x: number }) {
   const { event, x } = props
   const { dur } = event
@@ -323,18 +412,22 @@ export function staffWidthFor(n: number, slot: number, min: number): number {
  * Her olay kendi yuvasını alır. Yuva en az `baseSlot` kadardır; işaretli notada solundaki işarete,
  * işaret ile nota başı arasındaki boşluğa ve başın kendisine yetecek kadar genişler. İşaretsiz
  * notalar yalnızca kendi yuvalarının gerektirdiği kadar yer değiştirir. Toplam genişlik `width`'i
- * aşarsa görünüm kutusu genişler (SVG %100 genişlikte ölçeklenir, kırpılmaz).
+ * aşarsa görünüm kutusu genişler (SVG %100 genişlikte ölçeklenir, kırpılmaz). Röpriz işaretleri
+ * kendi yerlerini (`ROPRIZ_W`) yuvalardan önce ve sonra alır.
  */
 export function layoutEvents(
   events: MusicEvent[],
   width: number,
   syllables?: string[],
+  ropriz?: { bas?: boolean; son?: boolean },
 ): { xs: number[]; ends: number[]; viewWidth: number } {
-  const baseSlot = (width - FIRST_X - RIGHT_MARGIN) / Math.max(events.length, 1)
+  const lead = ropriz?.bas ? ROPRIZ_W : 0
+  const trail = ropriz?.son ? ROPRIZ_W : 0
+  const baseSlot = (width - FIRST_X - lead - RIGHT_MARGIN - trail) / Math.max(events.length, 1)
   const xs: number[] = []
   /** Her yuvanın sağ kenarı (ölçü çizgisi buraya çizilir). */
   const ends: number[] = []
-  let start = FIRST_X
+  let start = FIRST_X + lead
   for (const [i, e] of events.entries()) {
     const accW = e.kind === 'note' ? accidentalWidth(e.pitch.acc) : 0
     let slot = accW > 0 ? Math.max(baseSlot, accW + ACC_GAP + 2 * HEAD_RX + MIN_GAP) : baseSlot
@@ -350,7 +443,7 @@ export function layoutEvents(
     start += slot
     ends.push(start)
   }
-  return { xs, ends, viewWidth: Math.max(width, start + RIGHT_MARGIN) }
+  return { xs, ends, viewWidth: Math.max(width, start + trail + RIGHT_MARGIN) }
 }
 
 export function Staff(props: {
@@ -366,9 +459,15 @@ export function Staff(props: {
    * Verilmezse her nota bayrağıyla, bugünkü gibi çizilir.
    */
   beamBeats?: number
+  /**
+   * Röpriz: `bas` anahtardan sonra kalın-ince çizgi ve iki nokta, `son` satır sonunda iki nokta ve ince-kalın
+   * çizgi (satır sonu ölçü çizgisinin yerine).
+   */
+  ropriz?: { bas?: boolean; son?: boolean }
 }) {
-  const { events, width: baseWidth = DEFAULT_WIDTH, highlightIndex, barlinesAfter, syllables, beamBeats } = props
-  const { xs, ends, viewWidth: width } = layoutEvents(events, baseWidth, syllables)
+  const { events, width: baseWidth = DEFAULT_WIDTH, highlightIndex, barlinesAfter, syllables, beamBeats, ropriz } =
+    props
+  const { xs, ends, viewWidth: width } = layoutEvents(events, baseWidth, syllables, ropriz)
   const beams =
     beamBeats === undefined
       ? []
@@ -377,8 +476,12 @@ export function Staff(props: {
   for (const b of beams) for (const [i, y] of b.tips) beamTips.set(i, { down: b.down, y })
   const last = events.length - 1
   const barXs = barlinesAfter
-    ? [...barlinesAfter.filter((i) => i >= 0 && i < last).map((i) => ends[i]!), width - 2]
+    ? [...barlinesAfter.filter((i) => i >= 0 && i < last).map((i) => ends[i]!), ...(ropriz?.son ? [] : [width - 2])]
     : []
+  const ucluMarks = ucluGroups(events, new Set(barlinesAfter ?? [])).map((g) => {
+    const top = Math.min(STAFF_TOP, ...g.map((i) => eventTop(events[i]!, beamTips.get(i))))
+    return { x: (xs[g[0]!]! + xs[g.at(-1)!]!) / 2, y: Math.max(UCLU_SIZE, top - UCLU_GAP) }
+  })
 
   return (
     <svg
@@ -409,6 +512,8 @@ export function Staff(props: {
       >
         {CLEF_GLYPH}
       </text>
+      {ropriz?.bas && <RoprizSign side="bas" x={FIRST_X - 4} />}
+      {ropriz?.son && <RoprizSign side="son" x={width - 2} />}
       {barXs.map((bx) => (
         <line
           key={bx}
@@ -438,6 +543,7 @@ export function Staff(props: {
       )}
       {events.map((e, i) => {
         const x = xs[i]!
+        const next = events[i + 1]
         const highlighted = i === highlightIndex
         return (
           <g
@@ -459,9 +565,44 @@ export function Staff(props: {
                 stemDown={beamTips.get(i)?.down ?? soloDown(e)}
               />
             )}
+            {e.kind === 'note' && e.bag && next?.kind === 'note' && (
+              <BagArc
+                from={e}
+                to={next}
+                x1={x}
+                x2={xs[i + 1]!}
+                bothUp={!(beamTips.get(i)?.down ?? soloDown(e)) && !(beamTips.get(i + 1)?.down ?? soloDown(next))}
+              />
+            )}
+            {e.nefes && (
+              <text
+                data-nefes
+                x={x + HEAD_RX + NEFES_GAP}
+                y={STAFF_TOP + 4}
+                font-size={NEFES_SIZE}
+                font-family={MUSIC_FONT}
+                fill={INK}
+              >
+                {BREATH_GLYPH}
+              </text>
+            )}
           </g>
         )
       })}
+      {ucluMarks.map((m, k) => (
+        <text
+          key={`u${k}`}
+          data-uclu
+          x={m.x}
+          y={m.y}
+          font-size={UCLU_SIZE}
+          font-style="italic"
+          text-anchor="middle"
+          fill={INK}
+        >
+          3
+        </text>
+      ))}
       {beams.map((b, k) => (
         <g key={`b${k}`} data-beam-group>
           {b.segments.map((s, j) => (
