@@ -2,13 +2,15 @@ import { describe, expect, it } from 'vitest'
 import { rotaBilinir } from '../../app'
 import { KOMA_FARKI, NEY_PERDELER } from '../ney-perdeler'
 import { NOTA_TOPICS } from '../nota-topics'
-import { DERSLER, dersById, notaDersId, perdeDersId } from './index'
+import { DERSLER, dersById, notaDersId, perdeDersId, usulDersId, usulDersleri } from './index'
 import { HAZIRLIK_DERSLERI } from './hazirlik'
 import { NOTA_DERSLERI } from './nota'
 import { NOTA_2_DERSLERI } from './nota-2'
 import { ETUT_DERSLERI } from './etut'
 import { PERDE_DERSLERI } from './perdeler'
+import { USUL_DERSLERI } from './usul'
 import { ETUTLER } from '../etutler'
+import { USULLER } from '../usuller'
 import { PERDE_ADLARI } from '../perde-adlari'
 import { cardToEvents, perdeKey } from '../../learning/cards'
 import { neyLevelConfig } from '../../learning/long-tone'
@@ -30,6 +32,7 @@ function metinler(d: Ders): string[] {
       case 'porte':
       case 'parmak':
       case 'gorsel':
+      case 'usul':
         return b.aciklama ? [b.aciklama] : []
     }
   }
@@ -56,13 +59,18 @@ describe('DERSLER değişmezleri', () => {
 
   it.each(DERSLER.map((d) => [d.id, d] as const))('%s: dene bloğu ve görsel blok var, kaynaklar dolu', (_id, d) => {
     expect(d.bloklar.some((b) => b.tur === 'dene')).toBe(true)
-    expect(d.bloklar.some((b) => b.tur === 'porte' || b.tur === 'parmak' || b.tur === 'gorsel')).toBe(true)
+    expect(d.bloklar.some((b) => b.tur === 'porte' || b.tur === 'parmak' || b.tur === 'gorsel' || b.tur === 'usul')).toBe(true)
     expect(d.kaynaklar.length).toBeGreaterThan(0)
   })
 
   it.each(DERSLER.map((d) => [d.id, d] as const))('%s: kimlik öneki bağlı olduğu içeriğe işaret eder', (_id, d) => {
     if (d.id.startsWith('perde:')) expect(NEY_PERDELER.map((p) => p.id)).toContain(d.id.slice('perde:'.length))
     if (d.id.startsWith('nota:')) expect(NOTA_TOPICS.map((t) => t.id)).toContain(d.id.slice('nota:'.length))
+    if (d.id.startsWith('usul:') && d.id !== 'usul:giris') expect(USULLER.map((u) => u.id)).toContain(d.id.slice('usul:'.length))
+  })
+
+  it.each(DERSLER.map((d) => [d.id, d] as const))('%s: usul blokları var olan usule bağlı', (_id, d) => {
+    for (const b of d.bloklar) if (b.tur === 'usul') expect(USULLER.map((u) => u.id)).toContain(b.usulId)
   })
 
   it.each(DERSLER.map((d) => [d.id, d] as const))('%s: parmak blokları var olan perdeye bağlı', (_id, d) => {
@@ -625,5 +633,102 @@ describe('uzun ses dersleri uygulamanın bant ve süre eğrisiyle tutarlı', () 
     expect(m).toMatch(new RegExp(`öneri ±${ONERI_CENT} sent`, 'i'))
     expect(m).toMatch(/öneri/)
     expect(m).not.toMatch(/4 sn|±10 sent/)
+  })
+})
+
+describe('Usul dersleri', () => {
+  const IDS = ['usul:giris', 'usul:nim-sofyan', 'usul:semai', 'usul:sofyan']
+  const USUL_IDLERI = ['nim-sofyan', 'semai', 'sofyan']
+  const ders = (id: string) => dersById(id)!
+  const metin = (id: string) => metinler(ders(id)).join(' ')
+  const usulBloklari = (id: string) => ders(id).bloklar.flatMap((b) => (b.tur === 'usul' ? [b] : []))
+
+  it('dört usul dersi bu sırayla var; hepsi seviye 2 ve DERSLER içinde; alıştırma usul bölümü', () => {
+    expect(USUL_DERSLERI.map((d) => d.id)).toEqual(IDS)
+    expect(DERSLER.filter((d) => d.id.startsWith('usul:')).map((d) => d.id)).toEqual(IDS)
+    for (const id of IDS) {
+      expect(ders(id).seviye, id).toBe(2)
+      expect(ders(id).alistirma, id).toBe('/usul')
+    }
+  })
+
+  it('usulDersId ve usulDersleri', () => {
+    expect(usulDersId('semai')).toBe('usul:semai')
+    expect(usulDersleri('nim-sofyan')).toEqual(['usul:giris', 'usul:nim-sofyan'])
+    expect(usulDersleri('sofyan')).toEqual(['usul:giris', 'usul:sofyan'])
+    // dersi olmayan usullerde yalnız giriş
+    for (const u of USULLER.filter((x) => !USUL_IDLERI.includes(x.id))) expect(usulDersleri(u.id), u.id).toEqual(['usul:giris'])
+  })
+
+  it('her usul dersinde yalnız ilgili usulün usul bloğu var; kaynaklar dolu; dene bloğu var', () => {
+    for (const u of USUL_IDLERI) {
+      const id = usulDersId(u)
+      expect(usulBloklari(id).map((b) => b.usulId), id).toEqual([u])
+      expect(ders(id).kaynaklar.length, id).toBeGreaterThan(0)
+      expect(ders(id).bloklar.some((b) => b.tur === 'dene'), id).toBe(true)
+    }
+    expect(usulBloklari('usul:giris').length).toBeGreaterThan(0)
+    expect(ders('usul:giris').kaynaklar.length).toBeGreaterThan(0)
+  })
+
+  it('her usul dersinin "Kendin dene" kutusunda sesli sayma, dizlere vurma ve Vurarak çalış adımı var', () => {
+    const kalip: Record<string, string> = { 'nim-sofyan': 'düm-tek', semai: 'düm-tek-tek', sofyan: 'düm-te-ke' }
+    for (const u of USUL_IDLERI) {
+      const dene = ders(usulDersId(u)).bloklar.find((b) => b.tur === 'dene')
+      const adimlar = dene && dene.tur === 'dene' ? dene.adimlar.join(' ') : ''
+      expect(adimlar, u).toMatch(/sesli say/)
+      expect(adimlar, u).toContain(`(${kalip[u]})`)
+      expect(adimlar, u).toMatch(/dizlerine vurarak eşlik et/)
+      expect(adimlar, u).toMatch(/Vurarak çalış/)
+    }
+  })
+
+  it('giriş: usul tanımı, düm kalın/güçlü, tek ince/hafif, te ve ke, öğretim sırası, vurarak çalışma', () => {
+    const m = metin('usul:giris')
+    expect(m).toMatch(/tekrarlanan vuruş kalıbı/)
+    expect(m).toMatch(/iskelet/)
+    expect(m).toMatch(/[Dd]üm[^.]*kalın[^.]*güçlü/)
+    expect(m).toMatch(/[Tt]ek[^.]*ince[^.]*hafif/)
+    expect(m).toMatch(/\b[Tt]e\b[^.]*\bke\b/)
+    expect(m.indexOf('Nim Sofyan')).toBeGreaterThan(-1)
+    expect(m.indexOf('Nim Sofyan')).toBeLessThan(m.indexOf('Semâî'))
+    expect(m.indexOf('Semâî')).toBeLessThan(m.indexOf('Sofyan', m.indexOf('Semâî')))
+    expect(m).toMatch(/Vurarak çalış/)
+  })
+
+  it('hiçbir ders hangi elle vurulacağını söylemez (kaynaklarda doğrulanamadı)', () => {
+    for (const id of IDS) expect(metin(id), id).not.toMatch(/sağ el|sol el|\bsağ\b|\bsol\b/i)
+  })
+
+  it('usul dersleri vuruş kalıbını ve zamanı usul verisiyle aynı anlatır', () => {
+    const olcuMetni = (id: string, zaman: number, kalip: RegExp) => {
+      expect(metin(`usul:${id}`), id).toContain(`${zaman}/4`)
+      expect(metin(`usul:${id}`), id).toMatch(kalip)
+    }
+    olcuMetni('nim-sofyan', 2, /düm,? tek/)
+    olcuMetni('semai', 3, /düm,? tek,? tek/)
+    olcuMetni('sofyan', 4, /düm[^.]*te[^.]*ke/)
+    for (const u of USUL_IDLERI) {
+      const usul = USULLER.find((x) => x.id === u)!
+      expect(usul.zaman).toBe({ 'nim-sofyan': 2, semai: 3, sofyan: 4 }[u])
+      expect(usul.mertebe).toBe(4)
+    }
+  })
+
+  it('Nim Sofyan dersi iki mertebesini anar (2/4 ve 2/8), uygulamanın 2/4 kullandığını söyler; Sofyan dersi düm 2 zaman uzar der', () => {
+    expect(metin('usul:nim-sofyan')).toMatch(/2\/8/)
+    expect(metin('usul:nim-sofyan')).toMatch(/2\/4/)
+    expect(metin('usul:sofyan')).toMatch(/2 zaman/)
+  })
+
+  it('sayılar "öneri" diye anılır: ♩ = 60 verilen her derste öneri kelimesi de vardır', () => {
+    for (const id of IDS) if (/♩ = 60/.test(metin(id))) expect(metin(id), id).toMatch(/öneri/)
+  })
+
+  it('kalıp verisi: her usul dersi, usul bloğunun gösterdiği vuruşları (düm/tek/te/ke adları) metinde de anar', () => {
+    for (const u of USUL_IDLERI) {
+      const usul = USULLER.find((x) => x.id === u)!
+      for (const ses of new Set(usul.vurus!.map((x) => x.ses))) expect(metin(usulDersId(u)), `${u} ${ses}`).toContain(ses)
+    }
   })
 })

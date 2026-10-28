@@ -1,8 +1,11 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/preact'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { playWritten, stopAudio, unlockAudio } from '../audio/player'
+import { playCode, playWritten, stopAudio, unlockAudio } from '../audio/player'
+import { buildUsulOnceCode } from '../audio/usul'
+import { getUsulSesi } from '../audio/usulSamples'
 import type { Ders } from '../content/dersler/types'
 import { NEY_PERDELER } from '../content/ney-perdeler'
+import { USULLER } from '../content/usuller'
 import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
 import type { MusicEvent } from '../music/notation'
 import { DEFAULT_SETTINGS, getSettings, isaretEkle, resetDbForTests, saveSettings } from '../store/db'
@@ -11,6 +14,7 @@ import { DersView } from './DersView'
 vi.mock('../audio/player', () => ({
   unlockAudio: vi.fn(() => Promise.resolve()),
   playWritten: vi.fn(() => Promise.resolve()),
+  playCode: vi.fn(() => Promise.resolve()),
   stopAudio: vi.fn(),
 }))
 vi.mock('../store/db', async (orijinal) => {
@@ -46,6 +50,8 @@ beforeEach(async () => {
   vi.mocked(unlockAudio).mockImplementation(() => Promise.resolve())
   vi.mocked(playWritten).mockReset()
   vi.mocked(playWritten).mockImplementation(() => Promise.resolve())
+  vi.mocked(playCode).mockReset()
+  vi.mocked(playCode).mockImplementation(() => Promise.resolve())
   vi.mocked(stopAudio).mockClear()
 })
 afterEach(() => cleanup())
@@ -219,5 +225,76 @@ describe('DersView', () => {
     expect(screen.queryByRole('link')).toBeNull()
     rerender(<DersView ders={DERS} onDone={() => undefined} geri={{ href: '#/ogren', label: 'Öğren bölümüne dön' }} />)
     expect(screen.getByRole('link', { name: 'Öğren bölümüne dön' }).getAttribute('href')).toBe('#/ogren')
+  })
+})
+
+describe('DersView: usul bloğu', () => {
+  const usulDers = (usulId: string): Ders => ({
+    ...DERS,
+    bloklar: [{ tur: 'usul', usulId, aciklama: 'Usul açıklaması' }],
+  })
+  const kutular = () => [...document.querySelectorAll<HTMLElement>('[data-testid="vurus"]')]
+  const usul = (id: string) => USULLER.find((u) => u.id === id)!
+
+  it.each(['nim-sofyan', 'semai', 'sofyan'])('%s: düm-tek kutuları usulün vuruş sayısı kadar çizilir; açıklama görünür', (id) => {
+    render(<DersView ders={usulDers(id)} onDone={() => undefined} />)
+    expect(kutular().map((k) => k.textContent)).toEqual(usul(id).vurus!.map((v) => v.ses))
+    expect(screen.getByText('Usul açıklaması')).toBeTruthy()
+  })
+
+  it('Dinle bir kez playCode çağırır: önce sesi açar, bir ölçüyü ♩ = 60 hızında iki kez çalar (kullanıcının usul sesiyle)', async () => {
+    render(<DersView ders={usulDers('sofyan')} onDone={() => undefined} />)
+    expect(screen.getAllByRole('button', { name: '▶ Dinle' })).toHaveLength(1)
+    await dinle(0)
+    await waitFor(() => expect(playCode).toHaveBeenCalledTimes(1))
+    const bekle = buildUsulOnceCode(usul('sofyan'), 60, getUsulSesi(), 2)
+    expect(vi.mocked(playCode).mock.calls[0]).toEqual([bekle.code, bekle.durationMs])
+    expect(bekle.durationMs).toBe(8000)
+    expect(bekle.code).toContain('.mask("<1 1 0@1000000>")')
+    expect(vi.mocked(unlockAudio).mock.invocationCallOrder[0]!).toBeLessThan(vi.mocked(playCode).mock.invocationCallOrder[0]!)
+    expect(playWritten).not.toHaveBeenCalled()
+  })
+
+  it('soundOn:false → SOUND_OFF, hiçbir şey çalmaz', async () => {
+    await saveSettings({ soundOn: false })
+    render(<DersView ders={usulDers('semai')} onDone={() => undefined} />)
+    await dinle(0)
+    expect((await screen.findByRole('status')).textContent).toBe(SOUND_OFF)
+    expect(unlockAudio).not.toHaveBeenCalled()
+    expect(playCode).not.toHaveBeenCalled()
+  })
+
+  it('çalma hatası → SOUND_WARNING', async () => {
+    vi.mocked(playCode).mockRejectedValueOnce(new Error('çalamadı'))
+    render(<DersView ders={usulDers('semai')} onDone={() => undefined} />)
+    await dinle(0)
+    expect((await screen.findByRole('status')).textContent).toBe(SOUND_WARNING)
+  })
+
+  it('unmount sesi durdurur; bekleyen unlockAudio çıkıştan sonra çalmaz', async () => {
+    let bitir!: () => void
+    vi.mocked(unlockAudio).mockImplementation(() => new Promise<void>((r) => (bitir = r)))
+    const { unmount } = render(<DersView ders={usulDers('nim-sofyan')} onDone={() => undefined} />)
+    await dinle(0)
+    await waitFor(() => expect(unlockAudio).toHaveBeenCalled())
+    vi.mocked(stopAudio).mockClear()
+    unmount()
+    expect(stopAudio).toHaveBeenCalled()
+    bitir()
+    await new Promise((r) => setTimeout(r, 0))
+    expect(playCode).not.toHaveBeenCalled()
+  })
+
+  it('vuruş kalıbı olmayan usulde (Dolap) şema ve Dinle yok, açıklama görünür', () => {
+    render(<DersView ders={usulDers('dolap')} onDone={() => undefined} />)
+    expect(kutular()).toHaveLength(0)
+    expect(screen.queryByRole('button', { name: '▶ Dinle' })).toBeNull()
+    expect(screen.getByText('Usul açıklaması')).toBeTruthy()
+  })
+
+  it('bilinmeyen usul kimliğinde çökmez; yalnız açıklama görünür', () => {
+    render(<DersView ders={usulDers('yok')} onDone={() => undefined} />)
+    expect(kutular()).toHaveLength(0)
+    expect(screen.queryByRole('button', { name: '▶ Dinle' })).toBeNull()
   })
 })

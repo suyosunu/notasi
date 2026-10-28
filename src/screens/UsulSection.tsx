@@ -2,16 +2,18 @@ import { useEffect, useRef, useState } from 'preact/hooks'
 import { startUsul, stopUsul } from '../audio/usul'
 import { acquireWakeLock, releaseWakeLock } from '../audio/wakeLock'
 import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
+import { dersById, usulDersId } from '../content/dersler'
 import { ONERILEN_SEVIYE } from '../content/seviyeler'
 import { USULLER } from '../content/usuller'
 import type { Usul } from '../content/usuller'
+import { DersKapisi } from '../ders/DersKapisi'
+import { VurusDiagram } from '../notation/VurusDiagram'
 import { getSettings } from '../store/db'
 import type { Settings } from '../store/db'
 
 const BPM_MIN = 40
 const BPM_MAX = 120
 const BPM_DEFAULT = 60
-const DOLAP_NOTE = 'Bu usulün vuruş kalıbı kaynaklarda bulunamadı; yalnızca zaman sayılır (12/8).'
 /**
  * Vurgu saatinin gecikme payı (ms): Strudel zamanlayıcısı desenleri ~0.1 sn ileriden planlar, yani ilk vuruş
  * `startUsul` çözüldükten yaklaşık bu kadar sonra duyulur. Vurgu sesle birlikte ilerlesin diye saat bu kadar geç başlar.
@@ -69,28 +71,16 @@ function useActiveStroke(clock: Clock | null): number | null {
   return active
 }
 
-/** Düm ayrı, tek/te/ke ayrı renkte; genişlik süreyle orantılıdır. Çalan vuruş `data-active` ile vurgulanır. */
-function VurusDiagram({ usul, active }: { usul: Usul; active: number | null }) {
-  if (usul.vurus === null) return <p class="notice">{DOLAP_NOTE}</p>
+/** Usul bölümü: önce "Usul nedir?" dersi (ders kuralı), sonra usul listesi, vuruş şeması, hız kaydırıcısı ve döngü çalma. */
+export function UsulSection() {
   return (
-    <div class="vurus-row" role="img" aria-label={usul.vurus.map((x) => x.ses).join(' ')}>
-      {usul.vurus.map((x, i) => (
-        <span
-          key={i}
-          data-testid="vurus"
-          data-active={i === active ? 'true' : undefined}
-          class={x.ses === 'düm' ? 'vurus vurus-dum' : 'vurus vurus-tek'}
-          style={{ width: `${(x.sure / usul.zaman) * 100}%` }}
-        >
-          {x.ses}
-        </span>
-      ))}
-    </div>
+    <DersKapisi dersId="usul:giris" geri={{ href: '#/', label: 'Ana ekrana dön' }}>
+      <UsulIcerik />
+    </DersKapisi>
   )
 }
 
-/** Usul bölümü: usul listesi, vuruş şeması, hız kaydırıcısı ve döngü çalma. */
-export function UsulSection() {
+function UsulIcerik() {
   const [settings, setSettings] = useState<Settings | null>(null)
   const [selectedId, setSelectedId] = useState(USULLER[0]!.id)
   const [bpm, setBpm] = useState(BPM_DEFAULT)
@@ -220,6 +210,19 @@ export function UsulSection() {
           {warn}
         </p>
       )}
+
+      <div class="tools usul-links">
+        {dersById(usulDersId(usul.id)) && (
+          <a class="tool" href={`#/ders/${encodeURIComponent(usulDersId(usul.id))}`}>
+            📖 Ders
+          </a>
+        )}
+        {usul.vurus !== null && (
+          <a class="tool" href={`#/usul/vur/${usul.id}`}>
+            👏 Vurarak çalış
+          </a>
+        )}
+      </div>
 
       <div class="links">
         <a class="back" href="#/">

@@ -1,11 +1,16 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks'
-import { playWritten, stopAudio, unlockAudio } from '../audio/player'
+import { playCode, playWritten, stopAudio, unlockAudio } from '../audio/player'
+import { buildUsulOnceCode } from '../audio/usul'
+import { getUsulSesi } from '../audio/usulSamples'
 import { NEY_PERDELER, visibleFingering } from '../content/ney-perdeler'
 import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
+import { USULLER } from '../content/usuller'
+import type { Usul } from '../content/usuller'
 import type { Ders, DersBlok } from '../content/dersler/types'
 import type { MusicEvent } from '../music/notation'
 import { FingeringDiagram } from '../ney/Fingering'
 import { Staff } from '../notation/Staff'
+import { VurusDiagram } from '../notation/VurusDiagram'
 import { DEFAULT_SETTINGS, getSettings, isaretEkle } from '../store/db'
 import type { Settings } from '../store/db'
 import { Gorsel } from './Gorseller'
@@ -14,6 +19,9 @@ const STAFF_WIDTH = 320
 const VARSAYILAN_BPM = 60
 /** Ders portelerindeki örnekler 4/4'tür: bir dörtlük içindeki sekizlikler kirişlenir. */
 const DERS_VURUS = 1
+/** Usul örneği ♩ = 60'ta (her zaman 1 sn) ve bir ölçü iki kez çalınır. */
+const USUL_BPM = 60
+const USUL_OLCU = 2
 
 function sesliMi(olaylar: MusicEvent[]): boolean {
   return olaylar.some((e) => e.kind === 'note')
@@ -52,7 +60,11 @@ export function DersView(props: { ders: Ders; onDone: () => void; geri?: { href:
     [],
   )
 
-  async function dinle(blok: number, olaylar: MusicEvent[], bpm: number) {
+  /**
+   * Ortak Dinle akışı: ayarlar yüklenmeden çalmaz; ses kapalıysa SOUND_OFF; `unlockAudio` dokunuşta ilk await'tir (iOS);
+   * sayfadan çıkıldıysa ya da yeni bir Dinle başladıysa eski çağrı çalmaz; hata SOUND_WARNING olur.
+   */
+  async function calGuvenli(blok: number, cal: (s: Settings) => Promise<void>) {
     if (!settings) return
     setUyari(null)
     if (!settings.soundOn) {
@@ -61,14 +73,22 @@ export function DersView(props: { ders: Ders; onDone: () => void; geri?: { href:
     }
     const run = ++runRef.current
     try {
-      // unlockAudio dokunuş işleyicisinde, ilk iş olarak çağrılmalıdır (iOS).
       await unlockAudio()
       if (run !== runRef.current) return
-      await playWritten(olaylar, settings.tuning, bpm)
+      await cal(settings)
     } catch {
       if (run === runRef.current) setUyari({ blok, mesaj: SOUND_WARNING })
     }
   }
+
+  const dinle = (blok: number, olaylar: MusicEvent[], bpm: number) =>
+    calGuvenli(blok, (s) => playWritten(olaylar, s.tuning, bpm))
+
+  const dinleUsul = (blok: number, u: Usul) =>
+    calGuvenli(blok, () => {
+      const { code, durationMs } = buildUsulOnceCode(u, USUL_BPM, getUsulSesi(), USUL_OLCU)
+      return playCode(code, durationMs)
+    })
 
   async function bitir() {
     try {
@@ -79,11 +99,11 @@ export function DersView(props: { ders: Ders; onDone: () => void; geri?: { href:
     onDone()
   }
 
-  function dinleDugmesi(blok: number, olaylar: MusicEvent[], bpm: number) {
+  function dinleDugmesi(blok: number, cal: () => Promise<void>) {
     return (
       <>
         <div class="tools">
-          <button type="button" class="tool" disabled={!settings} onClick={() => void dinle(blok, olaylar, bpm)}>
+          <button type="button" class="tool" disabled={!settings} onClick={() => void cal()}>
             ▶ Dinle
           </button>
         </div>
@@ -123,7 +143,7 @@ export function DersView(props: { ders: Ders; onDone: () => void; geri?: { href:
               />
             </div>
             {b.aciklama && <figcaption class="muted">{b.aciklama}</figcaption>}
-            {sesliMi(b.olaylar) && dinleDugmesi(i, calinan, b.bpm ?? VARSAYILAN_BPM)}
+            {sesliMi(b.olaylar) && dinleDugmesi(i, () => dinle(i, calinan, b.bpm ?? VARSAYILAN_BPM))}
           </figure>
         )
       }
@@ -138,7 +158,7 @@ export function DersView(props: { ders: Ders; onDone: () => void; geri?: { href:
               </div>
             )}
             {b.aciklama && <figcaption class="muted">{b.aciklama}</figcaption>}
-            {perde && dinleDugmesi(i, [{ kind: 'note', pitch: perde.written, dur: 'half' }], VARSAYILAN_BPM)}
+            {perde && dinleDugmesi(i, () => dinle(i, [{ kind: 'note', pitch: perde.written, dur: 'half' }], VARSAYILAN_BPM))}
           </figure>
         )
       }
@@ -149,6 +169,16 @@ export function DersView(props: { ders: Ders; onDone: () => void; geri?: { href:
             {b.aciklama && <figcaption class="muted">{b.aciklama}</figcaption>}
           </figure>
         )
+      case 'usul': {
+        const u = USULLER.find((x) => x.id === b.usulId)
+        return (
+          <figure key={i} class="ders-figur">
+            {u && <VurusDiagram usul={u} />}
+            {b.aciklama && <figcaption class="muted">{b.aciklama}</figcaption>}
+            {u?.vurus && dinleDugmesi(i, () => dinleUsul(i, u))}
+          </figure>
+        )
+      }
       case 'dene':
         return (
           <section key={i} class="ders-dene" aria-labelledby={`dene-${i}`}>

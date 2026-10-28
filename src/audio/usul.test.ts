@@ -436,4 +436,32 @@ describe('buildUsulOnceCode: bir ölçü, tek seferlik (Ayarlar → Dene)', () =
   it('geçersiz tempoda RangeError', () => {
     expect(() => buildUsulOnceCode(usul('sofyan'), 0, 'konga')).toThrow(RangeError)
   })
+
+  it('olcu = 2: iki ölçü art arda, ardından ses yok; süre iki ölçü', async () => {
+    const { code, durationMs } = buildUsulOnceCode(usul('sofyan'), 60, 'tahta', 2)
+    expect(durationMs).toBe(8000)
+    expect(code).toBe(`${buildUsulBody(usul('sofyan'), 60, 'tahta')}.mask("<1 1 0@1000000>").cpm(15)`)
+    const { evalScope } = await import('@strudel/core')
+    const { evaluate, transpiler } = await import('@strudel/transpiler')
+    await evalScope(import('@strudel/core'), import('@strudel/mini'))
+    const { pattern } = await evaluate(code, transpiler)
+    // cpm(15) ⇒ bir ölçü 4 sorgu-döngüsü (cps = 1 kabulü).
+    const hs = pattern
+      .queryArc(0, 8)
+      .filter((h) => h.hasOnset())
+      .sort((a, b) => Number(a.whole!.begin) - Number(b.whole!.begin))
+    expect(hs.map((h) => (h.value as { s: string }).s)).toEqual([
+      'usul_tahta_dum', 'usul_tahta_tek', 'usul_tahta_tek',
+      'usul_tahta_dum', 'usul_tahta_tek', 'usul_tahta_tek',
+    ])
+    expect(pattern.queryArc(8, 300).filter((h) => h.hasOnset())).toEqual([])
+  })
+
+  it('olcu = 1 varsayılandır ve ONE_SHOT ile aynı koddur', () => {
+    expect(buildUsulOnceCode(usul('semai'), 60, 'konga', 1)).toEqual(buildUsulOnceCode(usul('semai'), 60, 'konga'))
+  })
+
+  it.each([0, 1.5, -1, Number.NaN])('olcu = %s: RangeError', (olcu) => {
+    expect(() => buildUsulOnceCode(usul('sofyan'), 60, 'konga', olcu)).toThrow(RangeError)
+  })
 })

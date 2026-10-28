@@ -4,7 +4,7 @@ import { startUsul, stopUsul } from '../audio/usul'
 import { acquireWakeLock, releaseWakeLock } from '../audio/wakeLock'
 import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
 import { USULLER } from '../content/usuller'
-import { resetDbForTests, saveSettings } from '../store/db'
+import { getSettings, isaretEkle, resetDbForTests, saveSettings } from '../store/db'
 import { UsulSection } from './UsulSection'
 
 vi.mock('../audio/usul', () => ({
@@ -23,6 +23,7 @@ const usul = (id: string) => USULLER.find((u) => u.id === id)!
 
 beforeEach(async () => {
   await resetDbForTests()
+  await isaretEkle('okunanDersler', 'usul:giris') // ders kapısı açık; kapı testleri kendi kaydını sıfırlar
   vi.mocked(startUsul).mockReset().mockImplementation(() => Promise.resolve())
   vi.mocked(stopUsul).mockClear()
   vi.mocked(acquireWakeLock).mockClear()
@@ -30,6 +31,13 @@ beforeEach(async () => {
   location.hash = ''
 })
 afterEach(() => cleanup())
+
+/** Ders kapısı ayarları okuyunca usul listesi görünür. */
+async function ilkRender() {
+  const r = render(<UsulSection />)
+  await screen.findByRole('heading', { name: /Usuller/ })
+  return r
+}
 
 async function tapPlay() {
   const btn = screen.getByRole('button', { name: '▶ Çal' }) as HTMLButtonElement
@@ -39,15 +47,15 @@ async function tapPlay() {
 const pick = (name: RegExp) => fireEvent.click(screen.getByRole('button', { name }))
 
 describe('UsulSection', () => {
-  it('"Usuller" başlığı ve altı usulün listesi', () => {
-    render(<UsulSection />)
+  it('"Usuller" başlığı ve altı usulün listesi', async () => {
+    await ilkRender()
     expect(screen.getByRole('heading', { name: /Usuller/ })).toBeTruthy()
     for (const u of USULLER) expect(screen.getByRole('button', { name: new RegExp(`^${u.name}`) })).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Ana ekrana dön' }).getAttribute('href')).toBe('#/')
   })
 
-  it('usul düğmelerinde önerilen seviye etiketi; Dolap etiketsiz', () => {
-    render(<UsulSection />)
+  it('usul düğmelerinde önerilen seviye etiketi; Dolap etiketsiz', async () => {
+    await ilkRender()
     const etiket = (ad: string) =>
       screen.getByRole('button', { name: new RegExp(`^${ad}`) }).querySelector('.seviye-etiket')?.textContent
     expect(etiket('Nim Sofyan')).toBe('Seviye 2')
@@ -58,8 +66,8 @@ describe('UsulSection', () => {
     expect(etiket('Dolap')).toBeUndefined()
   })
 
-  it('vuruş şeması: kutular süreyle orantılı genişlikte, etiketli, düm ve tek farklı renkte', () => {
-    render(<UsulSection />)
+  it('vuruş şeması: kutular süreyle orantılı genişlikte, etiketli, düm ve tek farklı renkte', async () => {
+    await ilkRender()
     pick(/Düyek/)
     const boxes = [...document.querySelectorAll<HTMLElement>('[data-testid="vurus"]')]
     expect(boxes.map((b) => b.textContent)).toEqual(['düm', 'tek', 'tek', 'düm', 'tek'])
@@ -70,8 +78,8 @@ describe('UsulSection', () => {
     expect(classes[0]).not.toBe(classes[1])
   })
 
-  it('açılışta Nim Sofyan seçili ve "Seviye 2" etiketi var', () => {
-    render(<UsulSection />)
+  it('açılışta Nim Sofyan seçili ve "Seviye 2" etiketi var', async () => {
+    await ilkRender()
     const nim = screen.getByRole('button', { name: /^Nim Sofyan/ })
     expect(nim.getAttribute('aria-pressed')).toBe('true')
     expect(nim.querySelector('.seviye-etiket')?.textContent).toBe('Seviye 2')
@@ -81,8 +89,8 @@ describe('UsulSection', () => {
     expect(screen.getByText('Hız: ♩ = 60')).toBeTruthy()
   })
 
-  it('Sofyan: düm, te, ke etiketleri; te ve ke tek ile aynı renk sınıfında', () => {
-    render(<UsulSection />)
+  it('Sofyan: düm, te, ke etiketleri; te ve ke tek ile aynı renk sınıfında', async () => {
+    await ilkRender()
     pick(/^Sofyan/)
     const boxes = [...document.querySelectorAll<HTMLElement>('[data-testid="vurus"]')]
     expect(boxes.map((b) => b.textContent)).toEqual(['düm', 'te', 'ke'])
@@ -91,8 +99,8 @@ describe('UsulSection', () => {
     expect(boxes[0]!.className).not.toBe(boxes[1]!.className)
   })
 
-  it('Dolap: vuruş şeması gösterilmez, açıklama metni görünür', () => {
-    render(<UsulSection />)
+  it('Dolap: vuruş şeması gösterilmez, açıklama metni görünür', async () => {
+    await ilkRender()
     expect(screen.queryByText(DOLAP_NOTE)).toBeNull()
     pick(/Dolap/)
     expect(document.querySelectorAll('[data-testid="vurus"]')).toHaveLength(0)
@@ -102,8 +110,8 @@ describe('UsulSection', () => {
     expect(document.querySelectorAll('[data-testid="vurus"]')).toHaveLength(3)
   })
 
-  it('hız kaydırıcısı 40–120, varsayılan 60; etiket "Hız: ♩ = {bpm}"', () => {
-    render(<UsulSection />)
+  it('hız kaydırıcısı 40–120, varsayılan 60; etiket "Hız: ♩ = {bpm}"', async () => {
+    await ilkRender()
     const slider = screen.getByRole('slider') as HTMLInputElement
     expect([slider.min, slider.max, slider.value]).toEqual(['40', '120', '60'])
     expect(screen.getByText('Hız: ♩ = 60')).toBeTruthy()
@@ -111,8 +119,8 @@ describe('UsulSection', () => {
     expect(screen.getByText('Hız: ♩ = 90')).toBeTruthy()
   })
 
-  it('mertebesi 8 olan usulde birim ♪, 4 olanda ♩ gösterilir', () => {
-    render(<UsulSection />)
+  it('mertebesi 8 olan usulde birim ♪, 4 olanda ♩ gösterilir', async () => {
+    await ilkRender()
     pick(/^Sofyan/)
     expect(screen.getByText('Hız: ♩ = 60')).toBeTruthy()
     pick(/Düyek/)
@@ -124,7 +132,7 @@ describe('UsulSection', () => {
   })
 
   it('Çal: sesi açıp seçili usulü varsayılan hızla başlatır; düğme "■ Durdur" olur', async () => {
-    render(<UsulSection />)
+    await ilkRender()
     await tapPlay()
     await waitFor(() => expect(startUsul).toHaveBeenCalledTimes(1))
     expect(startUsul).toHaveBeenCalledWith(usul('nim-sofyan'), 60)
@@ -132,7 +140,7 @@ describe('UsulSection', () => {
   })
 
   it('Durdur: stopUsul çağrılır ve düğme "▶ Çal" olur', async () => {
-    render(<UsulSection />)
+    await ilkRender()
     await tapPlay()
     fireEvent.click(await screen.findByRole('button', { name: '■ Durdur' }))
     expect(stopUsul).toHaveBeenCalled()
@@ -140,14 +148,14 @@ describe('UsulSection', () => {
   })
 
   it('Dolap seçiliyken Çal metronomu başlatır (startUsul Dolap ile)', async () => {
-    render(<UsulSection />)
+    await ilkRender()
     pick(/Dolap/)
     await tapPlay()
     await waitFor(() => expect(startUsul).toHaveBeenCalledWith(usul('dolap'), 60))
   })
 
   it('çalarken usul değişirse yeni usulle yeniden başlar', async () => {
-    render(<UsulSection />)
+    await ilkRender()
     await tapPlay()
     await waitFor(() => expect(startUsul).toHaveBeenCalledTimes(1))
     pick(/Düyek/)
@@ -157,7 +165,7 @@ describe('UsulSection', () => {
   })
 
   it('çalarken hız değişirse (bırakınca) yeni hızla yeniden başlar; çalmıyorsa başlamaz', async () => {
-    render(<UsulSection />)
+    await ilkRender()
     const slider = screen.getByRole('slider') as HTMLInputElement
     fireEvent.input(slider, { target: { value: '80' } })
     fireEvent.change(slider)
@@ -170,14 +178,14 @@ describe('UsulSection', () => {
     expect(startUsul).toHaveBeenCalledTimes(2)
   })
 
-  it('çalmıyorken usul seçmek çalmayı başlatmaz', () => {
-    render(<UsulSection />)
+  it('çalmıyorken usul seçmek çalmayı başlatmaz', async () => {
+    await ilkRender()
     pick(/Düyek/)
     expect(startUsul).not.toHaveBeenCalled()
   })
 
   it('sayfadan çıkınca (unmount) stopUsul çağrılır', async () => {
-    const { unmount } = render(<UsulSection />)
+    const { unmount } = await ilkRender()
     await waitFor(() => expect((screen.getByRole('button', { name: '▶ Çal' }) as HTMLButtonElement).disabled).toBe(false))
     vi.mocked(stopUsul).mockClear() // önceki testin geç unmount temizliği sayıma karışmasın
     unmount()
@@ -185,7 +193,7 @@ describe('UsulSection', () => {
   })
 
   it('çalarken ekran kilidi istenir; Durdur, hata ve unmount bırakır', async () => {
-    const { unmount } = render(<UsulSection />)
+    const { unmount } = await ilkRender()
     await tapPlay()
     await screen.findByRole('button', { name: '■ Durdur' })
     expect(acquireWakeLock).toHaveBeenCalled()
@@ -201,14 +209,14 @@ describe('UsulSection', () => {
 
   it('çalma başarısızsa ekran kilidi bırakılır; ses kapalıyken istenmez', async () => {
     vi.mocked(startUsul).mockImplementation(() => Promise.reject(new Error('strudel yok')))
-    render(<UsulSection />)
+    await ilkRender()
     await tapPlay()
     await screen.findByText(SOUND_WARNING)
     expect(releaseWakeLock).toHaveBeenCalled()
     cleanup()
     vi.mocked(acquireWakeLock).mockClear()
     await saveSettings({ soundOn: false })
-    render(<UsulSection />)
+    await ilkRender()
     await tapPlay()
     await screen.findByText(SOUND_OFF)
     expect(acquireWakeLock).not.toHaveBeenCalled()
@@ -216,7 +224,7 @@ describe('UsulSection', () => {
 
   it('ses kapalıyken SOUND_OFF gösterir, çalmaz', async () => {
     await saveSettings({ soundOn: false })
-    render(<UsulSection />)
+    await ilkRender()
     await tapPlay()
     expect(await screen.findByText(SOUND_OFF)).toBeTruthy()
     expect(startUsul).not.toHaveBeenCalled()
@@ -225,10 +233,60 @@ describe('UsulSection', () => {
 
   it('çalma başarısız olursa SOUND_WARNING gösterir ve düğme "▶ Çal" kalır', async () => {
     vi.mocked(startUsul).mockImplementation(() => Promise.reject(new Error('strudel yok')))
-    render(<UsulSection />)
+    await ilkRender()
     await tapPlay()
     expect(await screen.findByText(SOUND_WARNING)).toBeTruthy()
     expect(screen.getByRole('button', { name: '▶ Çal' })).toBeTruthy()
+  })
+})
+
+describe('UsulSection: ders kapısı ve bağlantılar', () => {
+  it("usul:giris okunmadan önce ders görünür; Anladım'dan sonra usul listesi", async () => {
+    await resetDbForTests() // giriş dersi okunmamış
+    render(<UsulSection />)
+    expect((await screen.findByRole('heading', { level: 1 })).textContent).toBe('📖 Usul nedir?')
+    expect(screen.queryByRole('heading', { name: /Usuller/ })).toBeNull()
+    expect(screen.getByRole('link', { name: 'Ana ekrana dön' }).getAttribute('href')).toBe('#/')
+    fireEvent.click(screen.getByRole('button', { name: 'Anladım, alıştırmaya geç' }))
+    expect(await screen.findByRole('heading', { name: /Usuller/ })).toBeTruthy()
+    expect((await getSettings()).okunanDersler).toEqual(['usul:giris'])
+  })
+
+  it('giriş okunmuşsa liste doğrudan görünür', async () => {
+    await ilkRender()
+    expect(screen.queryByRole('button', { name: 'Anladım, alıştırmaya geç' })).toBeNull()
+  })
+
+  it('Nim Sofyan seçiliyken Ders ve Vurarak çalış bağlantıları var', async () => {
+    await ilkRender()
+    expect(screen.getByRole('link', { name: '📖 Ders' }).getAttribute('href')).toBe('#/ders/usul%3Anim-sofyan')
+    expect(screen.getByRole('link', { name: '👏 Vurarak çalış' }).getAttribute('href')).toBe('#/usul/vur/nim-sofyan')
+  })
+
+  it.each([
+    ['Semâî', 'semai'],
+    ['Sofyan', 'sofyan'],
+  ])('%s seçilince bağlantılar o usule gider', async (ad, id) => {
+    await ilkRender()
+    pick(new RegExp(`^${ad}`))
+    expect(screen.getByRole('link', { name: '📖 Ders' }).getAttribute('href')).toBe(`#/ders/usul%3A${id}`)
+    expect(screen.getByRole('link', { name: '👏 Vurarak çalış' }).getAttribute('href')).toBe(`#/usul/vur/${id}`)
+  })
+
+  it('dersi olmayan ama vuruşu olan usulde (Düyek) yalnız Vurarak çalış var', async () => {
+    await ilkRender()
+    pick(/Düyek/)
+    expect(screen.queryByRole('link', { name: '📖 Ders' })).toBeNull()
+    expect(screen.getByRole('link', { name: '👏 Vurarak çalış' }).getAttribute('href')).toBe('#/usul/vur/duyek')
+  })
+
+  it('Dolap seçiliyken Vurarak çalış yok (ders de yok)', async () => {
+    await ilkRender()
+    pick(/Dolap/)
+    expect(screen.queryByRole('link', { name: '👏 Vurarak çalış' })).toBeNull()
+    expect(screen.queryByRole('link', { name: '📖 Ders' })).toBeNull()
+    pick(/^Sofyan/)
+    expect(screen.getByRole('link', { name: '👏 Vurarak çalış' })).toBeTruthy()
   })
 })
 
@@ -287,7 +345,7 @@ describe('UsulSection: vurgulu şema', () => {
   }
 
   it('çalarken o anki vuruş kutusu vurgulanır ve döngüyle birlikte ilerler (Sofyan, ♩ = 60)', async () => {
-    render(<UsulSection />)
+    await ilkRender()
     pick(/^Sofyan/)
     expect(activeIndexes()).toEqual([])
     await tapPlay()
@@ -302,7 +360,7 @@ describe('UsulSection: vurgulu şema', () => {
   })
 
   it('Aksak (9/8): 2 zamanlık vuruşlar iki zaman boyunca vurgulu kalır', async () => {
-    render(<UsulSection />)
+    await ilkRender()
     pick(/Aksak/)
     await tapPlay()
     await screen.findByRole('button', { name: '■ Durdur' })
@@ -312,7 +370,7 @@ describe('UsulSection: vurgulu şema', () => {
   })
 
   it('Durdur vurguyu kaldırır ve kare döngüsünü durdurur', async () => {
-    render(<UsulSection />)
+    await ilkRender()
     pick(/^Sofyan/)
     await tapPlay()
     await screen.findByRole('button', { name: '■ Durdur' })
@@ -326,7 +384,7 @@ describe('UsulSection: vurgulu şema', () => {
   })
 
   it('hız değişince saat yeniden başlar (♩ = 120)', async () => {
-    render(<UsulSection />)
+    await ilkRender()
     pick(/^Sofyan/)
     await tapPlay()
     await screen.findByRole('button', { name: '■ Durdur' })
@@ -342,7 +400,7 @@ describe('UsulSection: vurgulu şema', () => {
   })
 
   it('usul değişince saat yeniden başlar ve yeni usulün kutuları vurgulanır', async () => {
-    render(<UsulSection />)
+    await ilkRender()
     pick(/^Sofyan/)
     await tapPlay()
     await screen.findByRole('button', { name: '■ Durdur' })
@@ -357,7 +415,7 @@ describe('UsulSection: vurgulu şema', () => {
   })
 
   it('çalma başarısız olursa vurgu kalkar', async () => {
-    render(<UsulSection />)
+    await ilkRender()
     await tapPlay()
     await screen.findByRole('button', { name: '■ Durdur' })
     await expectActiveAt(1000 + LAT + 500, [0])
@@ -372,7 +430,7 @@ describe('UsulSection: vurgulu şema', () => {
 
   it('ses kapalıyken vurgu başlamaz', async () => {
     await saveSettings({ soundOn: false })
-    render(<UsulSection />)
+    await ilkRender()
     await tapPlay()
     await screen.findByText(SOUND_OFF)
     flush(1000 + LAT + 500)
@@ -382,7 +440,7 @@ describe('UsulSection: vurgulu şema', () => {
   })
 
   it('sayfadan çıkınca (unmount) kare döngüsü durur', async () => {
-    const { unmount } = render(<UsulSection />)
+    const { unmount } = await ilkRender()
     await tapPlay()
     await screen.findByRole('button', { name: '■ Durdur' })
     await expectActiveAt(1000 + LAT + 500, [0])

@@ -214,12 +214,24 @@ export function buildUsulPatternCode(u: Usul, bpm: number, ses: UsulSesi = getUs
   return `${buildUsulBody(u, bpm, ses)}.cpm(${bpm / u.zaman})`
 }
 
-/** Usulün tek bir ölçüsü, tek seferlik (Ayarlar → Usul sesi → "▶ Dene"); `playCode` ile çalınır. */
-export function buildUsulOnceCode(u: Usul, bpm: number, ses: UsulSesi): { code: string; durationMs: number } {
+/** İlk `olcu` döngü çalar, sonrası (pratikte sonsuza dek) susturulur; 1 ölçüde `ONE_SHOT` ile aynıdır. */
+const tekSeferlik = (olcu: number) => (olcu === 1 ? ONE_SHOT : `.mask("<${'1 '.repeat(olcu)}0@1000000>")`)
+
+/**
+ * Usulün `olcu` ölçüsü (varsayılan 1), tek seferlik; `playCode` ile çalınır (Ayarlar → Usul sesi → "▶ Dene" bir ölçü,
+ * usul dersleri iki ölçü çalar). Bir döngü = bir ölçü olduğundan iki ölçü, maskenin ilk iki döngüyü açmasıdır.
+ */
+export function buildUsulOnceCode(
+  u: Usul,
+  bpm: number,
+  ses: UsulSesi,
+  olcu = 1,
+): { code: string; durationMs: number } {
   if (!(bpm > 0) || !(u.zaman > 0)) throw new RangeError('Geçerli tempo yok')
+  if (!Number.isInteger(olcu) || olcu < 1) throw new RangeError('Ölçü sayısı 1 ya da daha çok olmalı')
   return {
-    code: `${buildUsulBody(u, bpm, ses)}${ONE_SHOT}.cpm(${bpm / u.zaman})`,
-    durationMs: (u.zaman * 60000) / bpm,
+    code: `${buildUsulBody(u, bpm, ses)}${tekSeferlik(olcu)}.cpm(${bpm / u.zaman})`,
+    durationMs: (olcu * u.zaman * 60000) / bpm,
   }
 }
 

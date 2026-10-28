@@ -11,10 +11,12 @@ export type DersBlok =
   | { tur: 'porte'; olaylar: MusicEvent[]; aciklama?: string; bpm?: number; ropriz?: boolean; olcuCizgileri?: number[] }
   | { tur: 'parmak'; perdeId: PerdeId; aciklama?: string } // FingeringDiagram + ▶ Dinle (yarımlık)
   | { tur: 'gorsel'; ad: GorselAdi; aciklama?: string }
+  // Usulün düm-tek şeması + bir ölçüsünü ♩ = 60'ta iki kez çalan ▶ Dinle (vuruş kalıbı olmayan usulde şema ve Dinle yok).
+  | { tur: 'usul'; usulId: string; aciklama?: string }
   | { tur: 'dene'; adimlar: string[] } // "Kendin dene" kutusu
 
 export interface Ders {
-  /** 's0:...', 'nota:<topicId>', 'perde:<PerdeId>', 'etut:<ad>' */
+  /** 's0:...', 'nota:<topicId>', 'perde:<PerdeId>', 'etut:<ad>', 'usul:giris', 'usul:<usulId>' */
   id: string
   seviye: number
   baslik: string

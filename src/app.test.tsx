@@ -121,10 +121,12 @@ describe('App', () => {
     expect(await screen.findByText('Oturum sonu')).toBeTruthy()
   })
 
-  it('#/usul rotası Usul bölümünü gösterir', () => {
+  it('#/usul rotası yeni kullanıcıda önce "Usul nedir?" dersini, "Anladım"dan sonra Usul bölümünü gösterir', async () => {
     location.hash = '#/usul'
     render(<App />)
-    expect(screen.getByRole('heading', { name: /Usuller/ })).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: /Usul nedir\?/ })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Anladım, alıştırmaya geç' }))
+    expect(await screen.findByRole('heading', { name: /Usuller/ })).toBeTruthy()
     expect(screen.getByRole('button', { name: '▶ Çal' })).toBeTruthy()
   })
 
