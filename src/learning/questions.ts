@@ -27,7 +27,7 @@ export interface Question {
 
 const STEP_LIST: Step[] = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
 const DURATION_HINT = 'Birlik 4, ikilik 2, dörtlük 1, sekizlik ½ vuruş; nokta yarısı kadar ekler'
-const DURATION_4_HINT = 'Onaltılık ¼ vuruş; üçlemede üç nota tek vuruşa sığar (üstündeki 3 işaretine bak).'
+const DURATION_4_HINT = 'Onaltılık ¼ vuruş (iki bayrak); üçleme: üç nota tek vuruşa sığar, üstünde 3 yazar.'
 
 function noteHint(index: number): string {
   if (index < 0) return "Portenin altındaki ilk ek çizgi Do'dur"
@@ -39,6 +39,21 @@ const DURATION_TOPICS = NOTA_TOPICS.filter((t) => t.kind === 'duration')
 
 function namesOf(topics: typeof DURATION_TOPICS): string[] {
   return [...new Set(topics.flatMap((t) => t.cards.map((c) => durationName(cardToEvent(c)))))]
+}
+
+/**
+ * sure-4 çeldiricileri konuya özgüdür: önce konunun öbür adları, sonra en yakın yanlış cevap
+ * (nota için 'Sekizlik', sus için 'Sekizlik sus'), en sonda kalan süre adları.
+ */
+function sure4Options(topic: (typeof DURATION_TOPICS)[number], answer: string, isRest: boolean, rng: () => number): string[] {
+  const own = namesOf([topic]).filter((n) => n !== answer)
+  const near = isRest ? 'Sekizlik sus' : 'Sekizlik'
+  const rest = namesOf(DURATION_TOPICS).filter((n) => n !== answer && !own.includes(n) && n !== near)
+  const distractors: string[] = []
+  for (const tier of [shuffle(own, rng), near === answer ? [] : [near], shuffle(rest, rng)]) {
+    for (const n of tier) if (distractors.length < 3 && !distractors.includes(n)) distractors.push(n)
+  }
+  return shuffle([answer, ...distractors], rng)
 }
 
 /** Bu konunun ve önceki süre konularının adları; yetmezse tüm süre adlarından tamamlanır. */
@@ -329,7 +344,7 @@ export function makeQuestion(cardId: string, rng: () => number): Question {
     topicId: topic.id,
     prompt: 'Bu hangi süre?',
     events,
-    options: durationOptions(topic.id, answer, rng),
+    options: topic.id === 'sure-4' ? sure4Options(topic, answer, event.kind === 'rest', rng) : durationOptions(topic.id, answer, rng),
     answer,
     hint: topic.id === 'sure-4' ? DURATION_4_HINT : DURATION_HINT,
   }

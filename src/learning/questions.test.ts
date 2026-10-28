@@ -92,6 +92,26 @@ describe('makeQuestion', () => {
       expect(r.answer).toBe('Onaltılık sus')
       expect(r.events).toEqual([{ kind: 'rest', dur: 'sixteenth' }])
     })
+    it('çeldiriciler konuya özgüdür: her tohumda en yakın yanlış cevaplar seçeneklerde', () => {
+      const beklenen: Record<string, string[]> = {
+        'dur:eighth.uclu': ['Onaltılık', 'Sekizlik'],
+        'dur:sixteenth': ['Sekizlik üçleme', 'Sekizlik'],
+        'rest:sixteenth': ['Sekizlik sus'],
+      }
+      for (const [card, adlar] of Object.entries(beklenen)) {
+        for (let s = 1; s <= 50; s++) {
+          const q = makeQuestion(card, seededRng(s))
+          expect(new Set(q.options).size).toBe(4)
+          for (const ad of adlar) expect(q.options, `${card} tohum ${s}`).toContain(ad)
+        }
+      }
+    })
+    it('ipucu üçleme ve onaltılık kartlarının ikisini de kapsar', () => {
+      const h = makeQuestion('dur:sixteenth', seededRng(1)).hint
+      expect(h).toMatch(/Onaltılık/)
+      expect(h).toMatch(/üçleme/)
+      expect(makeQuestion('dur:eighth.uclu', seededRng(1)).hint).toBe(h)
+    })
     it('önceki süre konularında üçleme/onaltılık adları sızmaz', () => {
       for (const card of ['dur:eighth', 'rest:eighth', 'dur:half.dotted']) {
         for (let s = 1; s <= 50; s++) {
