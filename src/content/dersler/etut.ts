@@ -2,11 +2,14 @@ import type { MusicEvent } from '../../music/notation'
 import { ETUTLER } from '../etutler'
 import { NEY_PERDELER } from '../ney-perdeler'
 import type { PerdeId } from '../ney-perdeler'
+import { n } from './nota'
 import type { Ders } from './types'
 
 // Seviye 1 etüt dersleri: etütlerin nasıl çalışıldığı ve rast beşlisi. Bilgiler yalnızca araştırma notundan
 // (docs/superpowers/notes/2026-10-25-ney-mufredat-arastirma.md; S1, S2 9.3.1.3, S4 ders 3–4, S5 s.054–065) ve genel
 // nota bilgisinden gelir. Sayısal hedefler (tempo, hatasız çalma) "öneri" diye anılır.
+// Seviye 2: dil dersi (`dil:tu-bag`; S4 d15 bağ işaretinde "dil çarpması yok", ayrıntılı dil teknikleri Seviye 4'tür) ve eser dersi
+// (`eser:giris`; S1 ve §1 ortak kuralı: eser önce dinlenir, sonra notası okunur, en son neyle çalınır; S5 s.033; S4 "ezberle").
 
 const S1 =
   'S1 MEB TYMM, Bireysel Çalgı Eğitimi Ney Modülü (1–8): https://tymm.meb.gov.tr/assets/pdf/muzik-bireysel-calgi-egitimi-ney.pdf'
@@ -148,5 +151,106 @@ export const ETUT_DERSLERI: Ders[] = [
     ],
     kaynaklar: [S2, s4(2), S5],
     alistirma: '/etut/rast-besli-1',
+  },
+]
+
+/** Dil dersindeki ezgi: Nevâ, Çârgâh, Segâh (dil-1 etüdünün ilk ölçüsü). `bagli`: ikişerli bağ (1.–2. ve 3.–4. nota). */
+function dilEzgisi(bagli: boolean): MusicEvent[] {
+  return ['D5', 'C5', 'B4b1', 'C5'].map((k, i) => ({ ...n(k), ...(bagli && i % 2 === 0 ? { bag: true } : {}) }) as MusicEvent)
+}
+
+/** Seviye 2: dil ve eser dersleri (`ETUT_DERSLERI` Seviye 1'dir). */
+export const DIL_ESER_DERSLERI: Ders[] = [
+  {
+    id: 'dil:tu-bag',
+    seviye: 2,
+    baslik: 'Dil: tu ve bağ',
+    bloklar: [
+      {
+        tur: 'metin',
+        metin: 'Neyde sesi dille başlatırsın. Hava akımını "tu" der gibi dilinin ucuyla açarsın. Her yeni nota böyle bir "tu" ile başlar; ses net ve ayrık duyulur.',
+      },
+      {
+        tur: 'porte',
+        olaylar: dilEzgisi(false),
+        aciklama: 'Ayrık: Nevâ, Çârgâh, Segâh, Çârgâh. Dört notanın her birine ayrı "tu" dersin.',
+        bpm: 60,
+      },
+      {
+        tur: 'metin',
+        metin: 'Bağ, iki ya da daha çok notanın üstüne çizilen eğri çizgidir. Bağ altındaki notalarda dil vurulmaz: yalnız ilk notayı "tu" ile başlatırsın, sonrakine geçerken sadece parmağını değiştirirsin. Hava akımı kesilmez, ses akar. Zeki Sözen\'in ders notlarında da bağ işareti için "dil çarpması yok" denir.',
+      },
+      {
+        tur: 'porte',
+        olaylar: dilEzgisi(true),
+        aciklama: 'Bağlı: aynı dört nota ikişerli bağlı. Nevâ ve Segâh\'a "tu" dersin; ikinci ve dördüncü notaya (Çârgâh) dil vurmadan geçersin.',
+        bpm: 60,
+      },
+      {
+        tur: 'metin',
+        metin: 'Bağ ile uzatma bağı farklıdır; farkını "Röpriz ve bağ" dersinde görmüştün. Bağ farklı perdeleri bağlar, uzatma bağı aynı perdeyi.',
+      },
+      {
+        tur: 'metin',
+        metin: 'Uygulamadaki ses ayrık ve bağlı çalışı aynı duyurur. Aradaki fark ney çalarken senin dilinde ve nefesindedir; farkı kendi çalışında yaparsın. Kendi sesini dinle: bağlı yerlerde ses kopmadan akmalı.',
+      },
+      {
+        tur: 'metin',
+        metin: 'Burada yalnız iki şeyi öğreniyorsun: "tu" ile başlatmak ve bağda dil vurmamak. Ayrıntılı dil teknikleri Seviye 4\'tedir.',
+      },
+      {
+        tur: 'dene',
+        adimlar: [
+          'Ayrık portedeki dört notayı çal; her notada "tu" de ve sesin başlayışını dinle.',
+          'Bağlı portedeki aynı notaları çal; bağ altındaki ikinci notaya dil vurma, yalnız parmağını değiştir.',
+          'Bağlı yerlerde sesin kesilmeden aktığını dinle.',
+          'Dil etüdünü aç ve ♩ = 60\'ta çal: önce ayrık, sonra bağlı.',
+        ],
+      },
+    ],
+    kaynaklar: [s4(15), S1],
+    alistirma: '/etut/dil-1',
+  },
+  {
+    id: 'eser:giris',
+    seviye: 2,
+    baslik: 'Bir eser nasıl çalışılır',
+    bloklar: [
+      {
+        tur: 'metin',
+        metin: 'Eser, öğrendiğin sesleri bir parçada birleştirir. Kaynaklarda eser çalışmanın ortak bir sırası vardır: önce dinlenir, sonra notası okunur, en son neyle çalınır.',
+      },
+      {
+        tur: 'liste',
+        maddeler: [
+          'Önce dinle: eseri baştan sona dinle. Ezginin gidişini kulağın tanısın.',
+          'Sonra oku: notayı önce usulü sayarak oku, sonra solfejle (nota adlarıyla) oku.',
+          'En sonda çal: eseri neyle çal, yavaştan başla.',
+        ],
+      },
+      {
+        tur: 'usul',
+        usulId: 'nim-sofyan',
+        aciklama: 'Usulle okurken ölçüyü böyle sayarsın: düm, tek. Nota, usulün üstüne oturur.',
+      },
+      {
+        tur: 'metin',
+        metin: 'Mehmet Yücel\'in bir kuralı var: yedi sese 2–3 ay çalışmadan eser çalınmaz. Bu yedi ses Nevâ, Nim Hicaz, Çârgâh, Segâh, Kürdî, Dügâh ve Rast\'tır. Önce sesleri ve etütleri çalış; eser bunların ardından gelir.',
+      },
+      {
+        tur: 'metin',
+        metin: 'Zeki Sözen de derslerinde çalışılan alıştırmaların ezberlenmesini ister. Eseri de ezberle.',
+      },
+      {
+        tur: 'dene',
+        adimlar: [
+          'Parçalar bölümünden basit bir eser seç ve "🔊 Dinle" ile baştan sona dinle.',
+          'Notayı usulü sayarak oku, sonra aynı notayı solfejle oku.',
+          'Eseri neyle yavaş çal; hatasız çalınca hızlan.',
+          'Parçayı ezberle ve notaya bakmadan çalmayı dene.',
+        ],
+      },
+    ],
+    kaynaklar: [S1, S2, S5, s4(3)],
   },
 ]

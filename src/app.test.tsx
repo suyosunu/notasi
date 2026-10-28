@@ -164,10 +164,11 @@ describe('App', () => {
     expect(screen.getByRole('link', { name: /Hak Teâlâ/ }).getAttribute('href')).toBe('#/parcalar/hak-teala')
   })
 
-  it('#/parcalar/<id> rotası parça sayfasını açar', () => {
+  it('#/parcalar/<id> rotası parça sayfasını açar (eser:giris okunduysa)', async () => {
+    await saveSettings({ okunanDersler: ['eser:giris'] })
     location.hash = '#/parcalar/daglar-ile-taslar-ile'
     render(<App />)
-    expect(screen.getByRole('heading', { name: /Dağlar ile Taşlar ile/ })).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: /Dağlar ile Taşlar ile/ })).toBeTruthy()
     expect(screen.getByRole('button', { name: '🔊 Dinle' })).toBeTruthy()
   })
 

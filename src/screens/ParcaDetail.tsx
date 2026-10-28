@@ -5,6 +5,7 @@ import { acquireWakeLock, releaseWakeLock } from '../audio/wakeLock'
 import { PARCALAR } from '../content/parcalar'
 import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
 import { USULLER } from '../content/usuller'
+import { DersKapisi } from '../ders/DersKapisi'
 import { beamBeatsFor } from '../notation/beams'
 import { ScoreView } from '../notation/ScoreView'
 import { getSettings } from '../store/db'
@@ -98,85 +99,87 @@ export function ParcaDetail({ parcaId }: { parcaId: string }) {
   }
 
   return (
-    <main class="screen">
-      <h1>🎧 {piece.title}</h1>
-      <dl class="makam-info">
-        <div>
-          <dt>Makam</dt>
-          <dd>
-            <a href={`#/makam/${piece.makam}`}>{makamAdi(piece)}</a>
-          </dd>
+    <DersKapisi dersId="eser:giris" geri={{ href: '#/parcalar', label: 'Parçalara dön' }}>
+      <main class="screen">
+        <h1>🎧 {piece.title}</h1>
+        <dl class="makam-info">
+          <div>
+            <dt>Makam</dt>
+            <dd>
+              <a href={`#/makam/${piece.makam}`}>{makamAdi(piece)}</a>
+            </dd>
+          </div>
+          <div>
+            <dt>Usul</dt>
+            <dd>
+              <a href="#/usul">{usulAdi(piece)}</a>
+              {usul && <small class="muted">{` ${usul.zaman}/${usul.mertebe}`}</small>}
+            </dd>
+          </div>
+          <div>
+            <dt>Besteci</dt>
+            <dd>{piece.composer}</dd>
+          </div>
+        </dl>
+
+        <ScoreView olcu={piece.olcu} soz={piece.soz} beamBeats={beamBeatsFor(usul)} />
+
+        <label class="usul-speed">
+          <span>{`Hız: ♩ = ${bpm}`}</span>
+          <input
+            type="range"
+            min={BPM_MIN}
+            max={BPM_MAX}
+            step={1}
+            value={bpm}
+            onInput={(e) => setBpm(Number(e.currentTarget.value))}
+            // Bırakınca: çalıyorsa durur, yeni hızla yeniden Dinle'ye basılır.
+            onChange={(e) => {
+              setBpm(Number(e.currentTarget.value))
+              if (playing) stop()
+            }}
+          />
+        </label>
+
+        <label class="toggle">
+          <input
+            type="checkbox"
+            checked={withUsul}
+            onChange={(e) => {
+              setWithUsul(e.currentTarget.checked)
+              if (playing) stop()
+            }}
+          />
+          {' 🥁 Usul eşliği'}
+        </label>
+        {withUsul && usul?.vurus === null && <p class="muted">{METRONOME_NOTE}</p>}
+
+        <div class="tools">
+          {playing ? (
+            <button type="button" class="primary" onClick={stop}>
+              ■ Durdur
+            </button>
+          ) : (
+            <button type="button" class="primary" disabled={!settings} onClick={() => void listen()}>
+              🔊 Dinle
+            </button>
+          )}
         </div>
-        <div>
-          <dt>Usul</dt>
-          <dd>
-            <a href="#/usul">{usulAdi(piece)}</a>
-            {usul && <small class="muted">{` ${usul.zaman}/${usul.mertebe}`}</small>}
-          </dd>
-        </div>
-        <div>
-          <dt>Besteci</dt>
-          <dd>{piece.composer}</dd>
-        </div>
-      </dl>
-
-      <ScoreView olcu={piece.olcu} soz={piece.soz} beamBeats={beamBeatsFor(usul)} />
-
-      <label class="usul-speed">
-        <span>{`Hız: ♩ = ${bpm}`}</span>
-        <input
-          type="range"
-          min={BPM_MIN}
-          max={BPM_MAX}
-          step={1}
-          value={bpm}
-          onInput={(e) => setBpm(Number(e.currentTarget.value))}
-          // Bırakınca: çalıyorsa durur, yeni hızla yeniden Dinle'ye basılır.
-          onChange={(e) => {
-            setBpm(Number(e.currentTarget.value))
-            if (playing) stop()
-          }}
-        />
-      </label>
-
-      <label class="toggle">
-        <input
-          type="checkbox"
-          checked={withUsul}
-          onChange={(e) => {
-            setWithUsul(e.currentTarget.checked)
-            if (playing) stop()
-          }}
-        />
-        {' 🥁 Usul eşliği'}
-      </label>
-      {withUsul && usul?.vurus === null && <p class="muted">{METRONOME_NOTE}</p>}
-
-      <div class="tools">
-        {playing ? (
-          <button type="button" class="primary" onClick={stop}>
-            ■ Durdur
-          </button>
-        ) : (
-          <button type="button" class="primary" disabled={!settings} onClick={() => void listen()}>
-            🔊 Dinle
-          </button>
+        {warn && (
+          <p class="notice" role="status">
+            {warn}
+          </p>
         )}
-      </div>
-      {warn && (
-        <p class="notice" role="status">
-          {warn}
-        </p>
-      )}
 
-      <p class="muted">
-        Nota: <a href={SYMBTR_URL}>SymbTr</a> (Karaosmanoğlu 2012), CC BY-NC-SA 4.0.
-      </p>
-      <div class="links">
-        <a class="back" href="#/parcalar">
-          Parçalar bölümüne dön
-        </a>
-      </div>
-    </main>
+        <p class="muted">
+          Nota: <a href={SYMBTR_URL}>SymbTr</a> (Karaosmanoğlu 2012), CC BY-NC-SA 4.0.
+        </p>
+        <div class="links">
+          <a class="back" href="#/parcalar">
+            Parçalar bölümüne dön
+          </a>
+        </div>
+      </main>
+    </DersKapisi>
   )
 }

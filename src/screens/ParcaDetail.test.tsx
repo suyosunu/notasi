@@ -7,7 +7,7 @@ import { acquireWakeLock, releaseWakeLock } from '../audio/wakeLock'
 import { PARCALAR } from '../content/parcalar'
 import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
 import { DEFAULT_TUNING } from '../music/ahenk'
-import { resetDbForTests, saveSettings } from '../store/db'
+import { getSettings, isaretEkle, resetDbForTests, saveSettings } from '../store/db'
 import { ParcaDetail } from './ParcaDetail'
 
 vi.mock('../audio/player', () => ({
@@ -28,6 +28,7 @@ let finishPlay: () => void = () => {}
 
 beforeEach(async () => {
   await resetDbForTests()
+  await isaretEkle('okunanDersler', 'eser:giris') // ders kapısı açık; kapı testleri kaydı kendileri siler
   vi.mocked(unlockAudio).mockReset().mockImplementation(() => Promise.resolve())
   vi.mocked(stopAudio).mockReset()
   vi.mocked(acquireWakeLock).mockClear()
@@ -37,6 +38,13 @@ beforeEach(async () => {
     .mockImplementation(() => new Promise<void>((r) => (finishPlay = r)))
 })
 afterEach(() => cleanup())
+
+/** Parçayı açar; ders kapısı (eser:giris) okunmuş sayıldığından ayarlar yüklenince parça başlığı görünür. */
+async function renderParca(id: string) {
+  const r = render(<ParcaDetail parcaId={id} />)
+  await screen.findByRole('heading', { level: 1 })
+  return r
+}
 
 const byId = (id: string) => PARCALAR.find((p) => p.id === id)!
 
@@ -49,8 +57,30 @@ const usulBox = () => screen.getByRole('checkbox', { name: '🥁 Usul eşliği' 
 const slider = () => screen.getByRole('slider') as HTMLInputElement
 
 describe('ParcaDetail', () => {
-  it('başlık, makam (bağlantı), usul (bağlantı), besteci ve satırlara bölünmüş nota', () => {
+  it('eser:giris okunmadan önce ders; okunduktan sonra parça', async () => {
+    await resetDbForTests()
     render(<ParcaDetail parcaId="hak-teala" />)
+    expect(await screen.findByRole('heading', { name: /Bir eser nasıl çalışılır/ })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: '🔊 Dinle' })).toBeNull()
+    expect(screen.queryByRole('slider')).toBeNull()
+    expect(screen.getByRole('link', { name: 'Parçalara dön' }).getAttribute('href')).toBe('#/parcalar')
+    fireEvent.click(screen.getByRole('button', { name: 'Anladım, alıştırmaya geç' }))
+    expect(await screen.findByRole('heading', { name: /Hak Teâlâ/ })).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: /Bir eser nasıl çalışılır/ })).toBeNull()
+    expect((await getSettings()).okunanDersler).toContain('eser:giris')
+  })
+
+  it('ders okunmuşsa parça doğrudan açılır; bilinmeyen parçada ders gösterilmez', async () => {
+    render(<ParcaDetail parcaId="hak-teala" />)
+    expect(await screen.findByRole('heading', { name: /Hak Teâlâ/ })).toBeTruthy()
+    cleanup()
+    await resetDbForTests()
+    render(<ParcaDetail parcaId="yok" />)
+    expect(screen.getByText('Parça bulunamadı.')).toBeTruthy()
+  })
+
+  it('başlık, makam (bağlantı), usul (bağlantı), besteci ve satırlara bölünmüş nota', async () => {
+    await renderParca('hak-teala')
     expect(screen.getByRole('heading', { name: /Hak Teâlâ/ })).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Uşşak' }).getAttribute('href')).toBe('#/makam/ussak')
     expect(screen.getByRole('link', { name: 'Sofyan' }).getAttribute('href')).toBe('#/usul')
@@ -59,8 +89,8 @@ describe('ParcaDetail', () => {
     expect(document.querySelectorAll('text[data-syllable]').length).toBeGreaterThan(0)
   })
 
-  it('kiriş vuruş birimi usulden gelir: Dolap (12/8) üçlü, Sofyan (4/4) ikili gruplar', () => {
-    render(<ParcaDetail parcaId="benim-adim-dertli-dolap" />)
+  it('kiriş vuruş birimi usulden gelir: Dolap (12/8) üçlü, Sofyan (4/4) ikili gruplar', async () => {
+    await renderParca('benim-adim-dertli-dolap')
     // Her ölçü "e e e q e q e. s q": 12/8'de ilk üç sekizlik ve (yedek geçişle) e. s birer grup olur;
     // e. s grubundaki onaltılığın kısa ikinci kirişi vardır.
     const dolap = byId('benim-adim-dertli-dolap')
@@ -68,7 +98,7 @@ describe('ParcaDetail', () => {
     expect(document.querySelectorAll('[data-beam="2"]')).toHaveLength(dolap.olcu.length)
     expect(document.querySelectorAll('line[data-beamed]')).toHaveLength(5 * dolap.olcu.length)
     cleanup()
-    render(<ParcaDetail parcaId="hak-teala" />)
+    await renderParca('hak-teala')
     // Hak Teâlâ 1. ölçü "q q e e e e": iki ayrı ikili grup.
     const firstRow = document.querySelector('[data-testid="score-row"]')!
     const beamed = [...firstRow.querySelectorAll('line[data-beamed]')]
@@ -76,19 +106,19 @@ describe('ParcaDetail', () => {
     expect(firstRow.querySelectorAll('[data-beam="1"]').length).toBeGreaterThanOrEqual(2)
   })
 
-  it('Dolap parçasında usul bağlantısı Dolap adını gösterir; parmak şeması yoktur', () => {
-    render(<ParcaDetail parcaId="benim-adim-dertli-dolap" />)
+  it('Dolap parçasında usul bağlantısı Dolap adını gösterir; parmak şeması yoktur', async () => {
+    await renderParca('benim-adim-dertli-dolap')
     expect(screen.getByRole('link', { name: 'Dolap' }).getAttribute('href')).toBe('#/usul')
     expect(document.querySelectorAll('[data-testid="hole"]')).toHaveLength(0)
   })
 
-  it('Nota: SymbTr bağlantısı SymbTr deposunun sayfasına gider (ham TSV değil)', () => {
-    render(<ParcaDetail parcaId="hak-teala" />)
+  it('Nota: SymbTr bağlantısı SymbTr deposunun sayfasına gider (ham TSV değil)', async () => {
+    await renderParca('hak-teala')
     expect(screen.getByRole('link', { name: 'SymbTr' }).getAttribute('href')).toBe('https://github.com/MTG/SymbTr')
   })
 
-  it('hız kaydırıcısı 40–100, varsayılan 60; usul eşliği varsayılan açık', () => {
-    render(<ParcaDetail parcaId="hak-teala" />)
+  it('hız kaydırıcısı 40–100, varsayılan 60; usul eşliği varsayılan açık', async () => {
+    await renderParca('hak-teala')
     expect(slider().min).toBe('40')
     expect(slider().max).toBe('100')
     expect(slider().value).toBe('60')
@@ -99,7 +129,7 @@ describe('ParcaDetail', () => {
   it('Dinle: önce sesi açar; parçayı kullanıcının ahengiyle, doğru olay sayısıyla ve usul eşliğiyle çalar', async () => {
     const tuning = { ahenk: 'mansur' as const, octaveOffset: 0, tuningCents: 10 }
     await saveSettings({ tuning })
-    render(<ParcaDetail parcaId="hak-teala" />)
+    await renderParca('hak-teala')
     // düğme ayarlar (ahenk) yüklenince etkinleşir
     fireEvent.click(await listenButton())
     expect(unlockAudio).toHaveBeenCalledTimes(1)
@@ -119,7 +149,7 @@ describe('ParcaDetail', () => {
 
   it('parça seçili ney sesiyle çalar', async () => {
     vi.mocked(getNeySesi).mockReturnValue('nefesli')
-    render(<ParcaDetail parcaId="hak-teala" />)
+    await renderParca('hak-teala')
     fireEvent.click(await listenButton())
     await waitFor(() => expect(playCode).toHaveBeenCalledTimes(1))
     const [code] = vi.mocked(playCode).mock.calls[0]!
@@ -129,7 +159,7 @@ describe('ParcaDetail', () => {
   })
 
   it('usul eşliği kapalıyken yalnızca melodi; hız değişince yeni tempoyla çalar', async () => {
-    render(<ParcaDetail parcaId="hak-teala" />)
+    await renderParca('hak-teala')
     const btn = await listenButton()
     fireEvent.click(usulBox())
     fireEvent.input(slider(), { target: { value: '90' } })
@@ -143,7 +173,7 @@ describe('ParcaDetail', () => {
   })
 
   it('çalarken Durdur gösterir; Durdur sesi keser ve Dinle geri gelir', async () => {
-    render(<ParcaDetail parcaId="hak-teala" />)
+    await renderParca('hak-teala')
     fireEvent.click(await listenButton())
     const stop = await screen.findByRole('button', { name: '■ Durdur' })
     vi.mocked(stopAudio).mockClear()
@@ -153,7 +183,7 @@ describe('ParcaDetail', () => {
   })
 
   it('parça bitince Dinle geri gelir', async () => {
-    render(<ParcaDetail parcaId="hak-teala" />)
+    await renderParca('hak-teala')
     fireEvent.click(await listenButton())
     await screen.findByRole('button', { name: '■ Durdur' })
     finishPlay()
@@ -161,7 +191,7 @@ describe('ParcaDetail', () => {
   })
 
   it('çalarken hız ya da usul anahtarı değişirse çalma durur', async () => {
-    render(<ParcaDetail parcaId="hak-teala" />)
+    await renderParca('hak-teala')
     fireEvent.click(await listenButton())
     await screen.findByRole('button', { name: '■ Durdur' })
     vi.mocked(stopAudio).mockClear()
@@ -179,7 +209,7 @@ describe('ParcaDetail', () => {
 
   it('ses kapalıyken uyarır, çalmaz', async () => {
     await saveSettings({ soundOn: false })
-    render(<ParcaDetail parcaId="hak-teala" />)
+    await renderParca('hak-teala')
     fireEvent.click(await listenButton())
     expect(await screen.findByText(SOUND_OFF)).toBeTruthy()
     expect(unlockAudio).not.toHaveBeenCalled()
@@ -188,7 +218,7 @@ describe('ParcaDetail', () => {
 
   it('çalma başarısız olursa ses uyarısı gösterir ve Dinle geri gelir', async () => {
     vi.mocked(playCode).mockImplementation(() => Promise.reject(new Error('strudel yok')))
-    render(<ParcaDetail parcaId="hak-teala" />)
+    await renderParca('hak-teala')
     fireEvent.click(await listenButton())
     expect(await screen.findByText(SOUND_WARNING)).toBeTruthy()
     expect(screen.getByRole('button', { name: '🔊 Dinle' })).toBeTruthy()
@@ -196,14 +226,14 @@ describe('ParcaDetail', () => {
 
   it('sesi açma başarısız olursa da ses uyarısı gösterir', async () => {
     vi.mocked(unlockAudio).mockImplementation(() => Promise.reject(new Error('kilitli')))
-    render(<ParcaDetail parcaId="hak-teala" />)
+    await renderParca('hak-teala')
     fireEvent.click(await listenButton())
     expect(await screen.findByText(SOUND_WARNING)).toBeTruthy()
     expect(playCode).not.toHaveBeenCalled()
   })
 
   it('sayfadan çıkınca (unmount) ses durur', async () => {
-    const { unmount } = render(<ParcaDetail parcaId="hak-teala" />)
+    const { unmount } = await renderParca('hak-teala')
     fireEvent.click(await listenButton())
     await screen.findByRole('button', { name: '■ Durdur' })
     vi.mocked(stopAudio).mockClear()
@@ -213,7 +243,7 @@ describe('ParcaDetail', () => {
 
   it('çalarken ekran kilidi istenir; Durdur, bitiş, hata ve unmount bırakır', async () => {
     // Durdur
-    const first = render(<ParcaDetail parcaId="hak-teala" />)
+    const first = await renderParca('hak-teala')
     fireEvent.click(await listenButton())
     await screen.findByRole('button', { name: '■ Durdur' })
     expect(acquireWakeLock).toHaveBeenCalledTimes(1)
@@ -237,20 +267,20 @@ describe('ParcaDetail', () => {
 
   it('çalma hatasında ekran kilidi bırakılır; ses kapalıyken istenmez', async () => {
     vi.mocked(playCode).mockImplementation(() => Promise.reject(new Error('strudel yok')))
-    render(<ParcaDetail parcaId="hak-teala" />)
+    await renderParca('hak-teala')
     fireEvent.click(await listenButton())
     await screen.findByText(SOUND_WARNING)
     expect(releaseWakeLock).toHaveBeenCalled()
     cleanup()
     vi.mocked(acquireWakeLock).mockClear()
     await saveSettings({ soundOn: false })
-    render(<ParcaDetail parcaId="hak-teala" />)
+    await renderParca('hak-teala')
     fireEvent.click(await listenButton())
     await screen.findByText(SOUND_OFF)
     expect(acquireWakeLock).not.toHaveBeenCalled()
   })
 
-  it('bilinmeyen parça için bulunamadı mesajı', () => {
+  it('bilinmeyen parça için bulunamadı mesajı', async () => {
     render(<ParcaDetail parcaId="yok" />)
     expect(screen.getByText('Parça bulunamadı.')).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Parçalar bölümüne dön' }).getAttribute('href')).toBe('#/parcalar')

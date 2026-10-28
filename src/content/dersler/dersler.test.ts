@@ -576,10 +576,8 @@ describe('Seviye 1 etüt dersleri', () => {
     expect(ders('etut:rast-besli').alistirma).toBe('/etut/rast-besli-1')
   })
 
-  it('her etüdün dersi vardır (dörtlü ve dil dersleri Task 49 ile gelir)', () => {
-    const sonra = (id: string) => id.startsWith('dortlu:') || id === 'dil:tu-bag'
-    for (const e of ETUTLER.filter((x) => !sonra(x.dersId))) expect(dersById(e.dersId), e.id).toBeDefined()
-    expect(ETUTLER.filter((x) => x.tur === 'usul').every((x) => dersById(x.dersId))).toBe(true)
+  it('her etüdün dersi vardır', () => {
+    for (const e of ETUTLER) expect(dersById(e.dersId), e.id).toBeDefined()
   })
 
   it('etut:giris: tek-neva etüdünün ilk iki ölçüsü porte olarak gösterilir', () => {
@@ -732,5 +730,85 @@ describe('Usul dersleri', () => {
       const usul = USULLER.find((x) => x.id === u)!
       for (const ses of new Set(usul.vurus!.map((x) => x.ses))) expect(metin(usulDersId(u)), `${u} ${ses}`).toContain(ses)
     }
+  })
+})
+
+describe('Seviye 2 dörtlü, dil ve eser dersleri', () => {
+  const ders = (id: string) => dersById(id)!
+  const porteler = (id: string) => ders(id).bloklar.flatMap((b) => (b.tur === 'porte' ? [b] : []))
+  const listeler = (id: string) => ders(id).bloklar.flatMap((b) => (b.tur === 'liste' ? b.maddeler : [])).join(' ')
+  const perdeler = (olaylar: MusicEvent[]) => olaylar.map((e) => (e.kind === 'note' ? e.pitch : null))
+  const yazim = (ids: string[]) => ids.map((id) => NEY_PERDELER.find((p) => p.id === id)!.written)
+
+  const DORTLULER = [
+    { id: 'dortlu:cargah', etut: 'dortlu-cargah', perdeler: ['rast', 'dugah', 'buselik', 'cargah'], sayilar: ['9', '4'] },
+    { id: 'dortlu:kurdi', etut: 'dortlu-kurdi', perdeler: ['dugah', 'kurdi', 'cargah', 'neva'], sayilar: ['4', '9'] },
+    { id: 'dortlu:hicaz', etut: 'dortlu-hicaz', perdeler: ['dugah', 'dik-kurdi', 'nim-hicaz', 'neva'], sayilar: ['5', '12'] },
+  ]
+
+  it.each(DORTLULER)('$id: seviye 2; porte dörtlünün dört notasını sırayla içerir; alıştırma etüde gider', (d) => {
+    expect(ders(d.id).seviye).toBe(2)
+    expect(DERSLER.map((x) => x.id)).toContain(d.id)
+    expect(ders(d.id).alistirma).toBe(`/etut/${d.etut}`)
+    expect(ETUTLER.find((e) => e.id === d.etut)!.dersId).toBe(d.id)
+    const cikis = porteler(d.id).map((b) => perdeler(b.olaylar))
+    expect(cikis).toContainEqual(yazim(d.perdeler))
+  })
+
+  it('dörtlü portelerindeki yazılı notalar Global Constraints ile aynı', () => {
+    const anahtar = (id: string) =>
+      perdeler(porteler(id)[0]!.olaylar).map((p) => p && `${p.step}${p.octave}${p.acc === 0 ? '' : `${p.acc < 0 ? 'b' : '#'}${Math.abs(p.acc)}`}`)
+    expect(anahtar('dortlu:cargah').join(' ')).toBe(['G4', 'A4', 'B4', 'C5'].join(' '))
+    expect(anahtar('dortlu:kurdi').join(' ')).toBe(['A4', 'B4b5', 'C5', 'D5'].join(' '))
+    expect(anahtar('dortlu:hicaz').join(' ')).toBe(['A4', 'B4b4', 'C5#4', 'D5'].join(' '))
+  })
+
+  it.each(DORTLULER)('$id: liste bloğu aralıkları koma cinsinden yazar', (d) => {
+    const liste = listeler(d.id)
+    for (const s of d.sayilar) expect(liste).toMatch(new RegExp(String.raw`\b${s} koma`))
+  })
+
+  it('dörtlü derslerinin aralık sırası: Çârgâh 9+9+4, Kürdî 4+9+9, Hicaz 5+12+5', () => {
+    const sira = (id: string) => [...listeler(id).matchAll(/(\d+) koma/g)].map((m) => m[1]).join('+')
+    expect(sira('dortlu:cargah')).toBe('9+9+4')
+    expect(sira('dortlu:kurdi')).toBe('4+9+9')
+    expect(sira('dortlu:hicaz')).toBe('5+12+5')
+  })
+
+  it('dörtlü dersleri: makam Seviye 3’e bırakılır; Kürdî dersi Çârgâh ile, Hicaz dersi artık ikiliyle ilgilenir', () => {
+    expect(metinler(ders('dortlu:cargah')).join(' ')).toMatch(/Seviye 3/)
+    expect(metinler(ders('dortlu:cargah')).join(' ')).toMatch(/S3/)
+    expect(metinler(ders('dortlu:kurdi')).join(' ')).toMatch(/Çârgâh dörtlüsü/)
+    expect(metinler(ders('dortlu:hicaz')).join(' ')).toMatch(/artık ikili/)
+  })
+
+  it('dil:tu-bag: ayrık ve bağlı porte; bağlı portede bag işaretli nota var; ses farkı dürüstçe söylenir', () => {
+    const d = ders('dil:tu-bag')
+    expect(d.seviye).toBe(2)
+    expect(d.alistirma).toBe('/etut/dil-1')
+    expect(ETUTLER.find((e) => e.id === 'dil-1')!.dersId).toBe('dil:tu-bag')
+    const [ayrik, bagli] = porteler('dil:tu-bag').map((b) => b.olaylar)
+    expect(ayrik!.some((e) => e.kind === 'note' && e.bag)).toBe(false)
+    expect(bagli!.some((e) => e.kind === 'note' && e.bag)).toBe(true)
+    const m = metinler(d).join(' ')
+    expect(m).toMatch(/tu/)
+    expect(m).toMatch(/dil vurulmaz/)
+    expect(m).toMatch(/Seviye 4/)
+    expect(m).toMatch(/aynı duyurur|aynı çalar|aynı ses/)
+  })
+
+  it('eser:giris: sıra dinle → oku → çal; Yücel kuralı ve ezber; kaynaklar S1 ve S5', () => {
+    const d = ders('eser:giris')
+    expect(d.seviye).toBe(2)
+    expect(d.alistirma).toBeUndefined()
+    const m = metinler(d).join(' ')
+    expect(m).toMatch(/dinle[\s\S]*oku[\s\S]*çal/i)
+    expect(m).toMatch(/usul/i)
+    expect(m).toMatch(/solfej/i)
+    expect(m).toMatch(/2–3 ay/)
+    expect(m).toMatch(/ezber/i)
+    expect(d.kaynaklar.some((k) => k.startsWith('S1 '))).toBe(true)
+    expect(d.kaynaklar.some((k) => k.startsWith('S5 '))).toBe(true)
+    expect(d.kaynaklar.some((k) => k.startsWith('S4 '))).toBe(true)
   })
 })
