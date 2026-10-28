@@ -7,7 +7,7 @@ import type { Step } from '../music/pitch'
 export type { Topic }
 
 const STEPS: readonly string[] = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
-const DURATIONS: readonly string[] = ['whole', 'half', 'quarter', 'eighth']
+const DURATIONS: readonly string[] = ['whole', 'half', 'quarter', 'eighth', 'sixteenth']
 
 function invalid(cardId: string): never {
   throw new Error(`Geçersiz kart kimliği: ${cardId}`)
@@ -15,7 +15,8 @@ function invalid(cardId: string): never {
 
 /**
  * 'note:D5' → Re5 dörtlük; 'dur:half' → Si4 ikilik nota;
- * 'dur:quarter.dotted' → noktalı; 'rest:eighth' → sekizlik sus.
+ * 'dur:quarter.dotted' → noktalı; 'rest:eighth' → sekizlik sus; 'dur:eighth.uclu' → üçleme sekizliği
+ * (tek olay; porte için üçü cardToEvents'ten gelir). Noktalı ve üçleme birlikte kullanılmaz.
  */
 export function cardToEvent(cardId: string): MusicEvent {
   const m = /^(note|dur|rest):(.+)$/.exec(cardId)
@@ -27,10 +28,14 @@ export function cardToEvent(cardId: string): MusicEvent {
     return { kind: 'note', pitch, dur: 'quarter' }
   }
   const [dur, flag, ...extra] = rest.split('.')
-  if (!DURATIONS.includes(dur) || extra.length > 0 || (flag !== undefined && flag !== 'dotted')) {
+  if (!DURATIONS.includes(dur) || extra.length > 0 || (flag !== undefined && flag !== 'dotted' && flag !== 'uclu')) {
     return invalid(cardId)
   }
-  const base = { dur: dur as DurationKind, ...(flag === 'dotted' ? { dotted: true } : {}) }
+  const base = {
+    dur: dur as DurationKind,
+    ...(flag === 'dotted' ? { dotted: true } : {}),
+    ...(flag === 'uclu' ? { uclu: true } : {}),
+  }
   if (type === 'rest') return { kind: 'rest', ...base }
   return { kind: 'note', pitch: { step: 'B', octave: 4, acc: 0 }, ...base }
 }
@@ -45,7 +50,7 @@ export function perdeKey(cardId: string): string {
 /**
  * Tüm kart türleri için olay listesi. 'seq:G4-A4-B4-C5' → dört dörtlük nota;
  * 'perde:D5' → tek dörtlük nota; 'perde-ters:D5' → porte çizilmez (boş liste);
- * diğer kartlar tek olaylıdır (cardToEvent).
+ * 'dur:eighth.uclu' → üç üçleme olayı (bir vuruşluk grup); diğer kartlar tek olaylıdır (cardToEvent).
  */
 export function cardToEvents(cardId: string): MusicEvent[] {
   if (cardId.startsWith('perde')) {
@@ -55,7 +60,10 @@ export function cardToEvents(cardId: string): MusicEvent[] {
     if (!pitch) return invalid(cardId)
     return [{ kind: 'note', pitch, dur: 'quarter' }]
   }
-  if (!cardId.startsWith('seq:')) return [cardToEvent(cardId)]
+  if (!cardId.startsWith('seq:')) {
+    const e = cardToEvent(cardId)
+    return e.uclu ? [e, { ...e }, { ...e }] : [e]
+  }
   const parts = cardId.slice(4).split('-')
   return parts.map((p) => {
     const n = /^([A-G])(\d)$/.exec(p)

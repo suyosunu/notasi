@@ -68,6 +68,40 @@ describe('makeQuestion', () => {
     }
   })
 
+  describe('sure-4 (onaltılık ve üçleme)', () => {
+    it('üçleme kartı: cevap "Sekizlik üçleme", seçeneklerde "Onaltılık", hepsi farklı, porteye 3 nota', () => {
+      for (let s = 1; s <= 50; s++) {
+        const q = makeQuestion('dur:eighth.uclu', seededRng(s))
+        expect(q.topicId).toBe('sure-4')
+        expect(q.answer).toBe('Sekizlik üçleme')
+        expect(q.options).toHaveLength(4)
+        expect(new Set(q.options).size).toBe(4)
+        expect(q.options).toContain(q.answer)
+        expect(q.events).toHaveLength(3)
+        expect(q.events.every((e) => e.kind === 'note' && e.dur === 'eighth' && e.uclu === true)).toBe(true)
+      }
+    })
+    it('"Onaltılık" seçeneklerde görülür; onaltılık ve onaltılık sus kartlarının cevapları', () => {
+      const seen = new Set<string>()
+      for (let s = 1; s <= 50; s++) makeQuestion('dur:eighth.uclu', seededRng(s)).options.forEach((o) => seen.add(o))
+      expect(seen.has('Onaltılık')).toBe(true)
+      const q = makeQuestion('dur:sixteenth', seededRng(2))
+      expect(q.answer).toBe('Onaltılık')
+      expect(q.events).toHaveLength(1)
+      const r = makeQuestion('rest:sixteenth', seededRng(2))
+      expect(r.answer).toBe('Onaltılık sus')
+      expect(r.events).toEqual([{ kind: 'rest', dur: 'sixteenth' }])
+    })
+    it('önceki süre konularında üçleme/onaltılık adları sızmaz', () => {
+      for (const card of ['dur:eighth', 'rest:eighth', 'dur:half.dotted']) {
+        for (let s = 1; s <= 50; s++) {
+          const q = makeQuestion(card, seededRng(s))
+          expect(q.options.some((o) => o.includes('üçleme') || o.startsWith('Onaltılık'))).toBe(false)
+        }
+      }
+    })
+  })
+
   describe('dizi okuma (seq:)', () => {
     it('soru metni, cevap, ipucu ve olaylar', () => {
       const q = makeQuestion('seq:D5-C5-B4-A4', seededRng(1))

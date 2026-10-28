@@ -97,7 +97,7 @@ describe('topicStatuses / currentTopic', () => {
   it('perde-2 artık en sondadır; koma-1 öğrenilmeden perde-2 kilitli', () => {
     expect(NOTA_TOPICS.at(-1)!.id).toBe('perde-2')
     const sonraki = NOTA_TOPICS.slice(NOTA_TOPICS.findIndex((t) => t.id === 'koma-1'))
-    expect(sonraki.map((t) => t.id)).toEqual(['koma-1', 'koma-2', 'perde-3', 'perde-4', 'perde-2'])
+    expect(sonraki.map((t) => t.id)).toEqual(['koma-1', 'koma-2', 'perde-3', 'perde-4', 'sure-4', 'perde-2'])
     // Öğrenilmiş perde-2 denemeleri olsa bile önündeki konular öğrenilmeden kilitli kalır.
     const s = topicStatuses(NOTA_TOPICS, attempts('perde-2', Array(10).fill(true)), new Set())
     expect(s['perde-2']).toBe('kilitli')

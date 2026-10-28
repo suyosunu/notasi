@@ -27,6 +27,7 @@ export interface Question {
 
 const STEP_LIST: Step[] = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
 const DURATION_HINT = 'Birlik 4, ikilik 2, dörtlük 1, sekizlik ½ vuruş; nokta yarısı kadar ekler'
+const DURATION_4_HINT = 'Onaltılık ¼ vuruş; üçlemede üç nota tek vuruşa sığar (üstündeki 3 işaretine bak).'
 
 function noteHint(index: number): string {
   if (index < 0) return "Portenin altındaki ilk ek çizgi Do'dur"
@@ -327,9 +328,9 @@ export function makeQuestion(cardId: string, rng: () => number): Question {
     cardId,
     topicId: topic.id,
     prompt: 'Bu hangi süre?',
-    events: [event],
+    events,
     options: durationOptions(topic.id, answer, rng),
     answer,
-    hint: DURATION_HINT,
+    hint: topic.id === 'sure-4' ? DURATION_4_HINT : DURATION_HINT,
   }
 }

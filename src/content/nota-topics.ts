@@ -9,7 +9,7 @@ export interface Topic {
 /**
  * Sıra = açılma sırası. MEB ney sırasıyla hizalıdır: gündüz okunan perde akşam çalınır.
  * Üçüncü kademe perdeleri (perde-2: Hüseynî, Acem, Gerdâniye, Muhayyer) Seviye 3'tür; Seviye 2 konuları
- * (koma işaretleri, perde-3, perde-4) bitmeden açılmaz, bu yüzden perde-2 en sondadır.
+ * (koma işaretleri, perde-3, perde-4, sure-4) bitmeden açılmaz, bu yüzden perde-2 en sondadır.
  */
 export const NOTA_TOPICS: Topic[] = [
   { id: 'nota-1', section: 'nota', title: 'Re, Do, Si', kind: 'note-name', cards: ['note:D5', 'note:C5', 'note:B4'] },
@@ -72,6 +72,7 @@ export const NOTA_TOPICS: Topic[] = [
     kind: 'perde-name',
     cards: ['perde:C5#4', 'perde:C5#5', 'perde:F5#4', 'perde-ters:C5#4', 'perde-ters:C5#5', 'perde-ters:F5#4'],
   },
+  { id: 'sure-4', section: 'nota', title: 'Onaltılık ve üçleme', kind: 'duration', cards: ['dur:sixteenth', 'dur:eighth.uclu', 'rest:sixteenth'] },
   {
     id: 'perde-2',
     section: 'nota',

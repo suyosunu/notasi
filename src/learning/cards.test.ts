@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { NOTA_TOPICS } from '../content/nota-topics'
+import { beats } from '../music/notation'
 import { cardToEvent, cardToEvents, topicOfCard } from './cards'
 
 describe('cardToEvent', () => {
@@ -26,6 +27,16 @@ describe('cardToEvent', () => {
   it('noktalı süreler', () => {
     expect(cardToEvent('dur:quarter.dotted')).toMatchObject({ kind: 'note', dur: 'quarter', dotted: true })
     expect(cardToEvent('rest:quarter.dotted')).toEqual({ kind: 'rest', dur: 'quarter', dotted: true })
+  })
+  it("'dur:sixteenth' tek onaltılık; 'rest:sixteenth' onaltılık sus", () => {
+    expect(cardToEvent('dur:sixteenth')).toEqual({ kind: 'note', pitch: { step: 'B', octave: 4, acc: 0 }, dur: 'sixteenth' })
+    expect(cardToEvent('rest:sixteenth')).toEqual({ kind: 'rest', dur: 'sixteenth' })
+  })
+  it("'dur:eighth.uclu' bayrağı kabul edilir; 'dur:eighth.uclu.dotted' geçersiz", () => {
+    expect(cardToEvent('dur:eighth.uclu')).toMatchObject({ kind: 'note', dur: 'eighth', uclu: true })
+    expect(() => cardToEvent('dur:eighth.uclu.dotted')).toThrow(Error)
+    expect(() => cardToEvents('dur:eighth.uclu.dotted')).toThrow(Error)
+    expect(() => cardToEvent('dur:eighth.triplet')).toThrow(Error)
   })
   it.each(['', 'foo', 'note:H4', 'note:C', 'dur:long', 'rest:half.double', 'dur:half.dotted.x', 'x:C4'])(
     'geçersiz kimlik %j hata verir',
@@ -75,6 +86,32 @@ describe('cardToEvents', () => {
   })
 })
 
+describe('sure-4 kartları', () => {
+  it("'dur:eighth.uclu' üç üçleme sekizliği (Si4) verir; 'dur:sixteenth' tek onaltılık", () => {
+    const e = cardToEvents('dur:eighth.uclu')
+    expect(e).toHaveLength(3)
+    for (const x of e) {
+      expect(x).toEqual({ kind: 'note', pitch: { step: 'B', octave: 4, acc: 0 }, dur: 'eighth', uclu: true })
+    }
+    expect(beats(e[0]!) * 3).toBeCloseTo(1, 6)
+    expect(cardToEvents('dur:sixteenth')).toHaveLength(1)
+    expect(cardToEvents('rest:sixteenth')).toEqual([{ kind: 'rest', dur: 'sixteenth' }])
+  })
+  it('konu tanımı: perde-4 ile perde-2 arasında, süre türünde', () => {
+    const ids = NOTA_TOPICS.map((t) => t.id)
+    expect(ids.indexOf('sure-4')).toBe(ids.indexOf('perde-4') + 1)
+    expect(ids.indexOf('perde-2')).toBe(ids.indexOf('sure-4') + 1)
+    expect(NOTA_TOPICS.find((t) => t.id === 'sure-4')).toEqual({
+      id: 'sure-4',
+      section: 'nota',
+      title: 'Onaltılık ve üçleme',
+      kind: 'duration',
+      cards: ['dur:sixteenth', 'dur:eighth.uclu', 'rest:sixteenth'],
+    })
+    expect(topicOfCard('dur:eighth.uclu').id).toBe('sure-4')
+  })
+})
+
 describe('topicOfCard', () => {
   it('kartın konusunu bulur', () => {
     expect(topicOfCard('note:A5').id).toBe('nota-5')
@@ -89,7 +126,7 @@ describe('topicOfCard', () => {
     const ids = NOTA_TOPICS.map((t) => t.id)
     expect(ids).toEqual([
       'nota-1', 'sure-1', 'nota-2', 'sure-2', 'nota-3', 'sure-3', 'nota-4', 'nota-5',
-      'dizi-1', 'perde-1', 'dizi-2', 'koma-1', 'koma-2', 'perde-3', 'perde-4', 'perde-2',
+      'dizi-1', 'perde-1', 'dizi-2', 'koma-1', 'koma-2', 'perde-3', 'perde-4', 'sure-4', 'perde-2',
     ])
   })
   it('dizi konuları sequence türünde ve 6 karttan oluşur', () => {
