@@ -26,6 +26,13 @@ beforeEach(() => {
 })
 
 describe('buildUsulPatternCode', () => {
+  it('Nim Sofyan desen kodu iki vuruşlu, cpm = bpm/2', () => {
+    const code = buildUsulPatternCode(usul('nim-sofyan'), 60, 'oryantal')
+    expect(code).toContain('freq("65@1 ~@1").s("sine")')
+    expect(code).toContain('s("~@1 white@1")')
+    expect(code.endsWith('.cpm(30)')).toBe(true)
+  })
+
   it('Sofyan: düm (gövde + deri), te/ke (ton + tık) katmanları; cpm = bpm / zaman', () => {
     const code = buildUsulPatternCode(usul('sofyan'), 60, 'oryantal')
     expect(code.startsWith('stack(')).toBe(true)

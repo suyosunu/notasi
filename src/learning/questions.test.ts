@@ -146,10 +146,13 @@ describe('perde isimleri (perde: / perde-ters:)', () => {
     )
   })
 
-  it('perde: çeldiricileri dokuz perde adından gelir (perde-2 için)', () => {
+  // perde-2 artık son konudur: önündeki bütün perde konularının (perde-1, -3, -4) adları da öğrenilmiştir.
+  const ONBES = [...NINE, 'Bûselik', 'Kürdî', 'Dik Kürdî', 'Nim Hicaz', 'Hicaz', 'Eviç']
+
+  it('perde: çeldiricileri öğrenilmiş perde adlarından gelir (perde-2 için)', () => {
     for (let s = 1; s <= 30; s++) {
       for (const card of ['perde:E5', 'perde:A5']) {
-        for (const o of makeQuestion(card, seededRng(s)).options) expect(NINE).toContain(o)
+        for (const o of makeQuestion(card, seededRng(s)).options) expect(ONBES).toContain(o)
       }
     }
   })
@@ -166,10 +169,10 @@ describe('perde isimleri (perde: / perde-ters:)', () => {
     }
   })
 
-  it('perde-2 ileri soruda çeldiriciler perde-1 ve perde-2 adlarından gelir (dokuzun hepsi)', () => {
+  it('perde-2 ileri soruda çeldiriciler önceki bütün perde konularının ve perde-2 adlarından gelir', () => {
     const seen = new Set<string>()
-    for (let s = 1; s <= 60; s++) for (const o of makeQuestion('perde:E5', seededRng(s)).options) seen.add(o)
-    expect([...seen].sort()).toEqual([...NINE].sort())
+    for (let s = 1; s <= 200; s++) for (const o of makeQuestion('perde:E5', seededRng(s)).options) seen.add(o)
+    expect([...seen].sort()).toEqual([...ONBES].sort())
   })
 
   it('perde-ters:D5 → porte yok, perde adından nota sor', () => {

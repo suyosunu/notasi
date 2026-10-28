@@ -50,6 +50,7 @@ describe('UsulSection', () => {
     render(<UsulSection />)
     const etiket = (ad: string) =>
       screen.getByRole('button', { name: new RegExp(`^${ad}`) }).querySelector('.seviye-etiket')?.textContent
+    expect(etiket('Nim Sofyan')).toBe('Seviye 2')
     expect(etiket('Sofyan')).toBe('Seviye 2')
     expect(etiket('Semâî')).toBe('Seviye 2')
     expect(etiket('Düyek')).toBe('Seviye 5')
@@ -69,8 +70,20 @@ describe('UsulSection', () => {
     expect(classes[0]).not.toBe(classes[1])
   })
 
-  it('Sofyan (varsayılan): düm, te, ke etiketleri; te ve ke tek ile aynı renk sınıfında', () => {
+  it('açılışta Nim Sofyan seçili ve "Seviye 2" etiketi var', () => {
     render(<UsulSection />)
+    const nim = screen.getByRole('button', { name: /^Nim Sofyan/ })
+    expect(nim.getAttribute('aria-pressed')).toBe('true')
+    expect(nim.querySelector('.seviye-etiket')?.textContent).toBe('Seviye 2')
+    const boxes = [...document.querySelectorAll<HTMLElement>('[data-testid="vurus"]')]
+    expect(boxes.map((b) => b.textContent)).toEqual(['düm', 'tek'])
+    expect(boxes.map((b) => b.style.width)).toEqual(['50%', '50%'])
+    expect(screen.getByText('Hız: ♩ = 60')).toBeTruthy()
+  })
+
+  it('Sofyan: düm, te, ke etiketleri; te ve ke tek ile aynı renk sınıfında', () => {
+    render(<UsulSection />)
+    pick(/^Sofyan/)
     const boxes = [...document.querySelectorAll<HTMLElement>('[data-testid="vurus"]')]
     expect(boxes.map((b) => b.textContent)).toEqual(['düm', 'te', 'ke'])
     expect(boxes.map((b) => b.style.width)).toEqual(['50%', '25%', '25%'])
@@ -84,7 +97,7 @@ describe('UsulSection', () => {
     pick(/Dolap/)
     expect(document.querySelectorAll('[data-testid="vurus"]')).toHaveLength(0)
     expect(screen.getByText(DOLAP_NOTE)).toBeTruthy()
-    pick(/Sofyan/)
+    pick(/^Sofyan/)
     expect(screen.queryByText(DOLAP_NOTE)).toBeNull()
     expect(document.querySelectorAll('[data-testid="vurus"]')).toHaveLength(3)
   })
@@ -100,7 +113,7 @@ describe('UsulSection', () => {
 
   it('mertebesi 8 olan usulde birim ♪, 4 olanda ♩ gösterilir', () => {
     render(<UsulSection />)
-    pick(/Sofyan/)
+    pick(/^Sofyan/)
     expect(screen.getByText('Hız: ♩ = 60')).toBeTruthy()
     pick(/Düyek/)
     expect(screen.getByText('Hız: ♪ = 60')).toBeTruthy()
@@ -114,7 +127,7 @@ describe('UsulSection', () => {
     render(<UsulSection />)
     await tapPlay()
     await waitFor(() => expect(startUsul).toHaveBeenCalledTimes(1))
-    expect(startUsul).toHaveBeenCalledWith(usul('sofyan'), 60)
+    expect(startUsul).toHaveBeenCalledWith(usul('nim-sofyan'), 60)
     expect(screen.getByRole('button', { name: '■ Durdur' })).toBeTruthy()
   })
 
@@ -150,10 +163,10 @@ describe('UsulSection', () => {
     fireEvent.change(slider)
     expect(startUsul).not.toHaveBeenCalled()
     await tapPlay()
-    await waitFor(() => expect(startUsul).toHaveBeenCalledWith(usul('sofyan'), 80))
+    await waitFor(() => expect(startUsul).toHaveBeenCalledWith(usul('nim-sofyan'), 80))
     fireEvent.input(slider, { target: { value: '100' } })
     fireEvent.change(slider)
-    await waitFor(() => expect(startUsul).toHaveBeenLastCalledWith(usul('sofyan'), 100))
+    await waitFor(() => expect(startUsul).toHaveBeenLastCalledWith(usul('nim-sofyan'), 100))
     expect(startUsul).toHaveBeenCalledTimes(2)
   })
 
@@ -275,6 +288,7 @@ describe('UsulSection: vurgulu şema', () => {
 
   it('çalarken o anki vuruş kutusu vurgulanır ve döngüyle birlikte ilerler (Sofyan, ♩ = 60)', async () => {
     render(<UsulSection />)
+    pick(/^Sofyan/)
     expect(activeIndexes()).toEqual([])
     await tapPlay()
     await screen.findByRole('button', { name: '■ Durdur' })
@@ -299,6 +313,7 @@ describe('UsulSection: vurgulu şema', () => {
 
   it('Durdur vurguyu kaldırır ve kare döngüsünü durdurur', async () => {
     render(<UsulSection />)
+    pick(/^Sofyan/)
     await tapPlay()
     await screen.findByRole('button', { name: '■ Durdur' })
     await expectActiveAt(1000 + LAT + 2500, [1])
@@ -312,6 +327,7 @@ describe('UsulSection: vurgulu şema', () => {
 
   it('hız değişince saat yeniden başlar (♩ = 120)', async () => {
     render(<UsulSection />)
+    pick(/^Sofyan/)
     await tapPlay()
     await screen.findByRole('button', { name: '■ Durdur' })
     await expectActiveAt(1000 + LAT + 500, [0])
@@ -327,6 +343,7 @@ describe('UsulSection: vurgulu şema', () => {
 
   it('usul değişince saat yeniden başlar ve yeni usulün kutuları vurgulanır', async () => {
     render(<UsulSection />)
+    pick(/^Sofyan/)
     await tapPlay()
     await screen.findByRole('button', { name: '■ Durdur' })
     await expectActiveAt(1000 + LAT + 2500, [1])

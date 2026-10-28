@@ -7,15 +7,21 @@ describe('NEY_PERDELER', () => {
     expect(NEY_PERDELER.slice(0, 5).map((p) => p.id)).toEqual(['neva', 'cargah', 'segah', 'dugah', 'rast'])
   })
 
-  it('sıra: ilk beş, ardından yeni perdeler; Bûselik Rast’tan sonra gelir', () => {
+  it('sıra: ilk beş, Seviye 2 ara sesleri, ardından üçüncü kademe; Bûselik Rast’tan sonra gelir', () => {
     expect(NEY_PERDELER.map((p) => p.id)).toEqual([
       'neva', 'cargah', 'segah', 'dugah', 'rast',
-      'huseyni', 'acem', 'gerdaniye', 'muhayyer', 'buselik', 'kurdi', 'dik-kurdi', 'nim-hicaz', 'evic',
+      'buselik', 'kurdi', 'dik-kurdi', 'nim-hicaz', 'huseyni', 'acem', 'gerdaniye', 'muhayyer', 'evic',
     ])
     expect(NEY_PERDELER.map((p) => p.name)).toEqual([
       'Nevâ', 'Çârgâh', 'Segâh', 'Dügâh', 'Rast',
-      'Hüseynî', 'Acem', 'Gerdâniye (açık)', 'Muhayyer (açık)', 'Bûselik', 'Kürdî', 'Dik Kürdî', 'Nim Hicaz', 'Eviç',
+      'Bûselik', 'Kürdî', 'Dik Kürdî', 'Nim Hicaz', 'Hüseynî', 'Acem', 'Gerdâniye (açık)', 'Muhayyer (açık)', 'Eviç',
     ])
+  })
+
+  it("Seviye 2 ara sesleri Rast'tan sonra, üçüncü kademeden önce gelir", () => {
+    const ids = NEY_PERDELER.map((p) => p.id)
+    expect(ids.slice(5, 9)).toEqual(['buselik', 'kurdi', 'dik-kurdi', 'nim-hicaz'])
+    expect(ids[9]).toBe('huseyni')
   })
 
   it("Bûselik Rast'tan sonra, perde-3 konusuyla açılır", () => {
@@ -47,14 +53,14 @@ describe('NEY_PERDELER', () => {
       ['segah', 'B', 4, -1, 'nota-1'],
       ['dugah', 'A', 4, 0, 'nota-2'],
       ['rast', 'G', 4, 0, 'nota-2'],
-      ['huseyni', 'E', 5, 0, 'perde-2'],
-      ['acem', 'F', 5, 0, 'perde-2'],
-      ['gerdaniye', 'G', 5, 0, 'perde-2'],
-      ['muhayyer', 'A', 5, 0, 'perde-2'],
       ['buselik', 'B', 4, 0, 'perde-3'],
       ['kurdi', 'B', 4, -5, 'perde-3'],
       ['dik-kurdi', 'B', 4, -4, 'perde-3'],
       ['nim-hicaz', 'C', 5, 4, 'perde-4'],
+      ['huseyni', 'E', 5, 0, 'perde-2'],
+      ['acem', 'F', 5, 0, 'perde-2'],
+      ['gerdaniye', 'G', 5, 0, 'perde-2'],
+      ['muhayyer', 'A', 5, 0, 'perde-2'],
       ['evic', 'F', 5, 4, 'perde-4'],
     ])
     const topicIds = NOTA_TOPICS.map((t) => t.id)

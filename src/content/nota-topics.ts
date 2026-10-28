@@ -6,7 +6,11 @@ export interface Topic {
   cards: string[]
 }
 
-/** Sıra = açılma sırası. MEB ney sırasıyla hizalıdır: gündüz okunan perde akşam çalınır. */
+/**
+ * Sıra = açılma sırası. MEB ney sırasıyla hizalıdır: gündüz okunan perde akşam çalınır.
+ * Üçüncü kademe perdeleri (perde-2: Hüseynî, Acem, Gerdâniye, Muhayyer) Seviye 3'tür; Seviye 2 konuları
+ * (koma işaretleri, perde-3, perde-4) bitmeden açılmaz, bu yüzden perde-2 en sondadır.
+ */
 export const NOTA_TOPICS: Topic[] = [
   { id: 'nota-1', section: 'nota', title: 'Re, Do, Si', kind: 'note-name', cards: ['note:D5', 'note:C5', 'note:B4'] },
   { id: 'sure-1', section: 'nota', title: 'Birlik, ikilik, dörtlük', kind: 'duration', cards: ['dur:whole', 'dur:half', 'dur:quarter'] },
@@ -41,16 +45,6 @@ export const NOTA_TOPICS: Topic[] = [
     cards: ['seq:G4-B4-D5-G5', 'seq:D5-B4-G4-B4', 'seq:C5-E5-G5-E5', 'seq:A4-C5-E5-A5', 'seq:F5-D5-B4-G4', 'seq:E5-C5-A4-C5'],
   },
   {
-    id: 'perde-2',
-    section: 'nota',
-    title: "Perde adları: Hüseynî'den Muhayyer'e",
-    kind: 'perde-name',
-    cards: [
-      'perde:E5', 'perde:F5', 'perde:G5', 'perde:A5',
-      'perde-ters:E5', 'perde-ters:F5', 'perde-ters:G5', 'perde-ters:A5',
-    ],
-  },
-  {
     id: 'koma-1',
     section: 'nota',
     title: 'Koma işaretleri: bemoller',
@@ -77,5 +71,15 @@ export const NOTA_TOPICS: Topic[] = [
     title: 'Perdeler: Nim Hicaz, Hicaz, Eviç',
     kind: 'perde-name',
     cards: ['perde:C5#4', 'perde:C5#5', 'perde:F5#4', 'perde-ters:C5#4', 'perde-ters:C5#5', 'perde-ters:F5#4'],
+  },
+  {
+    id: 'perde-2',
+    section: 'nota',
+    title: "Perde adları: Hüseynî'den Muhayyer'e",
+    kind: 'perde-name',
+    cards: [
+      'perde:E5', 'perde:F5', 'perde:G5', 'perde:A5',
+      'perde-ters:E5', 'perde-ters:F5', 'perde-ters:G5', 'perde-ters:A5',
+    ],
   },
 ]

@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { ETUTLER } from '../content/etutler'
+import { NOTA_TOPICS } from '../content/nota-topics'
 import { NEY_PERDELER } from '../content/ney-perdeler'
 import type { PerdeId } from '../content/ney-perdeler'
 import type { LongToneRec } from '../store/db'
 import { buildEveningPlan, perdeStatuses } from './evening-plan'
 import type { PerdeStatus } from './evening-plan'
+import { topicStatuses } from './mastery'
 import type { TopicStatus } from './mastery'
 
 /** Bütün etütler çalınmış sayılır; etüt adımı olmayan senaryolar için. */
@@ -90,6 +92,31 @@ describe('perdeStatuses', () => {
     const passed = ['neva', 'cargah', 'segah', 'dugah', 'rast'].map((id) => tone(id, true))
     expect(perdeStatuses(passed, topics(['perde-2'])).huseyni).toBe('kilitli')
     expect(perdeStatuses(passed, topics()).huseyni).toBe('acik')
+  })
+
+  it('Rast geçilince güncel perde Bûselik olur, Hüseynî kilitli kalır', () => {
+    const passed = ['neva', 'cargah', 'segah', 'dugah', 'rast'].map((id) => tone(id, true))
+    // Nota konuları perde-3'e kadar öğrenilmiş; perde-3 açık, perde-4 ve perde-2 henüz kilitli.
+    const ogrenilen = new Set(NOTA_TOPICS.slice(0, NOTA_TOPICS.findIndex((t) => t.id === 'perde-3')).map((t) => t.id))
+    const notalar = topicStatuses(NOTA_TOPICS, [], ogrenilen)
+    expect(notalar['perde-3']).toBe('acik')
+    expect(notalar['perde-2']).toBe('kilitli')
+    const s = perdeStatuses(passed, notalar)
+    expect(s.buselik).toBe('acik')
+    expect(s.huseyni).toBe('kilitli')
+    const plan = buildEveningPlan({ ilkSesPassed: true, calibrated: true, baspareGecildi: true, calinanEtutler: HEPSI, perdeStatus: s })
+    expect(plan.find((st) => st.tries === 3)!.perdeId).toBe('buselik')
+  })
+
+  it("eski sırada Hüseynî'yi geçmiş kullanıcının perdesi geçilmiş kalır", () => {
+    const eski = ['neva', 'cargah', 'segah', 'dugah', 'rast', 'huseyni'].map((id) => tone(id, true))
+    // perde-2 öğrenilmiş sayılır ama koma-1 öğrenilmemiş: yeni sırada perde-2 en sonda, kilitli.
+    const ogrenilen = new Set(['perde-2'])
+    const notalar = topicStatuses(NOTA_TOPICS, [], ogrenilen)
+    expect(notalar['koma-1']).not.toBe('ogrenildi')
+    const s = perdeStatuses(eski, notalar)
+    expect(s.huseyni).toBe('gecildi')
+    expect(s.acem).toBe('kilitli')
   })
 
   it('yeni perdeler nota konusu sırasıyla ve kendi konusuna bağlı açılır', () => {

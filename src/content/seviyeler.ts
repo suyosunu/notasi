@@ -176,5 +176,5 @@ export const SEVIYELER: Seviye[] = [
 export const ONERILEN_SEVIYE: { parca: Record<string, number>; makam: Record<string, number>; usul: Record<string, number> } = {
   parca: { 'benim-adim-dertli-dolap': 2, 'hak-teala': 3, 'daglar-ile-taslar-ile': 4 },
   makam: { rast: 3, ussak: 4, hicaz: 4 },
-  usul: { sofyan: 2, semai: 2, 'yuruk-semai': 4, duyek: 5, aksak: 5 },
+  usul: { 'nim-sofyan': 2, sofyan: 2, semai: 2, 'yuruk-semai': 4, duyek: 5, aksak: 5 },
 }
