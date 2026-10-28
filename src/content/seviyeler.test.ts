@@ -23,10 +23,93 @@ describe('SEVIYELER', () => {
     expect(SEVIYELER[1]).toMatchObject({ ad: 'İlk beş ses', sure: '3–10. hafta' })
   })
 
-  it('seviye 2–7 henüz hedefsizdir', () => {
-    for (const s of SEVIYELER.slice(2)) expect(s.hedefler).toEqual([])
+  it('seviye 3–7 henüz hedefsizdir', () => {
+    for (const s of SEVIYELER.slice(3)) expect(s.hedefler).toEqual([])
     expect(SEVIYELER[0]!.hedefler).toHaveLength(7)
-    expect(SEVIYELER[1]!.hedefler).toHaveLength(9)
+    expect(SEVIYELER[1]!.hedefler).toHaveLength(10)
+  })
+
+  it("Seviye 2'nin hedefleri tanımlı ve kimlikleri tekil", () => {
+    const s2 = SEVIYELER[2]!
+    expect(s2.hedefler.map((h) => h.id)).toEqual([
+      's2-nota',
+      's2-ropriz',
+      's2-buselik-8',
+      's2-kurdi-8',
+      's2-dik-kurdi-8',
+      's2-nim-hicaz-8',
+      's2-vur-nim-sofyan',
+      's2-vur-semai',
+      's2-vur-sofyan',
+      's2-usul-etut',
+      's2-dortlu',
+      's2-dil',
+      's2-ezgi',
+    ])
+    const ids = hedefler.map((h) => h.id)
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(s2.ozet).toBe(
+      'Koma işaretleri, onaltılık ve üçleme; Bûselik, Kürdî, Dik Kürdî, Nim Hicaz; Nim Sofyan, Semâî ve Sofyan usulleri; Çârgâh, Kürdî ve Hicaz dörtlüleri.',
+    )
+  })
+
+  it('Seviye 2 hedeflerinin ölçütleri, metinleri ve rotaları kararlaştırıldığı gibi', () => {
+    const h = (id: string) => hedefler.find((x) => x.id === id)!
+    expect(h('s2-nota').olcut).toEqual({ tur: 'konular', topicIds: ['koma-1', 'koma-2', 'perde-3', 'perde-4', 'sure-4'] })
+    expect(h('s2-nota').rota).toBe('/nota')
+    expect(h('s2-ropriz').olcut).toEqual({ tur: 'ders', dersId: 'okuma:ropriz' })
+    for (const [id, ad] of [
+      ['buselik', 'Bûselik'],
+      ['kurdi', 'Kürdî'],
+      ['dik-kurdi', 'Dik Kürdî'],
+      ['nim-hicaz', 'Nim Hicaz'],
+    ] as const) {
+      expect(h(`s2-${id}-8`).olcut).toEqual({ tur: 'uzun-ses', perdeId: id, ms: 8000, cent: 20 })
+      expect(h(`s2-${id}-8`).rota).toBe(`/ney/${id}`)
+      expect(h(`s2-${id}-8`).metin).toContain(ad)
+    }
+    for (const [id, ad] of [
+      ['nim-sofyan', 'Nim Sofyan'],
+      ['semai', 'Semâî'],
+      ['sofyan', 'Sofyan'],
+    ] as const) {
+      expect(h(`s2-vur-${id}`).olcut).toEqual({ tur: 'usul-vurma', usulId: id })
+      expect(h(`s2-vur-${id}`).metin).toBe(`${ad} usulünü vurdum`)
+      expect(h(`s2-vur-${id}`).rota).toBe(`/usul/vur/${id}`)
+    }
+    expect(h('s2-usul-etut')).toMatchObject({
+      metin: 'Üç usulde birer etüt',
+      olcut: { tur: 'etutler', etutIds: ['usul-nim-sofyan', 'usul-semai', 'usul-sofyan'] },
+    })
+    expect(h('s2-dortlu')).toMatchObject({
+      metin: 'Çârgâh, Kürdî ve Hicaz dörtlüleri',
+      olcut: { tur: 'etutler', etutIds: ['dortlu-cargah', 'dortlu-kurdi', 'dortlu-hicaz'] },
+    })
+    expect(h('s2-dil')).toMatchObject({ metin: 'Dil ve bağ etüdü', olcut: { tur: 'etutler', etutIds: ['dil-1'] } })
+    expect(h('s2-ezgi')).toMatchObject({
+      metin: 'Bir ezgiyi ezbere çaldım (Benim Adım Dertli Dolap)',
+      olcut: { tur: 'onay' },
+      rota: '/parcalar/benim-adim-dertli-dolap',
+    })
+  })
+
+  it('s1-olcu Seviye 1 sonunda ölçü dersine bağlı', () => {
+    const s1 = SEVIYELER[1]!.hedefler
+    expect(s1[s1.length - 1]).toEqual({
+      id: 's1-olcu',
+      metin: 'Ölçü, ölçü çizgisi ve nefes işareti dersini okudum',
+      olcut: { tur: 'ders', dersId: 'okuma:olcu' },
+      rota: '/ders/okuma%3Aolcu',
+    })
+  })
+
+  it('her usul-vurma ölçütü var olan bir usula işaret eder', () => {
+    for (const h of hedefler) {
+      if (h.olcut.tur === 'usul-vurma') {
+        const { usulId } = h.olcut
+        expect(USULLER.some((u) => u.id === usulId), h.id).toBe(true)
+      }
+    }
   })
 
   it('hedef kimlikleri benzersiz', () => {

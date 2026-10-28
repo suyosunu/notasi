@@ -1,6 +1,7 @@
 import { NEFES_HEDEF_ID } from '../learning/baspare'
 import { ETUTLER } from './etutler'
 import type { PerdeId } from './ney-perdeler'
+import { USULLER } from './usuller'
 
 // Seviyeler ve geçme ölçütleri (yol haritası §1, karar §4.2 b: hiçbir şey kilitlenmez).
 // Sayısal hedefler (süre, sent) öneridir; kaynaklar kesin değer vermez.
@@ -13,6 +14,7 @@ export type HedefOlcut =
   | { tur: 'baspare' }
   | { tur: 'konular'; topicIds: string[] }
   | { tur: 'etutler'; etutIds: string[] }
+  | { tur: 'usul-vurma'; usulId: string } // usulId vurulanUsuller'de mi
 
 export interface Hedef {
   id: string
@@ -111,6 +113,78 @@ const SEVIYE_1: Hedef[] = [
     rota: '/etut/rast-besli-1',
   },
   { id: 's1-rast-gur', metin: 'Rast sesim gür ve sağlam çıkıyor', olcut: { tur: 'onay' } },
+  {
+    id: 's1-olcu',
+    metin: 'Ölçü, ölçü çizgisi ve nefes işareti dersini okudum',
+    olcut: { tur: 'ders', dersId: 'okuma:olcu' },
+    rota: dersRotasi('okuma:olcu'),
+  },
+]
+
+const ARA_SESLER: { id: PerdeId; ad: string }[] = [
+  { id: 'buselik', ad: 'Bûselik' },
+  { id: 'kurdi', ad: 'Kürdî' },
+  { id: 'dik-kurdi', ad: 'Dik Kürdî' },
+  { id: 'nim-hicaz', ad: 'Nim Hicaz' },
+]
+
+// Seviye 2'nin usul sırası: Nim Sofyan → Semâî → Sofyan (kaynaklarda uzlaşı var).
+const SEVIYE_2_USULLER = ['nim-sofyan', 'semai', 'sofyan']
+
+const SEVIYE_2: Hedef[] = [
+  {
+    id: 's2-nota',
+    metin: 'Koma işaretleri, ara sesler, onaltılık ve üçleme konuları',
+    olcut: { tur: 'konular', topicIds: ['koma-1', 'koma-2', 'perde-3', 'perde-4', 'sure-4'] },
+    rota: '/nota',
+  },
+  {
+    id: 's2-ropriz',
+    metin: 'Röpriz ve bağ dersini okudum',
+    olcut: { tur: 'ders', dersId: 'okuma:ropriz' },
+    rota: dersRotasi('okuma:ropriz'),
+  },
+  ...ARA_SESLER.map(
+    (p): Hedef => ({
+      id: `s2-${p.id}-8`,
+      metin: `${p.ad}: 8 sn uzun ses`,
+      olcut: { tur: 'uzun-ses', perdeId: p.id, ms: 8000, cent: 20 },
+      rota: `/ney/${p.id}`,
+    }),
+  ),
+  ...SEVIYE_2_USULLER.map((id): Hedef => {
+    const ad = USULLER.find((u) => u.id === id)!.name
+    return {
+      id: `s2-vur-${id}`,
+      metin: `${ad} usulünü vurdum`,
+      olcut: { tur: 'usul-vurma', usulId: id },
+      rota: `/usul/vur/${id}`,
+    }
+  }),
+  {
+    id: 's2-usul-etut',
+    metin: 'Üç usulde birer etüt',
+    olcut: { tur: 'etutler', etutIds: ['usul-nim-sofyan', 'usul-semai', 'usul-sofyan'] },
+    rota: '/ney',
+  },
+  {
+    id: 's2-dortlu',
+    metin: 'Çârgâh, Kürdî ve Hicaz dörtlüleri',
+    olcut: { tur: 'etutler', etutIds: ['dortlu-cargah', 'dortlu-kurdi', 'dortlu-hicaz'] },
+    rota: '/ney',
+  },
+  {
+    id: 's2-dil',
+    metin: 'Dil ve bağ etüdü',
+    olcut: { tur: 'etutler', etutIds: ['dil-1'] },
+    rota: '/etut/dil-1',
+  },
+  {
+    id: 's2-ezgi',
+    metin: 'Bir ezgiyi ezbere çaldım (Benim Adım Dertli Dolap)',
+    olcut: { tur: 'onay' },
+    rota: '/parcalar/benim-adim-dertli-dolap',
+  },
 ]
 
 export const SEVIYELER: Seviye[] = [
@@ -132,8 +206,8 @@ export const SEVIYELER: Seviye[] = [
     no: 2,
     ad: 'Ara sesler, ilk usuller',
     sure: '2,5–5. ay',
-    ozet: 'Diyez, bemol ve koma işaretleri; Nim Hicaz, Kürdî, Bûselik; Nim Sofyan, Semâî ve Sofyan usulleri.',
-    hedefler: [],
+    ozet: 'Koma işaretleri, onaltılık ve üçleme; Bûselik, Kürdî, Dik Kürdî, Nim Hicaz; Nim Sofyan, Semâî ve Sofyan usulleri; Çârgâh, Kürdî ve Hicaz dörtlüleri.',
+    hedefler: SEVIYE_2,
   },
   {
     no: 3,

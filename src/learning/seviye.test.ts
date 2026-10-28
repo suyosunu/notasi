@@ -1,10 +1,12 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { SEVIYELER } from '../content/seviyeler'
 import type { Hedef, Seviye } from '../content/seviyeler'
+import * as db from '../store/db'
+import { isaretEkle, resetDbForTests } from '../store/db'
 import type { LongToneRec } from '../store/db'
 import { BASPARE_ID } from './baspare'
 import { ILK_SES_ID } from './evening-plan'
-import { hedefDurumlari, mevcutSeviye, siradakiHedef } from './seviye'
+import { hedefDurumlari, loadIlerleme, mevcutSeviye, siradakiHedef } from './seviye'
 import type { HedefDurumu, IlerlemeGirdisi } from './seviye'
 
 function girdi(over: Partial<IlerlemeGirdisi> = {}): IlerlemeGirdisi {
@@ -12,6 +14,7 @@ function girdi(over: Partial<IlerlemeGirdisi> = {}): IlerlemeGirdisi {
     okunanDersler: new Set(),
     onaylar: new Set(),
     calinanEtutler: new Set(),
+    vurulanUsuller: new Set(),
     longTones: [],
     notaStatuses: {},
     ...over,
@@ -100,6 +103,48 @@ describe('hedefDurumlari', () => {
   })
 })
 
+describe('usul-vurma ve Seviye 2 ölçütleri', () => {
+  it("usul-vurma hedefi vurulanUsuller'de usul varsa tamam", () => {
+    const yok = hedefDurumlari(SEVIYELER, girdi())
+    expect(yok['s2-vur-semai']!.tamam).toBe(false)
+    const d = hedefDurumlari(SEVIYELER, girdi({ vurulanUsuller: new Set(['semai']) }))
+    expect(d['s2-vur-semai']!.tamam).toBe(true)
+    expect(d['s2-vur-sofyan']!.tamam).toBe(false)
+    expect(d['s2-vur-nim-sofyan']!.tamam).toBe(false)
+  })
+
+  it('Seviye 2 etüt ve ders hedefleri ilgili kümelere bakar', () => {
+    const d = hedefDurumlari(
+      SEVIYELER,
+      girdi({
+        okunanDersler: new Set(['okuma:ropriz', 'okuma:olcu']),
+        calinanEtutler: new Set(['usul-nim-sofyan', 'dil-1', 'dortlu-cargah']),
+      }),
+    )
+    expect(d['s2-ropriz']!.tamam).toBe(true)
+    expect(d['s1-olcu']!.tamam).toBe(true)
+    expect(d['s2-usul-etut']).toEqual({ tamam: false, ilerleme: '1/3' })
+    expect(d['s2-dortlu']).toEqual({ tamam: false, ilerleme: '1/3' })
+    expect(d['s2-dil']).toEqual({ tamam: true, ilerleme: '1/1' })
+  })
+
+  it('loadIlerleme vurulanUsuller alanı olmayan ayarla hatasız', async () => {
+    await resetDbForTests()
+    const g = await loadIlerleme()
+    expect(g.vurulanUsuller.size).toBe(0)
+    await isaretEkle('vurulanUsuller', 'sofyan')
+    expect([...(await loadIlerleme()).vurulanUsuller]).toEqual(['sofyan'])
+  })
+
+  it('loadIlerleme settings.vurulanUsuller tanımsızken de çökmez', async () => {
+    await resetDbForTests()
+    vi.spyOn(db, 'getSettings').mockResolvedValueOnce({} as Awaited<ReturnType<typeof db.getSettings>>)
+    const g = await loadIlerleme()
+    expect(g.vurulanUsuller.size).toBe(0)
+    expect(g.okunanDersler.size).toBe(0)
+  })
+})
+
 describe('mevcutSeviye ve siradakiHedef', () => {
   const onay = (id: string): Hedef => ({ id, metin: id, olcut: { tur: 'onay' } })
   const seviye = (no: number, hedefler: Hedef[]): Seviye => ({ no, ad: `S${no}`, sure: '', ozet: '', hedefler })
@@ -126,10 +171,18 @@ describe('mevcutSeviye ve siradakiHedef', () => {
     expect(mevcutSeviye(SEVIYELER, d).no).toBe(1)
   })
 
-  it('seviye 0 ve 1 tamam → seviye 2; hedefsiz seviyede sıradaki hedef null', () => {
-    const d = hepsiTamam()
+  it('Seviye 0–1 tamam, Seviye 2 eksik → mevcutSeviye 2, siradakiHedef s2-nota', () => {
+    const d = hedefDurumlari(SEVIYELER, girdi())
+    for (const s of SEVIYELER.slice(0, 2)) for (const h of s.hedefler) d[h.id] = { tamam: true }
     const s = mevcutSeviye(SEVIYELER, d)
     expect(s.no).toBe(2)
+    expect(siradakiHedef(s, d)!.id).toBe('s2-nota')
+  })
+
+  it('hepsi tamamsa mevcut seviye 3 (hedefsiz); sıradaki hedef null', () => {
+    const d = hepsiTamam()
+    const s = mevcutSeviye(SEVIYELER, d)
+    expect(s.no).toBe(3)
     expect(siradakiHedef(s, d)).toBeNull()
   })
 

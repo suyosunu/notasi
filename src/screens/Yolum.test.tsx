@@ -105,10 +105,39 @@ describe('Yolum', () => {
   it('hedefsiz seviyede özet ve "sonraki aşamalarda" metni görünür', async () => {
     render(<Yolum />)
     await screen.findByText('Neyin bölümlerini öğrendim')
-    const ozet = [...document.querySelectorAll('details')].find((d) => d.textContent?.includes('Seviye 2'))!
-    expect(ozet.textContent).toContain('Seviye 2 · Ara sesler, ilk usuller')
-    expect(ozet.textContent).toContain(SEVIYELER[2]!.ozet)
+    const ozet = [...document.querySelectorAll('details')].find((d) => d.textContent?.includes('Seviye 3'))!
+    expect(ozet.textContent).toContain('Seviye 3 · Üçüncü kademe, ilk makam')
+    expect(ozet.textContent).toContain(SEVIYELER[3]!.ozet)
     expect(ozet.textContent).toContain('Bu seviyenin hedefleri sonraki aşamalarda gelecek.')
+  })
+
+  it('Seviye 2 hedefleri liste olarak görünür; s2-ezgi onaylanabilir', async () => {
+    render(<Yolum />)
+    await screen.findByText('Neyin bölümlerini öğrendim')
+    const bolum = [...document.querySelectorAll('details')].find((d) => d.textContent?.includes('Seviye 2 ·'))!
+    expect(within(bolum as HTMLElement).getAllByRole('listitem')).toHaveLength(SEVIYELER[2]!.hedefler.length)
+    expect(bolum.textContent).toContain('Nim Sofyan usulünü vurdum')
+    expect(bolum.textContent).toContain('Üç usulde birer etüt')
+    expect(bolum.textContent).toContain('Çârgâh, Kürdî ve Hicaz dörtlüleri')
+    expect(bolum.textContent).not.toContain('Bu seviyenin hedefleri sonraki aşamalarda gelecek.')
+
+    const vur = within(satir('Semâî usulünü vurdum')).getByRole('link', { name: 'Git' })
+    expect(vur.getAttribute('href')).toBe('#/usul/vur/semai')
+    expect(within(satir('Semâî usulünü vurdum')).getByRole('img', { name: 'eksik' })).toBeTruthy()
+
+    const kutu = within(satir(/Benim Adım Dertli Dolap/)).getByRole('checkbox') as HTMLInputElement
+    expect(kutu.checked).toBe(false)
+    fireEvent.click(kutu)
+    await waitFor(async () => expect((await getSettings()).onaylananHedefler).toContain('s2-ezgi'))
+    await waitFor(() => expect(kutu.checked).toBe(true))
+  })
+
+  it('vurulan usul Yolum’da ✓ görünür', async () => {
+    await isaretEkle('vurulanUsuller', 'semai')
+    render(<Yolum />)
+    await screen.findByText('Neyin bölümlerini öğrendim')
+    expect(within(satir('Semâî usulünü vurdum')).getByRole('img', { name: 'tamam' }).textContent).toBe('✓')
+    expect(within(satir('Sofyan usulünü vurdum')).getByRole('img', { name: 'eksik' })).toBeTruthy()
   })
 
   it('sayıların öneri olduğu notu görünür; ana ekrana dönüş bağlantısı vardır', async () => {

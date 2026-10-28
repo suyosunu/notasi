@@ -12,6 +12,7 @@ export interface IlerlemeGirdisi {
   okunanDersler: ReadonlySet<string>
   onaylar: ReadonlySet<string>
   calinanEtutler: ReadonlySet<string>
+  vurulanUsuller: ReadonlySet<string>
   longTones: LongToneRec[]
   notaStatuses: Record<string, TopicStatus>
 }
@@ -48,6 +49,8 @@ function hedefDurumu(h: Hedef, g: IlerlemeGirdisi): HedefDurumu {
       return sayim(o.topicIds.filter((id) => g.notaStatuses[id] === 'ogrenildi').length, o.topicIds.length)
     case 'etutler':
       return sayim(o.etutIds.filter((id) => g.calinanEtutler.has(id)).length, o.etutIds.length)
+    case 'usul-vurma':
+      return { tamam: g.vurulanUsuller.has(o.usulId) }
   }
 }
 
@@ -90,6 +93,7 @@ export async function loadIlerleme(): Promise<IlerlemeGirdisi> {
     okunanDersler: new Set(settings.okunanDersler ?? []),
     onaylar: new Set(settings.onaylananHedefler ?? []),
     calinanEtutler: new Set(settings.calinanEtutler ?? []),
+    vurulanUsuller: new Set(settings.vurulanUsuller ?? []),
     longTones,
     notaStatuses: topicStatuses(NOTA_TOPICS, attempts, placedOut),
   }
