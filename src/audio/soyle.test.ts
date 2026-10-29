@@ -1,40 +1,40 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { USULLER } from '../content/usuller'
-import { hece, sesSec, soyleAdimlari, soylemeyiDurdur, soyleUsul } from './soyle'
+import {
+  heceAdi,
+  insanSesAdi,
+  insanSesiInCode,
+  kaydetInsanSesi,
+  konusmayiAc,
+  sesSec,
+  soylemeyiDurdur,
+} from './soyle'
+import type { SampleHost } from './usulSamples'
 
-const usul = (id: string) => USULLER.find((u) => u.id === id)!
-
-describe('soyleAdimlari', () => {
-  it("Sofyan ♩ = 60, 2 ölçü: düüüm 0, te 2 sn, ke 3 sn; ikinci ölçü 4 sn'den", () => {
-    const a = soyleAdimlari(usul('sofyan'), 60, 2)
-    expect(a.map((x) => [x.at, x.metin])).toEqual([
-      [0, 'düüüm'],
-      [2000, 'te'],
-      [3000, 'ke'],
-      [4000, 'düüüm'],
-      [6000, 'te'],
-      [7000, 'ke'],
-    ])
-    expect(a[0]!.hiz).toBeLessThan(1) // uzun hece yavaş
-    expect(a[1]!.hiz).toBe(1) // kısa hece normal hızda: hızlandırınca kesik duyuluyordu
+describe('hece adları', () => {
+  it('1 zamandan uzun düm "duum", kısa düm "dum"; diğerleri kendi adıyla', () => {
+    expect(heceAdi({ ses: 'düm', sure: 2 })).toBe('duum')
+    expect(heceAdi({ ses: 'düm', sure: 1 })).toBe('dum')
+    expect(heceAdi({ ses: 'tek', sure: 2 })).toBe('tek')
+    expect(heceAdi({ ses: 'te', sure: 1 })).toBe('te')
+    expect(insanSesAdi('erkek', { ses: 'ke', sure: 1 })).toBe('usul_insan_erkek_ke')
   })
 
-  it('1 zamanlık düm kısa yazılır; Dolap (vuruşsuz) boş', () => {
-    expect(hece({ ses: 'düm', sure: 1 })).toBe('düm')
-    expect(hece({ ses: 'tek', sure: 2 })).toBe('tek')
-    expect(soyleAdimlari(usul('dolap'), 60, 1)).toEqual([])
+  it('koddaki insan sesini bulur', () => {
+    expect(insanSesiInCode('s("usul_insan_kadin_duum@2 usul_insan_kadin_te@1")')).toBe('kadin')
+    expect(insanSesiInCode('s("usul_tahta_dum@2")')).toBeNull()
   })
 })
 
 const YELDA = { lang: 'tr-TR', name: 'Yelda' }
 const TOLGA = { lang: 'tr_TR', name: 'Microsoft Tolga - Turkish (Turkey)' }
 
-describe('soyleUsul', () => {
-  const spoken: { text: string; lang: string; rate: number; pitch: number; voice: unknown }[] = []
+describe('konuşma sesi', () => {
+  const spoken: { text: string; lang: string; rate: number; pitch: number; volume: number; voice: unknown }[] = []
   class Utterance {
     lang = ''
     rate = 1
     pitch = 1
+    volume = 1
     voice: unknown = null
     text: string
     constructor(text: string) {
@@ -44,16 +44,28 @@ describe('soyleUsul', () => {
   const synth = {
     speaking: false,
     pending: false,
-    speak: vi.fn((u: Utterance) =>
-      spoken.push({ text: u.text, lang: u.lang, rate: u.rate, pitch: u.pitch, voice: u.voice }),
-    ),
+    speak: vi.fn((u: Utterance) => spoken.push({ ...u })),
     cancel: vi.fn(),
     getVoices: vi.fn((): { lang: string; name: string }[] => [YELDA]),
   }
 
+  type Tetik = (time: number, value: { duration: number }, onended: () => void) => unknown
+  /** Sahte Strudel: kaydedilen sesler ve ses saati (sn). */
+  const sounds = new Map<string, Tetik>()
+  const node = () => ({ connect: vi.fn((n: unknown) => n), start: vi.fn(), stop: vi.fn(), offset: { value: 1 } })
+  const ctx = { currentTime: 10, createConstantSource: vi.fn(node), createGain: vi.fn(node) }
+  const host = {
+    getAudioContext: () => ctx,
+    registerSound: (key: string, fn: Tetik) => sounds.set(key, fn),
+    onceEnded: vi.fn(),
+    releaseAudioNode: vi.fn(),
+  } as unknown as SampleHost
+
   beforeEach(() => {
     vi.useFakeTimers()
     spoken.length = 0
+    sounds.clear()
+    synth.speaking = false
     synth.speak.mockClear()
     synth.cancel.mockClear()
     synth.getVoices.mockImplementation(() => [{ lang: 'en-US', name: 'Samantha' }, YELDA])
@@ -66,37 +78,51 @@ describe('soyleUsul', () => {
     vi.unstubAllGlobals()
   })
 
-  it('ilk hece eşzamanlı söylenir (iOS dokunuşu); diğerleri zamanında; Türkçe; bitince çözülür', async () => {
-    let done = false
-    const p = soyleUsul(usul('sofyan'), 60, 1).then(() => (done = true))
-    expect(spoken.map((s) => s.text)).toEqual(['düüüm'])
-    expect(spoken[0]!.lang).toBe('tr-TR')
-    vi.advanceTimersByTime(2000)
-    expect(spoken.map((s) => s.text)).toEqual(['düüüm', 'te'])
-    vi.advanceTimersByTime(1000)
-    expect(spoken.map((s) => s.text)).toEqual(['düüüm', 'te', 'ke'])
-    await Promise.resolve()
-    expect(done).toBe(false)
-    vi.advanceTimersByTime(1000)
-    await p
-    expect(done).toBe(true)
+  it('beş hece sessiz ses olarak kaydedilir', () => {
+    kaydetInsanSesi(host, 'kadin')
+    expect([...sounds.keys()].sort()).toEqual(
+      ['dum', 'duum', 'ke', 'te', 'tek'].map((h) => `usul_insan_kadin_${h}`),
+    )
   })
 
-  it('durdurulunca sonraki heceler söylenmez ve söz çözülür', async () => {
-    const p = soyleUsul(usul('sofyan'), 60, 2)
+  it('tetiklenen hece vuruş anından konuşma gecikmesi kadar önce, Türkçe söylenir; uzun düm yavaş', () => {
+    kaydetInsanSesi(host, 'kadin')
+    sounds.get('usul_insan_kadin_duum')!(10.3, { duration: 1.5 }, () => {})
+    vi.advanceTimersByTime(199)
+    expect(spoken).toEqual([])
+    vi.advanceTimersByTime(1)
+    expect(spoken).toMatchObject([{ text: 'düüüm', lang: 'tr-TR', voice: YELDA, pitch: 1 }])
+    expect(spoken[0]!.rate).toBeLessThan(1)
+    sounds.get('usul_insan_kadin_te')!(10, { duration: 0.75 }, () => {})
+    vi.advanceTimersByTime(0)
+    expect(spoken[1]).toMatchObject({ text: 'te', rate: 1 })
+  })
+
+  it('önceki hece sürüyorsa kesilir ki sonraki vuruş gecikmesin', () => {
+    kaydetInsanSesi(host, 'kadin')
+    synth.speaking = true
+    sounds.get('usul_insan_kadin_ke')!(10, { duration: 0.75 }, () => {})
+    vi.advanceTimersByTime(0)
+    expect(synth.cancel).toHaveBeenCalled()
+    expect(spoken.map((s) => s.text)).toEqual(['ke'])
+  })
+
+  it('durdurulunca zamanlanmış heceler söylenmez', () => {
+    kaydetInsanSesi(host, 'kadin')
+    sounds.get('usul_insan_kadin_te')!(10.5, { duration: 0.75 }, () => {})
     soylemeyiDurdur()
-    await p
-    vi.advanceTimersByTime(10000)
-    expect(spoken.map((s) => s.text)).toEqual(['düüüm'])
+    vi.advanceTimersByTime(1000)
+    expect(spoken).toEqual([])
     expect(synth.cancel).toHaveBeenCalled()
   })
 
-  it('konuşma sesi yoksa reddedilir', async () => {
-    vi.unstubAllGlobals()
-    vi.stubGlobal('speechSynthesis', undefined)
-    // jsdom'da speechSynthesis hiç tanımlı değildir
-    delete (window as { speechSynthesis?: unknown }).speechSynthesis
-    await expect(soyleUsul(usul('sofyan'), 60)).rejects.toThrow()
+  it('erkek ses yoksa kadın ses kalınlaştırılarak söylenir', () => {
+    kaydetInsanSesi(host, 'erkek')
+    sounds.get('usul_insan_erkek_te')!(10, { duration: 0.75 }, () => {})
+    vi.advanceTimersByTime(0)
+    expect(spoken[0]).toMatchObject({ text: 'te', voice: YELDA })
+    expect(spoken[0]!.pitch).toBeLessThan(1)
+    expect(sesSec('erkek').ad).toBe('Yelda, kalınlaştırılmış')
   })
 
   it('erkek ses: Türkçe erkek ses varsa o, normal perdede', () => {
@@ -105,18 +131,24 @@ describe('soyleUsul', () => {
     expect(sesSec('kadin')).toMatchObject({ ses: YELDA, perde: 1, ad: 'Yelda' })
   })
 
-  it('erkek ses yoksa kadın ses kalınlaştırılarak söylenir', () => {
-    const p = soyleUsul(usul('sofyan'), 60, 1, 'erkek')
-    expect(spoken[0]).toMatchObject({ text: 'düüüm', voice: YELDA })
-    expect(spoken[0]!.pitch).toBeLessThan(1)
-    expect(sesSec('erkek').ad).toBe('Yelda, kalınlaştırılmış')
-    soylemeyiDurdur()
-    return p
-  })
-
   it('"female" adlı ses erkek sayılmaz', () => {
     const female = { lang: 'tr-TR', name: 'Turkish Female' }
     synth.getVoices.mockImplementation(() => [female])
     expect(sesSec('erkek')).toMatchObject({ ses: female, perde: 0.6 })
+  })
+
+  it('konuşmayı açma dokunuşta sessiz bir söyleme yapar', () => {
+    konusmayiAc()
+    expect(spoken).toMatchObject([{ volume: 0 }])
+  })
+
+  it('konuşma sesi olmayan cihazda hece yine sessiz ses olarak çalar, hiçbir şey söylenmez', () => {
+    vi.unstubAllGlobals()
+    delete (window as { speechSynthesis?: unknown }).speechSynthesis
+    kaydetInsanSesi(host, 'kadin')
+    expect(() => sounds.get('usul_insan_kadin_te')!(10, { duration: 0.75 }, () => {})).not.toThrow()
+    expect(() => konusmayiAc()).not.toThrow()
+    vi.advanceTimersByTime(1000)
+    expect(spoken).toEqual([])
   })
 })

@@ -1,8 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks'
 import { playCode, playWritten, setDilBelirginligi, setNeySesi, setUsulSesi, stopAudio, unlockAudio } from '../audio/player'
 import type { NeySesi } from '../audio/pattern'
-import { type SesTuru, sesSec, soylemeyiDurdur, soyleUsul } from '../audio/soyle'
+import { konusmaVar, konusmayiAc, sesSec } from '../audio/soyle'
 import { buildUsulOnceCode } from '../audio/usul'
+import { insanSesiMi } from '../audio/usulSamples'
 import type { UsulSesi } from '../audio/usulSamples'
 import { USULLER } from '../content/usuller'
 import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
@@ -49,12 +50,13 @@ const USUL_SESI_SECENEKLERI: { id: UsulSesi; label: string }[] = [
   { id: 'konga', label: 'Konga' },
   { id: 'tahta', label: 'Tahta' },
   { id: 'darbuka', label: 'Darbuka' },
+  { id: 'insan-kadin', label: 'İnsan sesi (kadın)' },
+  { id: 'insan-erkek', label: 'İnsan sesi (erkek)' },
 ]
 /** Usul sesi "▶ Dene": Sofyan'ın bir ölçüsü (düm te ke), ♩ = 80. */
 const DENEME_USUL = USULLER.find((u) => u.id === 'sofyan')!
 const DENEME_USUL_BPM = 80
-/** "▶ Söyle" (deneme): Sofyan iki ölçü, cihazın hazır Türkçe sesiyle (bkz. audio/soyle.ts). */
-const SOYLE_OLCU = 2
+/** İnsan sesi seçenekleri cihazın hazır Türkçe konuşma sesine dayanır (bkz. audio/soyle.ts). */
 const SOYLE_YOK = 'Bu cihazda hazır konuşma sesi bulunamadı.'
 
 interface Message {
@@ -94,7 +96,6 @@ export function Settings() {
     () => () => {
       runRef.current++
       stopAudio()
-      soylemeyiDurdur()
     },
     [],
   )
@@ -153,6 +154,7 @@ export function Settings() {
 
   async function changeUsulSesi(usulSesi: UsulSesi) {
     setUsulSesi(usulSesi) // hemen uygulanır; kayıt arkadan gelir
+    setUsulWarn(insanSesiMi(usulSesi) && !konusmaVar() ? SOYLE_YOK : null)
     setSettings(await saveSettings({ usulSesi }))
   }
 
@@ -164,8 +166,17 @@ export function Settings() {
       setUsulWarn(SOUND_OFF)
       return
     }
+    setSoyleyen(null)
+    if (insanSesiMi(ses)) {
+      if (!konusmaVar()) {
+        setUsulWarn(SOYLE_YOK)
+        return
+      }
+      // Denenen ses seçili olmayabilir: unlockAudio konuşmayı yalnızca seçili insan sesinde açar (iOS dokunuşu).
+      konusmayiAc()
+      setSoyleyen(sesSec(ses === 'insan-erkek' ? 'erkek' : 'kadin').ad)
+    }
     const run = ++runRef.current
-    soylemeyiDurdur()
     try {
       // unlockAudio dokunuş işleyicisinde, ilk iş olarak çağrılmalıdır (iOS).
       await unlockAudio()
@@ -174,30 +185,6 @@ export function Settings() {
       await playCode(code, durationMs)
     } catch {
       if (run === runRef.current) setUsulWarn(SOUND_WARNING)
-    }
-  }
-
-  /** Usulü cihazın hazır Türkçe sesiyle söyler (deneme). İlk hece dokunuş içinde, eşzamanlı söylenir (iOS). */
-  async function trySoyle(tur: SesTuru) {
-    if (!settings) return
-    setUsulWarn(null)
-    if (!settings.soundOn) {
-      setUsulWarn(SOUND_OFF)
-      return
-    }
-    ++runRef.current
-    stopAudio()
-    const soyleme = soyleUsul(DENEME_USUL, DENEME_USUL_BPM, SOYLE_OLCU, tur)
-    try {
-      setSoyleyen(sesSec(tur).ad)
-    } catch {
-      // Konuşma sesi yok: `soyleme` reddedilir, uyarı aşağıda.
-    }
-    try {
-      await soyleme
-    } catch {
-      setSoyleyen(null)
-      setUsulWarn(SOYLE_YOK)
     }
   }
 
@@ -390,18 +377,9 @@ export function Settings() {
             </div>
           ))}
         </div>
-        <div class="voice-option">
-          <span>İnsan sesi (hazır ses, deneme)</span>
-          <button type="button" class="tool" aria-label="▶ Kadın (İnsan sesi)" onClick={() => void trySoyle('kadin')}>
-            ▶ Kadın
-          </button>
-          <button type="button" class="tool" aria-label="▶ Erkek (İnsan sesi)" onClick={() => void trySoyle('erkek')}>
-            ▶ Erkek
-          </button>
-        </div>
         <p class="hint">
-          Sofyan'ı telefonun hazır Türkçe sesiyle "düüüm te ke" diye söyler. Telefonda erkek ses yoksa kadın ses
-          kalınlaştırılır. Yalnız deneme içindir: derslerde çalmaz, zamanlaması tempoya tam oturmayabilir.
+          İnsan sesi, usulü telefonun hazır Türkçe konuşma sesiyle "düüüm te ke" diye söyler (deneme): zamanlaması
+          kayıt sesleri kadar kesin olmayabilir. Telefonda erkek ses yoksa kadın ses kalınlaştırılır.
         </p>
         {soyleyen && <p class="hint">Söyleyen ses: {soyleyen}</p>}
         {usulWarn && (

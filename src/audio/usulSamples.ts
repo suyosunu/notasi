@@ -9,12 +9,19 @@ import type { VurusSesi } from '../content/usuller'
  * - Tahta: aynı kaynak. Düm GM 77 Low Wood Block, tek/te/ke GM 76 Hi Wood Block.
  * - Darbuka: VCSL (Versilian Studios, CC0). Düm Darbuka_1, tek Darbuka_2, te/ke Darbuka_3 (vl2, rr1).
  */
-export type UsulSesi = 'oryantal' | 'konga' | 'tahta' | 'darbuka'
-export const USUL_SESLERI: readonly UsulSesi[] = ['oryantal', 'konga', 'tahta', 'darbuka']
+export type UsulSesi = 'oryantal' | 'konga' | 'tahta' | 'darbuka' | InsanSesi
+export const USUL_SESLERI: readonly UsulSesi[] = ['oryantal', 'konga', 'tahta', 'darbuka', 'insan-kadin', 'insan-erkek']
 
 /** Kayıt tabanlı seçenekler. */
-export type KayitSesi = Exclude<UsulSesi, 'oryantal'>
+export type KayitSesi = 'konga' | 'tahta' | 'darbuka'
 export const KAYIT_SESLERI: readonly KayitSesi[] = ['konga', 'tahta', 'darbuka']
+
+/** Cihazın hazır Türkçe konuşma sesiyle hece söyleyen seçenekler (deneme; bkz. soyle.ts). */
+export type InsanSesi = 'insan-kadin' | 'insan-erkek'
+
+export function insanSesiMi(v: UsulSesi): v is InsanSesi {
+  return v === 'insan-kadin' || v === 'insan-erkek'
+}
 
 export function isUsulSesi(v: unknown): v is UsulSesi {
   return typeof v === 'string' && (USUL_SESLERI as readonly string[]).includes(v)

@@ -426,6 +426,36 @@ describe('usul sesi: kayıt tabanlı seçenekler (Konga, Tahta, Darbuka)', () =>
   })
 })
 
+describe('usul sesi: insan sesi (hazır konuşma sesi)', () => {
+  it('Sofyan: her vuruş kendi hecesinin sessiz sesini, kendi süresinde tetikler; uzun düm "duum"', () => {
+    expect(buildUsulBody(usul('sofyan'), 80, 'insan-erkek')).toBe(
+      's("usul_insan_erkek_duum@2 usul_insan_erkek_te@1 usul_insan_erkek_ke@1")',
+    )
+    expect(buildUsulBody(usul('sofyan'), 80, 'insan-kadin')).toContain('usul_insan_kadin_duum@2')
+  })
+
+  it('gerçek Strudel çekirdeğinde Sofyan heceleri 0, 2, 3. zamanlarda', async () => {
+    const { evalScope } = await import('@strudel/core')
+    const { evaluate, transpiler } = await import('@strudel/transpiler')
+    await evalScope(import('@strudel/core'), import('@strudel/mini'))
+    const { pattern } = await evaluate(buildUsulPatternCode(usul('sofyan'), 60, 'insan-kadin'), transpiler)
+    const hs = pattern
+      .queryArc(0, 4)
+      .filter((h) => h.hasOnset())
+      .map((h) => [Number(h.whole.begin), (h.value as { s: string }).s])
+      .sort((a, b) => (a[0] as number) - (b[0] as number))
+    expect(hs).toEqual([
+      [0, 'usul_insan_kadin_duum'],
+      [2, 'usul_insan_kadin_te'],
+      [3, 'usul_insan_kadin_ke'],
+    ])
+  })
+
+  it('Dolap (vuruşsuz) insan sesinde de metronom çalar', () => {
+    expect(buildUsulBody(usul('dolap'), 60, 'insan-kadin')).toBe(metronomeBody(12, 60))
+  })
+})
+
 describe('buildUsulOnceCode: bir ölçü, tek seferlik (Ayarlar → Dene)', () => {
   it('Sofyan ♩ = 80: bir ölçü (3 sn), o sesle; ölçüden sonra ses yok', async () => {
     const { code, durationMs } = buildUsulOnceCode(usul('sofyan'), 80, 'tahta')

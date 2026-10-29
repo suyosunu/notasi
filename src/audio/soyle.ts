@@ -1,53 +1,48 @@
-import type { Usul, Vurus } from '../content/usuller'
+import type { Vurus } from '../content/usuller'
+import type { SampleHost } from './usulSamples'
 
 /**
- * Usulü insan sesiyle söyleme denemesi (Ayarlar → Usul sesi → "▶ Söyle"): cihazın hazır Türkçe konuşma sesi
- * (Web Speech API, `speechSynthesis`) her vuruşun hecesini vuruş anında söyler. Strudel'den bağımsızdır; zamanlama
- * `setTimeout` ve konuşma motorunun gecikmesine bağlı olduğu için tempoya tam oturmayabilir (deneme).
+ * İnsan sesi usul seçenekleri (Ayarlar → Usul sesi → "İnsan sesi (kadın/erkek)"): cihazın hazır Türkçe konuşma sesi
+ * (Web Speech API, `speechSynthesis`) her vuruşun hecesini söyler. Heceler Strudel'de sessiz birer ses olarak çalar
+ * (`usul_insan_<tür>_<hece>`); tetiklendiklerinde hece vuruş anına göre zamanlanıp söylenir. Böylece usulün çaldığı her
+ * yer (ders, etüt, parça, usul vurma) aynı kodla insan sesini de çalar. Konuşma motoru ses saatinden bağımsız olduğu
+ * için zamanlama kayıt sesleri kadar kesin değildir (deneme).
  */
 
-/** 1 zamandan uzun düm uzatılarak yazılır; konuşma sesi onu da daha yavaş söyler. */
-export function hece(v: Vurus): string {
-  return v.ses === 'düm' && v.sure > 1 ? 'düüüm' : v.ses
+export type SesTuru = 'kadin' | 'erkek'
+export const SES_TURLERI: readonly SesTuru[] = ['kadin', 'erkek']
+
+/** Hecenin ses adındaki karşılığı; `duum` 1 zamandan uzun düm'dür. */
+export type HeceAdi = 'duum' | 'dum' | 'tek' | 'te' | 'ke'
+
+/** Söylenen metin ve hız (1 = normal). Kısa heceler normal hızda (hızlandırınca kesik duyuluyordu); uzun düm yavaş. */
+const HECELER: Record<HeceAdi, { metin: string; hiz: number }> = {
+  duum: { metin: 'düüüm', hiz: 0.8 },
+  dum: { metin: 'düm', hiz: 1 },
+  tek: { metin: 'tek', hiz: 1 },
+  te: { metin: 'te', hiz: 1 },
+  ke: { metin: 'ke', hiz: 1 },
 }
 
-/**
- * Hece hızı (1 = normal): kısa heceler (te, ke, tek) normal hızda söylenir; hızlandırınca kesik duyuluyordu.
- * Uzun vuruş yavaş söylenir ki "düüüm" uzasın.
- */
-const NORMAL = 1
-const YAVAS = 0.8
-
-export interface SoyleAdim {
-  /** Başlangıçtan bu yana (ms). */
-  at: number
-  metin: string
-  hiz: number
+export function heceAdi(v: Vurus): HeceAdi {
+  if (v.ses === 'düm') return v.sure > 1 ? 'duum' : 'dum'
+  return v.ses
 }
 
-/** `olcu` ölçünün heceleri ve zamanları; `bpm` mertebe birimine göredir. */
-export function soyleAdimlari(u: Usul, bpm: number, olcu: number): SoyleAdim[] {
-  if (u.vurus === null) return []
-  const birim = 60000 / bpm
-  const adimlar: SoyleAdim[] = []
-  let t = 0
-  for (let i = 0; i < olcu; i++) {
-    for (const v of u.vurus) {
-      adimlar.push({ at: t * birim, metin: hece(v), hiz: v.sure > 1 ? YAVAS : NORMAL })
-      t += v.sure
-    }
-  }
-  return adimlar
+/** Vuruşun Strudel ses adı. */
+export function insanSesAdi(tur: SesTuru, v: Vurus): string {
+  return `usul_insan_${tur}_${heceAdi(v)}`
+}
+
+/** Kod insan sesi çalıyorsa türünü döndürür (ses kaydı için). */
+export function insanSesiInCode(code: string): SesTuru | null {
+  const m = /\busul_insan_(kadin|erkek)_/.exec(code)
+  return m ? (m[1] as SesTuru) : null
 }
 
 export function konusmaVar(): boolean {
   return typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window
 }
-
-let zamanlayicilar: ReturnType<typeof setTimeout>[] = []
-let bitir: (() => void) | null = null
-
-export type SesTuru = 'kadin' | 'erkek'
 
 /** Bilinen erkek Türkçe sesler (iOS, Windows, Edge); adı "female" içeren ses erkek sayılmaz. */
 function erkekMi(v: SpeechSynthesisVoice): boolean {
@@ -60,10 +55,11 @@ const KALIN = 0.6
 export interface SesSecimi {
   ses: SpeechSynthesisVoice | undefined
   perde: number
-  /** Ayarlar'da gösterilir: hangi ses çaldı. */
+  /** Ayarlar'da gösterilir: hangi ses çalıyor. */
   ad: string
 }
 
+/** Sesler bazı tarayıcılarda geç yüklendiği için her hecede yeniden seçilir. */
 export function sesSec(tur: SesTuru): SesSecimi {
   const tr = speechSynthesis.getVoices().filter((v) => v.lang.toLowerCase().replace('_', '-').startsWith('tr'))
   const erkek = tr.find(erkekMi)
@@ -76,50 +72,76 @@ export function sesSec(tur: SesTuru): SesSecimi {
   return { ses, perde: 1, ad: ses?.name ?? 'Türkçe ses' }
 }
 
-function soyleHece(a: SoyleAdim, secim: SesSecimi) {
-  const s = new SpeechSynthesisUtterance(a.metin)
+function soyleHece(hece: HeceAdi, tur: SesTuru) {
+  const { metin, hiz } = HECELER[hece]
+  const secim = sesSec(tur)
+  const s = new SpeechSynthesisUtterance(metin)
   s.lang = 'tr-TR'
   if (secim.ses) s.voice = secim.ses
-  s.rate = a.hiz
+  s.rate = hiz
   s.pitch = secim.perde
   // Önceki hece hâlâ sürüyorsa kesilir: sıraya girip sonraki vuruşları geciktirmesin.
   if (speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel()
   speechSynthesis.speak(s)
 }
 
-/** Çalan söyleme varsa durdurur. */
+/**
+ * iOS konuşmayı yalnızca kullanıcı hareketi içinde açar: dokunuşta (unlockAudio) sessiz bir söyleme yapılır, sonraki
+ * heceler zamanlayıcıdan söylenebilir.
+ */
+export function konusmayiAc(): void {
+  if (!konusmaVar()) return
+  const s = new SpeechSynthesisUtterance(' ')
+  s.volume = 0
+  speechSynthesis.speak(s)
+}
+
+let zamanlayicilar = new Set<ReturnType<typeof setTimeout>>()
+
+/** Zamanlanmış heceleri iptal eder, söyleneni keser (stopAudio çağırır). */
 export function soylemeyiDurdur(): void {
   for (const z of zamanlayicilar) clearTimeout(z)
-  zamanlayicilar = []
+  zamanlayicilar = new Set()
   if (konusmaVar()) speechSynthesis.cancel()
-  const b = bitir
-  bitir = null
-  b?.()
 }
 
 /**
- * Dokunuş işleyicisinden çağrılır: ilk hece eşzamanlı söylenir (iOS konuşmayı yalnızca kullanıcı hareketiyle açar).
- * Bitince ya da durdurulunca çözülür. Konuşma sesi yoksa hata fırlatır.
+ * Konuşma motorunun "söyle" ile sesin duyulması arasındaki gecikme payı (ms, tahmin): hece vuruş anından bu kadar
+ * önce söylenir. Strudel vuruşu ~0,1 sn önceden tetiklediği için hece pratikte tetiklenir tetiklenmez söylenir.
  */
-export function soyleUsul(u: Usul, bpm: number, olcu = 2, tur: SesTuru = 'kadin'): Promise<void> {
-  soylemeyiDurdur()
-  if (!konusmaVar()) return Promise.reject(new Error('Bu cihazda konuşma sesi yok'))
-  const adimlar = soyleAdimlari(u, bpm, olcu)
-  if (adimlar.length === 0) return Promise.resolve()
-  const secim = sesSec(tur)
-  const sure = (olcu * u.zaman * 60000) / bpm
-  return new Promise<void>((resolve) => {
-    bitir = resolve
-    for (const a of adimlar) {
-      if (a.at === 0) soyleHece(a, secim)
-      else zamanlayicilar.push(setTimeout(() => soyleHece(a, secim), a.at))
-    }
-    zamanlayicilar.push(
-      setTimeout(() => {
-        zamanlayicilar = []
-        bitir = null
-        resolve()
-      }, sure),
+const KONUSMA_GECIKMESI_MS = 100
+
+/** `tur` sesinin hecelerini Strudel'e sessiz ses olarak kaydeder; her tetiklenişte hece vuruş anında söylenir. */
+export function kaydetInsanSesi(host: SampleHost, tur: SesTuru): void {
+  for (const hece of Object.keys(HECELER) as HeceAdi[]) {
+    host.registerSound(
+      `usul_insan_${tur}_${hece}`,
+      (time, _value, onended) => {
+        const ctx = host.getAudioContext()
+        // Sessiz düğüm: superdough zinciri bir ses kaynağı bekler.
+        const src = ctx.createConstantSource()
+        src.offset.value = 0
+        const node = ctx.createGain()
+        src.connect(node)
+        src.start(time)
+        src.stop(time + 0.01)
+        host.onceEnded(src, () => {
+          host.releaseAudioNode(src)
+          onended()
+        })
+        if (konusmaVar()) {
+          const z = setTimeout(
+            () => {
+              zamanlayicilar.delete(z)
+              soyleHece(hece, tur)
+            },
+            Math.max(0, (time - ctx.currentTime) * 1000 - KONUSMA_GECIKMESI_MS),
+          )
+          zamanlayicilar.add(z)
+        }
+        return { node, stop: () => {}, nodes: { source: [src] } }
+      },
+      { type: 'sample' },
     )
-  })
+  }
 }

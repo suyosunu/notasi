@@ -470,6 +470,18 @@ describe('usul sesi (setUsulSesi / getUsulSesi) ve kayıt yükleme', () => {
     expect(strudel.evaluate).toHaveBeenCalledTimes(2)
   })
 
+  it('insan sesi: heceler dosyasız, evaluate öncesi sessiz ses olarak kaydedilir', async () => {
+    const { playLoop } = await freshPlayer()
+    await playLoop('s("usul_insan_erkek_duum@2 usul_insan_erkek_te@1 usul_insan_erkek_ke@1").cpm(20)')
+    expect(fetchMock).not.toHaveBeenCalled()
+    const adlar = strudel.registerSound.mock.calls.map((c) => c[0] as string)
+    expect(adlar).toContain('usul_insan_erkek_duum')
+    expect(adlar).toContain('usul_insan_erkek_te')
+    expect(Math.max(...strudel.registerSound.mock.invocationCallOrder)).toBeLessThan(
+      strudel.evaluate.mock.invocationCallOrder[0]!,
+    )
+  })
+
   it('playCode (parça): usul katmanındaki kayıt sesi yüklenir', async () => {
     const { playCode, stopAudio } = await freshPlayer()
     const p = playCode('stack(freq("440@1").s("triangle"), s("usul_darbuka_dum@2 ~@2")).cpm(15)', 1000)

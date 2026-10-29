@@ -449,10 +449,6 @@ h2.setting-label {
   gap: 0.75rem;
 }
 
-.voice-option > span {
-  flex: 1;
-}
-
 .radio {
   display: flex;
   align-items: center;

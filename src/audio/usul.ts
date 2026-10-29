@@ -1,7 +1,9 @@
 import type { Usul, Vurus, VurusSesi } from '../content/usuller'
 import { ONE_SHOT } from './pattern'
 import { playLoop, stopAudio, unlockAudio } from './player'
-import { getUsulSesi, strokeSound } from './usulSamples'
+import { insanSesAdi } from './soyle'
+import type { SesTuru } from './soyle'
+import { getUsulSesi, insanSesiMi, strokeSound } from './usulSamples'
 import type { KayitSesi, UsulSesi } from './usulSamples'
 
 // Kulakla ayarlanabilir ses parametreleri. "Oryantal" seçenekte örnek ses dosyası yoktur: yalnızca sentez (sine,
@@ -193,6 +195,11 @@ function sampleCode(u: Usul, bpm: number, ses: KayitSesi): string {
   )
 }
 
+/** İnsan sesi (soyle.ts): her vuruş kendi hecesinin sessiz sesini tetikler; hece konuşma sesiyle söylenir. */
+function insanCode(u: Usul, tur: SesTuru): string {
+  return `s("${u.vurus!.map((x) => step(insanSesAdi(tur, x), x.sure)).join(' ')}")`
+}
+
 /**
  * Tek usul ölçüsünün deseni (tempo yok): bir döngü = bir ölçü. Dolap'ta metronom (her seçenekte sentez tık:
  * metronom usul vuruşu değildir).
@@ -201,7 +208,9 @@ function sampleCode(u: Usul, bpm: number, ses: KayitSesi): string {
  */
 export function buildUsulBody(u: Usul, bpm: number, ses: UsulSesi = getUsulSesi()): string {
   if (u.vurus === null) return metronomeBody(u.zaman, bpm)
-  return ses === 'oryantal' ? strokeCode(u, bpm) : sampleCode(u, bpm, ses)
+  if (ses === 'oryantal') return strokeCode(u, bpm)
+  if (insanSesiMi(ses)) return insanCode(u, ses === 'insan-erkek' ? 'erkek' : 'kadin')
+  return sampleCode(u, bpm, ses)
 }
 
 /**

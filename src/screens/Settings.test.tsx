@@ -13,7 +13,7 @@ import {
 } from '../audio/player'
 import { toToneEvents } from '../audio/pattern'
 import type { NeySesi } from '../audio/pattern'
-import { sesSec, soylemeyiDurdur, soyleUsul } from '../audio/soyle'
+import { konusmaVar, konusmayiAc, sesSec } from '../audio/soyle'
 import { buildUsulOnceCode } from '../audio/usul'
 import type { UsulSesi } from '../audio/usulSamples'
 import { USULLER } from '../content/usuller'
@@ -35,9 +35,10 @@ vi.mock('../audio/player', () => ({
   setDilBelirginligi: vi.fn(),
 }))
 
-vi.mock('../audio/soyle', () => ({
-  soyleUsul: vi.fn(() => Promise.resolve()),
-  soylemeyiDurdur: vi.fn(),
+vi.mock('../audio/soyle', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../audio/soyle')>()),
+  konusmaVar: vi.fn(() => true),
+  konusmayiAc: vi.fn(),
   sesSec: vi.fn(() => ({ ses: undefined, perde: 1, ad: 'Yelda' })),
 }))
 
@@ -69,8 +70,8 @@ beforeEach(async () => {
   })
   vi.mocked(getUsulSesi).mockReset().mockImplementation(() => usulVoice)
   vi.mocked(setDilBelirginligi).mockReset()
-  vi.mocked(soyleUsul).mockReset().mockImplementation(() => Promise.resolve())
-  vi.mocked(soylemeyiDurdur).mockReset()
+  vi.mocked(konusmaVar).mockReset().mockImplementation(() => true)
+  vi.mocked(konusmayiAc).mockReset()
   vi.mocked(sesSec).mockReset().mockImplementation(() => ({ ses: undefined, perde: 1, ad: 'Yelda' }))
 })
 
@@ -357,7 +358,7 @@ describe('Settings: Usul sesi', () => {
   const radio = (name: string) => screen.getByRole('radio', { name }) as HTMLInputElement
   const sofyan = USULLER.find((u) => u.id === 'sofyan')!
 
-  it('başlık ve dört seçenek; varsayılan Tahta seçilidir; her birinin Dene düğmesi vardır', async () => {
+  it('başlık ve altı seçenek; varsayılan Tahta seçilidir; her birinin Dene düğmesi vardır', async () => {
     render(<Settings />)
     expect(await screen.findByRole('heading', { name: 'Usul sesi' })).toBeTruthy()
     const group = screen.getByRole('radiogroup', { name: 'Usul sesi' })
@@ -366,6 +367,8 @@ describe('Settings: Usul sesi', () => {
       'Konga',
       'Tahta',
       'Darbuka',
+      'İnsan sesi (kadın)',
+      'İnsan sesi (erkek)',
     ])
     expect(radio('Tahta').checked).toBe(true)
     expect(radio('Oryantal').checked).toBe(false)
@@ -374,6 +377,8 @@ describe('Settings: Usul sesi', () => {
       '▶ Dene (Konga)',
       '▶ Dene (Tahta)',
       '▶ Dene (Darbuka)',
+      '▶ Dene (İnsan sesi (kadın))',
+      '▶ Dene (İnsan sesi (erkek))',
     ])
   })
 
@@ -480,52 +485,58 @@ describe('Settings: Usul sesi', () => {
   })
 })
 
-describe('Settings: İnsan sesi (hazır ses, deneme)', () => {
+describe('Settings: İnsan sesi', () => {
   const sofyan = USULLER.find((u) => u.id === 'sofyan')!
-  const soyle = (tur: 'Kadın' | 'Erkek' = 'Kadın') => screen.findByRole('button', { name: `▶ ${tur} (İnsan sesi)` })
+  const dene = (tur: 'kadın' | 'erkek') => screen.findByRole('button', { name: `▶ Dene (İnsan sesi (${tur}))` })
 
-  it('▶ Kadın: çalan sesi durdurur, Sofyan ♩ = 80 iki ölçüyü hazır sesle söyler; sesin adını gösterir', async () => {
+  it('▶ Dene (kadın): konuşmayı dokunuşta açar, Sofyan ölçüsünü insan sesiyle çalar, sesin adını gösterir', async () => {
     render(<Settings />)
-    fireEvent.click(await soyle())
-    await waitFor(() => expect(soyleUsul).toHaveBeenCalledWith(sofyan, 80, 2, 'kadin'))
-    expect(stopAudio).toHaveBeenCalled()
-    expect(playCode).not.toHaveBeenCalled()
+    fireEvent.click(await dene('kadın'))
+    expect(konusmayiAc).toHaveBeenCalled()
+    expect(unlockAudio).toHaveBeenCalled()
+    await waitFor(() => expect(playCode).toHaveBeenCalled())
+    expect(vi.mocked(playCode).mock.calls[0]![0]).toBe(buildUsulOnceCode(sofyan, 80, 'insan-kadin').code)
+    expect(sesSec).toHaveBeenCalledWith('kadin')
     expect(await screen.findByText('Söyleyen ses: Yelda')).toBeTruthy()
   })
 
-  it('▶ Erkek: erkek sesle söyler', async () => {
+  it('▶ Dene (erkek): erkek sesle çalar', async () => {
     vi.mocked(sesSec).mockImplementation(() => ({ ses: undefined, perde: 0.6, ad: 'Yelda, kalınlaştırılmış' }))
     render(<Settings />)
-    fireEvent.click(await soyle('Erkek'))
-    await waitFor(() => expect(soyleUsul).toHaveBeenCalledWith(sofyan, 80, 2, 'erkek'))
-    expect(sesSec).toHaveBeenCalledWith('erkek')
+    fireEvent.click(await dene('erkek'))
+    await waitFor(() => expect(playCode).toHaveBeenCalled())
+    expect(vi.mocked(playCode).mock.calls[0]![0]).toContain('usul_insan_erkek_')
     expect(await screen.findByText('Söyleyen ses: Yelda, kalınlaştırılmış')).toBeTruthy()
   })
 
-  it('ses kapalıysa söylemez, uyarı gösterir', async () => {
+  it('kayıt sesi denenince söyleyen ses yazısı kalkar', async () => {
+    render(<Settings />)
+    fireEvent.click(await dene('kadın'))
+    await screen.findByText('Söyleyen ses: Yelda')
+    fireEvent.click(screen.getByRole('button', { name: '▶ Dene (Tahta)' }))
+    await waitFor(() => expect(screen.queryByText(/Söyleyen ses/)).toBeNull())
+  })
+
+  it('cihazda konuşma sesi yoksa çalmaz, bunu söyler; seçince de uyarır', async () => {
+    vi.mocked(konusmaVar).mockImplementation(() => false)
+    render(<Settings />)
+    fireEvent.click(await dene('erkek'))
+    expect(await screen.findByText('Bu cihazda hazır konuşma sesi bulunamadı.')).toBeTruthy()
+    expect(playCode).not.toHaveBeenCalled()
+    expect(screen.queryByText(/Söyleyen ses/)).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: '▶ Dene (Tahta)' }))
+    await waitFor(() => expect(screen.queryByText('Bu cihazda hazır konuşma sesi bulunamadı.')).toBeNull())
+    fireEvent.click(screen.getByRole('radio', { name: 'İnsan sesi (kadın)' }))
+    expect(await screen.findByText('Bu cihazda hazır konuşma sesi bulunamadı.')).toBeTruthy()
+    await waitFor(async () => expect((await getSettings()).usulSesi).toBe('insan-kadin'))
+  })
+
+  it('ses kapalıysa çalmaz, uyarı gösterir', async () => {
     await saveSettings({ soundOn: false })
     render(<Settings />)
-    fireEvent.click(await soyle())
+    fireEvent.click(await dene('kadın'))
     expect(await screen.findByText(SOUND_OFF)).toBeTruthy()
-    expect(soyleUsul).not.toHaveBeenCalled()
-  })
-
-  it('cihazda konuşma sesi yoksa bunu söyler', async () => {
-    vi.mocked(soyleUsul).mockImplementation(() => Promise.reject(new Error('yok')))
-    vi.mocked(sesSec).mockImplementation(() => {
-      throw new ReferenceError('speechSynthesis is not defined')
-    })
-    render(<Settings />)
-    fireEvent.click(await soyle('Erkek'))
-    expect(await screen.findByText('Bu cihazda hazır konuşma sesi bulunamadı.')).toBeTruthy()
-    expect(screen.queryByText(/Söyleyen ses/)).toBeNull()
-  })
-
-  it('sayfadan çıkınca söyleme durur', async () => {
-    const { unmount } = render(<Settings />)
-    await soyle()
-    unmount()
-    expect(soylemeyiDurdur).toHaveBeenCalled()
+    expect(playCode).not.toHaveBeenCalled()
   })
 })
 
