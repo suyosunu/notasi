@@ -8,7 +8,7 @@ export interface NoteEvent {
   dotted?: boolean
   /** true: sonraki notaya (aynı perde) bağlıdır; çalarken süreleri birleşir. */
   tie?: boolean
-  /** true: sonraki notaya bağ (legato; perde farklı olabilir). Yalnız çizilir; çalma değişmez. */
+  /** true: sonraki notaya bağ (legato; perde farklı olabilir). Çalımda sonraki ses dil vurulmadan girer (bkz. toToneEvents). */
   bag?: boolean
   /** true: üçleme üyesi; süre × 2/3. */
   uclu?: boolean

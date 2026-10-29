@@ -11,7 +11,7 @@ vi.mock('./player', () => ({ unlockAudio: vi.fn(), playLoop: vi.fn(), stopAudio:
 import { USULLER } from '../content/usuller'
 import { buildEtutCode } from './etut'
 import { buildUsulBody } from './usul'
-import { melodyChain, ONE_SHOT } from './pattern'
+import { melodyChain, ONE_SHOT, toToneEvents } from './pattern'
 import { SHAKUHACHI_SOUND } from './shakuhachi'
 
 const tekNeva = ETUTLER.find((e) => e.id === 'tek-neva')!
@@ -166,5 +166,18 @@ describe('buildEtutCode', () => {
     expect(() => buildEtutCode(tekNeva.olcu, DEFAULT_TUNING, 60, { ...opts, melodi: false, metronom: false })).toThrow(RangeError)
     expect(() => buildEtutCode(tekNeva.olcu, DEFAULT_TUNING, 0, opts)).toThrow(RangeError)
     expect(() => buildEtutCode([], DEFAULT_TUNING, 60, opts)).toThrow(RangeError)
+  })
+})
+
+describe('buildEtutCode: bağlı etüt (dil-1)', () => {
+  const dil = ETUTLER.find((e) => e.id === 'dil-1')!
+
+  it('bağlı sesler giriş sayımından sonra da kendi notalarına hizalı: yalnız onlar döngü bölgesinden başlar', async () => {
+    const tones = toToneEvents(dil.olcu.flat(), DEFAULT_TUNING).filter((t) => t.hz !== null)
+    expect(tones.some((t) => t.legato)).toBe(true)
+    const { code } = buildEtutCode(dil.olcu, DEFAULT_TUNING, 60, { melodi: true, metronom: false, voice: 'shakuhachi' })
+    const melodi = (await haps(code, 0, 4 + toplam(dil.olcu))).filter((h) => h.s === SHAKUHACHI_SOUND)
+    expect(melodi.map((h) => h.freq)).toEqual(tones.map((t) => Number(t.hz!.toFixed(2))))
+    expect(melodi.map((h) => (h as { begin?: number }).begin)).toEqual(tones.map((t) => (t.legato ? 1 : 0)))
   })
 })

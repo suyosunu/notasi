@@ -123,9 +123,17 @@ describe('loadShakuhachi', () => {
     expect(src.loop).toBe(true)
     expect(src.loopStart).toBeCloseTo(SHAKUHACHI_ZONE.loopStart / SHAKUHACHI_ZONE.sampleRate, 9)
     expect(src.loopEnd).toBeCloseTo(SHAKUHACHI_ZONE.loopEnd / SHAKUHACHI_ZONE.sampleRate, 9)
-    expect(src.start).toHaveBeenCalledWith(10)
+    expect(src.start).toHaveBeenCalledWith(10, 0)
     // tutma sonu + release (0.1) + küçük pay
     expect(src.stop.mock.calls[0]![0]).toBeCloseTo(10.61, 9)
     expect(raw.getVibratoOscillator).toHaveBeenCalledWith(src.detune, expect.anything(), 10)
+  })
+
+  it('begin: 1 (bağlı ses) baştaki üfleme geçişini atlayıp döngü bölgesinden başlar', async () => {
+    const { host, raw, sources } = fakeHost()
+    await loadShakuhachi(host, () => Promise.resolve(new Response(new ArrayBuffer(4))))
+    const onTrigger = raw.registerSound.mock.calls[0]![1] as (t: number, v: Record<string, unknown>, e: () => void) => void
+    onTrigger(3, { freq: 440, duration: 0.5, begin: 1 }, () => {})
+    expect(sources[0]!.start).toHaveBeenCalledWith(3, SHAKUHACHI_ZONE.loopStart / SHAKUHACHI_ZONE.sampleRate)
   })
 })

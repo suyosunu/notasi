@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { DEFAULT_TUNING } from '../music/ahenk'
 import type { MusicEvent } from '../music/notation'
 import {
+  BAG_GECIS_S,
   buildPatternCode,
   melodyChain,
   NEFES_SOLUK_CHAIN,
@@ -62,12 +63,20 @@ describe('toToneEvents', () => {
     expect(Math.abs(sum - 2)).toBeLessThan(1e-6)
   })
 
-  it('bag çalmayı değiştirmez: farklı perdeler ayrı ses kalır', () => {
+  it('bag: farklı perdeler ayrı ses kalır, bağlanan ses legato işaretlenir; susa giden bağ işaretlemez', () => {
+    const G4 = { step: 'G', octave: 4, acc: 0 } as const
+    const A4 = { step: 'A', octave: 4, acc: 0 } as const
     const written: MusicEvent[] = [
-      { kind: 'note', pitch: { step: 'G', octave: 4, acc: 0 }, dur: 'quarter', bag: true },
-      { kind: 'note', pitch: { step: 'A', octave: 4, acc: 0 }, dur: 'quarter' },
+      { kind: 'note', pitch: G4, dur: 'quarter', bag: true },
+      { kind: 'note', pitch: A4, dur: 'quarter', bag: true },
+      { kind: 'note', pitch: G4, dur: 'quarter', bag: true },
+      { kind: 'rest', dur: 'quarter' },
+      { kind: 'note', pitch: A4, dur: 'quarter' },
     ]
-    expect(toToneEvents(written, DEFAULT_TUNING).map((t) => t.beats)).toEqual([1, 1])
+    const tones = toToneEvents(written, DEFAULT_TUNING)
+    expect(tones.map((t) => t.beats)).toEqual([1, 1, 1, 1, 1])
+    expect(tones.map((t) => t.legato ?? false)).toEqual([false, true, true, false, false])
+    expect('legato' in tones[0]!).toBe(false)
   })
 
   describe('bağlı notalar', () => {
@@ -146,6 +155,11 @@ interface Hit {
   bandf?: number
   /** `.lpf()` çekirdekte `cutoff` anahtarına yazılır. */
   cutoff?: number
+  attack?: number
+  decay?: number
+  sustain?: number
+  release?: number
+  begin?: number
 }
 
 /** Kodu gerçek Strudel çekirdeğiyle değerlendirip başlangıçlı olayları döner. */
@@ -241,6 +255,53 @@ describe('ney sesleri: gerçek Strudel çekirdeğiyle', () => {
     const { code } = buildPatternCode(events, 60, 'nefesli')
     expect(await query(code, 5, 10)).toEqual([])
     expect(await query(code, 10, 60)).toEqual([])
+  })
+
+  describe('bağ (legato)', () => {
+    // Nevâ, Çârgâh(bağlı) Nevâ(bağlı), sus, Segâh
+    const bagli = [
+      { hz: 742.433, beats: 1 },
+      { hz: 556.8, beats: 1, legato: true as const },
+      { hz: 742.433, beats: 1, legato: true as const },
+      { hz: null, beats: 1 },
+      { hz: 527.849, beats: 1 },
+    ]
+
+    it('bağ yoksa zincir değişmez (bağsız çalımlar birebir aynı)', () => {
+      for (const v of NEY_SESLERI) expect(melodyChain(v, events)).toBe(melodyChain(v))
+    })
+
+    it('mevcut: bağsız sesler superdough varsayılanıyla, bağlı ses vurgusuz aynı düzeyde; önceki ses kısa söner', async () => {
+      const hs = await query(buildPatternCode(bagli, 60, 'mevcut').code, 0, 5)
+      expect(hs.map((h) => h.freq)).toEqual([742.43, 556.8, 742.43, 527.85])
+      const [ilk, b1, b2, son] = hs
+      expect([ilk!.attack, ilk!.decay, ilk!.sustain, ilk!.gain]).toEqual([0.001, 0.05, 0.6, 0.8])
+      expect(ilk!.release).toBe(BAG_GECIS_S)
+      expect([b1!.attack, b1!.sustain, b1!.gain]).toEqual([BAG_GECIS_S, 1, 0.48])
+      expect(b1!.release).toBe(BAG_GECIS_S)
+      expect(b2!.release).toBe(0.01) // susa gider
+      expect(b2!.gain! * b2!.sustain!).toBeCloseTo(son!.gain! * son!.sustain!, 9)
+      expect([son!.attack, son!.release]).toEqual([0.001, 0.01])
+    })
+
+    it('shakuhachi: bağlı ses kaydın döngü bölgesinden (begin 1) başlar, bağsız sesler baştan', async () => {
+      const hs = await query(buildPatternCode(bagli, 60, 'shakuhachi').code, 0, 5)
+      expect(hs.map((h) => h.begin)).toEqual([0, 1, 1, 0])
+      expect(hs.map((h) => h.release)).toEqual([BAG_GECIS_S, BAG_GECIS_S, 0.1, 0.1])
+      expect(hs.map((h) => h.attack)).toEqual([0.03, 0.03, 0.03, 0.03])
+      expect(hs.every((h) => h.s === SHAKUHACHI_SOUND)).toBe(true)
+    })
+
+    it('nefesli: iki katman da bağlı seste yumuşak girişsiz geçer, kendi değerlerini korur', async () => {
+      const hs = await query(buildPatternCode(bagli, 60, 'nefesli').code, 0, 5)
+      const ton = hs.filter((h) => h.s === 'triangle')
+      const soluk = hs.filter((h) => h.s === 'pink')
+      expect(ton.map((h) => h.attack)).toEqual([0.06, BAG_GECIS_S, BAG_GECIS_S, 0.06])
+      expect(soluk.map((h) => h.attack)).toEqual([0.04, BAG_GECIS_S, BAG_GECIS_S, 0.04])
+      expect(ton.map((h) => h.release)).toEqual([BAG_GECIS_S, BAG_GECIS_S, 0.12, 0.12])
+      expect(soluk.map((h) => h.release)).toEqual([BAG_GECIS_S, BAG_GECIS_S, 0.1, 0.1])
+      expect(soluk.every((h) => h.gain === 0.08)).toBe(true)
+    })
   })
 
   it('shakuhachi: frekanslar mevcut ile aynı, ses adı yerel shakuhachi', async () => {

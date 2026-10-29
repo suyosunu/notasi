@@ -47,6 +47,8 @@ interface TriggerValue {
   decay?: number
   sustain?: number
   release?: number
+  /** 0–1: döngü öncesi baş kısmın (üfleme geçişi) ne kadarı atlanır; 1 = doğrudan döngü bölgesinden (bağlı ses). */
+  begin?: number
 }
 
 interface VibratoHandle {
@@ -104,6 +106,11 @@ export function loadShakuhachi(host: ShakuhachiHost, fetchFn: (url: string) => P
   return loading
 }
 
+/** Örneğin çalmaya başladığı yer (s): `begin` × döngü başlangıcı; bağlı ses dil/üfleme geçişini duyurmaz. */
+export function startOffset(begin = 0): number {
+  return (Math.min(1, Math.max(0, begin)) * SHAKUHACHI_ZONE.loopStart) / SHAKUHACHI_ZONE.sampleRate
+}
+
 function trigger(host: ShakuhachiHost, buffer: AudioBuffer, time: number, value: TriggerValue, onended: () => void) {
   const [attack, decay, sustain, release] = host.getADSRValues([
     value.attack,
@@ -118,7 +125,7 @@ function trigger(host: ShakuhachiHost, buffer: AudioBuffer, time: number, value:
   src.loop = true
   src.loopStart = SHAKUHACHI_ZONE.loopStart / SHAKUHACHI_ZONE.sampleRate
   src.loopEnd = SHAKUHACHI_ZONE.loopEnd / SHAKUHACHI_ZONE.sampleRate
-  src.start(time)
+  src.start(time, startOffset(value.begin))
   const env = ctx.createGain()
   const node = src.connect(env) as GainNode
   const holdEnd = time + value.duration

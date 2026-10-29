@@ -37,7 +37,7 @@ export function buildPieceCode(
   const tones = toToneEvents(parca.olcu.flat(), tuning)
   const total = tones.reduce((sum, e) => sum + e.beats, 0)
   if (!(total > 0) || !(bpm > 0)) throw new RangeError('Çalınacak ses ya da geçerli tempo yok')
-  const melody = `freq("${toneSteps(tones)}")${melodyChain(voice)}`
+  const melody = `freq("${toneSteps(tones)}")${melodyChain(voice, tones)}`
   const tempo = `${ONE_SHOT}.cpm(${bpm / total})`
   const durationMs = (total * 60000) / bpm
   if (!withUsul) return { code: `${melody}${tempo}`, durationMs }

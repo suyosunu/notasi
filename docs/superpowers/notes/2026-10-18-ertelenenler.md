@@ -83,6 +83,7 @@ Görev incelemelerinde "şimdilik kalabilir" denen bulgular. Sürüm 2'ye başla
 - Final fix wave: minor (deferred): stale comments DersView.tsx:25 (geri only in route mode) and evening-plan.ts:726 (order wording)
 
 ## Aşama B (2026-10-29)
+- Düzeltme (kullanıcı geri bildirimi): `bag` artık çalımda duyulur. Bağlanan ses `ToneEvent.legato`; `melodyChain` seslerle hizalı zarf desenleri ekler (önceki ses `BAG_GECIS_S` = 0.03 s'de söner, bağlı ses vurgusuz girer; shakuhachi `begin: 1` ile kaydın baştaki üfleme geçişini atlar). Bağ içermeyen çalımların kodu birebir aynı. Ses kulakla iPhone'da doğrulanacak.
 - Ruling: T46 adds no `'usul-vurus'` GorselAdi; the `{ tur: 'usul' }` DersBlok is the only new rendering — Interfaces block is the more specific text — cost if wrong: one unused type value.
 - Ruling: T43 if the app has no sixteenth rest glyph, implementer adds one in glyphs/RestShape (part of the task) — card list is plan-fixed — cost: small glyph work.
 - Ruling: T42 EPS constant not added — beams.ts uses integer 1/48 units, equivalent and exact — cost if wrong: none observed.
