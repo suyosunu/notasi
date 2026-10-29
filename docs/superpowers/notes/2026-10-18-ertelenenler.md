@@ -81,3 +81,23 @@ Görev incelemelerinde "şimdilik kalabilir" denen bulgular. Sürüm 2'ye başla
 - Task 40: minor (deferred): Home's loadIlerleme re-reads rows load() already has; Yolum checkbox rollback is silent on write failure; weak regexes in dersler.test; Home test lacks the goal-less fallback
 - Process note: several UI test files were written after their components (no RED run); behaviour is still asserted.
 - Final fix wave: minor (deferred): stale comments DersView.tsx:25 (geri only in route mode) and evening-plan.ts:726 (order wording)
+
+## Aşama B (2026-10-29)
+- Ruling: T46 adds no `'usul-vurus'` GorselAdi; the `{ tur: 'usul' }` DersBlok is the only new rendering — Interfaces block is the more specific text — cost if wrong: one unused type value.
+- Ruling: T43 if the app has no sixteenth rest glyph, implementer adds one in glyphs/RestShape (part of the task) — card list is plan-fixed — cost: small glyph work.
+- Ruling: T42 EPS constant not added — beams.ts uses integer 1/48 units, equivalent and exact — cost if wrong: none observed.
+- Task 43: minor (deferred): rest:eighth.uclu / dur:sixteenth.dotted accepted generically
+- Task 43: minor (deferred): pre-existing — early duration topics fill distractors from all duration names (implementer concern)
+- Task 43: minor (deferred): questions.ts long ternary line; unreachable third distractor tier
+- Task 44: minor (deferred, user-facing — fix in final wave): okuma:olcu text describes double end line + time signature that the app's porte doesn't draw (nota-2.ts:539,543)
+- Task 44: minor (deferred): nefes "notayı kısaltarak" general knowledge; ta/tu syllable inconsistency (nota-2.ts:577,590); duplicate SI const; types.ts id comment lacks okuma:; weak meter test
+- Task 45: minor (deferred): weak "iki elinin orta parmağı" regex guard; duplicated Yücel sentence; "Hicaz'dan 1 koma pes" premature term; kademe vs devre wording
+- Task 46: minor (deferred): no-hand regex \bsağ\b never matches (ğ); te/ke test vacuous; "tek'in hafif bölünüşü" vs full zaman wording; giriş "Şemadaki ▶ Dinle" ambiguous
+- Ruling: T47 taps up to 150 ms before first beat count as early hit (only t < -150 dropped) — matches tolerance symmetry, fairer to beginner — cost: a count-in tap could rarely be credited
+- Ruling: T47 plan-mandated greedy time-order matching (early stray tap can claim a beat) kept — fazla doesn't affect gecti, but a wrong early tap costs the beat; acceptable for a beginner trainer — cost if wrong: occasional unfair miss; revisit if user reports.
+- Ruling: T48 evening plan offers Seviye 2 etüts only after all Seviye 1 etüts are played — keeps level order, Ney section stays unlocked (karar b) — cost if wrong: Seviye 2 etüts appear later in the evening plan.
+- Ruling: T48 usul etüt count-in stays metronome; usul sound runs with the melody — consistent with T47 — cost: none.
+- Task 48: minor (deferred): slice(0,11) index-based test; 375pt width of 3 measures/row for 2/4,3/4 to verify in browser in final check
+- Task 50: minor (deferred): spy not restored in seviye.test.ts; s2-usul-etut/s2-dortlu could route to first etüt
+- Final review fix wave (cfa95af) fixed: usul etüt gate (okuma:olcu + usul:giris), okuma:olcu wording, beamed triplet quiz, usul lesson → vurma route, Nim Hicaz spelling, dörtlü sign names, dil lesson source, mean deviation shown, sure-4 names out of early distractors.
+- Still open (from final review): perde-2 distractor pool of 15 names — revisit in Aşama C; T47 e.timeStamp / shared latency constant; Placement beam has no dedicated test.

@@ -65,13 +65,17 @@ Kaynaklarda sayısal hedef yoktur (saniye, cent, tempo). Tablodaki sayılar öne
 - ✅ **Perde ↔ solfej eşlemesi:** perde-1 konusu.
 
 ### Seviye 2
-- ✅ **Koma işaretleri:** koma-1, koma-2, perde-3 ve perde-4 konuları.
-- 🟡 **Noktalı nota, onaltılık, üçleme:** Noktalı nota var. Onaltılık soru olarak yok, yalnızca parçaların notasında görünüyor. Üçleme hiç yok.
-- 🟡 **Ara sesler:** Kürdî, Dik Kürdî ve Nim Hicaz var. Bûselik bu seviyeye taşınmalı.
-- ❌ **Dil teknikleri:** Yok.
-- 🟡 **Usuller:** Sofyan ve Semâî var. **Nim Sofyan yok**, oysa kaynakların hepsinde ilk öğretilen usul bu. Usulü vurarak çalışma alıştırması (dokunarak eşlik etme) da yok.
-- ❌ **Dörtlüler:** Çârgâh, Kürdî ve Hicaz dörtlüleri tanıtılmıyor.
-- 🟡 **Basit ezgiler:** "Benim Adım Dertli Dolap" yalnızca 2. kademe sesleriyle çalınıyor, bu seviyenin sonuna uygun.
+Aşama B ile bu seviye tamamlandı (2026-10-29).
+- ✅ **Koma işaretleri ve ara perde adları:** koma-1, koma-2, perde-3 ve perde-4 konuları, her birinin dersiyle.
+- ✅ **Onaltılık ve üçleme:** sure-4 konusu ve dersi. Üçleme hem çiziliyor hem de çalınıyor.
+- ✅ **Ölçü, nefes işareti, röpriz, bağ:** okuma dersleri ve porte çizimi.
+- ✅ **Ara sesler:** Bûselik, Kürdî, Dik Kürdî ve Nim Hicaz, Rast'tan sonra ve üçüncü kademeden önce açılır. Her birinin dersi var.
+- ✅ **Usuller:** Nim Sofyan eklendi. Nim Sofyan, Semâî ve Sofyan derslerle anlatılır. Ekrana dokunarak usul vurma alıştırması var.
+- ✅ **Dörtlüler:** Çârgâh, Kürdî ve Hicaz dörtlülerinin dersleri ve etütleri.
+- ✅ **Usul ve dil etütleri:** usul sesiyle eşlik edilir. Dil ve bağ dersi de eklendi.
+- 🟡 **Dil teknikleri:** Yalnızca anlatılıyor; bağ çalınırken ayrı bir ses verilmiyor, mikrofonla da değerlendirilmiyor. Ayrıntısı Seviye 4'te.
+- ✅ **Basit ezgi:** "Benim Adım Dertli Dolap" bu seviyenin "ezbere çaldım" hedefi. Eser çalışma dersi de var.
+- ✅ **Yolum:** Seviye 2'nin hedefleri tanımlı.
 
 ### Seviye 3
 - ✅ **Üçüncü kademe perdeleri:** Hüseynî, Acem, açık Gerdâniye, açık Muhayyer ve Eviç var. Nim Şehnaz, Nim Hisar ve kapalı Nevâ yok.
@@ -117,7 +121,7 @@ Her aşama tamamlandığında uygulama o seviyeyi eksiksiz destekler. Kullanıc�
 5. **Uzun ses hedefleri:** Seviye 0'da 5 sn, seviye 1'de 8 sn (öneri); akort toleransı seviyeye göre ayarlanır.
 6. **Varsayılan sesler:** Ney sesi Shakuhachi, usul sesi Tahta. Kullanıcının hiç değiştirmediği eski varsayılanlar da bu değerlere taşınır (bkz. kararlar).
 
-**Aşama B: Seviye 2**
+**Aşama B: Seviye 2** — **tamamlandı ve yayında (2026-10-29)**; plan: `docs/superpowers/plans/2026-10-29-asama-b.md`
 1. Nim Sofyan usulü (vuruş kalıbı kaynaktan doğrulanır). Usulü vurarak çalışma alıştırması: ekrana dokunarak düm-tek vurulur, uygulama zamanlamayı değerlendirir.
 2. Okuma konuları: onaltılık, üçleme (görüntü ve çalma desteğiyle birlikte), ölçü çizgisi, röpriz ve nefes işareti.
 3. Dörtlüler: Çârgâh, Kürdî ve Hicaz dörtlülerinin tanıtılması ve etütleri.
