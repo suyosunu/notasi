@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { USULLER } from '../content/usuller'
-import { hece, soyleAdimlari, soylemeyiDurdur, soyleUsul } from './soyle'
+import { hece, sesSec, soyleAdimlari, soylemeyiDurdur, soyleUsul } from './soyle'
 
 const usul = (id: string) => USULLER.find((u) => u.id === id)!
 
@@ -26,11 +26,15 @@ describe('soyleAdimlari', () => {
   })
 })
 
+const YELDA = { lang: 'tr-TR', name: 'Yelda' }
+const TOLGA = { lang: 'tr_TR', name: 'Microsoft Tolga - Turkish (Turkey)' }
+
 describe('soyleUsul', () => {
-  const spoken: { text: string; lang: string; rate: number }[] = []
+  const spoken: { text: string; lang: string; rate: number; pitch: number; voice: unknown }[] = []
   class Utterance {
     lang = ''
     rate = 1
+    pitch = 1
     voice: unknown = null
     text: string
     constructor(text: string) {
@@ -40,9 +44,11 @@ describe('soyleUsul', () => {
   const synth = {
     speaking: false,
     pending: false,
-    speak: vi.fn((u: Utterance) => spoken.push({ text: u.text, lang: u.lang, rate: u.rate })),
+    speak: vi.fn((u: Utterance) =>
+      spoken.push({ text: u.text, lang: u.lang, rate: u.rate, pitch: u.pitch, voice: u.voice }),
+    ),
     cancel: vi.fn(),
-    getVoices: vi.fn(() => [{ lang: 'en-US' }, { lang: 'tr-TR', name: 'Yelda' }]),
+    getVoices: vi.fn((): { lang: string; name: string }[] => [YELDA]),
   }
 
   beforeEach(() => {
@@ -50,6 +56,7 @@ describe('soyleUsul', () => {
     spoken.length = 0
     synth.speak.mockClear()
     synth.cancel.mockClear()
+    synth.getVoices.mockImplementation(() => [{ lang: 'en-US', name: 'Samantha' }, YELDA])
     vi.stubGlobal('speechSynthesis', synth)
     vi.stubGlobal('SpeechSynthesisUtterance', Utterance)
   })
@@ -90,5 +97,26 @@ describe('soyleUsul', () => {
     // jsdom'da speechSynthesis hiç tanımlı değildir
     delete (window as { speechSynthesis?: unknown }).speechSynthesis
     await expect(soyleUsul(usul('sofyan'), 60)).rejects.toThrow()
+  })
+
+  it('erkek ses: Türkçe erkek ses varsa o, normal perdede', () => {
+    synth.getVoices.mockImplementation(() => [YELDA, TOLGA])
+    expect(sesSec('erkek')).toMatchObject({ ses: TOLGA, perde: 1, ad: TOLGA.name })
+    expect(sesSec('kadin')).toMatchObject({ ses: YELDA, perde: 1, ad: 'Yelda' })
+  })
+
+  it('erkek ses yoksa kadın ses kalınlaştırılarak söylenir', () => {
+    const p = soyleUsul(usul('sofyan'), 60, 1, 'erkek')
+    expect(spoken[0]).toMatchObject({ text: 'düüüm', voice: YELDA })
+    expect(spoken[0]!.pitch).toBeLessThan(1)
+    expect(sesSec('erkek').ad).toBe('Yelda, kalınlaştırılmış')
+    soylemeyiDurdur()
+    return p
+  })
+
+  it('"female" adlı ses erkek sayılmaz', () => {
+    const female = { lang: 'tr-TR', name: 'Turkish Female' }
+    synth.getVoices.mockImplementation(() => [female])
+    expect(sesSec('erkek')).toMatchObject({ ses: female, perde: 0.6 })
   })
 })

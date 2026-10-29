@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks'
 import { playCode, playWritten, setDilBelirginligi, setNeySesi, setUsulSesi, stopAudio, unlockAudio } from '../audio/player'
 import type { NeySesi } from '../audio/pattern'
-import { soylemeyiDurdur, soyleUsul } from '../audio/soyle'
+import { type SesTuru, sesSec, soylemeyiDurdur, soyleUsul } from '../audio/soyle'
 import { buildUsulOnceCode } from '../audio/usul'
 import type { UsulSesi } from '../audio/usulSamples'
 import { USULLER } from '../content/usuller'
@@ -67,6 +67,7 @@ export function Settings() {
   const [message, setMessage] = useState<Message | null>(null)
   const [soundWarn, setSoundWarn] = useState<string | null>(null)
   const [usulWarn, setUsulWarn] = useState<string | null>(null)
+  const [soyleyen, setSoyleyen] = useState<string | null>(null)
   const [dilWarn, setDilWarn] = useState<string | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
 
@@ -177,7 +178,7 @@ export function Settings() {
   }
 
   /** Usulü cihazın hazır Türkçe sesiyle söyler (deneme). İlk hece dokunuş içinde, eşzamanlı söylenir (iOS). */
-  async function trySoyle() {
+  async function trySoyle(tur: SesTuru) {
     if (!settings) return
     setUsulWarn(null)
     if (!settings.soundOn) {
@@ -186,9 +187,16 @@ export function Settings() {
     }
     ++runRef.current
     stopAudio()
+    const soyleme = soyleUsul(DENEME_USUL, DENEME_USUL_BPM, SOYLE_OLCU, tur)
     try {
-      await soyleUsul(DENEME_USUL, DENEME_USUL_BPM, SOYLE_OLCU)
+      setSoyleyen(sesSec(tur).ad)
     } catch {
+      // Konuşma sesi yok: `soyleme` reddedilir, uyarı aşağıda.
+    }
+    try {
+      await soyleme
+    } catch {
+      setSoyleyen(null)
       setUsulWarn(SOYLE_YOK)
     }
   }
@@ -384,14 +392,18 @@ export function Settings() {
         </div>
         <div class="voice-option">
           <span>İnsan sesi (hazır ses, deneme)</span>
-          <button type="button" class="tool" aria-label="▶ Söyle (İnsan sesi)" onClick={() => void trySoyle()}>
-            ▶ Söyle
+          <button type="button" class="tool" aria-label="▶ Kadın (İnsan sesi)" onClick={() => void trySoyle('kadin')}>
+            ▶ Kadın
+          </button>
+          <button type="button" class="tool" aria-label="▶ Erkek (İnsan sesi)" onClick={() => void trySoyle('erkek')}>
+            ▶ Erkek
           </button>
         </div>
         <p class="hint">
-          Sofyan'ı telefonun hazır Türkçe sesiyle "düüüm te ke" diye söyler. Yalnız deneme içindir: derslerde
-          çalmaz, zamanlaması tempoya tam oturmayabilir.
+          Sofyan'ı telefonun hazır Türkçe sesiyle "düüüm te ke" diye söyler. Telefonda erkek ses yoksa kadın ses
+          kalınlaştırılır. Yalnız deneme içindir: derslerde çalmaz, zamanlaması tempoya tam oturmayabilir.
         </p>
+        {soyleyen && <p class="hint">Söyleyen ses: {soyleyen}</p>}
         {usulWarn && (
           <p class="notice" role="alert">
             {usulWarn}
