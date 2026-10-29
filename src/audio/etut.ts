@@ -41,7 +41,7 @@ export function buildEtutCode(
   const click = metronomeBody(olcuVurus, bpm)
   const sayim = `${click}.compress(0, ${giris} / ${cycle})`
   const layers: string[] = []
-  if (opts.melodi) layers.push(`freq("~@${giris} ${toneSteps(tones)}")${melodyChain(opts.voice, tones, giris)}`)
+  if (opts.melodi) layers.push(`freq("~@${giris} ${toneSteps(tones)}")${melodyChain(opts.voice, tones, { lead: giris, bpm })}`)
   if (!opts.metronom) layers.push(sayim)
   else if (!opts.usul) layers.push(`${click}.fast(${cycle / olcuVurus})`)
   else layers.push(sayim, `${buildUsulBody(opts.usul, bpm)}.fast(${total / olcuVurus}).compress(${giris} / ${cycle}, 1)`)

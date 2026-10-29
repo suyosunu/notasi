@@ -5,6 +5,7 @@ import {
   getUsulSesi,
   playCode,
   playWritten,
+  setDilBelirginligi,
   setNeySesi,
   setUsulSesi,
   stopAudio,
@@ -30,6 +31,7 @@ vi.mock('../audio/player', () => ({
   getNeySesi: vi.fn(() => 'mevcut'),
   setUsulSesi: vi.fn(),
   getUsulSesi: vi.fn(() => 'oryantal'),
+  setDilBelirginligi: vi.fn(),
 }))
 
 vi.mock('../store/backup', async (importOriginal) => {
@@ -59,6 +61,7 @@ beforeEach(async () => {
     usulVoice = v
   })
   vi.mocked(getUsulSesi).mockReset().mockImplementation(() => usulVoice)
+  vi.mocked(setDilBelirginligi).mockReset()
 })
 
 afterEach(() => {
@@ -464,5 +467,64 @@ describe('Settings: Usul sesi', () => {
     await screen.findByText('Yedek yüklendi.')
     expect(getUsulSesi()).toBe('konga')
     expect(radio('Konga').checked).toBe(true)
+  })
+})
+
+describe('Settings: Dil belirginliği', () => {
+  const slider = () => screen.getByRole('slider', { name: 'Dil belirginliği (yüzde)' }) as HTMLInputElement
+
+  it('varsayılan %50; kaydırınca hemen uygulanır, bırakınca kaydedilir', async () => {
+    render(<Settings />)
+    await screen.findByRole('heading', { name: 'Dil belirginliği' })
+    expect(slider().value).toBe('50')
+    expect(screen.getByText('Dil (tu): %50')).toBeTruthy()
+    fireEvent.input(slider(), { target: { value: '80' } })
+    expect(setDilBelirginligi).toHaveBeenLastCalledWith(0.8)
+    expect(screen.getByText('Dil (tu): %80')).toBeTruthy()
+    fireEvent.change(slider(), { target: { value: '80' } })
+    await waitFor(async () => expect((await getSettings()).dilBelirginligi).toBe(80))
+  })
+
+  it('kayıtlı değer görünür', async () => {
+    await saveSettings({ dilBelirginligi: 20 })
+    render(<Settings />)
+    await screen.findByRole('heading', { name: 'Dil belirginliği' })
+    expect(slider().value).toBe('20')
+  })
+
+  it('Dene: seçili ney sesiyle önce dört dilli nota, sus, sonra aynıları bağlı çalar', async () => {
+    await saveSettings({ neySesi: 'nefesli' })
+    render(<Settings />)
+    await screen.findByRole('heading', { name: 'Dil belirginliği' })
+    fireEvent.click(screen.getByRole('button', { name: '▶ Dene (Dil belirginliği)' }))
+    await waitFor(() => expect(playWritten).toHaveBeenCalledTimes(1))
+    const [events, , bpm, voice] = vi.mocked(playWritten).mock.calls[0]!
+    expect(voice).toBe('nefesli')
+    expect(bpm).toBe(72)
+    expect(events.map((e) => e.kind)).toEqual(['note', 'note', 'note', 'note', 'rest', 'note', 'note', 'note', 'note'])
+    expect(events.map((e) => (e.kind === 'note' ? Boolean(e.bag) : null))).toEqual([
+      false, false, false, false, null, true, true, true, false,
+    ])
+  })
+
+  it('ses kapalıyken Dene çalmaz, SOUND_OFF gösterir', async () => {
+    await saveSettings({ soundOn: false })
+    render(<Settings />)
+    await screen.findByRole('heading', { name: 'Dil belirginliği' })
+    fireEvent.click(screen.getByRole('button', { name: '▶ Dene (Dil belirginliği)' }))
+    expect(await screen.findByText(SOUND_OFF)).toBeTruthy()
+    expect(playWritten).not.toHaveBeenCalled()
+  })
+
+  it('geri yüklemeden sonra player yedekteki değere ayarlanır', async () => {
+    await saveSettings({ dilBelirginligi: 30 })
+    const backup = await exportBackup()
+    await saveSettings({ dilBelirginligi: 90 })
+    render(<Settings />)
+    await screen.findByRole('button', { name: 'Yedeği geri yükle' })
+    pickFile(JSON.stringify(backup))
+    await screen.findByText('Yedek yüklendi.')
+    expect(setDilBelirginligi).toHaveBeenLastCalledWith(0.3)
+    expect(slider().value).toBe('30')
   })
 })

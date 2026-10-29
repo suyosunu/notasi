@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks'
-import { playCode, playWritten, setNeySesi, setUsulSesi, stopAudio, unlockAudio } from '../audio/player'
+import { playCode, playWritten, setDilBelirginligi, setNeySesi, setUsulSesi, stopAudio, unlockAudio } from '../audio/player'
 import type { NeySesi } from '../audio/pattern'
 import { buildUsulOnceCode } from '../audio/usul'
 import type { UsulSesi } from '../audio/usulSamples'
@@ -30,6 +30,19 @@ const DENEME_DIZISI: MusicEvent[] = [
 ]
 const DENEME_BPM = 72
 
+/** Dil belirginliği "▶ Dene": Nevâ Çârgâh Segâh Çârgâh önce dilli, sonra bağlı (fark duyulsun), sekizliklerle. */
+const DIL_DENEME: MusicEvent[] = (() => {
+  const yazim = [
+    { step: 'D', octave: 5, acc: 0 },
+    { step: 'C', octave: 5, acc: 0 },
+    { step: 'B', octave: 4, acc: -1 },
+    { step: 'C', octave: 5, acc: 0 },
+  ] as const
+  const dilli = yazim.map((pitch): MusicEvent => ({ kind: 'note', pitch, dur: 'eighth' }))
+  const bagli = yazim.map((pitch, i): MusicEvent => ({ kind: 'note', pitch, dur: 'eighth', ...(i < 3 ? { bag: true } : {}) }))
+  return [...dilli, { kind: 'rest', dur: 'quarter' }, ...bagli]
+})()
+
 const USUL_SESI_SECENEKLERI: { id: UsulSesi; label: string }[] = [
   { id: 'oryantal', label: 'Oryantal' },
   { id: 'konga', label: 'Konga' },
@@ -50,6 +63,7 @@ export function Settings() {
   const [message, setMessage] = useState<Message | null>(null)
   const [soundWarn, setSoundWarn] = useState<string | null>(null)
   const [usulWarn, setUsulWarn] = useState<string | null>(null)
+  const [dilWarn, setDilWarn] = useState<string | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -99,6 +113,35 @@ export function Settings() {
       await playWritten(DENEME_DIZISI, settings.tuning, DENEME_BPM, voice)
     } catch {
       if (run === runRef.current) setSoundWarn(SOUND_WARNING)
+    }
+  }
+
+  /** Kaydırırken hemen uygulanır (ekrandaki yüzde ve çalım); bırakınca kaydedilir. */
+  function previewDil(yuzde: number) {
+    setDilBelirginligi(yuzde / 100)
+    setSettings((s) => (s ? { ...s, dilBelirginligi: yuzde } : s))
+  }
+
+  async function changeDil(yuzde: number) {
+    previewDil(yuzde)
+    setSettings(await saveSettings({ dilBelirginligi: yuzde }))
+  }
+
+  async function tryDil() {
+    if (!settings) return
+    setDilWarn(null)
+    if (!settings.soundOn) {
+      setDilWarn(SOUND_OFF)
+      return
+    }
+    const run = ++runRef.current
+    try {
+      // unlockAudio dokunuş işleyicisinde, ilk iş olarak çağrılmalıdır (iOS).
+      await unlockAudio()
+      if (run !== runRef.current) return
+      await playWritten(DIL_DENEME, settings.tuning, DENEME_BPM, settings.neySesi)
+    } catch {
+      if (run === runRef.current) setDilWarn(SOUND_WARNING)
     }
   }
 
@@ -162,6 +205,7 @@ export function Settings() {
     const restored = await getSettings()
     setNeySesi(restored.neySesi) // oynatıcı sesleri geri yüklenen ayarla eşleşsin
     setUsulSesi(restored.usulSesi)
+    setDilBelirginligi(restored.dilBelirginligi / 100)
     setSettings(restored)
     setMessage({ kind: 'ok', text: 'Yedek yüklendi.' })
   }
@@ -250,6 +294,39 @@ export function Settings() {
         {soundWarn && (
           <p class="notice" role="alert">
             {soundWarn}
+          </p>
+        )}
+      </section>
+
+      <section class="setting" aria-labelledby="dil-belirginligi">
+        <h2 id="dil-belirginligi" class="setting-label">
+          Dil belirginliği
+        </h2>
+        <div class="voice-option">
+          <label class="usul-speed">
+            <span>{`Dil (tu): %${settings.dilBelirginligi}`}</span>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={10}
+              value={settings.dilBelirginligi}
+              aria-label="Dil belirginliği (yüzde)"
+              onInput={(e) => previewDil(Number(e.currentTarget.value))}
+              onChange={(e) => void changeDil(Number(e.currentTarget.value))}
+            />
+          </label>
+          <button type="button" class="tool" aria-label="▶ Dene (Dil belirginliği)" onClick={() => void tryDil()}>
+            ▶ Dene
+          </button>
+        </div>
+        <p class="hint">
+          Bağsız notalar arasındaki "tu" ayrımı. %0'da sesler birbirine yapışık çalar; arttıkça her notadan önce kısa
+          bir dil boşluğu duyulur. Bağlı notalar etkilenmez. Dene önce dört notayı dilli, sonra aynılarını bağlı çalar.
+        </p>
+        {dilWarn && (
+          <p class="notice" role="alert">
+            {dilWarn}
           </p>
         )}
       </section>

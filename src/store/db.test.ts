@@ -78,6 +78,17 @@ describe('settings', () => {
     expect(s.varsayilanSesSurumu).toBe(2)
   })
 
+  it('dilBelirginligi: varsayılan 50, kaydedilir; eski/bozuk kayıt varsayılana, sınır dışı sınıra döner', async () => {
+    expect(DEFAULT_SETTINGS.dilBelirginligi).toBe(50)
+    expect((await getSettings()).dilBelirginligi).toBe(50)
+    await saveSettings({ dilBelirginligi: 70 })
+    expect((await getSettings()).dilBelirginligi).toBe(70)
+    await saveSettings({ dilBelirginligi: 140 })
+    expect((await getSettings()).dilBelirginligi).toBe(100)
+    await saveSettings({ dilBelirginligi: 'çok' as unknown as number })
+    expect((await getSettings()).dilBelirginligi).toBe(50)
+  })
+
   it('neySesi kaydedilir', async () => {
     await saveSettings({ neySesi: 'nefesli' })
     expect((await getSettings()).neySesi).toBe('nefesli')

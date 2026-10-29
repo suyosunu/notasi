@@ -64,6 +64,8 @@ export interface Settings {
   neySesi: NeySesi
   /** Usul vuruşlarının sesi (Ayarlar → "Usul sesi"); usul bölümünde ve parça eşliğinde. */
   usulSesi: UsulSesi
+  /** Bağsız iki ses arasındaki dil ("tu") ayrımının gücü, yüzde 0–100 (Ayarlar → "Dil belirginliği"). */
+  dilBelirginligi: number
   /** Varsayılan seslerin hangi sürümde taşındığı; 2'den küçük kayıtta eski varsayılanlar bir kez taşınır. */
   varsayilanSesSurumu: number
   /** Okunmuş ders kimlikleri (ders kapısı bir kez zorunludur). */
@@ -90,6 +92,7 @@ export const DEFAULT_SETTINGS: Settings = {
   lastBackupAt: null,
   neySesi: 'shakuhachi',
   usulSesi: 'tahta',
+  dilBelirginligi: 50,
   varsayilanSesSurumu: 2,
   okunanDersler: [],
   onaylananHedefler: [],
@@ -187,6 +190,11 @@ function tasiSesler(rest: Partial<Settings>): Pick<Settings, 'neySesi' | 'usulSe
   }
 }
 
+/** Eski kayıtta yoktur; sayı olmayan değer varsayılana döner, 0–100 dışı sınıra çekilir. */
+function temizYuzde(v: unknown): number {
+  return typeof v === 'number' && Number.isFinite(v) ? Math.min(100, Math.max(0, Math.round(v))) : DEFAULT_SETTINGS.dilBelirginligi
+}
+
 /** Eski kayıtta yoktur; bozuk değer (dizi olmayan) boşa, string olmayan öğeler atılır. */
 function temizIsaretler(rest: Partial<Settings>): Pick<Settings, IsaretAlani> {
   const temiz = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [])
@@ -207,6 +215,7 @@ function mergeSettings(stored: Partial<SettingsRec> | undefined): Settings {
     tuning: { ...DEFAULT_SETTINGS.tuning, ...(rest.tuning ?? {}) },
     ...tasiSesler(rest),
     ...temizIsaretler(rest),
+    dilBelirginligi: temizYuzde(rest.dilBelirginligi),
   }
 }
 

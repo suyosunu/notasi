@@ -84,6 +84,7 @@ Görev incelemelerinde "şimdilik kalabilir" denen bulgular. Sürüm 2'ye başla
 
 ## Aşama B (2026-10-29)
 - Düzeltme (kullanıcı geri bildirimi): `bag` artık çalımda duyulur. Bağlanan ses `ToneEvent.legato`; `melodyChain` seslerle hizalı zarf desenleri ekler (önceki ses `BAG_GECIS_S` = 0.03 s'de söner, bağlı ses vurgusuz girer; shakuhachi `begin: 1` ile kaydın baştaki üfleme geçişini atlar). Bağ içermeyen çalımların kodu birebir aynı. Ses kulakla iPhone'da doğrulanacak.
+- Ekleme (kullanıcı isteği): Ayarlar → "Dil belirginliği" (%0–100, varsayılan %50, adım 10). Bağsız ses → bağsız ses geçişinde önceki ses `k × TU_BOSLUK_S` (0.12 s) erken susar (clip, en az 0.5), sönüşü ve sonraki sesin girişi kısalır. %0 eski çalımdır. Bağlı geçişler ve susla ayrılan sesler etkilenmez. Varsayılanın %50 olması bütün melodi çalımlarını değiştirir (kullanıcı "tu belirgin olsun" dedi).
 - Ruling: T46 adds no `'usul-vurus'` GorselAdi; the `{ tur: 'usul' }` DersBlok is the only new rendering — Interfaces block is the more specific text — cost if wrong: one unused type value.
 - Ruling: T43 if the app has no sixteenth rest glyph, implementer adds one in glyphs/RestShape (part of the task) — card list is plan-fixed — cost: small glyph work.
 - Ruling: T42 EPS constant not added — beams.ts uses integer 1/48 units, equivalent and exact — cost if wrong: none observed.

@@ -1,9 +1,13 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_TUNING } from '../music/ahenk'
 import type { MusicEvent } from '../music/notation'
 import {
   BAG_GECIS_S,
   buildPatternCode,
+  DIL_VARSAYILAN,
+  getDilBelirginligi,
+  setDilBelirginligi,
+  TU_BOSLUK_S,
   melodyChain,
   NEFES_SOLUK_CHAIN,
   NEFES_TON_CHAIN,
@@ -160,6 +164,7 @@ interface Hit {
   sustain?: number
   release?: number
   begin?: number
+  clip?: number
 }
 
 /** Kodu gerçek Strudel çekirdeğiyle değerlendirip başlangıçlı olayları döner. */
@@ -267,9 +272,10 @@ describe('ney sesleri: gerçek Strudel çekirdeğiyle', () => {
       { hz: 527.849, beats: 1 },
     ]
 
-    it('bağ yoksa zincir değişmez (bağsız çalımlar birebir aynı)', () => {
-      for (const v of NEY_SESLERI) expect(melodyChain(v, events)).toBe(melodyChain(v))
+    it('dil belirginliği 0 ve bağ yoksa zincir değişmez (eski çalım birebir)', () => {
+      for (const v of NEY_SESLERI) expect(melodyChain(v, events, { bpm: 60, dil: 0 })).toBe(melodyChain(v))
     })
+
 
     it('mevcut: bağsız sesler superdough varsayılanıyla, bağlı ses vurgusuz aynı düzeyde; önceki ses kısa söner', async () => {
       const hs = await query(buildPatternCode(bagli, 60, 'mevcut').code, 0, 5)
@@ -301,6 +307,44 @@ describe('ney sesleri: gerçek Strudel çekirdeğiyle', () => {
       expect(ton.map((h) => h.release)).toEqual([BAG_GECIS_S, BAG_GECIS_S, 0.12, 0.12])
       expect(soluk.map((h) => h.release)).toEqual([BAG_GECIS_S, BAG_GECIS_S, 0.1, 0.1])
       expect(soluk.every((h) => h.gain === 0.08)).toBe(true)
+    })
+  })
+
+  describe('dil belirginliği', () => {
+    afterEach(() => setDilBelirginligi(DIL_VARSAYILAN))
+    // Nevâ, Çârgâh (bağsız), Segâh (bağlı), sus, Dügâh
+    const tu = [
+      { hz: 742.433, beats: 1 },
+      { hz: 556.8, beats: 1 },
+      { hz: 527.849, beats: 1, legato: true as const },
+      { hz: null, beats: 1 },
+      { hz: 494.957, beats: 0.5 },
+    ]
+
+    it('bağsız geçişte önceki ses erken susar ve kısa söner, sonraki ses keskin girer; bağlı geçiş ve sus etkilenmez', async () => {
+      setDilBelirginligi(0.5)
+      const hs = await query(buildPatternCode(tu, 60, 'shakuhachi').code, 0, 5)
+      expect(hs.map((h) => h.clip ?? 1)).toEqual([1 - 0.5 * TU_BOSLUK_S, 1, 1, 1])
+      expect(hs.map((h) => h.release)).toEqual([0.06, BAG_GECIS_S, 0.1, 0.1])
+      expect(hs.map((h) => h.attack)).toEqual([0.03, 0.0175, 0.03, 0.03])
+    })
+
+    it('erken susma payı saniye cinsindendir: tempo artınca vuruş oranı büyür, en çok yarısı', () => {
+      const clips = (bpm: number, dil: number) =>
+        melodyChain('mevcut', [{ hz: 440, beats: 0.25 }, { hz: 494, beats: 1 }], { bpm, dil }).match(/\.clip\("([\d.]+)@/)?.[1]
+      expect(Number(clips(60, 1))).toBeCloseTo(1 - TU_BOSLUK_S / 0.25, 4)
+      expect(Number(clips(200, 1))).toBe(0.5)
+    })
+
+    it('0 eski çalımdır; ayar sınır dışı değeri sınıra çeker', () => {
+      setDilBelirginligi(0)
+      expect(buildPatternCode(tu.slice(0, 2), 60, 'nefesli').code).toBe(
+        `freq("742.43@1 556.80@1")${melodyChain('nefesli')}.mask("<1 0@1000000>").cpm(30)`,
+      )
+      setDilBelirginligi(7)
+      expect(getDilBelirginligi()).toBe(1)
+      setDilBelirginligi(Number.NaN)
+      expect(getDilBelirginligi()).toBe(DIL_VARSAYILAN)
     })
   })
 

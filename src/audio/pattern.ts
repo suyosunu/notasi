@@ -34,24 +34,74 @@ export const SHAKUHACHI_CHAIN = `.s("${SHAKUHACHI_SOUND}").attack(0.03).release(
 /** Bağlı geçişte önceki sesin sönüşü ve sonrakinin girişi (s): ikisi üst üste biner, arada boşluk ya da vurgu kalmaz. */
 export const BAG_GECIS_S = 0.03
 
+/**
+ * Dil ("tu") belirginliği: bağsız iki ses arasındaki ayrımın gücü, 0–1 (Ayarlar → "Dil belirginliği" yüzde olarak).
+ * 0 eski çalımdır (sesler birbirine yapışık). Artınca önceki ses biraz erken susar (`TU_BOSLUK_S × k`), kısa söner,
+ * sonraki ses keskin girer: aradaki dil vuruşu duyulur. Bağlı geçişler etkilenmez.
+ */
+export const DIL_VARSAYILAN = 0.5
+/** k = 1'de önceki sesin erken susma payı (s); sönüş bu payın içindedir. */
+export const TU_BOSLUK_S = 0.12
+/** k = 1'de önceki sesin sönüşü ve sonraki sesin girişi (s); sesin kendi değeri daha kısaysa o kalır. */
+const TU_SONUS_S = 0.02
+const TU_GIRIS_S = 0.005
+/** Erken susma sesin en çok yarısını alır (hızlı tempoda kısa notalar kaybolmasın). */
+const TU_EN_KISA_CLIP = 0.5
+
+let dilBelirginligi = DIL_VARSAYILAN
+
+/** Ayarlardan yüklenir; Ayarlar'da değişince hemen uygulanır. 0–1 dışı değer sınıra çekilir. */
+export function setDilBelirginligi(k: number): void {
+  dilBelirginligi = Number.isFinite(k) ? Math.min(1, Math.max(0, k)) : DIL_VARSAYILAN
+}
+
+export function getDilBelirginligi(): number {
+  return dilBelirginligi
+}
+
 /** Bir sesin zarf değerleri; anahtarlar Strudel kontrolleridir. */
-type Zarf = Partial<Record<'attack' | 'decay' | 'sustain' | 'release' | 'gain' | 'begin', number>>
+type Zarf = Partial<Record<'attack' | 'decay' | 'sustain' | 'release' | 'gain' | 'begin' | 'clip', number>>
+
+/** `melodyChain` seçenekleri: `lead` freq deseninin başındaki sus (vuruş), `bpm` erken susma payı için, `dil` 0–1. */
+export interface MelodiSecenek {
+  lead?: number
+  bpm?: number
+  dil?: number
+}
 
 /**
- * Bağlı geçişler için seslerle hizalı zarf desenleri (`.attack("0.03@1 …")` …). Bağlı girişte (`legato`) `bagli`
- * değerleri, bağlı çıkışta (sonraki ses `legato`) kısa sönüş (`BAG_GECIS_S`) kullanılır; diğer sesler `normal`
- * değerleriyle çalar. `lead`: melodiden önceki sus (vuruş), `normal` değerle doldurulur.
+ * Her sesin zarfı. Bağlı girişte (`legato`) `bagli` değerleri, bağlı çıkışta (sonraki ses `legato`) kısa sönüş
+ * (`BAG_GECIS_S`). Bağsız sesten bağsız sese geçişte (dil vuruşu) `dil` oranında: önceki ses kısa söner ve erken
+ * susar (`clip`), sonraki ses keskin girer. Diğer sesler `normal` değerleriyle çalar.
  */
-function zarfDeseni(tones: ToneEvent[], lead: number, normal: Zarf, bagli: Zarf): string {
-  const keys = Object.keys(normal) as (keyof Zarf)[]
+function zarflar(tones: ToneEvent[], normal: Zarf, bagli: Zarf, dil: number, bpm?: number): Zarf[] {
+  const kisalt = (v: number, hedef: number) => v - dil * (v - Math.min(v, hedef))
+  const tuGiris = (x: ToneEvent | undefined, onceki: ToneEvent | undefined) =>
+    dil > 0 && x?.hz != null && !x.legato && onceki?.hz != null
+  return tones.map((t, i) => {
+    const z: Zarf = { ...normal, ...(t.legato ? bagli : {}) }
+    if (tuGiris(t, tones[i - 1])) z.attack = kisalt(z.attack!, TU_GIRIS_S)
+    if (tones[i + 1]?.legato) z.release = BAG_GECIS_S
+    else if (tuGiris(tones[i + 1], t)) {
+      z.release = kisalt(z.release!, TU_SONUS_S)
+      if (bpm && bpm > 0) z.clip = Math.max(TU_EN_KISA_CLIP, 1 - (dil * TU_BOSLUK_S * bpm) / (60 * t.beats))
+    }
+    return z
+  })
+}
+
+/**
+ * Seslerle hizalı zarf desenleri (`.attack("0.03@1 …")` …). Her ses `normal` değerinde kalıyorsa boş döner: zincir
+ * değişmez. `lead` adımı `normal` değerle (clip 1) doldurulur.
+ */
+function zarfDeseni(tones: ToneEvent[], normal: Zarf, bagli: Zarf, s: MelodiSecenek): string {
+  const zs = zarflar(tones, normal, bagli, s.dil ?? dilBelirginligi, s.bpm)
+  const tam: Zarf = { ...normal, clip: 1 }
+  const keys = (Object.keys(tam) as (keyof Zarf)[]).filter((k) => zs.some((z) => (z[k] ?? tam[k]) !== tam[k]))
   return keys
     .map((k) => {
-      const steps = tones.map((t, i) => {
-        let v = (t.legato ? bagli[k] : undefined) ?? normal[k]!
-        if (k === 'release' && tones[i + 1]?.legato) v = BAG_GECIS_S
-        return `${v}@${Number(t.beats.toFixed(6))}`
-      })
-      if (lead > 0) steps.unshift(`${normal[k]}@${lead}`)
+      const steps = zs.map((z, i) => `${Number((z[k] ?? tam[k]!).toFixed(4))}@${Number(tones[i]!.beats.toFixed(6))}`)
+      if ((s.lead ?? 0) > 0) steps.unshift(`${tam[k]}@${s.lead}`)
       return `.${k}("${steps.join(' ')}")`
     })
     .join('')
@@ -62,13 +112,12 @@ function zarfDeseni(tones: ToneEvent[], lead: number, normal: Zarf, bagli: Zarf)
  * `stack` eder: ton ve soluk katmanı aynı frekans ve ritimle üst üste çalar. Zincirden sonra gelen maske ve
  * `.cpm()` iki katmana birlikte uygulanır.
  *
- * `tones` içinde bağlı ses (`legato`) varsa zincire seslerle hizalı zarf desenleri eklenir (`lead`: freq deseninin
- * başındaki sus, vuruş). Bağlı ses vurgusuz girer, önceki ses kısa söner; shakuhachi kaydı baştaki üfleme
- * geçişini atlayıp döngü bölgesinden başlar (`begin`). Bağsız seslerin değerleri zincirin kendi değerleridir.
+ * `tones` verilince zincire seslerle hizalı zarf desenleri eklenir (bkz. `zarflar`): bağlı ses vurgusuz girer,
+ * önceki ses kısa söner; shakuhachi kaydı bağlı seste baştaki üfleme geçişini atlayıp döngü bölgesinden başlar
+ * (`begin`). Bağsız geçişler dil belirginliğiyle ayrılır. Hiçbir ses değişmiyorsa zincir yalın kalır.
  */
-export function melodyChain(v: NeySesi, tones: ToneEvent[] = [], lead = 0): string {
-  const bag = tones.some((t) => t.legato)
-  const zarf = (normal: Zarf, bagli: Zarf) => (bag ? zarfDeseni(tones, lead, normal, bagli) : '')
+export function melodyChain(v: NeySesi, tones: ToneEvent[] = [], s: MelodiSecenek = {}): string {
+  const zarf = (normal: Zarf, bagli: Zarf) => (tones.length ? zarfDeseni(tones, normal, bagli, s) : '')
   switch (v) {
     case 'nefesli':
       return (
@@ -111,7 +160,7 @@ export function buildPatternCode(
     throw new RangeError('Çalınacak ses ya da geçerli tempo yok')
   }
   return {
-    code: `freq("${toneSteps(events)}")${melodyChain(voice, events)}${ONE_SHOT}.cpm(${bpm / totalBeats})`,
+    code: `freq("${toneSteps(events)}")${melodyChain(voice, events, { bpm })}${ONE_SHOT}.cpm(${bpm / totalBeats})`,
     durationMs: (totalBeats * 60000) / bpm,
   }
 }

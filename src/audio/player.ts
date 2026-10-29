@@ -34,6 +34,9 @@ export function getNeySesi(): NeySesi {
 /** Seçili usul sesi (Ayarlar → "Usul sesi"); durum usulSamples.ts'tedir, ney sesi gibi buradan da kullanılır. */
 export { getUsulSesi, setUsulSesi } from './usulSamples'
 
+/** Dil belirginliği (Ayarlar, 0–1); durum pattern.ts'tedir, bütün melodi çalımlarına uygulanır. */
+export { getDilBelirginligi, setDilBelirginligi } from './pattern'
+
 /**
  * Strudel'i (büyük paket) arka planda yükler. Kullanıcı hareketi gerekmez;
  * uygulama açılışında çağrılır ki dokunuş anında içe aktarma beklenmesin.

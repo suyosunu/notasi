@@ -75,6 +75,7 @@ describe('measureBeats', () => {
 describe('buildPieceCode', () => {
   it('seçilen ney sesinin zincirini kullanır (usullü ve usulsüz); varsayılan shakuhachi', () => {
     const p = parca('hak-teala')
+    const tones = toToneEvents(p.olcu.flat(), DEFAULT_TUNING)
     expect(buildPieceCode(p, DEFAULT_TUNING, 60, true).code).toContain(melodyChain('shakuhachi'))
     expect(buildPieceCode(p, DEFAULT_TUNING, 60, true).code).toBe(
       buildPieceCode(p, DEFAULT_TUNING, 60, true, 'shakuhachi').code,
@@ -83,7 +84,7 @@ describe('buildPieceCode', () => {
       for (const withUsul of [false, true]) {
         const { code } = buildPieceCode(p, DEFAULT_TUNING, 60, withUsul, v)
         expect(code.startsWith(withUsul ? 'stack(freq("' : 'freq("')).toBe(true)
-        expect(code).toContain(`")${melodyChain(v)}${withUsul ? ', ' : '.mask('}`)
+        expect(code).toContain(`")${melodyChain(v, tones, { bpm: 60 })}${withUsul ? ', ' : '.mask('}`)
       }
     }
   })
@@ -247,7 +248,7 @@ describe('buildPieceCode: usul sesi', () => {
       )
       expect(await hits(code, 124, 600)).toEqual([])
     }
-  })
+  }, 20000) // üç ses × 124 vuruşluk gerçek çekirdek sorgusu; toplu koşuda 5 sn'yi aşabiliyor
 
   it('varsayılan: seçili usul sesi (getUsulSesi); ilk değer tahta', () => {
     const p = parca('hak-teala')

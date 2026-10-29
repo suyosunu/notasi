@@ -154,7 +154,7 @@ describe('ParcaDetail', () => {
     await waitFor(() => expect(playCode).toHaveBeenCalledTimes(1))
     const [code] = vi.mocked(playCode).mock.calls[0]!
     expect(code).toBe(buildPieceCode(byId('hak-teala'), DEFAULT_TUNING, 60, true, 'nefesli').code)
-    expect(code).toContain(melodyChain('nefesli'))
+    expect(code).toContain(melodyChain('nefesli', toToneEvents(byId('hak-teala').olcu.flat(), DEFAULT_TUNING), { bpm: 60 }))
     vi.mocked(getNeySesi).mockReturnValue('shakuhachi')
   })
 
