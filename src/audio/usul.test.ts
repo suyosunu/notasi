@@ -320,8 +320,8 @@ describe('usul sesi: kayıt tabanlı seçenekler (Konga, Tahta, Darbuka)', () =>
   const KAYITLI = ['konga', 'tahta', 'darbuka'] as const
   afterEach(() => setUsulSesi('tahta'))
 
-  /** Bir ölçünün vuruşları; bir sorgu-döngüsü 1 sn (bkz. yukarıdaki haps). */
-  async function sampleHaps(u: Usul, bpm: number, ses: UsulSesi): Promise<UsulHit[]> {
+  /** Bir ölçünün bütün sesleri (kayıt + uzun vuruş tınısı); bir sorgu-döngüsü 1 sn (bkz. yukarıdaki haps). */
+  async function allHaps(u: Usul, bpm: number, ses: UsulSesi): Promise<UsulHit[]> {
     const { evalScope } = await import('@strudel/core')
     const { evaluate, transpiler } = await import('@strudel/transpiler')
     await evalScope(import('@strudel/core'), import('@strudel/mini'))
@@ -332,6 +332,12 @@ describe('usul sesi: kayıt tabanlı seçenekler (Konga, Tahta, Darbuka)', () =>
       .map((h) => ({ at: Number(h.whole.begin), hold: Number(h.duration), ...h.value }) as UsulHit)
       .sort((a, b) => a.at - b.at)
   }
+  /** Yalnız kayıt vuruşları. */
+  const sampleHaps = async (u: Usul, bpm: number, ses: UsulSesi) =>
+    (await allHaps(u, bpm, ses)).filter((h) => h.s?.startsWith('usul_'))
+  /** Yalnız uzun vuruş tınısı. */
+  const tiniHaps = async (u: Usul, bpm: number, ses: UsulSesi) =>
+    (await allHaps(u, bpm, ses)).filter((h) => !h.s?.startsWith('usul_'))
 
   it("varsayılan ses 'tahta'; 'oryantal' seçilince bugünkü sentez kodu aynen üretilir", () => {
     expect(getUsulSesi()).toBe('tahta')
@@ -361,12 +367,45 @@ describe('usul sesi: kayıt tabanlı seçenekler (Konga, Tahta, Darbuka)', () =>
     }
   })
 
-  it('kayıt seçeneklerinde sentez katmanı yoktur; ses adları yalnızca usul_<ses>_ kayıtlarıdır', () => {
+  it('uzun vuruşu (1 zamandan uzun) olmayan usulde sentez katmanı yoktur: yalnızca usul_<ses>_ kayıtları', () => {
     for (const ses of KAYITLI) {
-      const code = buildUsulPatternCode(usul('aksak'), 60, ses)
-      const names = [...code.matchAll(/\bs\("([^"]*)"\)/g)].flatMap((m) => m[1]!.split(/[\s@\d.]+/)).filter(Boolean)
-      expect(names.filter((n) => n !== '~').every((n) => n.startsWith(`usul_${ses}_`))).toBe(true)
-      expect(code).not.toMatch(/white|sine|triangle|freq\(/)
+      for (const id of ['nim-sofyan', 'semai']) {
+        const code = buildUsulPatternCode(usul(id), 60, ses)
+        const names = [...code.matchAll(/\bs\("([^"]*)"\)/g)].flatMap((m) => m[1]!.split(/[\s@\d.]+/)).filter(Boolean)
+        expect(names.filter((n) => n !== '~').every((n) => n.startsWith(`usul_${ses}_`))).toBe(true)
+        expect(code).not.toMatch(/white|sine|triangle|freq\(/)
+      }
+    }
+  })
+
+  it("Sofyan: 2 zamanlık düm'ün altında süre boyunca sönen tını var; te ve ke yalnız kayıt", async () => {
+    for (const ses of KAYITLI) {
+      for (const bpm of [60, 90]) {
+        const one = 60 / bpm
+        const [t, ...rest] = await tiniHaps(usul('sofyan'), bpm, ses)
+        expect(rest).toHaveLength(0)
+        const [dum] = await sampleHaps(usul('sofyan'), bpm, ses)
+        expect(t!.at).toBe(0)
+        expect(t!.s).toBe('triangle')
+        expect(t!.hold).toBeCloseTo(dum!.hold, 6)
+        expect(t!.hold).toBeCloseTo(0.9 * 2 * one, 2) // ≈ vuruşun süresi: "düüm"
+        expect(t!.decay).toBeCloseTo(t!.hold, 2) // tutmanın tamamı boyunca söner
+        expect(t!.sustain).toBeGreaterThan(0)
+        expect(t!.sustain).toBeLessThanOrEqual(0.1)
+        expect(t!.gain).toBeGreaterThan(0)
+        expect(t!.gain).toBeLessThan(dum!.gain! / 2) // kaydın altında, alçak düzeyli
+      }
+    }
+  })
+
+  it('Aksak: tını yalnız 2 zamanlık vuruşlarda (düm, düm, tek); düm tınısı tek tınısından pes ve gür', async () => {
+    for (const ses of KAYITLI) {
+      const hs = await tiniHaps(usul('aksak'), 60, ses) // düm2 te ke düm2 tek2 tek1
+      expect(hs.map((h) => Math.round(h.at * 1e6) / 1e6)).toEqual([0, 4, 6])
+      const [d1, d2, tek] = hs as [UsulHit, UsulHit, UsulHit]
+      expect(d2.freq).toBe(d1.freq)
+      expect(d1.freq!).toBeLessThan(tek.freq!)
+      expect(d1.gain!).toBeGreaterThan(tek.gain!)
     }
   })
 
@@ -397,11 +436,11 @@ describe('usul sesi: kayıt tabanlı seçenekler (Konga, Tahta, Darbuka)', () =>
     for (const ses of KAYITLI) {
       for (const u of USULLER.filter((x) => x.vurus !== null)) {
         for (const bpm of [40, 60, 120, 200]) {
-          const hs = await sampleHaps(u, bpm, ses)
+          const hs = await allHaps(u, bpm, ses) // kayıt ve tını
           const measure = (u.zaman * 60) / bpm
-          const onsets = [...hs.map((h) => h.at), measure]
-          for (const [i, h] of hs.entries()) {
-            const next = onsets[i + 1]!
+          const onsets = [...new Set(hs.map((h) => h.at)), measure].sort((a, b) => a - b)
+          for (const h of hs) {
+            const next = onsets.find((t) => t > h.at + 1e-9)!
             expect(h.release).toBeGreaterThanOrEqual(0.01)
             expect(h.release).toBeLessThanOrEqual(0.03)
             // tutma + bırakma + superdough'un (ve kayıt tetikleyicisinin) 10 ms durdurma payı
@@ -436,8 +475,11 @@ describe('buildUsulOnceCode: bir ölçü, tek seferlik (Ayarlar → Dene)', () =
     await evalScope(import('@strudel/core'), import('@strudel/mini'))
     const { pattern } = await evaluate(code, transpiler)
     // cpm(20) ⇒ bir ölçü 3 sorgu-döngüsü (cps = 1 kabulü).
-    const hs = pattern.queryArc(0, 3).filter((h) => h.hasOnset())
-    expect(hs.map((h) => (h.value as { s: string }).s)).toEqual(['usul_tahta_dum', 'usul_tahta_tek', 'usul_tahta_tek'])
+    const hs = pattern
+      .queryArc(0, 3)
+      .filter((h) => h.hasOnset())
+      .sort((a, b) => Number(a.whole!.begin) - Number(b.whole!.begin))
+    expect(hs.map((h) => (h.value as { s: string }).s)).toEqual(['usul_tahta_dum', 'triangle', 'usul_tahta_tek', 'usul_tahta_tek']) // 2 zamanlık düm'ün tınısı
     expect(pattern.queryArc(3, 300).filter((h) => h.hasOnset())).toEqual([])
   })
 
@@ -459,8 +501,8 @@ describe('buildUsulOnceCode: bir ölçü, tek seferlik (Ayarlar → Dene)', () =
       .filter((h) => h.hasOnset())
       .sort((a, b) => Number(a.whole!.begin) - Number(b.whole!.begin))
     expect(hs.map((h) => (h.value as { s: string }).s)).toEqual([
-      'usul_tahta_dum', 'usul_tahta_tek', 'usul_tahta_tek',
-      'usul_tahta_dum', 'usul_tahta_tek', 'usul_tahta_tek',
+      'usul_tahta_dum', 'triangle', 'usul_tahta_tek', 'usul_tahta_tek',
+      'usul_tahta_dum', 'triangle', 'usul_tahta_tek', 'usul_tahta_tek',
     ])
     expect(pattern.queryArc(8, 300).filter((h) => h.hasOnset())).toEqual([])
   })

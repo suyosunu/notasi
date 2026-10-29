@@ -178,19 +178,51 @@ function sampleGain(ses: KayitSesi, v: VurusSesi): number {
 const gainRound = (x: number) => Math.round(x * 10000) / 10000
 
 /**
- * Kayıt seçenekleri (Konga, Tahta, Darbuka): tek katman, her vuruş kendi kaydını çalar (`usulSamples.strokeSound`).
- * Kayıt doğal uzunluğu kadar tınlar (döngü yok); vuruştan uzunsa oryantal sesle aynı `envelope(d)` sınırıyla
- * (`clip`/`release`) sonraki vuruştan önce kesilir.
+ * Uzun vuruşun tınısı (kayıt seçenekleri): kayıtlar ~0.2–1.1 sn'de söner, 2 zamanlık "düüm" ise ♩ = 60'ta 2 sn sürer.
+ * Bu yüzden 1 zamandan uzun vuruşun altına kaydın baskın perdesinde (ffmpeg ile ölçüldü) alçak düzeyli bir üçgen dalga
+ * eklenir; oryantal sesin süreye uyan tınısı gibi tutma boyunca söner. 1 zamanlık vuruşlar yalnız kayıttır: "düm" ile
+ * "düüm" farkı duyulur. Kazanç: tınının başı kaydın ilk 50 ms RMS'inden ~8 dB kısık (kulakla ayarlanabilir).
+ * te/ke tek'in tınısını TEKE_LEVEL oranında kullanır (perde te/ke kaydınındır).
+ */
+const TINI: Record<KayitSesi, { dum: number; tek: number; teke: number; dumGain: number; tekGain: number }> = {
+  konga: { dum: 260, tek: 292, teke: 886, dumGain: 0.18, tekGain: 0.09 },
+  tahta: { dum: 500, tek: 745, teke: 745, dumGain: 0.12, tekGain: 0.06 },
+  darbuka: { dum: 144, tek: 730, teke: 740, dumGain: 0.15, tekGain: 0.1 },
+}
+const TINI_WAVE = 'triangle'
+/** Tını kaydın vuruşunun altında yumuşak açılır; vuruşun tıkını kalınlaştırmaz. */
+const TINI_ATTACK_S = 0.03
+const TINI_SUSTAIN = 0.08
+/** Tınının eklendiği en kısa vuruş (zaman): bundan uzun vuruşlar. */
+const TINI_MIN_SURE = 1
+
+function tiniHz(ses: KayitSesi, v: VurusSesi): number {
+  const t = TINI[ses]
+  return v === 'düm' ? t.dum : v === 'tek' ? t.tek : t.teke
+}
+function tiniGain(ses: KayitSesi, v: VurusSesi): number {
+  const t = TINI[ses]
+  return v === 'düm' ? t.dumGain : v === 'tek' ? t.tekGain : t.tekGain * TEKE_LEVEL[v]
+}
+
+/**
+ * Kayıt seçenekleri (Konga, Tahta, Darbuka): her vuruş kendi kaydını çalar (`usulSamples.strokeSound`). Kayıt doğal
+ * uzunluğu kadar tınlar (döngü yok); vuruştan uzunsa oryantal sesle aynı `envelope(d)` sınırıyla (`clip`/`release`)
+ * sonraki vuruştan önce kesilir. 1 zamandan uzun vuruş varsa altına süreye uyan tını katmanı eklenir (bkz. `TINI`).
  */
 function sampleCode(u: Usul, bpm: number, ses: KayitSesi): string {
   const vurus = u.vurus!
   const pat = (f: (x: Vurus) => string | number) => `"${vurus.map((x) => step(f(x), x.sure)).join(' ')}"`
   const env = (x: Vurus) => envelope(x.sure * zamanSeconds(bpm))
-  return (
-    `s(${pat((x) => strokeSound(ses, x.ses))})` +
-    `.clip(${pat((x) => env(x).clip)}).release(${pat((x) => env(x).release)})` +
-    `.gain(${pat((x) => gainRound(sampleGain(ses, x.ses)))})`
-  )
+  const gate = `.clip(${pat((x) => env(x).clip)}).release(${pat((x) => env(x).release)})`
+  const kayit = `s(${pat((x) => strokeSound(ses, x.ses))})${gate}.gain(${pat((x) => gainRound(sampleGain(ses, x.ses)))})`
+  const uzun = (x: Vurus) => x.sure > TINI_MIN_SURE
+  if (!vurus.some(uzun)) return kayit
+  const tini =
+    `freq(${pat((x) => (uzun(x) ? tiniHz(ses, x.ses) : REST))}).s("${TINI_WAVE}")` +
+    `.attack(${TINI_ATTACK_S}).decay(${pat((x) => env(x).hold)}).sustain(${TINI_SUSTAIN})${gate}` +
+    `.gain(${pat((x) => (uzun(x) ? gainRound(tiniGain(ses, x.ses)) : REST))})`
+  return `stack(${kayit}, ${tini})`
 }
 
 /**
