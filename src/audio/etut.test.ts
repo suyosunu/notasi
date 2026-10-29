@@ -158,10 +158,7 @@ describe('buildEtutCode', () => {
       expect(clicks(hs).map((h) => h.at)).toEqual([0, 1, 2, 3])
       const u = usulHits(hs)
       expect(u.map((h) => h.at)).toEqual(Array.from({ length: 8 }, (_, i) => [4 + 4 * i, 6 + 4 * i, 7 + 4 * i]).flat())
-      // Melodi yok; usul dışında kalan yalnız 2 zamanlık düm'ün tınısıdır (kayıt seslerinde, her ölçü başında).
-      const kalan = melody(hs).filter((h) => h.s === undefined || !h.s.startsWith('usul_'))
-      expect(kalan.every((h) => h.s === 'triangle')).toBe(true)
-      expect(kalan.map((h) => h.at)).toEqual(Array.from({ length: 8 }, (_, i) => 4 + 4 * i))
+      expect(melody(hs).filter((h) => h.s === undefined || !h.s.startsWith('usul_'))).toHaveLength(0)
     })
   })
 

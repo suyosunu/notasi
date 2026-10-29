@@ -36,15 +36,13 @@ interface Hit {
   release?: number
   bandf?: number
   penv?: number
-  vib?: number
 }
 
 /**
  * Usul sesleri: düm gövdesi 65 Hz sinüs, tek/te/ke tıkı bant geçirenli gürültü.
  * Düm'ün orta gövdesi de üçgendir; melodiden perde zarfıyla (penv) ayrılır.
  */
-/** Melodi sesi; usul tınısı (kayıt seslerinde uzun vuruşun altındaki üçgen dalga) vibratosuzdur, melodi değildir. */
-const isMelody = (h: Hit, s = 'triangle') => h.s === s && h.penv === undefined && (s !== 'triangle' || h.vib !== undefined)
+const isMelody = (h: Hit, s = 'triangle') => h.s === s && h.penv === undefined
 const isDum = (h: Hit) => h.s === 'sine' && h.freq === 65
 const isTekClick = (h: Hit) => h.s === 'white' && h.bandf === 3000
 
