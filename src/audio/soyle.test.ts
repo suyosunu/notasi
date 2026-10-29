@@ -11,10 +11,11 @@ import {
 import type { SampleHost } from './usulSamples'
 
 describe('hece adları', () => {
-  it('1 zamandan uzun düm "duum", kısa düm "dum"; diğerleri kendi adıyla', () => {
+  it('1 zamandan uzun düm "duum", tek "teek"; kısaları ve te/ke kendi adıyla', () => {
     expect(heceAdi({ ses: 'düm', sure: 2 })).toBe('duum')
     expect(heceAdi({ ses: 'düm', sure: 1 })).toBe('dum')
-    expect(heceAdi({ ses: 'tek', sure: 2 })).toBe('tek')
+    expect(heceAdi({ ses: 'tek', sure: 2 })).toBe('teek')
+    expect(heceAdi({ ses: 'tek', sure: 1 })).toBe('tek')
     expect(heceAdi({ ses: 'te', sure: 1 })).toBe('te')
     expect(insanSesAdi('erkek', { ses: 'ke', sure: 1 })).toBe('usul_insan_erkek_ke')
   })
@@ -78,10 +79,10 @@ describe('konuşma sesi', () => {
     vi.unstubAllGlobals()
   })
 
-  it('beş hece sessiz ses olarak kaydedilir', () => {
+  it('altı hece sessiz ses olarak kaydedilir', () => {
     kaydetInsanSesi(host, 'kadin')
     expect([...sounds.keys()].sort()).toEqual(
-      ['dum', 'duum', 'ke', 'te', 'tek'].map((h) => `usul_insan_kadin_${h}`),
+      ['dum', 'duum', 'ke', 'te', 'teek', 'tek'].map((h) => `usul_insan_kadin_${h}`),
     )
   })
 
@@ -96,6 +97,15 @@ describe('konuşma sesi', () => {
     sounds.get('usul_insan_kadin_te')!(10, { duration: 0.75 }, () => {})
     vi.advanceTimersByTime(0)
     expect(spoken[1]).toMatchObject({ text: 'te', rate: 1 })
+  })
+
+  it('uzun tek "teeek" diye yavaş, kısa tek "tek" diye normal hızda söylenir', () => {
+    kaydetInsanSesi(host, 'kadin')
+    sounds.get('usul_insan_kadin_teek')!(10, { duration: 1.5 }, () => {})
+    sounds.get('usul_insan_kadin_tek')!(10, { duration: 0.75 }, () => {})
+    vi.advanceTimersByTime(0)
+    expect(spoken).toMatchObject([{ text: 'teeek' }, { text: 'tek', rate: 1 }])
+    expect(spoken[0]!.rate).toBeLessThan(1)
   })
 
   it('önceki hece sürüyorsa kesilir ki sonraki vuruş gecikmesin', () => {

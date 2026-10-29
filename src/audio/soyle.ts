@@ -12,13 +12,14 @@ import type { SampleHost } from './usulSamples'
 export type SesTuru = 'kadin' | 'erkek'
 export const SES_TURLERI: readonly SesTuru[] = ['kadin', 'erkek']
 
-/** Hecenin ses adındaki karşılığı; `duum` 1 zamandan uzun düm'dür. */
-export type HeceAdi = 'duum' | 'dum' | 'tek' | 'te' | 'ke'
+/** Hecenin ses adındaki karşılığı; `duum` ve `teek` 1 zamandan uzun düm ve tek'tir. */
+export type HeceAdi = 'duum' | 'dum' | 'teek' | 'tek' | 'te' | 'ke'
 
-/** Söylenen metin ve hız (1 = normal). Kısa heceler normal hızda (hızlandırınca kesik duyuluyordu); uzun düm yavaş. */
+/** Söylenen metin ve hız (1 = normal). Kısa heceler normal hızda (hızlandırınca kesik duyuluyordu); uzun düm ve tek yavaş. */
 const HECELER: Record<HeceAdi, { metin: string; hiz: number }> = {
   duum: { metin: 'düüüm', hiz: 0.8 },
   dum: { metin: 'düm', hiz: 1 },
+  teek: { metin: 'teeek', hiz: 0.8 },
   tek: { metin: 'tek', hiz: 1 },
   te: { metin: 'te', hiz: 1 },
   ke: { metin: 'ke', hiz: 1 },
@@ -26,6 +27,7 @@ const HECELER: Record<HeceAdi, { metin: string; hiz: number }> = {
 
 export function heceAdi(v: Vurus): HeceAdi {
   if (v.ses === 'düm') return v.sure > 1 ? 'duum' : 'dum'
+  if (v.ses === 'tek') return v.sure > 1 ? 'teek' : 'tek'
   return v.ses
 }
 

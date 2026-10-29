@@ -13,6 +13,7 @@ vi.mock('./audio/player', () => ({
   preloadAudio: mocks.preloadAudio,
   setNeySesi: mocks.setNeySesi,
   setUsulSesi: mocks.setUsulSesi,
+  setDilBelirginligi: vi.fn(),
 }))
 vi.mock('./store/db', () => ({ getSettings: mocks.getSettings }))
 

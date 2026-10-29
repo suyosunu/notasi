@@ -434,6 +434,12 @@ describe('usul sesi: insan sesi (hazır konuşma sesi)', () => {
     expect(buildUsulBody(usul('sofyan'), 80, 'insan-kadin')).toContain('usul_insan_kadin_duum@2')
   })
 
+  it('Yürük Semâî: 2 zamanlık son tek uzun "teek", 1 zamanlık tekler kısa', () => {
+    expect(buildUsulBody(usul('yuruk-semai'), 80, 'insan-kadin')).toBe(
+      's("usul_insan_kadin_dum@1 usul_insan_kadin_tek@1 usul_insan_kadin_tek@1 usul_insan_kadin_dum@1 usul_insan_kadin_teek@2")',
+    )
+  })
+
   it('gerçek Strudel çekirdeğinde Sofyan heceleri 0, 2, 3. zamanlarda', async () => {
     const { evalScope } = await import('@strudel/core')
     const { evaluate, transpiler } = await import('@strudel/transpiler')
