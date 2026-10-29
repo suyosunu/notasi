@@ -11,8 +11,11 @@ export function hece(v: Vurus): string {
   return v.ses === 'düm' && v.sure > 1 ? 'düüüm' : v.ses
 }
 
-/** Hece hızı (1 = normal): kısa heceler hızlı söylenir ki sonraki vuruşa taşmasın; uzun vuruş yavaş. */
-const HIZLI = 1.4
+/**
+ * Hece hızı (1 = normal): kısa heceler (te, ke, tek) normal hızda söylenir; hızlandırınca kesik duyuluyordu.
+ * Uzun vuruş yavaş söylenir ki "düüüm" uzasın.
+ */
+const NORMAL = 1
 const YAVAS = 0.8
 
 export interface SoyleAdim {
@@ -30,7 +33,7 @@ export function soyleAdimlari(u: Usul, bpm: number, olcu: number): SoyleAdim[] {
   let t = 0
   for (let i = 0; i < olcu; i++) {
     for (const v of u.vurus) {
-      adimlar.push({ at: t * birim, metin: hece(v), hiz: v.sure > 1 ? YAVAS : HIZLI })
+      adimlar.push({ at: t * birim, metin: hece(v), hiz: v.sure > 1 ? YAVAS : NORMAL })
       t += v.sure
     }
   }

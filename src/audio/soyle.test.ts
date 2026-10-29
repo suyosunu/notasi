@@ -16,7 +16,7 @@ describe('soyleAdimlari', () => {
       [7000, 'ke'],
     ])
     expect(a[0]!.hiz).toBeLessThan(1) // uzun hece yavaş
-    expect(a[1]!.hiz).toBeGreaterThan(1)
+    expect(a[1]!.hiz).toBe(1) // kısa hece normal hızda: hızlandırınca kesik duyuluyordu
   })
 
   it('1 zamanlık düm kısa yazılır; Dolap (vuruşsuz) boş', () => {
