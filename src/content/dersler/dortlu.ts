@@ -33,7 +33,7 @@ export const DORTLU_DERSLERI: Ders[] = [
       {
         tur: 'porte',
         olaylar: [n('G4'), n('A4'), n('B4'), n('C5')],
-        aciklama: "Çârgâh dörtlüsü: Rast, Dügâh, Bûselik, Çârgâh; her ses bir dörtlük. Bûselik, Si'dir ve önünde işaret yoktur; dörtlünün üçüncü sesi odur.",
+        aciklama: "Çârgâh dörtlüsü: Rast, Dügâh, Bûselik, Çârgâh; her ses bir vuruş. Bûselik, Si'dir ve önünde işaret yoktur; dörtlünün üçüncü sesi odur.",
         bpm: 60,
       },
       { tur: 'metin', metin: 'Dörtlünün aralıkları (komayla):' },
@@ -69,12 +69,12 @@ export const DORTLU_DERSLERI: Ders[] = [
     bloklar: [
       {
         tur: 'metin',
-        metin: "Kürdî dörtlüsü Dügâh'ta başlar: Dügâh, Kürdî, Çârgâh, Nevâ. Nota adlarıyla La, Si 5 koma bemol, Do, Re. Kürdî perdesini daha önce öğrendin; şimdi onu bir dörtlünün ikinci sesi olarak çalarsın.",
+        metin: "Kürdî dörtlüsü Dügâh'ta başlar: Dügâh, Kürdî, Çârgâh, Nevâ. Nota adlarıyla La, Si küçük mücenneb bemolü, Do, Re. Kürdî perdesini daha önce öğrendin; şimdi onu bir dörtlünün ikinci sesi olarak çalarsın.",
       },
       {
         tur: 'porte',
         olaylar: [n('A4'), n('B4b5'), n('C5'), n('D5')],
-        aciklama: 'Kürdî dörtlüsü: Dügâh, Kürdî, Çârgâh, Nevâ; her ses bir dörtlük. İkinci notanın önünde 5 komalık bemol vardır.',
+        aciklama: 'Kürdî dörtlüsü: Dügâh, Kürdî, Çârgâh, Nevâ; her ses bir vuruş. İkinci notanın önünde küçük mücenneb bemolü (5 koma) vardır.',
         bpm: 60,
       },
       { tur: 'metin', metin: 'Dörtlünün aralıkları (komayla):' },
@@ -110,12 +110,12 @@ export const DORTLU_DERSLERI: Ders[] = [
     bloklar: [
       {
         tur: 'metin',
-        metin: "Hicaz dörtlüsü de Dügâh'ta başlar: Dügâh, Dik Kürdî, Nim Hicaz, Nevâ. Nota adlarıyla La, Si 4 koma bemol, Do bakiye diyez, Re. Dik Kürdî ile Nim Hicaz perdelerini daha önce öğrendin.",
+        metin: "Hicaz dörtlüsü de Dügâh'ta başlar: Dügâh, Dik Kürdî, Nim Hicaz, Nevâ. Nota adlarıyla La, Si bakiye bemolü, Do bakiye diyezi, Re. Dik Kürdî ile Nim Hicaz perdelerini daha önce öğrendin.",
       },
       {
         tur: 'porte',
         olaylar: [n('A4'), n('B4b4'), n('C5#4'), n('D5')],
-        aciklama: 'Hicaz dörtlüsü: Dügâh, Dik Kürdî, Nim Hicaz, Nevâ; her ses bir dörtlük. İkinci notanın önünde bemol, üçüncünün önünde diyez vardır.',
+        aciklama: 'Hicaz dörtlüsü: Dügâh, Dik Kürdî, Nim Hicaz, Nevâ; her ses bir vuruş. İkinci notanın önünde bakiye bemolü, üçüncünün önünde bakiye diyezi vardır.',
         bpm: 60,
       },
       { tur: 'metin', metin: 'Dörtlünün aralıkları (komayla):' },

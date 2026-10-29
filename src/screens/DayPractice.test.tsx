@@ -293,6 +293,23 @@ describe('DayPractice (dizi ve eski oturumlar)', () => {
     expect(screen.getByRole('button', { name: '💡 İpucu' })).toBeTruthy()
   })
 
+  it('üçleme sorusunda üç sekizlik dersteki gibi bir kirişle bağlanır (bayraksız)', async () => {
+    const q = makeQuestion('dur:eighth.uclu', seededRng(3))
+    await seedSession([q])
+    render(<DayPractice />)
+    await screen.findByText('Bu hangi süre?')
+    expect(screen.getAllByTestId('notehead')).toHaveLength(3)
+    expect(document.querySelectorAll('.staff-wrap [data-beam-group]')).toHaveLength(1)
+  })
+
+  it('tek sekizlik sorusunda kiriş çizilmez', async () => {
+    const q = makeQuestion('dur:eighth', seededRng(3))
+    await seedSession([q])
+    render(<DayPractice />)
+    await screen.findByText('Bu hangi süre?')
+    expect(document.querySelector('.staff-wrap [data-beam-group]')).toBeNull()
+  })
+
   it('nota süresi sorusunda "🔊 Dinle" görünür', async () => {
     const q = makeQuestion('dur:half', seededRng(3))
     await seedSession([q])

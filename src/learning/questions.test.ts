@@ -61,6 +61,16 @@ describe('makeQuestion', () => {
     expect(seen.size).toBeGreaterThan(3)
   })
 
+  it('sure-1 tamamlayıcı çeldiricilerinde sure-4 adları (üçleme, onaltılık) yoktur', () => {
+    const sure4 = ['Sekizlik üçleme', 'Onaltılık', 'Onaltılık sus']
+    for (const card of ['dur:whole', 'dur:half', 'dur:quarter']) {
+      for (let s = 1; s <= 200; s++) {
+        const q = makeQuestion(card, seededRng(s))
+        for (const ad of sure4) expect(q.options, `${card} tohum ${s}`).not.toContain(ad)
+      }
+    }
+  })
+
   it('erken süre konularında ileri konuların adları (sus) sızmaz', () => {
     for (let s = 1; s <= 50; s++) {
       const q = makeQuestion('dur:eighth', seededRng(s))

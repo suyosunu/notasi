@@ -1,4 +1,4 @@
-import { perdeDersId, perdeDersleri } from '../content/dersler'
+import { etutDersleri, perdeDersId, perdeDersleri } from '../content/dersler'
 import { ETUTLER } from '../content/etutler'
 import { NEY_PERDELER, visibleFingering } from '../content/ney-perdeler'
 import type { NeyPerde, PerdeId } from '../content/ney-perdeler'
@@ -17,8 +17,9 @@ export interface EveningStep {
   /** Adımdan önce okunması gereken ders (`DersKapisi`). Bu alandan önce açılmış oturumlarda yoktur: kapı atlanır. */
   dersId?: string
   /**
-   * Birden çok dersli adım (Nevâ: önce gösterge dersi, sonra Nevâ dersi); sırayla okunur. Varsa `dersId`'ye
-   * üstündür; bu alandan önce açılmış oturumlarda yoktur, o zaman `dersId` okunur.
+   * Birden çok dersli adım (Nevâ: önce gösterge dersi, sonra Nevâ dersi; usul etüdü: ölçü, usul girişi, usulün
+   * dersi); sırayla okunur. Varsa `dersId`'ye üstündür; bu alandan önce açılmış oturumlarda yoktur, o zaman
+   * `dersId` okunur.
    */
   dersIdler?: string[]
 }
@@ -103,7 +104,11 @@ function etutStep(perdeStatus: Record<PerdeId, PerdeStatus>, calinan: ReadonlySe
       e.perdeler.every((id) => perdeStatus[id] === 'gecildi'),
   )
   if (!etut) return null
-  return { kind: 'etut', etutId: etut.id, label: `Etüt · ${etut.baslik}`, tries: 1, dersId: etut.dersId }
+  const step: EveningStep = { kind: 'etut', etutId: etut.id, label: `Etüt · ${etut.baslik}`, tries: 1, dersId: etut.dersId }
+  // Usul etüdü: önce ölçü ve nefes, sonra usulün giriş ve kendi dersi (`etutDersleri`).
+  const idler = etutDersleri(etut)
+  if (idler.length > 1) step.dersIdler = idler
+  return step
 }
 
 export function buildEveningPlan(input: {

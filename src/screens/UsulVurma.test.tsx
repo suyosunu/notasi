@@ -151,6 +151,7 @@ describe('UsulVurma', () => {
     expect(screen.getByText(/Kaçan: 0 · Yanlış: 0 · Fazla: 0/)).toBeTruthy()
     expect(screen.getByText('✓ Geçtin')).toBeTruthy()
     expect(screen.queryByText(/Biraz (erken|geç) vuruyorsun/)).toBeNull()
+    expect(screen.getByText('Ortalama: 20 ms geç').className).toBe('muted')
     await waitFor(async () => expect((await getSettings()).vurulanUsuller).toEqual(['nim-sofyan']))
     expect(screen.getByRole('button', { name: '▶ Başla' })).toBeTruthy()
     expect(releaseWakeLock).toHaveBeenCalled()
@@ -164,6 +165,7 @@ describe('UsulVurma', () => {
     sekizVurus(baslangic)
     await bitir()
     expect(await screen.findByText('✓ Geçtin')).toBeTruthy()
+    expect(screen.getByText('Ortalama: tam zamanında')).toBeTruthy()
     expect(screen.getByText('Usul sesini kapatıp yalnız metronomla geçersen sayılır.')).toBeTruthy()
     expect(isaretEkle).not.toHaveBeenCalledWith('vurulanUsuller', expect.anything())
     expect((await getSettings()).vurulanUsuller).toEqual([])
@@ -190,6 +192,7 @@ describe('UsulVurma', () => {
     expect(screen.getByText('Bir daha dene')).toBeTruthy()
     expect(screen.queryByText('✓ Geçtin')).toBeNull()
     expect(screen.queryByText(/vuruyorsun/)).toBeNull()
+    expect(screen.queryByText(/Ortalama:/)).toBeNull()
   })
 
   it('geç vuruş uyarısı ve yanlış düğme sayımı; çok hızlı rastgele dokunuşta çökmez', async () => {
@@ -199,6 +202,7 @@ describe('UsulVurma', () => {
     sekizVurus(baslangic, 90)
     await bitir()
     expect(await screen.findByText('Biraz geç vuruyorsun')).toBeTruthy()
+    expect(screen.getByText('Ortalama: 90 ms geç')).toBeTruthy()
 
     btn = screen.getByRole('button', { name: '▶ Başla' }) as HTMLButtonElement
     baslangic = now
@@ -212,6 +216,7 @@ describe('UsulVurma', () => {
     expect(await screen.findByText('4/8 vuruş doğru')).toBeTruthy()
     expect(screen.getByText(/Kaçan: 0 · Yanlış: 4 · Fazla: 200/)).toBeTruthy()
     expect(screen.getByText('Biraz erken vuruyorsun')).toBeTruthy()
+    expect(screen.getByText('Ortalama: 80 ms erken')).toBeTruthy()
     expect(screen.getByText('Bir daha dene')).toBeTruthy()
   })
 

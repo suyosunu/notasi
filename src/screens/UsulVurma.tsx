@@ -268,6 +268,13 @@ function VurmaCalisma({ usul }: { usul: Usul }) {
   )
 }
 
+/** Doğru vuruşların ortalama sapması, ms'ye yuvarlanmış: "Ortalama: 45 ms geç" / "… erken" / "tam zamanında". */
+function ortalamaMetni(sapma: number): string {
+  const ms = Math.round(Math.abs(sapma))
+  if (ms === 0) return 'Ortalama: tam zamanında'
+  return `Ortalama: ${ms} ms ${sapma < 0 ? 'erken' : 'geç'}`
+}
+
 function SonucKutusu({ s, usulSesi }: { s: VurmaSonucu; usulSesi: boolean }) {
   const sapma = s.ortalamaSapma
   return (
@@ -277,6 +284,7 @@ function SonucKutusu({ s, usulSesi }: { s: VurmaSonucu; usulSesi: boolean }) {
       {sapma !== null && Math.abs(sapma) > SAPMA_UYARI_MS && (
         <p>{sapma < 0 ? 'Biraz erken vuruyorsun' : 'Biraz geç vuruyorsun'}</p>
       )}
+      {sapma !== null && <p class="muted">{ortalamaMetni(sapma)}</p>}
       <p class={s.gecti ? 'result-ok' : 'result-bad'}>{s.gecti ? '✓ Geçtin' : 'Bir daha dene'}</p>
       {s.gecti && usulSesi && <p class="hint">{ONAY_NOTU}</p>}
     </div>

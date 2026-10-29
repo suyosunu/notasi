@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks'
 import { buildEtutCode } from '../audio/etut'
 import { getNeySesi, playCode, stopAudio, unlockAudio } from '../audio/player'
 import { acquireWakeLock, releaseWakeLock } from '../audio/wakeLock'
+import { etutDersleri } from '../content/dersler'
 import { ETUTLER } from '../content/etutler'
 import type { Etut } from '../content/etutler'
 import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
@@ -178,7 +179,7 @@ export function EtutCalisma(props: { etut: Etut; onDone?: () => void; baslikGizl
   )
 }
 
-/** `/etut/:id`: etüt, ders okunduktan sonra açılır. */
+/** `/etut/:id`: etüt, dersleri (`etutDersleri`) okunduktan sonra açılır. */
 export function EtutDetail({ etutId }: { etutId: string }) {
   const etut = ETUTLER.find((e) => e.id === etutId)
   if (!etut) {
@@ -192,7 +193,7 @@ export function EtutDetail({ etutId }: { etutId: string }) {
     )
   }
   return (
-    <DersKapisi dersId={etut.dersId} geri={{ href: '#/ney', label: 'Ney bölümüne dön' }}>
+    <DersKapisi dersId={etutDersleri(etut)} geri={{ href: '#/ney', label: 'Ney bölümüne dön' }}>
       <main class="screen">
         <EtutCalisma etut={etut} />
         <div class="links">

@@ -11,6 +11,9 @@ import { getSettings, listAttempts, listTopics, saveSettings, setPlacedOut } fro
 import type { Settings } from '../store/db'
 import { seededRng } from '../util/rng'
 
+/** Soru portesinde vuruş içindeki sekizlikler kirişlenir (gündüz oturumuyla aynı çizim). */
+const KIRIS_VURUSU = 1
+
 type Step = 'sorular' | 'ney' | 'deneme' | 'kaydediliyor' | 'bitti'
 
 interface Answer {
@@ -147,7 +150,7 @@ export function Placement({ seed }: { seed?: number }) {
 
       <p class="prompt">{question.prompt}</p>
       <div class="staff-wrap">
-        <Staff events={question.events} />
+        <Staff events={question.events} beamBeats={KIRIS_VURUSU} />
       </div>
 
       <div class="options">

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { rotaBilinir } from '../../app'
 import { KOMA_FARKI, NEY_PERDELER } from '../ney-perdeler'
 import { NOTA_TOPICS } from '../nota-topics'
-import { DERSLER, dersById, notaDersId, perdeDersId, usulDersId, usulDersleri } from './index'
+import { DERSLER, dersById, etutDersleri, notaDersId, perdeDersId, usulDersId, usulDersleri } from './index'
 import { HAZIRLIK_DERSLERI } from './hazirlik'
 import { NOTA_DERSLERI } from './nota'
 import { NOTA_2_DERSLERI } from './nota-2'
@@ -344,6 +344,12 @@ describe('Seviye 2 okuma dersleri', () => {
     for (const s of ['2/4', '3/4', '4/4', 'ölçü çizgisi', 'bitiş çizgisi', 'nefes işareti']) expect(m).toContain(s)
   })
 
+  it('okuma:olcu basılı notadaki ölçü sayısını ve çift bitiş çizgisini uygulamanın portesinden ayırır', () => {
+    const m = metin('okuma:olcu')
+    expect(m).toContain('Uygulamadaki portelerde ölçü sayısı yazılmaz')
+    expect(m).toContain('Uygulamadaki portelerde bitiş çizgisi tek çizgi görünür')
+  })
+
   it('ölçü çizgili portelerde her ölçü ölçü sayısını doldurur (çizgiler geçerli olay sıralarında)', () => {
     for (const id of IDS)
       for (const x of porteBloklari(id)) {
@@ -459,6 +465,13 @@ describe('Seviye 2 ara ses perde dersleri', () => {
   const ders = (id: string) => dersById(perdeDersId(id))!
   const porteler = (id: string) => ders(id).bloklar.flatMap((b) => (b.tur === 'porte' ? [b.olaylar] : []))
   const tumMetin = (id: string) => metinler(ders(id)).join(' ')
+
+  it("Kürdî ve Nim Hicaz derslerinde Yücel'in yedi ses kuralı uygulamanın yazımıyla geçer", () => {
+    for (const id of ['kurdi', 'nim-hicaz']) {
+      expect(tumMetin(id), id).not.toMatch(/Nîm|Hicâz/)
+      expect(tumMetin(id), id).toContain('(Nevâ, Nim Hicaz, Çârgâh, Segâh, Kürdî, Dügâh, Rast)')
+    }
+  })
 
   it('dört ara ses dersi var, parmak bloğu doğru perdeyi gösterir, seviye 2', () => {
     expect(PERDE_DERSLERI.slice(5).map((d) => d.id)).toEqual(ARA.map(perdeDersId))
@@ -643,12 +656,20 @@ describe('Usul dersleri', () => {
   const metin = (id: string) => metinler(ders(id)).join(' ')
   const usulBloklari = (id: string) => ders(id).bloklar.flatMap((b) => (b.tur === 'usul' ? [b] : []))
 
-  it('dört usul dersi bu sırayla var; hepsi seviye 2 ve DERSLER içinde; alıştırma usul bölümü', () => {
+  it('dört usul dersi bu sırayla var; hepsi seviye 2 ve DERSLER içinde; alıştırma: giriş usul bölümü, ötekiler vurma', () => {
     expect(USUL_DERSLERI.map((d) => d.id)).toEqual(IDS)
     expect(DERSLER.filter((d) => d.id.startsWith('usul:')).map((d) => d.id)).toEqual(IDS)
-    for (const id of IDS) {
-      expect(ders(id).seviye, id).toBe(2)
-      expect(ders(id).alistirma, id).toBe('/usul')
+    for (const id of IDS) expect(ders(id).seviye, id).toBe(2)
+    expect(ders('usul:giris').alistirma).toBe('/usul')
+    for (const u of USUL_IDLERI) expect(ders(`usul:${u}`).alistirma, u).toBe(`/usul/vur/${u}`)
+  })
+
+  it('etutDersleri: usul etüdünde ölçü, usul girişi ve usulün dersi; ötekilerde etüdün kendi dersi', () => {
+    for (const e of ETUTLER) {
+      const beklenen = e.usulId ? ['okuma:olcu', 'usul:giris', `usul:${e.usulId}`] : [e.dersId]
+      expect(etutDersleri(e), e.id).toEqual(beklenen)
+      expect(etutDersleri(e).at(-1), e.id).toBe(e.dersId)
+      for (const id of etutDersleri(e)) expect(dersById(id), `${e.id}: ${id}`).toBeTruthy()
     }
   })
 
@@ -697,7 +718,12 @@ describe('Usul dersleri', () => {
   })
 
   it('hiçbir ders hangi elle vurulacağını söylemez (kaynaklarda doğrulanamadı)', () => {
-    for (const id of IDS) expect(metin(id), id).not.toMatch(/sağ el|sol el|\bsağ\b|\bsol\b/i)
+    // \b Türkçe harflerde (ğ) sınır bulmaz; kelime sınırı Unicode harf sınıfıyla denetlenir.
+    const el = /(^|[^\p{L}])(sağ|sol)(?!\p{L})/iu
+    expect('düm sağ, tek sol').toMatch(el)
+    expect('Sağ elle vur').toMatch(el)
+    expect('sağlam ve solgun').not.toMatch(el)
+    for (const id of IDS) expect(metin(id), id).not.toMatch(el)
   })
 
   it('usul dersleri vuruş kalıbını ve zamanı usul verisiyle aynı anlatır', () => {
@@ -780,6 +806,27 @@ describe('Seviye 2 dörtlü, dil ve eser dersleri', () => {
     expect(metinler(ders('dortlu:cargah')).join(' ')).toMatch(/S3/)
     expect(metinler(ders('dortlu:kurdi')).join(' ')).toMatch(/Çârgâh dörtlüsü/)
     expect(metinler(ders('dortlu:hicaz')).join(' ')).toMatch(/artık ikili/)
+  })
+
+  it('dörtlü dersleri ara sesleri uygulamanın işaret adlarıyla anar; süre "vuruş" diye söylenir (dörtlük ile karışmaz)', () => {
+    const m = (id: string) => metinler(ders(id)).join(' ')
+    for (const d of DORTLULER) {
+      expect(m(d.id), d.id).not.toMatch(/\d koma (bemol|diyez)\b/)
+      expect(m(d.id), d.id).not.toMatch(/bir dörtlük/)
+      expect(m(d.id), d.id).toMatch(/her ses bir vuruş/)
+    }
+    expect(m('dortlu:kurdi')).toContain(`Si ${ACCIDENTAL_NAMES[-5]}`)
+    expect(m('dortlu:hicaz')).toContain(`Si ${ACCIDENTAL_NAMES[-4]}`)
+    expect(m('dortlu:hicaz')).toContain(`Do ${ACCIDENTAL_NAMES[4]}`)
+  })
+
+  it('dil:tu-bag: röpriz dersine "ayrıntısı var" diye gönderir (sıra zorunlu değil); kaynak yalnız S4 ders 15', () => {
+    const d = ders('dil:tu-bag')
+    const m = metinler(d).join(' ')
+    expect(m).not.toMatch(/görmüştün/)
+    expect(m).toMatch(/"Röpriz ve bağ" dersinde var/)
+    expect(d.kaynaklar).toHaveLength(1)
+    expect(d.kaynaklar[0]).toMatch(/^S4/)
   })
 
   it('dil:tu-bag: ayrık ve bağlı porte; bağlı portede bag işaretli nota var; ses farkı dürüstçe söylenir', () => {

@@ -188,7 +188,7 @@ export const DIL_ESER_DERSLERI: Ders[] = [
       },
       {
         tur: 'metin',
-        metin: 'Bağ ile uzatma bağı farklıdır; farkını "Röpriz ve bağ" dersinde görmüştün. Bağ farklı perdeleri bağlar, uzatma bağı aynı perdeyi.',
+        metin: 'Bağ ile uzatma bağı farklıdır; farkının ayrıntısı "Röpriz ve bağ" dersinde var. Bağ farklı perdeleri bağlar, uzatma bağı aynı perdeyi.',
       },
       {
         tur: 'metin',
@@ -208,7 +208,7 @@ export const DIL_ESER_DERSLERI: Ders[] = [
         ],
       },
     ],
-    kaynaklar: [s4(15), S1],
+    kaynaklar: [s4(15)],
     alistirma: '/etut/dil-1',
   },
   {

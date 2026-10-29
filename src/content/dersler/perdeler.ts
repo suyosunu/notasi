@@ -57,6 +57,11 @@ const HEDEF_2 =
 const KADEME_2_NEFES =
   'Bu ses de ikinci kademedendir: Seviye 1\'deki gibi ılık, orta güçte nefesle çıkar. Daha sert üflersen ses yukarı kayar.'
 
+/** Mehmet Yücel'in ikinci devre yedi sesi ve eser kuralı (S5); `belirtme`: dersin perdesi, belirtme durumunda. */
+function yediSes(belirtme: string): string {
+  return `Mehmet Yücel ${belirtme} ikinci devre sesler arasında sayar (Nevâ, Nim Hicaz, Çârgâh, Segâh, Kürdî, Dügâh, Rast) ve bu yedi sese 2–3 ay çalışmadan eser çalmamayı önerir.`
+}
+
 /**
  * Her dersin "Kendin dene" adımları: uzun ses, ▶ Dinle ile kulakla karşılaştırma, akort göstergesi.
  * `onceki.hareket` geçişte parmağın ne yaptığını söyler (öntanımlı: parmak eklenir); `ekAdimlar` ▶ Dinle'den sonra eklenir.
@@ -385,11 +390,7 @@ export const PERDE_DERSLERI: Ders[] = [
         tur: 'metin',
         metin: 'Aynı parmakla daha sert üflersen Acem çıkar; onu ileride göreceksin. Şimdi nefesi ılık tut.',
       },
-      {
-        tur: 'metin',
-        metin:
-          "Mehmet Yücel Kürdî'yi ikinci devre sesler arasında sayar (Nevâ, Nîm Hicâz, Çârgâh, Segâh, Kürdî, Dügâh, Rast) ve bu yedi sese 2–3 ay çalışmadan eser çalmamayı önerir.",
-      },
+      { tur: 'metin', metin: yediSes("Kürdî'yi") },
       { tur: 'metin', metin: HAFTA },
       { tur: 'metin', metin: HEDEF_2 },
       deneAdimlari(
@@ -481,11 +482,7 @@ export const PERDE_DERSLERI: Ders[] = [
         metin: `Parmak sesi yaklaştırır; son ayarı kulağın yapar. ▶ Dinle ile Nim Hicaz'ı dinle, kendi sesini onunla ve Çârgâh'la karşılaştır. İnce ayarda ${KOMA_FARKI}`,
       },
       { tur: 'metin', metin: KADEME_2_NEFES },
-      {
-        tur: 'metin',
-        metin:
-          "Mehmet Yücel Nîm Hicâz'ı ikinci devre sesler arasında sayar (Nevâ, Nîm Hicâz, Çârgâh, Segâh, Kürdî, Dügâh, Rast) ve bu yedi sese 2–3 ay çalışmadan eser çalmamayı önerir.",
-      },
+      { tur: 'metin', metin: yediSes("Nim Hicaz'ı") },
       { tur: 'metin', metin: HAFTA },
       { tur: 'metin', metin: HEDEF_2 },
       deneAdimlari(

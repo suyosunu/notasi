@@ -111,7 +111,7 @@ export const USUL_DERSLERI: Ders[] = [
       },
     ],
     kaynaklar: [S1, S2, s4(13), WIKI_USUL],
-    alistirma: '/usul',
+    alistirma: '/usul/vur/nim-sofyan',
   },
   {
     id: 'usul:semai',
@@ -145,7 +145,7 @@ export const USUL_DERSLERI: Ders[] = [
       },
     ],
     kaynaklar: [S1, S2, s4(13), WIKI_USUL],
-    alistirma: '/usul',
+    alistirma: '/usul/vur/semai',
   },
   {
     id: 'usul:sofyan',
@@ -179,6 +179,6 @@ export const USUL_DERSLERI: Ders[] = [
       },
     ],
     kaynaklar: [S1, S2, s4(13), WIKI_USUL],
-    alistirma: '/usul',
+    alistirma: '/usul/vur/sofyan',
   },
 ]

@@ -56,7 +56,13 @@ function sure4Options(topic: (typeof DURATION_TOPICS)[number], answer: string, i
   return shuffle([answer, ...distractors], rng)
 }
 
-/** Bu konunun ve önceki süre konularının adları; yetmezse tüm süre adlarından tamamlanır. */
+/** sure-4 adları (Sekizlik üçleme, Onaltılık, Onaltılık sus): Seviye 2'de öğretilir, önceki konuların çeldiricisi olmaz. */
+const SURE_4_ADLARI = namesOf(DURATION_TOPICS.filter((t) => t.id === 'sure-4'))
+
+/**
+ * Bu konunun ve önceki süre konularının adları; yetmezse öbür süre adlarından tamamlanır. Tamamlarken sure-4 adları
+ * yalnız sure-4 konusunda kullanılır: öğretilmemiş üçleme ve onaltılık erken konularda seçenek olarak çıkmaz.
+ */
 function durationOptions(topicId: string, answer: string, rng: () => number): string[] {
   const upTo = DURATION_TOPICS.slice(0, DURATION_TOPICS.findIndex((t) => t.id === topicId) + 1)
   const distractors = shuffle(
@@ -64,9 +70,12 @@ function durationOptions(topicId: string, answer: string, rng: () => number): st
     rng,
   )
   if (distractors.length < 3) {
+    const sure4 = topicId === 'sure-4'
     distractors.push(
       ...shuffle(
-        namesOf(DURATION_TOPICS).filter((n) => n !== answer && !distractors.includes(n)),
+        namesOf(DURATION_TOPICS).filter(
+          (n) => n !== answer && !distractors.includes(n) && (sure4 || !SURE_4_ADLARI.includes(n)),
+        ),
         rng,
       ),
     )

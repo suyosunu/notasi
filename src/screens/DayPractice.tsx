@@ -16,6 +16,8 @@ import type { SessionRec, Settings } from '../store/db'
 import { seededRng } from '../util/rng'
 
 const TICK_MS = 1000
+/** Soru portesinde vuruş içindeki sekizlikler kirişlenir: üçlemenin üç sekizliği dersteki gibi bir kirişle bağlanır. */
+const KIRIS_VURUSU = 1
 const FREE_QUESTION_COUNT = 8
 const DAY_TITLE = '☀️ Nota okuma'
 export const REVIEW_NOTE = 'Biraz önceki konuyu tekrar edelim, sonra devam ederiz.'
@@ -90,7 +92,7 @@ function QuestionCard({ question, index, total, settings, feedback, note, title 
       <p class="prompt">{question.prompt}</p>
       {hasStaff && (
         <div class="staff-wrap">
-          <Staff events={question.events} />
+          <Staff events={question.events} beamBeats={KIRIS_VURUSU} />
         </div>
       )}
 

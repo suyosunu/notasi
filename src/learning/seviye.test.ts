@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { SEVIYELER } from '../content/seviyeler'
 import type { Hedef, Seviye } from '../content/seviyeler'
 import * as db from '../store/db'
@@ -24,6 +24,11 @@ function girdi(over: Partial<IlerlemeGirdisi> = {}): IlerlemeGirdisi {
 function kayit(perdeId: string, durationMs: number, toleranceCents: number, passed = true): LongToneRec {
   return { id: crypto.randomUUID(), perdeId, durationMs, passed, toleranceCents, at: new Date().toISOString() }
 }
+
+// getSettings casusu (spyOn) sonraki testlere sızmasın.
+afterEach(() => {
+  vi.restoreAllMocks()
+})
 
 const hedef = (id: string): Hedef => SEVIYELER.flatMap((s) => s.hedefler).find((h) => h.id === id)!
 

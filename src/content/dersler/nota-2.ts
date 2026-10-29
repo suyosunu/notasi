@@ -298,11 +298,11 @@ export const NOTA_2_DERSLERI: Ders[] = [
       },
       {
         tur: 'metin',
-        metin: 'Ölçüleri dikine ince bir çizgi ayırır: ölçü çizgisi. Parçanın sonunda iki çizgi yan yana durur, sağdaki kalındır: bitiş çizgisi.',
+        metin: 'Ölçüleri dikine ince bir çizgi ayırır: ölçü çizgisi. Basılı notalarda parçanın sonunda iki çizgi yan yana durur, sağdaki kalındır: bitiş çizgisi. Uygulamadaki portelerde bitiş çizgisi tek çizgi görünür.',
       },
       {
         tur: 'metin',
-        metin: 'Ölçü sayısı, portenin başında anahtardan sonra kesir gibi yazılır. Üstteki sayı bir ölçüde kaç vuruş olduğunu, alttaki 4 de vuruşun dörtlük olduğunu söyler.',
+        metin: 'Basılı notalarda ölçü sayısı, portenin başında anahtardan sonra kesir gibi yazılır. Üstteki sayı bir ölçüde kaç vuruş olduğunu, alttaki 4 de vuruşun dörtlük olduğunu söyler. Uygulamadaki portelerde ölçü sayısı yazılmaz; bu dersteki portelerde altlarındaki açıklamada verilir.',
       },
       {
         tur: 'liste',

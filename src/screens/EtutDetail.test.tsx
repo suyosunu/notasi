@@ -76,6 +76,27 @@ describe('EtutDetail', () => {
     expect(screen.queryByRole('slider')).toBeNull()
   })
 
+  it('usul etüdü önce ölçü ve nefes, sonra "Usul nedir?", sonra usulün kendi dersini ister; okunanlar atlanır', async () => {
+    const anladim = () => fireEvent.click(screen.getByRole('button', { name: 'Anladım, alıştırmaya geç' }))
+    const { unmount } = render(<EtutDetail etutId="usul-nim-sofyan" />)
+    expect(await screen.findByRole('heading', { name: /Ölçü, ölçü çizgisi ve nefes işareti/ })).toBeTruthy()
+    unmount()
+
+    await isaretEkle('okunanDersler', 'okuma:olcu')
+    render(<EtutDetail etutId="usul-nim-sofyan" />)
+    expect(await screen.findByRole('heading', { name: '📖 Usul nedir?' })).toBeTruthy()
+    expect(screen.queryByRole('slider')).toBeNull()
+    anladim()
+    expect(await screen.findByRole('heading', { name: '📖 Nim Sofyan' })).toBeTruthy()
+    expect(screen.queryByRole('slider')).toBeNull()
+    anladim()
+    expect(await screen.findByRole('heading', { name: '🎼 Usul: Nim Sofyan' })).toBeTruthy()
+    expect(screen.getByRole('slider')).toBeTruthy()
+    const okunan = (await getSettings()).okunanDersler
+    expect(okunan).toContain('usul:giris')
+    expect(okunan).toContain('usul:nim-sofyan')
+  })
+
   it('ders okunmuşsa doğrudan etüt: başlık, nota satırları, Ney bölümüne dön bağlantısı', async () => {
     await dersleriOku()
     render(<EtutDetail etutId="iki-neva-cargah" />)
