@@ -663,6 +663,12 @@ h2.setting-label {
   accent-color: var(--accent);
 }
 
+/* Ayarlar → Dil belirginliği: kaydırıcı Dene düğmesinin yanındaki bütün genişliği alır. */
+.voice-option .usul-speed {
+  flex: 1;
+  margin: 0;
+}
+
 .score {
   display: flex;
   flex-direction: column;
