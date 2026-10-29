@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks'
 import { playCode, playWritten, setDilBelirginligi, setNeySesi, setUsulSesi, stopAudio, unlockAudio } from '../audio/player'
 import type { NeySesi } from '../audio/pattern'
+import { soylemeyiDurdur, soyleUsul } from '../audio/soyle'
 import { buildUsulOnceCode } from '../audio/usul'
 import type { UsulSesi } from '../audio/usulSamples'
 import { USULLER } from '../content/usuller'
@@ -52,6 +53,9 @@ const USUL_SESI_SECENEKLERI: { id: UsulSesi; label: string }[] = [
 /** Usul sesi "▶ Dene": Sofyan'ın bir ölçüsü (düm te ke), ♩ = 80. */
 const DENEME_USUL = USULLER.find((u) => u.id === 'sofyan')!
 const DENEME_USUL_BPM = 80
+/** "▶ Söyle" (deneme): Sofyan iki ölçü, cihazın hazır Türkçe sesiyle (bkz. audio/soyle.ts). */
+const SOYLE_OLCU = 2
+const SOYLE_YOK = 'Bu cihazda hazır konuşma sesi bulunamadı.'
 
 interface Message {
   kind: 'ok' | 'error'
@@ -89,6 +93,7 @@ export function Settings() {
     () => () => {
       runRef.current++
       stopAudio()
+      soylemeyiDurdur()
     },
     [],
   )
@@ -159,6 +164,7 @@ export function Settings() {
       return
     }
     const run = ++runRef.current
+    soylemeyiDurdur()
     try {
       // unlockAudio dokunuş işleyicisinde, ilk iş olarak çağrılmalıdır (iOS).
       await unlockAudio()
@@ -167,6 +173,23 @@ export function Settings() {
       await playCode(code, durationMs)
     } catch {
       if (run === runRef.current) setUsulWarn(SOUND_WARNING)
+    }
+  }
+
+  /** Usulü cihazın hazır Türkçe sesiyle söyler (deneme). İlk hece dokunuş içinde, eşzamanlı söylenir (iOS). */
+  async function trySoyle() {
+    if (!settings) return
+    setUsulWarn(null)
+    if (!settings.soundOn) {
+      setUsulWarn(SOUND_OFF)
+      return
+    }
+    ++runRef.current
+    stopAudio()
+    try {
+      await soyleUsul(DENEME_USUL, DENEME_USUL_BPM, SOYLE_OLCU)
+    } catch {
+      setUsulWarn(SOYLE_YOK)
     }
   }
 
@@ -359,6 +382,16 @@ export function Settings() {
             </div>
           ))}
         </div>
+        <div class="voice-option">
+          <span>İnsan sesi (hazır ses, deneme)</span>
+          <button type="button" class="tool" aria-label="▶ Söyle (İnsan sesi)" onClick={() => void trySoyle()}>
+            ▶ Söyle
+          </button>
+        </div>
+        <p class="hint">
+          Sofyan'ı telefonun hazır Türkçe sesiyle "düüüm te ke" diye söyler. Yalnız deneme içindir: derslerde
+          çalmaz, zamanlaması tempoya tam oturmayabilir.
+        </p>
         {usulWarn && (
           <p class="notice" role="alert">
             {usulWarn}

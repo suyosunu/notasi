@@ -13,6 +13,7 @@ import {
 } from '../audio/player'
 import { toToneEvents } from '../audio/pattern'
 import type { NeySesi } from '../audio/pattern'
+import { soylemeyiDurdur, soyleUsul } from '../audio/soyle'
 import { buildUsulOnceCode } from '../audio/usul'
 import type { UsulSesi } from '../audio/usulSamples'
 import { USULLER } from '../content/usuller'
@@ -32,6 +33,11 @@ vi.mock('../audio/player', () => ({
   setUsulSesi: vi.fn(),
   getUsulSesi: vi.fn(() => 'oryantal'),
   setDilBelirginligi: vi.fn(),
+}))
+
+vi.mock('../audio/soyle', () => ({
+  soyleUsul: vi.fn(() => Promise.resolve()),
+  soylemeyiDurdur: vi.fn(),
 }))
 
 vi.mock('../store/backup', async (importOriginal) => {
@@ -62,6 +68,8 @@ beforeEach(async () => {
   })
   vi.mocked(getUsulSesi).mockReset().mockImplementation(() => usulVoice)
   vi.mocked(setDilBelirginligi).mockReset()
+  vi.mocked(soyleUsul).mockReset().mockImplementation(() => Promise.resolve())
+  vi.mocked(soylemeyiDurdur).mockReset()
 })
 
 afterEach(() => {
@@ -467,6 +475,41 @@ describe('Settings: Usul sesi', () => {
     await screen.findByText('Yedek yüklendi.')
     expect(getUsulSesi()).toBe('konga')
     expect(radio('Konga').checked).toBe(true)
+  })
+})
+
+describe('Settings: İnsan sesi (hazır ses, deneme)', () => {
+  const sofyan = USULLER.find((u) => u.id === 'sofyan')!
+  const soyle = () => screen.findByRole('button', { name: '▶ Söyle (İnsan sesi)' })
+
+  it('▶ Söyle: çalan sesi durdurur, Sofyan ♩ = 80 iki ölçüyü hazır sesle söyler', async () => {
+    render(<Settings />)
+    fireEvent.click(await soyle())
+    await waitFor(() => expect(soyleUsul).toHaveBeenCalledWith(sofyan, 80, 2))
+    expect(stopAudio).toHaveBeenCalled()
+    expect(playCode).not.toHaveBeenCalled()
+  })
+
+  it('ses kapalıysa söylemez, uyarı gösterir', async () => {
+    await saveSettings({ soundOn: false })
+    render(<Settings />)
+    fireEvent.click(await soyle())
+    expect(await screen.findByText(SOUND_OFF)).toBeTruthy()
+    expect(soyleUsul).not.toHaveBeenCalled()
+  })
+
+  it('cihazda konuşma sesi yoksa bunu söyler', async () => {
+    vi.mocked(soyleUsul).mockImplementation(() => Promise.reject(new Error('yok')))
+    render(<Settings />)
+    fireEvent.click(await soyle())
+    expect(await screen.findByText('Bu cihazda hazır konuşma sesi bulunamadı.')).toBeTruthy()
+  })
+
+  it('sayfadan çıkınca söyleme durur', async () => {
+    const { unmount } = render(<Settings />)
+    await soyle()
+    unmount()
+    expect(soylemeyiDurdur).toHaveBeenCalled()
   })
 })
 
