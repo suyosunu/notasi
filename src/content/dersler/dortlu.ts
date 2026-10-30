@@ -260,7 +260,7 @@ export const DORTLU_DERSLERI: Ders[] = [
       {
         tur: 'metin',
         metin:
-          'Üçlü, bir dörtlünün ilk üç sesidir; iki aralığı vardır. Yani üçlü, aynı adlı dörtlünün ilk iki aralığıdır. Altı üçlü vardır, çeşit adları dörtlülerle aynıdır. Aralıkların büyüklüğü komayla ölçülür (aşağıda önce iki aralık, sonra toplamı):',
+          'Üçlü, bir dörtlünün ilk üç sesidir; aralarında iki aralık vardır. Adları dörtlülerle aynıdır. Altı üçlü vardır. Aralıkların büyüklüğü komayla ölçülür (aşağıda önce iki aralık, sonra toplamı):',
       },
       {
         tur: 'liste',
@@ -294,7 +294,7 @@ export const DORTLU_DERSLERI: Ders[] = [
       {
         tur: 'metin',
         metin:
-          'Toplamlar üçlüleri ikiye ayırır: Bûselik, Kürdî ve Uşşak üçlüleri dar (13 koma), Rast ve Hicaz üçlüleri geniş (17 koma), Çârgâh üçlüsü en geniştir (18 koma). Üçlü kavramı ders kitaplarında kısa geçer; üçlülerin koma değerlerini yazan kaynak da sınırlıdır (kaynaklar bölümüne bak). Bu yüzden üçlüleri ezberleme: dörtlünün ilk üç sesi olduğunu bilmen yeter.',
+          'Toplamlar üçlüleri üç gruba ayırır: Bûselik, Kürdî ve Uşşak üçlüleri dar (13 koma), Rast ve Hicaz üçlüleri geniş (17 koma), Çârgâh üçlüsü en geniştir (18 koma). Üçlü kavramı ders kitaplarında kısa geçer; üçlülerin koma değerlerini yazan kaynak da sınırlıdır (kaynaklar bölümüne bak). Bu yüzden üçlüleri ezberleme: dörtlünün ilk üç sesi olduğunu bilmen yeter.',
       },
       {
         tur: 'dene',

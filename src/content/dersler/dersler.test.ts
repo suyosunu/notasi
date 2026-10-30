@@ -1717,6 +1717,10 @@ describe('Seviye 4 dil teknikleri ve tiz etüt dersleri', () => {
     for (const rota of ['/etut/tiz-segah-oktav', '/etut/dil-2']) expect(rotaBilinir(rota)).toBe(true)
   })
 
+  it('etut:tiz, mikrofon takibinin oktavı ayırdığını söyler (tiz ses alt oktavda kalırsa "pes" der)', () => {
+    expect(metin('etut:tiz')).toContain('"🎤 Dinlesin" bu etütlerde oktavı ayırır; tiz ses alt oktavda kalırsa "pes" der.')
+  })
+
   it('dil:teknikler üç artikülasyonu anlatır ve portede üçünü de gösterir (düz, bag, kesik)', () => {
     const m = metin('dil:teknikler')
     for (const s of ['bağsız', 'bağlı', 'kesik']) expect(m).toContain(s)

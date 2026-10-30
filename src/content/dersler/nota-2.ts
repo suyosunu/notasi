@@ -560,7 +560,7 @@ export const NOTA_4_DERSLERI: Ders[] = [
       {
         tur: 'metin',
         metin:
-          'Soru kartlarında bu notalar "tiz" önekiyle yazılır, çünkü Si, Do ve Re portenin hem altında hem üstünde bulunur: tiz Si (koma bemolü), tiz Do, tiz Do (bakiye diyezi), tiz Re. Sol ve La da böyledir: tiz Sol (Gerdâniye), tiz La (Muhayyer). "Tiz" yazan nota, ek çizgilerin çevresindeki nota demektir.',
+          'Soru kartlarında bu notalar "tiz" önekiyle yazılır, çünkü Si, Do ve Re hem porte içinde hem portenin üstünde bulunur: tiz Si (koma bemolü), tiz Do, tiz Do (bakiye diyezi), tiz Re. Sol ve La da böyledir: tiz Sol (Gerdâniye), tiz La (Muhayyer). "Tiz" yazan nota, ek çizgilerin çevresindeki nota demektir.',
       },
       {
         tur: 'metin',

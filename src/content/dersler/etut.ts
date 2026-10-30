@@ -382,10 +382,11 @@ export const ETUT_4_DERSLERI: Ders[] = [
       {
         tur: 'liste',
         maddeler: [
-          'Önce uzun değerlerle başla: birlikleri çal, alt sesten tiz sese geçerken parmağını oynatma, nefesini güçlendir. Tiz sesi uzun tutmaya çalışma; zorlanırsan kısa bırak.',
+          'Önce uzun değerlerle başla: birlikleri çal, alt sesten tiz sese geçerken parmağını oynatma, nefesini güçlendir. Tiz birliği zorlamadan tut; zorlanırsan kısa bırak ve nefes al.',
           'Sonra kısa değerlere geç: ikilikler, sonra dörtlükler. İki ses ne kadar sık değişirse nefesi o kadar çabuk ayarlaman gerekir.',
           'Tiz ses oktavın altında kalıyorsa parmağı değil nefesi değiştir; dudağın biraz daha büzülsün.',
           'Çoğu etütte tiz ses noktalı ikilikle biter ve ardından bir dörtlük sus gelir; susta nefes al.',
+          '"🎤 Dinlesin" bu etütlerde oktavı ayırır; tiz ses alt oktavda kalırsa "pes" der.',
         ],
       },
       {
@@ -429,13 +430,13 @@ export const ETUT_4_DERSLERI: Ders[] = [
       {
         tur: 'metin',
         metin:
-          "Kaynaklar konusunda dürüst olalım. MEB programı (ünite 1229) bu üç tekniğin yalnız adlarını verir, tanımlamaz. Burada anlatılanlar genel müzik bilgisidir. Zeki Sözen'in Ders 15'i yalnız bağı tanımlar. Kesiğin notada nota başının yanındaki bir noktayla gösterilmesi de bu uygulamadaki gösterimdir; ney kaynaklarında bu işaretin kullanımı yazılı değildir.",
+          "Kaynaklar konusunda dürüst olalım. MEB programı (ünite 1229) bu üç tekniğin yalnız adlarını verir, tanımlamaz. Burada anlatılanlar genel müzik bilgisidir. Zeki Sözen'in Ders 15'i yalnız bağı tanımlar. Kesiğin notada nota başının üstüne ya da altına (sapın karşısına) konan bir noktayla gösterilmesi de bu uygulamadaki gösterimdir; ney kaynaklarında bu işaretin kullanımı yazılı değildir.",
       },
       {
         tur: 'liste',
         maddeler: [
           'Bağsız: her nota ayrı dil vuruşuyla başlar. Notalar süresini doldurur, aralarında çok kısa bir ayrılık kalır. Özel bir işaret yoktur; yazılı nota öntanımlı olarak böyle çalınır.',
-          'Bağlı: bağ yayı altındaki notalarda dil vurulmaz, yalnız parmak değişir. Ses kopmadan akar. Zeki Sözen\'in ders notlarında bağ için "dil çarpması yok" denir.',
+          'Bağlı: bağ yayı altındaki notalarda dil vurulmaz, yalnız parmak değişir. Ses kopmadan akar. Zeki Sözen bağlı notalarda dille çarpma yapılmadığını yazar.',
           'Kesik: nota kısa çalınır, süresinin geri kalanı sus olur. Bu uygulamadaki gösterim: nota başının sap karşısına bir nokta konur.',
         ],
       },

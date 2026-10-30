@@ -126,7 +126,7 @@ export const MAKAMLAR: Makam[] = [
     seyir:
       "İnici-çıkıcı bir makamdır. Güçlü olan Hüseynî civarından başlanır, çeşnilerde karışık dolaşılır. " +
       "Hüseynî'de uşşak çeşnili yarım karar yapılır, sonunda Dügâh'ta Hüseynî dizisiyle tam karar verilir. " +
-      "En önemli asma karar Çârgâh'tır, ikincisi Segâh'tır. İnişte Eviç yerine Acem kullanılır.",
+      "En önemli asma karar Çârgâh'tır, ikincisi Segâh'tır. İnişte çoğunlukla Eviç yerine Acem kullanılır.",
   },
   {
     id: 'muhayyer',
@@ -142,7 +142,7 @@ export const MAKAMLAR: Makam[] = [
     seyir:
       "İnici bir makamdır. Tiz durak Muhayyer civarından başlanır, tizde dolaşılıp Muhayyer'de yarım karar yapılır. " +
       "Sonra orta bölgede Nevâ, Çârgâh, Segâh ve Rast asma kararları gösterilir. " +
-      "İnişte Eviç yerine Acem kullanılır. Dügâh'ta Hüseynî dizisiyle tam karar verilir.",
+      "İnişte çoğunlukla Eviç yerine Acem kullanılır. Dügâh'ta Hüseynî dizisiyle tam karar verilir.",
   },
   {
     id: 'kurdi',

@@ -212,7 +212,7 @@ export const USUL_DERSLERI: Ders[] = [
       },
       {
         tur: 'metin',
-        metin: 'Yürük Semâî\'nin 6/8 ve 6/4 olmak üzere iki mertebesi vardır. İkisinde de vuruş kalıbı aynıdır; yalnız zamanın değeri değişir: 6/8\'de her zaman bir sekizlik, 6/4\'te bir dörtlüktür. Vurduğun kalıp değişmez.',
+        metin: 'Yürük Semâî için bu uygulamada iki mertebe kullanılır: 6/8 ve 6/4. İkisinde de vuruş kalıbı aynıdır; yalnız zamanın değeri değişir: 6/8\'de her zaman bir sekizlik, 6/4\'te bir dörtlüktür. Vurduğun kalıp değişmez.',
       },
       {
         tur: 'usul',
@@ -221,7 +221,7 @@ export const USUL_DERSLERI: Ders[] = [
       },
       {
         tur: 'metin',
-        metin: 'TDV İslâm Ansiklopedisi\'ne göre "yürük semâî" adına en uygun mertebe 6/8\'dir; 6/4\'e aslında sengin semâî denir. Yine de notalarda 6/4 mertebesine de yürük semâî dendiği görülür ve bu usulün formu daha çok 6/4 olarak kullanılmıştır. Bu yüzden uygulamada iki kayıt vardır: Yürük Semâî ve Yürük Semâî (6/4). İkisini de Usul bölümünde seçip çalabilirsin.',
+        metin: 'TDV İslâm Ansiklopedisi\'ne göre "yürük semâî" adına en uygun mertebe 6/8\'dir; 6/4\'e aslında sengin semâî denir. Yine de notalarda 6/4 mertebesine de yürük semâî dendiği görülür; yürük semâî formundaki eserler daha çok 6/4 yazılmıştır. Bu yüzden uygulamada iki kayıt vardır: Yürük Semâî ve Yürük Semâî (6/4). İkisini de Usul bölümünde seçip çalabilirsin.',
       },
       {
         tur: 'dene',

@@ -219,7 +219,7 @@ export const PERDE_4_DERSLERI: Ders[] = [
       {
         tur: 'metin',
         metin:
-          "Rast parmağıyla üç ses çıkar: Rast, kapalı Nevâ (Seviye 3) ve kapalı Gerdâniye; her biri bir öncekinden yüksektir. Zeki Sözen şöyle yazar: Sol sesini bütün perdeler kapalı olarak da çıkarabiliriz (Ders 9).",
+          "Rast parmağıyla en az üç ses çıkar: Rast, kapalı Nevâ (Seviye 3) ve kapalı Gerdâniye; her biri bir öncekinden yüksektir. Çok sert üflersen Tiz Nevâ da çıkar (Tiz Nevâ dersine bak). Zeki Sözen şöyle yazar: Sol sesini bütün perdeler kapalı olarak da çıkarabiliriz (Ders 9).",
       },
       { tur: 'metin', metin: kapaliNefes('kapalı Gerdâniye', 'bütün deliklerin kapalı olduğu söylenir') },
       {
@@ -276,7 +276,7 @@ export const PERDE_4_DERSLERI: Ders[] = [
       {
         tur: 'metin',
         metin:
-          "Dügâh parmağıyla üç ses çıkar: Dügâh, Hüseynî (Seviye 3) ve kapalı Muhayyer; her biri bir öncekinden yüksektir. Zeki Sözen bu sesi için bütün parmakların kapalı, yalnız sol yüzük parmağının açık olduğunu yazar (Ders 9).",
+          "Dügâh parmağıyla üç ses çıkar: Dügâh, Hüseynî (Seviye 3) ve kapalı Muhayyer; her biri bir öncekinden yüksektir. Zeki Sözen bu ses için bütün parmakların kapalı, yalnız sol yüzük parmağının açık olduğunu yazar (Ders 9).",
       },
       { tur: 'metin', metin: kapaliNefes('kapalı Muhayyer', 'parmak durumu verilir') },
       { tur: 'metin', metin: HEDEF_4 },

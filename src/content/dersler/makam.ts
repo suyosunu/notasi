@@ -312,7 +312,7 @@ export const MAKAM_DERSLERI: Ders[] = [
         tur: 'dene',
         adimlar: [
           'Makam bölümünde Bayâtî\'yi aç ve "🔊 Diziyi dinle" ile dizisini dinle; Uşşak ile aynı sesleri duy.',
-          "Sekiz sesi Dügâh'tan Muhayyer'e çal; sonra aynı sesleri bu kez Nevâ'dan başlayıp Dügâh'a doğru dolaşarak çal. Bayâtî seyrinin yolu budur.",
+          "Sekiz sesi Dügâh'tan Muhayyer'e çal; sonra aynı sesleri bu kez Nevâ'dan başlayıp Dügâh'ta bitirerek çal. Bayâtî seyrinin yolu budur.",
           'Aynı ezgiyi bir kez Dügâh\'tan, bir kez Nevâ\'dan başlayarak çal; hangisinin Uşşak, hangisinin Bayâtî olduğunu söyle.',
           'Bayâtî dizisi etüdünü aç ve ♩ = 60\'ta metronomla çal.',
         ],
@@ -328,7 +328,7 @@ export const MAKAM_DERSLERI: Ders[] = [
     bloklar: [
       {
         tur: 'metin',
-        metin: `Hüseynî, Dügâh'ta karar veren bir makamdır. Yapısı: ${HUSEYNI.yapi}. Dügâh'tan Hüseynî'ye Hüseynî beşlisini çalarsın (8+5+9+9 koma), Hüseynî'den Muhayyer'e Uşşak dörtlüsünü (8+5+9 koma). Dizide iki işaretli ses vardır: Segâh (Si ${KOMA_BEMOLU}) ve Eviç (Fa ${BAKIYE_DIYEZI}).`,
+        metin: `Hüseynî, Dügâh'ta karar veren bir makamdır. Yapısı: ${HUSEYNI.yapi}. Dügâh'tan Hüseynî'ye Hüseynî beşlisini çalarsın (8+5+9+9 koma), Hüseynî'den Muhayyer'e Uşşak dörtlüsünü (8+5+9 koma). Hüseynî beşlisi: Uşşak dörtlüsü (8+5+9) ve bir tanini (9), toplam 31 koma. Dizide iki işaretli ses vardır: Segâh (Si ${KOMA_BEMOLU}) ve Eviç (Fa ${BAKIYE_DIYEZI}).`,
       },
       {
         tur: 'porte',
@@ -338,7 +338,7 @@ export const MAKAM_DERSLERI: Ders[] = [
       },
       {
         tur: 'metin',
-        metin: "Hüseynî inerken Eviç yerine Acem çalınır. Böyle iniş yapan diziye acemli hüseynî dizisi denir. Hüseynî eserlerinin hemen hepsinde Acem de geçer.",
+        metin: "Hüseynî inerken çoğunlukla Eviç yerine Acem çalınır. Böyle iniş yapan diziye acemli hüseynî dizisi denir. Hüseynî eserlerinin hemen hepsinde Acem de geçer.",
       },
       {
         tur: 'porte',
@@ -390,7 +390,7 @@ export const MAKAM_DERSLERI: Ders[] = [
     bloklar: [
       {
         tur: 'metin',
-        metin: `Muhayyer, Hüseynî makamının inici biçimidir. Dizisi Hüseynî ile aynıdır: aynı sekiz ses, aynı donanım (Segâh ve Eviç), aynı durak ve yeden. Yapısı: ${MUHAYYER.yapi}. İnişte Hüseynî'deki gibi Eviç yerine Acem çalınır.`,
+        metin: `Muhayyer, Hüseynî makamının inici biçimidir. Dizisi Hüseynî ile aynıdır: aynı sekiz ses, aynı donanım (Segâh ve Eviç), aynı durak ve yeden. Yapısı: ${MUHAYYER.yapi}. İnişte Hüseynî'deki gibi çoğunlukla Eviç yerine Acem çalınır.`,
       },
       {
         tur: 'porte',
@@ -428,7 +428,7 @@ export const MAKAM_DERSLERI: Ders[] = [
       {
         tur: 'metin',
         metin:
-          "Seyri: Muhayyer inici bir makamdır. Muhayyer'den, yani tiz duraktan başlanır. Tiz bölgede dolaşılır ve Muhayyer'de yarım karar yapılır (uşşak ya da hüseynî çeşnili). Sonra orta bölgeye inilir. Hüseynî'de uşşak çeşnili ikinci bir güçlü karar yapılabilir. Orta bölgede sırayla asma kararlar gösterilir: Nevâ'da rast çeşnili, Nevâ'da Eviç yerine Acem ile bûselik çeşnili, Çârgâh'ta çârgâh çeşnili, Segâh'ta segâh ya da ferahnâk çeşnili, Rast'ta rast çeşnili. Sonunda Dügâh'ta Hüseynî dizisiyle tam karar verilir.",
+          "Seyri: Muhayyer inici bir makamdır. Muhayyer'den, yani tiz duraktan başlanır. Tiz bölgede dolaşılır ve Muhayyer'de yarım karar yapılır (uşşak ya da hüseynî çeşnili). Sonra orta bölgeye inilir. Hüseynî ikinci güçlüdür; orada uşşak çeşnili asma karar yapılabilir. Orta bölgede sırayla asma kararlar gösterilir: Nevâ'da rast çeşnili, Nevâ'da Eviç yerine Acem ile bûselik çeşnili, Çârgâh'ta çârgâh çeşnili, Segâh'ta segâh ya da ferahnâk çeşnili, Rast'ta rast çeşnili. Sonunda Dügâh'ta Hüseynî dizisiyle tam karar verilir.",
       },
       {
         tur: 'metin',
