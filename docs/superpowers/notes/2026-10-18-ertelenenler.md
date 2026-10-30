@@ -111,3 +111,11 @@ Görev incelemelerinde "şimdilik kalabilir" denen bulgular. Sürüm 2'ye başla
 - Açık (minor): yalnız kısa SON ölçü seçilirse anacrusis gibi çalınır (melodi vuruş başında başlamaz, usul yok). Bugünkü içerikte kısa ölçü yok; anacrusisli içerik eklenirken (Adım 4) `lead` yalnız gerçek ilk ölçü (bas = 0) için hesaplanmalı.
 - Açık (minor): kendi kaydırmamızdan sonraki 1 sn içinde dokunmasız kullanıcı kaydırması (klavye, kaydırma çubuğu) algılanmaz; telefonda etkisi küçük.
 - Açık (minor): etüt ekranı ayarları iki kez okur (EtutCalisma + panel); çalarken kaydırıcı sürüklenirken "Tur" satırı henüz çalınmayan hızı gösterir; uzun parçada "Tümü" çalımında satır takibi yalnız otomatik kaydırmaya dayanır.
+
+## Adım 3 — mikrofonla takip, deneme (2026-10-30)
+- Ruling: takip yalnız etütte, tek tur, melodi kapalı (eşlik usul ya da yalnız giriş sayımı) — cost if wrong: parçaya açmak tek prop.
+- Ruling: oktav hatası (±1200 sent, 100 sent içinde) doğru sayılır — cost if wrong: gerçekten yanlış oktavda çalınan nota doğru görünür.
+- Ruling: tolerans 25 sent; ama ortanca en yakın başka bir ney perdesine düşüyor ve |sapma| ≥ 15 sent ise "X yerine Y" (bir koma farkları: Bûselik/Segâh, Kürdî/Dik Kürdî). 4–5 koma aralıklı komşularda (Çârgâh/Nim Hicaz vb.) ±45–57 sentten sonra da "yerine" yazar — cost if wrong: yalnız ifade.
+- Ruling: takip sırasında ses oturumu `play-and-record`, bitince `playback` — iPhone'da eşlik sesi kısılabilir ya da ahizeye gidebilir; deneme gösterecek.
+- Ruling: tur bitince mikrofon 500 ms daha açık kalır (gecikme penceresi), sonra değerlendirilir.
+- Açık (minor): değerlendirilmeyen (çok kısa) ve bağın devam notaları notada işaretsiz kalır; SVG `role="img"` içindeki `<title>` ekran okuyucuya ulaşmaz (özet `role="status"` erişilebilir kanal); 48000 Hz sabit örnekleme varsayımı; >70 sent dalı `calinan`'ı katlanmamış ortancadan adlandırır; kuyruk sırasında sayfadan çıkış testi yok; takipEt/calis kurulum tekrarı.
