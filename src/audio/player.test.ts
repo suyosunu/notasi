@@ -11,10 +11,20 @@ const strudel = vi.hoisted(() => ({
     Promise.resolve({ duration: 1, sampleRate: 44100, getChannelData: (_c: number) => new Float32Array(16) }),
   ),
   registerSound: vi.fn(),
+  ctx: { currentTime: 0, outputLatency: undefined as number | undefined },
 }))
 
 vi.mock('@strudel/web', () => ({
-  getAudioContext: () => ({ resume: strudel.resume, decodeAudioData: strudel.decodeAudioData }),
+  getAudioContext: () => ({
+    resume: strudel.resume,
+    decodeAudioData: strudel.decodeAudioData,
+    currentTime: strudel.ctx.currentTime,
+    outputLatency: strudel.ctx.outputLatency,
+    createConstantSource: () => ({ offset: { value: 1 }, connect: (n: unknown) => n, start: vi.fn(), stop: vi.fn() }),
+    createGain: () => ({}),
+  }),
+  onceEnded: (_src: unknown, cb: () => void) => cb(),
+  releaseAudioNode: vi.fn(),
   registerSound: strudel.registerSound,
   initStrudel: strudel.initStrudel,
   evaluate: strudel.evaluate,
@@ -41,6 +51,8 @@ beforeEach(() => {
   strudel.hush.mockReset()
   strudel.decodeAudioData.mockClear()
   strudel.registerSound.mockReset()
+  strudel.ctx.currentTime = 0
+  strudel.ctx.outputLatency = undefined
 })
 
 afterEach(() => {
@@ -427,6 +439,22 @@ describe('ney sesi (setNeySesi / getNeySesi)', () => {
   })
 })
 
+describe('sesSaatiSimdi', () => {
+  it('Strudel yüklenmeden null', async () => {
+    const { sesSaatiSimdi } = await freshPlayer()
+    expect(sesSaatiSimdi()).toBeNull()
+  })
+
+  it('yüklenince ses saatinden çıkış gecikmesini düşer; gecikme yoksa saatin kendisi', async () => {
+    const { preloadAudio, sesSaatiSimdi } = await freshPlayer()
+    await preloadAudio()
+    strudel.ctx.currentTime = 5
+    expect(sesSaatiSimdi()).toBe(5)
+    strudel.ctx.outputLatency = 0.25
+    expect(sesSaatiSimdi()).toBe(4.75)
+  })
+})
+
 describe('usul sesi (setUsulSesi / getUsulSesi) ve kayıt yükleme', () => {
   const fetchMock = vi.fn((_url: string) => Promise.resolve(new Response(new ArrayBuffer(8))))
   beforeEach(() => {
@@ -480,6 +508,28 @@ describe('usul sesi (setUsulSesi / getUsulSesi) ve kayıt yükleme', () => {
     expect(Math.max(...strudel.registerSound.mock.invocationCallOrder)).toBeLessThan(
       strudel.evaluate.mock.invocationCallOrder[0]!,
     )
+  })
+
+  it('ses saati işareti: işaretli kod çalınınca kaydedilir, tetik zamanı tutulur, stopAudio sonrası sıfırlanır', async () => {
+    const { playLoop, stopAudio } = await freshPlayer()
+    const { sonIsaret } = await import('./sesSaati')
+    await playLoop('stack(freq("440@1").s("triangle"), s("notasi_isaret")).cpm(15)')
+    expect(strudel.registerSound.mock.calls.map((c) => c[0] as string)).toEqual(['notasi_isaret'])
+    expect(Math.max(...strudel.registerSound.mock.invocationCallOrder)).toBeLessThan(
+      strudel.evaluate.mock.invocationCallOrder[0]!,
+    )
+    expect(sonIsaret()).toBeNull()
+    const tetik = strudel.registerSound.mock.calls[0]![1] as (time: number, value: unknown, onended: () => void) => void
+    tetik(12.5, {}, vi.fn())
+    expect(sonIsaret()).toBe(12.5)
+    stopAudio()
+    expect(sonIsaret()).toBeNull()
+  })
+
+  it('ses saati işareti olmayan kod işaret kaydetmez', async () => {
+    const { playLoop } = await freshPlayer()
+    await playLoop('s("usul_insan_erkek_te@1").cpm(20)')
+    expect(strudel.registerSound.mock.calls.map((c) => c[0] as string)).not.toContain('notasi_isaret')
   })
 
   it('playCode (parça): usul katmanındaki kayıt sesi yüklenir', async () => {

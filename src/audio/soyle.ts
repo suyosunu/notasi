@@ -1,4 +1,5 @@
 import type { Vurus } from '../content/usuller'
+import { sessizSes } from './sesSaati'
 import type { SampleHost } from './usulSamples'
 
 /**
@@ -121,16 +122,7 @@ export function kaydetInsanSesi(host: SampleHost, tur: SesTuru): void {
       (time, _value, onended) => {
         const ctx = host.getAudioContext()
         // Sessiz düğüm: superdough zinciri bir ses kaynağı bekler.
-        const src = ctx.createConstantSource()
-        src.offset.value = 0
-        const node = ctx.createGain()
-        src.connect(node)
-        src.start(time)
-        src.stop(time + 0.01)
-        host.onceEnded(src, () => {
-          host.releaseAudioNode(src)
-          onended()
-        })
+        const ses = sessizSes(host, time, onended)
         if (konusmaVar()) {
           const z = setTimeout(
             () => {
@@ -141,7 +133,7 @@ export function kaydetInsanSesi(host: SampleHost, tur: SesTuru): void {
           )
           zamanlayicilar.add(z)
         }
-        return { node, stop: () => {}, nodes: { source: [src] } }
+        return ses
       },
       { type: 'sample' },
     )

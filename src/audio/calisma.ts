@@ -4,14 +4,15 @@ import { beats } from '../music/notation'
 import type { MusicEvent } from '../music/notation'
 import { melodyChain, ONE_SHOT, toneSteps, toToneEvents } from './pattern'
 import type { NeySesi } from './pattern'
+import { ISARET_SESI } from './sesSaati'
 import { buildUsulBody, metronomeBody } from './usul'
 import { getUsulSesi } from './usulSamples'
 import type { UsulSesi } from './usulSamples'
 
 /** Usulsüz çalışmalar 4/4'tür: bir metronom ölçüsü 4 tıktır. */
 const USULSUZ_OLCU_VURUSU = 4
-/** Ses saati işareti: başa tek bir kısa sessiz örnek (tanımı Task 2'de `sesSaati.ts`'e taşınır). */
-const ISARET_KATMANI = 's("notasi_isaret")'
+/** Ses saati işareti: başa tek bir kısa sessiz örnek. */
+const ISARET_KATMANI = `s("${ISARET_SESI}")`
 /** Kayan nokta artığı payı (üçleme toplamları 2.9999999 çıkabilir). */
 const PAY = 1e-6
 

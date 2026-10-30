@@ -1,6 +1,7 @@
 import { setPlaybackSession } from './ios'
 import { buildPatternCode, toToneEvents } from './pattern'
 import type { NeySesi, ToneEvent } from './pattern'
+import { isaretiSifirla, ISARET_SESI, kaydetIsaret } from './sesSaati'
 import { loadShakuhachi, SHAKUHACHI_SOUND } from './shakuhachi'
 import { insanSesiInCode, kaydetInsanSesi, konusmayiAc, soylemeyiDurdur } from './soyle'
 import { getUsulSesi, insanSesiMi, loadUsulSamples, usulSesiInCode } from './usulSamples'
@@ -103,7 +104,7 @@ export function unlockAudio(): Promise<void> {
 
 /**
  * Kod yerel kayıtları kullanıyorsa onları (her biri bir kez) yükler: shakuhachi ney sesi ve kayıt tabanlı usul sesi
- * (Konga, Tahta, Darbuka). İnsan sesi usulünün heceleri dosyasızdır, yalnızca kaydedilir. Diğer sesler sentezdir.
+ * (Konga, Tahta, Darbuka). İnsan sesi usulünün heceleri ve ses saati işareti dosyasızdır, yalnızca kaydedilir. Diğer sesler sentezdir.
  */
 function ensureSounds(m: StrudelWeb, code: string): Promise<void> {
   const loads: Promise<void>[] = []
@@ -112,6 +113,7 @@ function ensureSounds(m: StrudelWeb, code: string): Promise<void> {
   if (usulSesi) loads.push(loadUsulSamples(m, usulSesi))
   const insan = insanSesiInCode(code)
   if (insan) kaydetInsanSesi(m, insan)
+  if (code.includes(`s("${ISARET_SESI}")`)) kaydetIsaret(m)
   return Promise.all(loads).then(() => undefined)
 }
 
@@ -135,7 +137,17 @@ export function stopAudio(): void {
   finishCurrent = null
   safeHush()
   soylemeyiDurdur() // insan sesi: zamanlanmış heceler de susar
+  isaretiSifirla()
   finish?.()
+}
+
+/**
+ * Ses saati (sn), çıkış gecikmesi düşülmüş: kullanıcının o an duyduğu ana karşılık gelir. Strudel yüklenmediyse null.
+ */
+export function sesSaatiSimdi(): number | null {
+  if (!strudelModule) return null
+  const ctx = strudelModule.getAudioContext()
+  return ctx.currentTime - (ctx.outputLatency || 0)
 }
 
 /** `voice` verilmezse seçili ney sesiyle çalar. */
