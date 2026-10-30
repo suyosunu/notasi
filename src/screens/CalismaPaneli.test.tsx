@@ -19,7 +19,7 @@ import { DEFAULT_TUNING, soundingHz } from '../music/ahenk'
 import { beats } from '../music/notation'
 import type { MusicEvent } from '../music/notation'
 import { resetDbForTests, saveSettings } from '../store/db'
-import { CalismaPaneli, takipOzeti } from './CalismaPaneli'
+import { CalismaPaneli, KUYRUK_DINLEME_MS, takipOzeti } from './CalismaPaneli'
 
 vi.mock('../audio/player', () => ({
   unlockAudio: vi.fn(() => Promise.resolve()),
@@ -467,9 +467,12 @@ describe('CalismaPaneli: çıkış', () => {
 })
 
 describe('CalismaPaneli: mikrofonla takip', () => {
-  const NOT = 'Deneme: telefonu neyin önüne koy. Eşlik çalar, sen neyle çalarsın; sonunda her nota için sonuç çıkar.'
+  const NOT =
+    'Deneme: telefonu neyin önüne koy. Kablosuz kulaklık bağlıysa çıkar. Eşlik çalar, sen neyle çalarsın; sonunda her nota için sonuç çıkar.'
+  /** Sonuç, eşlik bittikten `KUYRUK_DINLEME_MS` sonra çıkar; yük altında da beklensin. */
+  const SONUC_BEKLE = { timeout: 3000 }
   const cubuk = () => document.querySelector('.calisma-cubugu') as HTMLElement
-  const takipBtn = () => screen.getByRole('button', { name: '🎤 Çal, dinlesin' }) as HTMLButtonElement
+  const takipBtn = () => screen.getByRole('button', { name: '🎤 Dinlesin' }) as HTMLButtonElement
   const sonucYok = () => {
     expect(screen.queryByText(/ notadan /)).toBeNull()
     expect(document.querySelector('[data-durum]')).toBeNull()
@@ -486,18 +489,18 @@ describe('CalismaPaneli: mikrofonla takip', () => {
     await takipBaslat()
     vi.mocked(sonIsaret).mockReturnValue(10)
     finishPlay()
-    await screen.findByText(/^16 notadan /)
+    await screen.findByText(/^16 notadan /, {}, SONUC_BEKLE)
   }
 
   it('düğme ve deneme notu yalnız takip açıkken; düğme çubukta, not çubuğun ardında akışta', async () => {
     panel()
     await dinleBtn()
-    expect(screen.queryByRole('button', { name: '🎤 Çal, dinlesin' })).toBeNull()
+    expect(screen.queryByRole('button', { name: '🎤 Dinlesin' })).toBeNull()
     expect(screen.queryByText(NOT)).toBeNull()
     cleanup()
     panel({ takip: true })
     await dinleBtn()
-    expect(within(cubuk()).getByRole('button', { name: '🎤 Çal, dinlesin' })).toBeTruthy()
+    expect(within(cubuk()).getByRole('button', { name: '🎤 Dinlesin' })).toBeTruthy()
     const not = screen.getByText(NOT)
     expect(cubuk().contains(not)).toBe(false)
     expect(cubuk().compareDocumentPosition(not) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
@@ -528,7 +531,7 @@ describe('CalismaPaneli: mikrofonla takip', () => {
     expect(vi.mocked(playCode).mock.calls[0]).toEqual([usullu.code, usullu.durationMs])
     expect(usullu.code).not.toContain(SHAKUHACHI_SOUND)
     finishPlay()
-    expect(await screen.findByRole('button', { name: '🎤 Çal, dinlesin' })).toBeTruthy()
+    expect(await screen.findByRole('button', { name: '🎤 Dinlesin' }, SONUC_BEKLE)).toBeTruthy()
     await bekle()
     expect(playCode).toHaveBeenCalledTimes(1)
 
@@ -563,7 +566,7 @@ describe('CalismaPaneli: mikrofonla takip', () => {
     expect(micDurdur).not.toHaveBeenCalled()
     sonucYok()
     finishPlay()
-    const baslik = await screen.findByText("16 notadan 11'i doğru.")
+    const baslik = await screen.findByText("16 notadan 11'i doğru.", {}, SONUC_BEKLE)
     expect(micDurdur).toHaveBeenCalledTimes(1)
     expect(micSinyal!.aborted).toBe(true)
     expect(setPlaybackSession).toHaveBeenCalledTimes(1)
@@ -579,7 +582,7 @@ describe('CalismaPaneli: mikrofonla takip', () => {
     ]) {
       expect(within(kutu).getByText(satir)).toBeTruthy()
     }
-    expect(within(kutu).getByText(/^Gecikme -?\d+ ms · ses duyulan kare %\d+$/)).toBeTruthy()
+    expect(within(kutu).getByText(/^Gecikme -?\d+ ms · ses \(nota içinde\) %\d+ · uzun notalar 11\/16 doğru · ortanca sapma \d+ sent · ♩=60$/)).toBeTruthy()
     const durumlar = [...document.querySelectorAll('[data-durum]')].map((e) => e.getAttribute('data-durum'))
     expect(durumlar).toEqual(['pes', 'yok', 'yanlis', 'tiz', 'kisa', ...Array<string>(11).fill('dogru')])
 
@@ -592,7 +595,7 @@ describe('CalismaPaneli: mikrofonla takip', () => {
     await sonucUret()
     expect(screen.getByText("16 notadan 0'ı doğru.")).toBeTruthy()
     expect(screen.getByText('Duyulmadı: 16 nota')).toBeTruthy()
-    expect(screen.getByText('Gecikme 120 ms · ses duyulan kare %0')).toBeTruthy()
+    expect(screen.getByText('Gecikme 120 ms (kestirilemedi) · ses (nota içinde) %0 · uzun notalar 0/16 doğru · ♩=60')).toBeTruthy()
     expect(document.querySelectorAll('[data-durum="yok"]')).toHaveLength(16)
     fireEvent.click(await dinleBtn())
     sonucYok()
@@ -608,7 +611,7 @@ describe('CalismaPaneli: mikrofonla takip', () => {
     panel({ olcu: DORTLUK, takip: true })
     await takipBaslat()
     finishPlay()
-    expect(await screen.findByText('Ses başlamadı, sonuç çıkarılamadı.')).toBeTruthy()
+    expect(await screen.findByText('Ses başlamadı, sonuç çıkarılamadı.', {}, SONUC_BEKLE)).toBeTruthy()
     sonucYok()
     expect(micDurdur).toHaveBeenCalledTimes(1)
     expect(setPlaybackSession).toHaveBeenCalledTimes(1)
@@ -622,7 +625,7 @@ describe('CalismaPaneli: mikrofonla takip', () => {
     expect(await screen.findByText(MIC_HATA_METINLERI['izin-yok'])).toBeTruthy()
     expect(within(cubuk()).getByText('Ayrıntı: NotAllowedError: x')).toBeTruthy()
     expect(setPlaybackSession).toHaveBeenCalledTimes(1)
-    expect(await screen.findByRole('button', { name: '🎤 Çal, dinlesin' })).toBeTruthy()
+    expect(await screen.findByRole('button', { name: '🎤 Dinlesin' })).toBeTruthy()
     expect(releaseWakeLock).toHaveBeenCalled()
     await bekle()
     expect(playCode).not.toHaveBeenCalled()
@@ -702,7 +705,97 @@ describe('CalismaPaneli: mikrofonla takip', () => {
       degis()
       expect(micDurdur).toHaveBeenCalledTimes(i + 1)
       expect(setPlaybackSession).toHaveBeenCalledTimes(i + 1)
-      expect(await screen.findByRole('button', { name: '🎤 Çal, dinlesin' })).toBeTruthy()
+      expect(await screen.findByRole('button', { name: '🎤 Dinlesin' })).toBeTruthy()
+    }
+  })
+
+  it('mikrofon açılırken "Mikrofon açılıyor…", açılınca "🎤 Dinliyorum…"', async () => {
+    let ac: (d: () => void) => void = () => {}
+    vi.mocked(startPitchStream).mockImplementation((cb, signal) => {
+      micOrnek = cb
+      micSinyal = signal
+      return new Promise((r) => (ac = r))
+    })
+    panel({ takip: true })
+    await dinleBtn()
+    fireEvent.click(takipBtn())
+    await waitFor(() => expect(within(cubuk()).getByRole('status').textContent).toBe('Mikrofon açılıyor…'))
+    expect(playCode).not.toHaveBeenCalled()
+    ac(micDurdur)
+    await waitFor(() => expect(within(cubuk()).getByRole('status').textContent).toBe('🎤 Dinliyorum…'))
+    await waitFor(() => expect(playCode).toHaveBeenCalledTimes(1))
+  })
+
+  describe('eşlikten sonraki dinleme kuyruğu', () => {
+    afterEach(() => vi.useRealTimers())
+    /** DORTLUK, ♩ = 60, giriş 4, t0 = 10: son nota (Do) 29–30 sn. */
+    const sonNotaHz = () => soundingHz({ step: 'C', octave: 4, acc: 0 }, DEFAULT_TUNING)
+
+    it('eşlik bitince mikrofon 500 ms daha açık kalır; o sırada gelen örnekler sayılır', async () => {
+      expect(KUYRUK_DINLEME_MS).toBe(500)
+      panel({ olcu: DORTLUK, olcuPerSatir: 1, takip: true })
+      await takipBaslat()
+      vi.mocked(sonIsaret).mockReturnValue(10)
+      vi.useFakeTimers()
+      finishPlay()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(micDurdur).not.toHaveBeenCalled()
+      expect(within(cubuk()).getByRole('status').textContent).toBe('🎤 Dinliyorum…')
+      // Son nota gecikmeyle çalınır: örnekleri eşlik bittikten sonra gelir.
+      for (let i = 0; i < 50; i++) {
+        vi.mocked(sesSaatiSimdi).mockReturnValue(29 + i * 0.02 + ANALIZ_PENCERESI_S)
+        micOrnek!({ t: 0, hz: sonNotaHz(), clarity: 1 })
+      }
+      await vi.advanceTimersByTimeAsync(KUYRUK_DINLEME_MS - 10)
+      expect(micDurdur).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(10)
+      expect(micDurdur).toHaveBeenCalledTimes(1)
+      expect(setPlaybackSession).toHaveBeenCalledTimes(1)
+      await vi.advanceTimersByTimeAsync(200) // çizim ve efektler
+      vi.useRealTimers()
+      expect(await screen.findByText("16 notadan 1'i doğru.", {}, SONUC_BEKLE)).toBeTruthy()
+      expect(document.querySelectorAll('[data-durum="dogru"]')).toHaveLength(1)
+    })
+
+    it('kuyrukta Durdur: mikrofon durur, sonuç ve uyarı çıkmaz', async () => {
+      panel({ olcu: DORTLUK, takip: true })
+      await takipBaslat()
+      vi.mocked(sonIsaret).mockReturnValue(10)
+      vi.useFakeTimers()
+      finishPlay()
+      await vi.advanceTimersByTimeAsync(100)
+      expect(micDurdur).not.toHaveBeenCalled()
+      fireEvent.click(screen.getByRole('button', { name: '⏹ Durdur' }))
+      expect(micDurdur).toHaveBeenCalledTimes(1)
+      expect(micSinyal!.aborted).toBe(true)
+      await vi.advanceTimersByTimeAsync(KUYRUK_DINLEME_MS + 200)
+      vi.useRealTimers()
+      await bekle()
+      sonucYok()
+      expect(screen.queryByText('Ses başlamadı, sonuç çıkarılamadı.')).toBeNull()
+      expect(micDurdur).toHaveBeenCalledTimes(1)
+      expect(setPlaybackSession).toHaveBeenCalledTimes(1)
+      expect(screen.getByRole('button', { name: '🎤 Dinlesin' })).toBeTruthy()
+    })
+  })
+
+  it('sonuç çıkınca özet bir kez görünüme kaydırılır', async () => {
+    const asil = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollIntoView')
+    const kaydir = vi.fn()
+    Element.prototype.scrollIntoView = kaydir
+    try {
+      panel({ olcu: DORTLUK, olcuPerSatir: 1, takip: true })
+      await sonucUret()
+      const kutu = document.querySelector('.takip-ozet')
+      await waitFor(() => expect(kaydir).toHaveBeenCalledTimes(1))
+      expect(kaydir.mock.contexts[0]).toBe(kutu)
+      expect(kaydir.mock.calls[0]).toEqual([{ block: 'nearest', behavior: 'smooth' }])
+      fireEvent.click(tekrarBox()) // yeniden çizim yeniden kaydırmaz
+      await bekle()
+      expect(kaydir).toHaveBeenCalledTimes(1)
+    } finally {
+      if (asil) Object.defineProperty(Element.prototype, 'scrollIntoView', asil)
+      else delete (Element.prototype as Partial<Element>).scrollIntoView
     }
   })
 
@@ -734,10 +827,16 @@ describe('takipOzeti', () => {
   const sonuc = (notalar: TakipSonucu['notalar'], ek: Partial<TakipSonucu> = {}): TakipSonucu => ({
     notalar,
     gecikmeMs: 130,
-    sesliOran: 0.734,
+    gecikmeKaynagi: 'olcum',
+    sesliOran: 0.5,
+    pencereSesliOran: 0.734,
+    kisaNotalar: { dogru: 5, toplam: 7 },
+    uzunNotalar: { dogru: 9, toplam: 9 },
+    ortancaSapmaSent: 11.4,
     atlanan: 0,
     ...ek,
   })
+  const TANI = 'Gecikme 130 ms · ses (nota içinde) %73 · kısa notalar 5/7 doğru · uzun 9/9 · ortanca sapma 11 sent · ♩=60'
   const n = (olcu: number, nota: number, durum: TakipDurumu, calinan?: string) => ({
     olcu,
     nota,
@@ -766,6 +865,7 @@ describe('takipOzeti', () => {
         { atlanan: 3 },
       ),
       OLCU,
+      60,
     )
     expect(o.baslik).toBe("12 notadan 2'si doğru.")
     expect(o.satirlar).toEqual([
@@ -776,12 +876,36 @@ describe('takipOzeti', () => {
       'Kısa tutuldu: 1 nota',
       '3 nota çok kısa olduğu için değerlendirilmedi.',
     ])
-    expect(o.tani).toBe('Gecikme 130 ms · ses duyulan kare %73')
+    expect(o.tani).toBe(TANI)
   })
 
   it('hepsi doğruysa ek satır yok; listede olmayan perde solfej adıyla', () => {
-    expect(takipOzeti(sonuc([n(0, 0, 'dogru'), n(0, 1, 'dogru')]), OLCU).satirlar).toEqual([])
-    expect(takipOzeti(sonuc([n(1, 2, 'pes')]), OLCU).satirlar).toEqual(['Pes: Do (1)'])
+    expect(takipOzeti(sonuc([n(0, 0, 'dogru'), n(0, 1, 'dogru')]), OLCU, 60).satirlar).toEqual([])
+    expect(takipOzeti(sonuc([n(1, 2, 'pes')]), OLCU, 60).satirlar).toEqual(['Pes: Do (1)'])
+  })
+
+  it('tanılama: gecikme kestirilemediyse ya da sınırdaysa belirtilir; turun temposu', () => {
+    const tani = (ek: Partial<TakipSonucu>, tempo = 60) => takipOzeti(sonuc([n(0, 0, 'dogru')], ek), OLCU, tempo).tani
+    expect(tani({ gecikmeMs: 120, gecikmeKaynagi: 'varsayilan' })).toBe(TANI.replace('130 ms', '120 ms (kestirilemedi)'))
+    expect(tani({ gecikmeMs: 400, gecikmeKaynagi: 'sinir' })).toBe(TANI.replace('130 ms', '400 ms (sınırda)'))
+    expect(tani({ gecikmeMs: -100, gecikmeKaynagi: 'sinir' })).toBe(TANI.replace('130 ms', '-100 ms (sınırda)'))
+    expect(tani({}, 72)).toBe(TANI.replace('♩=60', '♩=72'))
+  })
+
+  it('tanılama: boş kısa/uzun grubu ve duyulan nota yoksa sapma yazılmaz', () => {
+    const tani = (ek: Partial<TakipSonucu>) => takipOzeti(sonuc([n(0, 0, 'dogru')], ek), OLCU, 60).tani
+    expect(tani({ kisaNotalar: { dogru: 0, toplam: 0 } })).toBe(
+      'Gecikme 130 ms · ses (nota içinde) %73 · uzun notalar 9/9 doğru · ortanca sapma 11 sent · ♩=60',
+    )
+    expect(tani({ uzunNotalar: { dogru: 0, toplam: 0 }, ortancaSapmaSent: null })).toBe(
+      'Gecikme 130 ms · ses (nota içinde) %73 · kısa notalar 5/7 doğru · ♩=60',
+    )
+  })
+
+  it('hiçbir nota değerlendirilemediyse "0 notadan" değil, yavaşlama önerisi', () => {
+    const o = takipOzeti(sonuc([], { atlanan: 5 }), OLCU, 60)
+    expect(o.baslik).toBe('Notalar çok kısa olduğu için değerlendirilemedi; daha yavaş bir hızda dene.')
+    expect(o.satirlar).toEqual([])
   })
 
   it.each([
@@ -809,6 +933,6 @@ describe('takipOzeti', () => {
     [100, "100'ü"],
   ])('%i doğru: "%s"', (k, ek) => {
     const notalar = [...Array.from({ length: k }, () => n(0, 0, 'dogru')), n(0, 1, 'yok')]
-    expect(takipOzeti(sonuc(notalar), OLCU).baslik).toBe(`${k + 1} notadan ${ek} doğru.`)
+    expect(takipOzeti(sonuc(notalar), OLCU, 60).baslik).toBe(`${k + 1} notadan ${ek} doğru.`)
   })
 })

@@ -294,10 +294,10 @@ describe('ParcaDetail', () => {
     expect(acquireWakeLock).not.toHaveBeenCalled()
   })
 
-  it('parçada mikrofonla takip yoktur: "🎤 Çal, dinlesin" ve deneme notu çıkmaz', async () => {
+  it('parçada mikrofonla takip yoktur: "🎤 Dinlesin" ve deneme notu çıkmaz', async () => {
     await renderParca('hak-teala')
     await listenButton()
-    expect(screen.queryByRole('button', { name: '🎤 Çal, dinlesin' })).toBeNull()
+    expect(screen.queryByRole('button', { name: '🎤 Dinlesin' })).toBeNull()
     expect(screen.queryByText(/^Deneme: telefonu/)).toBeNull()
   })
 

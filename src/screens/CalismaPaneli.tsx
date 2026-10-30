@@ -10,8 +10,8 @@ import { acquireWakeLock, releaseWakeLock } from '../audio/wakeLock'
 import { NEY_PERDELER } from '../content/ney-perdeler'
 import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
 import type { Usul } from '../content/usuller'
-import { ANALIZ_PENCERESI_S, beklenenNotalar, degerlendir } from '../learning/takip'
-import type { NotaSonucu, TakipDurumu, TakipOrnegi, TakipSonucu } from '../learning/takip'
+import { ANALIZ_PENCERESI_S, beklenenNotalar, degerlendir, GECIKME_ARALIGI_MS } from '../learning/takip'
+import type { NotaSayimi, NotaSonucu, TakipDurumu, TakipOrnegi, TakipSonucu } from '../learning/takip'
 import type { MusicEvent } from '../music/notation'
 import { samePitch, SOLFEJ } from '../music/pitch'
 import { ScoreView } from '../notation/ScoreView'
@@ -25,8 +25,11 @@ export const HIZ_ADIMI = 5
 const METRONOME_NOTE = 'Bu usulün vuruş kalıbı bilinmediği için eşlik metronomla yapılır.'
 const IPUCU = 'Bir satıra dokun: yalnız o bölüm çalar. Başka bir satıra da dokunursan aradaki bölüm seçilir.'
 const TAKIP_NOTU =
-  'Deneme: telefonu neyin önüne koy. Eşlik çalar, sen neyle çalarsın; sonunda her nota için sonuç çıkar.'
+  'Deneme: telefonu neyin önüne koy. Kablosuz kulaklık bağlıysa çıkar. Eşlik çalar, sen neyle çalarsın; sonunda her nota için sonuç çıkar.'
 const SES_BASLAMADI = 'Ses başlamadı, sonuç çıkarılamadı.'
+const HEPSI_ATLANDI = 'Notalar çok kısa olduğu için değerlendirilemedi; daha yavaş bir hızda dene.'
+/** Eşlik bittikten sonra mikrofonun açık kaldığı süre (ms): en geç gecikmeyle çalınan son nota da duyulsun. */
+export const KUYRUK_DINLEME_MS = GECIKME_ARALIGI_MS[1] + 100
 /** Kullanıcı son bu kadar ms içinde kaydırdıysa çalan satıra otomatik kaydırılmaz. */
 const KULLANICI_KAYDIRMA_MS = 2000
 /** Kendi `scrollIntoView`'umuzdan sonra bu kadar ms içindeki scroll olayları (yumuşak kaydırma) kullanıcıdan sayılmaz. */
@@ -49,6 +52,15 @@ interface Dinleme {
   iptal: AbortController
   durdurucu: (() => void) | null
 }
+
+/** Son biten takibin sonucu ve o turun temposu (tanılama satırı için). */
+interface TakipKaydi {
+  sonuc: TakipSonucu
+  tempo: number
+}
+
+/** Takipte mikrofonun durumu: izin/açılış bekleniyor ya da açık ve dinliyor. */
+type MikDurumu = 'aciliyor' | 'dinliyor'
 
 /** Çubuktaki uyarı; `detay` (mikrofon hatasının tanılaması) küçük satırda gösterilir. */
 interface Uyari {
@@ -91,11 +103,17 @@ function say(adlar: string[]): [string, number][] {
 }
 
 /**
- * Takip sonucunun özeti: başlık ("16 notadan 12'si doğru."), varsa ayrıntı satırları (pes, tiz, başka perde, duyulmadı,
- * kısa tutuldu, değerlendirilmeyen) ve tanılama satırı. Perde adı beklenen notanın yazılı perdesinden (`NEY_PERDELER`;
- * listede yoksa solfej adı); `olcu` sonucun ölçü indislerinin işaret ettiği (bütün) nota dizisidir.
+ * Takip sonucunun özeti: başlık ("16 notadan 12'si doğru."; hiçbir nota değerlendirilemediyse yavaşlama önerisi), varsa
+ * ayrıntı satırları (pes, tiz, başka perde, duyulmadı, kısa tutuldu, değerlendirilmeyen) ve tanılama satırı (gecikme ve
+ * kaynağı, nota pencerelerindeki ses oranı, kısa/uzun notalarda doğru sayısı, ortanca sapma, turun temposu). Perde adı
+ * beklenen notanın yazılı perdesinden (`NEY_PERDELER`; listede yoksa solfej adı); `olcu` sonucun ölçü indislerinin
+ * işaret ettiği (bütün) nota dizisidir.
  */
-export function takipOzeti(sonuc: TakipSonucu, olcu: MusicEvent[][]): { baslik: string; satirlar: string[]; tani: string } {
+export function takipOzeti(
+  sonuc: TakipSonucu,
+  olcu: MusicEvent[][],
+  tempo: number,
+): { baslik: string; satirlar: string[]; tani: string } {
   const ad = (s: NotaSonucu) => {
     const e = olcu[s.olcu]?.[s.nota]
     if (!e || e.kind !== 'note') return '?'
@@ -116,12 +134,30 @@ export function takipOzeti(sonuc: TakipSonucu, olcu: MusicEvent[][]): { baslik: 
   if (yok) satirlar.push(`Duyulmadı: ${yok} nota`)
   const kisa = durumda('kisa').length
   if (kisa) satirlar.push(`Kısa tutuldu: ${kisa} nota`)
-  if (sonuc.atlanan) satirlar.push(`${sonuc.atlanan} nota çok kısa olduğu için değerlendirilmedi.`)
+  const hepsiAtlandi = sonuc.notalar.length === 0 && sonuc.atlanan > 0
+  if (sonuc.atlanan && !hepsiAtlandi) satirlar.push(`${sonuc.atlanan} nota çok kısa olduğu için değerlendirilmedi.`)
   return {
-    baslik: `${sonuc.notalar.length} notadan ${iyelikli(durumda('dogru').length)} doğru.`,
+    baslik: hepsiAtlandi ? HEPSI_ATLANDI : `${sonuc.notalar.length} notadan ${iyelikli(durumda('dogru').length)} doğru.`,
     satirlar,
-    tani: `Gecikme ${sonuc.gecikmeMs} ms · ses duyulan kare %${Math.round(sonuc.sesliOran * 100)}`,
+    tani: taniSatiri(sonuc, tempo),
   }
+}
+
+const GECIKME_EKI = { olcum: '', varsayilan: ' (kestirilemedi)', sinir: ' (sınırda)' } as const
+
+/** Tanılama satırı: "Gecikme 140 ms · ses (nota içinde) %82 · kısa notalar 5/7 doğru · uzun 9/9 · ortanca sapma 11 sent · ♩=60". */
+function taniSatiri(sonuc: TakipSonucu, tempo: number): string {
+  const sayim = (k: NotaSayimi) => `${k.dogru}/${k.toplam}`
+  const parca = [
+    `Gecikme ${sonuc.gecikmeMs} ms${GECIKME_EKI[sonuc.gecikmeKaynagi]}`,
+    `ses (nota içinde) %${Math.round(sonuc.pencereSesliOran * 100)}`,
+  ]
+  const { kisaNotalar: kisa, uzunNotalar: uzun } = sonuc
+  if (kisa.toplam) parca.push(`kısa notalar ${sayim(kisa)} doğru`)
+  if (uzun.toplam) parca.push(kisa.toplam ? `uzun ${sayim(uzun)}` : `uzun notalar ${sayim(uzun)} doğru`)
+  if (sonuc.ortancaSapmaSent !== null) parca.push(`ortanca sapma ${Math.round(sonuc.ortancaSapmaSent)} sent`)
+  parca.push(`♩=${tempo}`)
+  return parca.join(' · ')
 }
 
 /**
@@ -129,8 +165,8 @@ export function takipOzeti(sonuc: TakipSonucu, olcu: MusicEvent[][]): { baslik: 
  * (usul ya da metronom) anahtarı, tekrar ve her turda hızlanma, dinle / usulle (metronomla) çal / durdur ve çalan
  * notanın vurgusu (ses saati işaretinden; çalan satır görünüme kaydırılır). Bölüm satırı ve çalma düğmeleri notanın
  * ardındaki yapışkan çubuktadır. `durdurRef`: üst ekran (ör. "Çaldım") çalan sesi durdurabilsin diye panelin durdurma
- * işlevi buraya yazılır. `takip` (deneme, yalnız etüt): "🎤 Çal, dinlesin" seçili bölümü eşlikle bir tur çalarken
- * mikrofonu dinler; tur bitince her notanın sonucu notada ve özette gösterilir.
+ * işlevi buraya yazılır. `takip` (deneme, yalnız etüt): "🎤 Dinlesin" seçili bölümü eşlikle bir tur çalarken
+ * mikrofonu dinler; tur bitince her notanın sonucu notada ve özette gösterilir (özet bir kez görünüme kaydırılır).
  */
 export function CalismaPaneli(props: {
   olcu: MusicEvent[][]
@@ -155,10 +191,12 @@ export function CalismaPaneli(props: {
   const [turNo, setTurNo] = useState(1)
   const [warn, setWarn] = useState<Uyari | null>(null)
   const [vurgu, setVurgu] = useState<Konum | null>(null)
-  /** Süren çalım mikrofon takibi mi ("🎤 Dinliyorum…"). */
-  const [dinliyor, setDinliyor] = useState(false)
+  /** Süren çalım mikrofon takibiyse mikrofonun durumu ("Mikrofon açılıyor…" / "🎤 Dinliyorum…"); değilse null. */
+  const [mik, setMik] = useState<MikDurumu | null>(null)
   /** Son biten takibin sonucu; yeni çalım, yeni seçim ya da "Sonucu temizle" kaldırır. */
-  const [sonuc, setSonuc] = useState<TakipSonucu | null>(null)
+  const [sonuc, setSonuc] = useState<TakipKaydi | null>(null)
+  /** Takip özeti kutusu: sonuç çıkınca görünüme kaydırılır (yapışkan çubuk örtmesin). */
+  const ozetRef = useRef<HTMLDivElement>(null)
   /** Süren mikrofon takibi; `dinlemeyiBitir` kapatır. */
   const dinlemeRef = useRef<Dinleme | null>(null)
   /** Her başlatma/durdurmada artar: yalnızca son çalmanın sonucu ekranı değiştirir. */
@@ -283,6 +321,14 @@ export function CalismaPaneli(props: {
     satir.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
   }, [vurgu, playing])
 
+  // Sonuç çıkınca özet bir kez görünüme kaydırılır (yapışkan çubuk notanın altını örttüğü için gözden kaçmasın).
+  useLayoutEffect(() => {
+    const kutu = ozetRef.current
+    if (!sonuc || !kutu || typeof kutu.scrollIntoView !== 'function') return
+    kendiKaydirdiRef.current = Date.now()
+    kutu.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [sonuc])
+
   /**
    * Dokunuş işleyicisinden çağrılır: unlockAudio eşzamanlı, ilk await'ten önce başlatılır (iOS). Her tur seçili
    * ölçüleri o anki tempoyla çalar; tekrar açıksa tur bitince yeniden başlar, hızlanma açıksa tempo `HIZ_ADIMI` artar.
@@ -293,7 +339,7 @@ export function CalismaPaneli(props: {
     const run = ++runRef.current
     setWarn(null)
     setSonuc(null)
-    setDinliyor(false)
+    setMik(null)
     if (!settings.soundOn) {
       setWarn({ metin: SOUND_OFF })
       return
@@ -366,10 +412,11 @@ export function CalismaPaneli(props: {
   }
 
   /**
-   * "🎤 Çal, dinlesin": seçili bölüm melodisiz, tek tur çalar (Tekrarla ve Hızlan yok sayılır; eşlik anahtarı kapalıysa
+   * "🎤 Dinlesin": seçili bölüm melodisiz, tek tur çalar (Tekrarla ve Hızlan yok sayılır; eşlik anahtarı kapalıysa
    * yalnız giriş sayımı) ve mikrofon dinlenir. Dokunuş işleyicisinden çağrılır: unlockAudio, kayıt oturumu ve mikrofon
    * sırayla, eşzamanlı, ilk await'ten önce başlar (iOS; unlockAudio oturumu `playback` yaptığı için kayıt oturumu
-   * ondan sonra). Eşlik mikrofon açılınca çalar. Tur doğal bitince örnekler ses saati işaretine göre değerlendirilir.
+   * ondan sonra). Eşlik mikrofon açılınca çalar. Tur doğal bitince mikrofon `KUYRUK_DINLEME_MS` daha açık kalır (geç
+   * çalınan son nota da duyulsun), sonra örnekler ses saati işaretine göre değerlendirilir.
    */
   async function takipEt() {
     if (!settings) return
@@ -386,7 +433,7 @@ export function CalismaPaneli(props: {
     const tempo = bpm
     const ornekler: TakipOrnegi[] = []
     const dinleme: Dinleme = { iptal: new AbortController(), durdurucu: null }
-    setDinliyor(true)
+    setMik('aciliyor')
     setPlaying(true)
     void acquireWakeLock()
     try {
@@ -419,11 +466,15 @@ export function CalismaPaneli(props: {
         return
       }
       dinleme.durdurucu = durdurucu
+      setMik('dinliyor')
       await unlocked
       if (run !== runRef.current) return
       const calan = playCode(kod.code, kod.durationMs)
       turRef.current = { run, tempo, girisVurus: kod.girisVurus, olcu: kesik, bas }
       await calan
+      if (run !== runRef.current) return
+      // Kuyruk: çalım gecikmesi yüzünden son nota eşlikten sonra da sürer; mikrofon biraz daha açık kalır.
+      await new Promise((r) => setTimeout(r, KUYRUK_DINLEME_MS))
       if (run !== runRef.current) return
       dinlemeyiBitir()
       const t0 = sonIsaret()
@@ -431,7 +482,8 @@ export function CalismaPaneli(props: {
         setWarn({ metin: SES_BASLAMADI })
         return
       }
-      setSonuc(degerlendir(beklenenNotalar(dilim, bas, tuning, tempo, t0, kod.girisVurus), ornekler, tuning))
+      const takipSonucu = degerlendir(beklenenNotalar(dilim, bas, tuning, tempo, t0, kod.girisVurus), ornekler, tuning)
+      setSonuc({ sonuc: takipSonucu, tempo })
     } catch {
       if (run === runRef.current) setWarn({ metin: SOUND_WARNING })
     } finally {
@@ -439,6 +491,7 @@ export function CalismaPaneli(props: {
       if (turRef.current?.run === run) turRef.current = null
       if (run === runRef.current) {
         setPlaying(false)
+        setMik(null)
         releaseWakeLock()
       }
     }
@@ -451,6 +504,7 @@ export function CalismaPaneli(props: {
     stopAudio()
     releaseWakeLock()
     setPlaying(false)
+    setMik(null)
   }
 
   return (
@@ -467,7 +521,7 @@ export function CalismaPaneli(props: {
           if (playing) stop()
         }}
         vurgu={vurgu}
-        sonuclar={sonuc?.notalar ?? null}
+        sonuclar={sonuc?.sonuc.notalar ?? null}
       />
       {/* Yapışkan çalma çubuğu: nota uzunken de bölüm ve çalma düğmeleri ekranın altında elde kalır. */}
       <div class="calisma-cubugu" ref={cubukRef}>
@@ -502,17 +556,17 @@ export function CalismaPaneli(props: {
               </button>
               {takip && (
                 <button type="button" class="tool" disabled={!settings} onClick={() => void takipEt()}>
-                  🎤 Çal, dinlesin
+                  🎤 Dinlesin
                 </button>
               )}
             </>
           )}
-          {playing && dinliyor && (
+          {playing && mik && (
             <span class="muted" role="status">
-              🎤 Dinliyorum…
+              {mik === 'aciliyor' ? 'Mikrofon açılıyor…' : '🎤 Dinliyorum…'}
             </span>
           )}
-          {playing && tekrar && !dinliyor && (
+          {playing && tekrar && !mik && (
             <span class="muted" role="status">
               {`Tur ${turNo} · ♩ = ${bpm}`}
             </span>
@@ -525,7 +579,13 @@ export function CalismaPaneli(props: {
         )}
         {warn?.detay && <p class="mic-error-detail">Ayrıntı: {warn.detay}</p>}
       </div>
-      {sonuc && <TakipOzetKutusu ozet={takipOzeti(sonuc, olcu)} onTemizle={() => setSonuc(null)} />}
+      {sonuc && (
+        <TakipOzetKutusu
+          ozet={takipOzeti(sonuc.sonuc, olcu, sonuc.tempo)}
+          kutuRef={ozetRef}
+          onTemizle={() => setSonuc(null)}
+        />
+      )}
       <p class="muted">{IPUCU}</p>
       {takip && <p class="muted">{TAKIP_NOTU}</p>}
 
@@ -589,11 +649,15 @@ export function CalismaPaneli(props: {
   )
 }
 
-/** Takip özeti: çubuğun altında, akışta. */
-function TakipOzetKutusu(props: { ozet: ReturnType<typeof takipOzeti>; onTemizle: () => void }): JSX.Element {
-  const { ozet, onTemizle } = props
+/** Takip özeti: çubuğun altında, akışta. `kutuRef` kutunun kendisine bağlanır (görünüme kaydırmak için). */
+function TakipOzetKutusu(props: {
+  ozet: ReturnType<typeof takipOzeti>
+  kutuRef: { current: HTMLDivElement | null }
+  onTemizle: () => void
+}): JSX.Element {
+  const { ozet, kutuRef, onTemizle } = props
   return (
-    <div class="takip-ozet" role="status">
+    <div class="takip-ozet" role="status" ref={kutuRef}>
       <p class="takip-ozet-baslik">{ozet.baslik}</p>
       {ozet.satirlar.map((s) => (
         <p key={s}>{s}</p>
