@@ -101,8 +101,8 @@ function baspareStep(): EveningStep {
 
 /**
  * `ETUTLER` sırasında, bütün perdeleri geçilmiş ve henüz çalınmamış ilk etüt; yoksa adım da yoktur. N seviyeli etüt,
- * kendisinden küçük seviyelerin bütün etütleri çalınınca önerilir: Seviye 2 etütleri (usul, dörtlü, dil) Seviye 1'in,
- * Seviye 3 etütleri (kademe, Nevâ beşlileri, diziler) Seviye 1 ve 2'nin hepsi çalınmadan araya girmez; perdeleri
+ * kendisinden küçük seviyelerin bütün etütleri çalınınca önerilir (kural genel): Seviye 2 etütleri Seviye 1'in,
+ * Seviye 3 etütleri Seviye 1 ve 2'nin, Seviye 4 etütleri Seviye 1–3'ün hepsi çalınmadan araya girmez; perdeleri
  * geçilmiş olsa da. Seviye 1 her zaman öneriye açıktır. Ney bölümünde hepsi her zaman açıktır (kilit yok).
  */
 function etutStep(perdeStatus: Record<PerdeId, PerdeStatus>, calinan: ReadonlySet<string>): EveningStep | null {

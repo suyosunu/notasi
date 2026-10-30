@@ -578,6 +578,15 @@ describe('etüt adımı', () => {
     for (const eksik of [alt[0]!, 'usul-sofyan', 'dizi-neva']) {
       expect(oneri(new Set(alt.filter((id) => id !== eksik)))).toEqual([eksik])
     }
+    // Kapı gerçekten sınanır: Bûselik geçilmemiş, yani dortlu-cargah önerilemez ve çalınmamış kalır; Seviye 4 perdelerinin
+    // hepsi geçilmiş olsa da (Bûselik hiçbirinde yok) Seviye 4 etüdü önerilmez.
+    const buselikYok = statuses({ ...(tum as Record<PerdeId, PerdeStatus>), buselik: 'acik' })
+    const digerleri = new Set(alt.filter((id) => id !== 'dortlu-cargah'))
+    const s4Perdeler = ETUTLER.filter((e) => e.seviye === 4).flatMap((e) => e.perdeler)
+    expect(s4Perdeler).not.toContain('buselik')
+    expect(
+      etutAdimlari(buildEveningPlan(girdi({ perdeStatus: buselikYok, calinanEtutler: digerleri }))).map((s) => s.etutId),
+    ).toEqual([])
     // Seviye 1–3'ün hepsi çalınınca ilk Seviye 4 etüdü gelir.
     expect(oneri(new Set(alt))).toEqual(['tiz-segah-oktav'])
     // Seviye 4 etütleri sırayla önerilir; hepsi çalınınca etüt adımı kalmaz.
