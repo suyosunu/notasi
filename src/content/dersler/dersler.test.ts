@@ -23,6 +23,9 @@ import { beats } from '../../music/notation'
 import type { MusicEvent } from '../../music/notation'
 import type { Ders, DersBlok } from './types'
 
+/** Task 64'te gelecek dersler (Seviye 4 tiz etütleri ve dil teknikleri); o zamana dek etüt denetimlerinde atlanır. */
+const TASK_64_DERSLERI = ['etut:tiz', 'dil:teknikler']
+
 /** Bir dersteki tüm metinler (başlık, anlatım, açıklamalar, adımlar, kaynaklar). */
 function metinler(d: Ders): string[] {
   const blokMetni = (b: DersBlok): string[] => {
@@ -82,9 +85,7 @@ describe('DERSLER değişmezleri', () => {
     for (const b of d.bloklar) if (b.tur === 'parmak') expect(NEY_PERDELER.map((p) => p.id)).toContain(b.perdeId)
   })
 
-  // Task 62'nin makam dersleri, Task 63'ün ekleyeceği dizi etütlerine gider; etütler gelince bu liste silinir.
-  const TASK_63_ETUT_ROTALARI = ['dizi-ussak-tiz', 'dizi-bayati', 'dizi-huseyni', 'dizi-muhayyer', 'dizi-kurdi', 'dizi-hicaz'].map((id) => `/etut/${id}`)
-  it.each(DERSLER.filter((d) => d.alistirma && !TASK_63_ETUT_ROTALARI.includes(d.alistirma)).map((d) => [d.id, d.alistirma!] as const))(
+  it.each(DERSLER.filter((d) => d.alistirma).map((d) => [d.id, d.alistirma!] as const))(
     '%s: alıştırma rotası (%s) bilinir',
     (_id, rota) => {
       expect(rotaBilinir(rota)).toBe(true)
@@ -796,7 +797,8 @@ describe('Seviye 1 etüt dersleri', () => {
   })
 
   it('her etüdün dersi vardır', () => {
-    for (const e of ETUTLER) expect(dersById(e.dersId), e.id).toBeDefined()
+    // etut:tiz ve dil:teknikler dersleri Task 64'te gelir; o zamana dek yalnız bu ikisi atlanır.
+    for (const e of ETUTLER.filter((x) => !TASK_64_DERSLERI.includes(x.dersId))) expect(dersById(e.dersId), e.id).toBeDefined()
   })
 
   it('etut:giris: tek-neva etüdünün ilk iki ölçüsü porte olarak gösterilir', () => {
@@ -884,7 +886,7 @@ describe('Usul dersleri', () => {
           : [e.dersId]
       expect(etutDersleri(e), e.id).toEqual(beklenen)
       expect(etutDersleri(e).at(-1), e.id).toBe(e.dersId)
-      for (const id of etutDersleri(e)) expect(dersById(id), `${e.id}: ${id}`).toBeTruthy()
+      for (const id of etutDersleri(e).filter((x) => !TASK_64_DERSLERI.includes(x))) expect(dersById(id), `${e.id}: ${id}`).toBeTruthy()
     }
   })
 

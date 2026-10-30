@@ -10,12 +10,15 @@ import type { PerdeId } from './ney-perdeler'
 // - Seviye 3: kademe geçişi (aynı parmakla iki şiddet: 2. kademe sesi ve 31 koma üstündeki eşi), Nevâ'da Rast ve
 //   Bûselik beşlileri ve Rast ile Nevâ dizileri (4/4). Usulsüz, yalnız uzun seslerle; kapalı Nevâ inişte kullanılır.
 //   İlke MEB 1218 ve 1232 ile neyzenim _9'dan (araştırma C §5); kalıplar bizim önerimizdir.
+// - Seviye 4: tiz perdeler (alt perde–tiz perde oktav çiftleri; neyzenim _8: "orta ve alt perdeleri uzun uzun üflemenizi
+//   öneriyorum", bu yüzden tizde süreler kısa), makam dizileri (Uşşak Tiz Nevâ'ya kadar, Bayâtî, Hüseynî, Muhayyer, Kürdî,
+//   Hicaz), dil teknikleri (bağsız, bağlı, kesik) ve aksak usuller (Türk Aksağı 5/8, Devr-i Hindî 7/8). Kalıplar bizim önerimizdir.
 // Çalış sırası: uzun ses → etüt → eser (araştırma notu, ortak kalıp S1, S2, S5; etüt tempoları S4 ders 3–4).
 
 export interface Etut {
   id: string
   baslik: string
-  tur: 'tek' | 'iki' | 'besli' | 'usul' | 'dortlu' | 'dil' | 'kademe' | 'dizi'
+  tur: 'tek' | 'iki' | 'besli' | 'usul' | 'dortlu' | 'dil' | 'kademe' | 'dizi' | 'tiz'
   /** Hepsi geçilince etüt akşam planına girer. */
   perdeler: PerdeId[]
   /** Ölçüler: usulsüz etütte 4/4, usullü etütte `usul.zaman * 4 / usul.mertebe` dörtlük (5/8 → 2.5, 7/8 → 3.5). */
@@ -23,7 +26,7 @@ export interface Etut {
   bpm: number
   /** Etütten önce okunan ders. */
   dersId: string
-  seviye: 1 | 2 | 3
+  seviye: 1 | 2 | 3 | 4
   /** `USULLER` kimliği: eşlik usul sesiyle çalar. Yoksa 4/4 metronom. */
   usulId?: string
 }
@@ -363,6 +366,152 @@ const SEVIYE3_ETUTLERI: Etut[] = [
   }),
 ]
 
+/** Seviye 4 etüdü: ♩ = 60. */
+function seviye4(e: Omit<Etut, 'olcu' | 'bpm' | 'seviye'> & { notasyon: string }): Etut {
+  const { notasyon, ...rest } = e
+  return { ...rest, olcu: parseEtut(notasyon), bpm: 60, seviye: 4 }
+}
+
+/** Oktav kalıbı: uzun sesler, ikilikler, dörtlükler; tizde noktalı ikilik ve sus, alt sesle biter. */
+function oktavKalibi(alt: string, tiz: string): string {
+  return (
+    `${alt}:1 | ${tiz}:1 | ${alt}:2 ${tiz}:2 | ${tiz}:2 ${alt}:2 | ${alt}:4 ${tiz}:4 ${alt}:4 ${tiz}:4 | ` +
+    `${tiz}:2. r:4 | ${alt}:1`
+  )
+}
+
+/**
+ * Seviye 4 etütleri. Oktav etütlerinde alt perde ile bir oktav üstündeki tiz perde birbirini izler; kapalı Gerdâniye ve
+ * Muhayyer açık olanlarla aynı yazılı notadır (G5, A5). Dizi etütleri Seviye 4 perdelerini (tiz sesler, Eviç, Acem...) kullanır.
+ * Usul etütlerinde her ölçünün ilk notası düm'e denk gelir: Türk Aksağı (5/8) düm 2, tek 2, tek 1; Devr-i Hindî (7/8)
+ * düm 1, tek 1, tek 1, düm 2, tek 2 (neyzenim _13); ölçüler 2.5 ve 3.5 dörtlüktür.
+ */
+const SEVIYE4_ETUTLERI: Etut[] = [
+  seviye4({
+    id: 'tiz-segah-oktav',
+    baslik: 'Oktav: Segâh–Tiz Segâh',
+    tur: 'tiz',
+    perdeler: ['segah', 'tiz-segah'],
+    dersId: 'etut:tiz',
+    notasyon: oktavKalibi('B4b1', 'B5b1'),
+  }),
+  seviye4({
+    id: 'tiz-cargah-oktav',
+    baslik: 'Oktav: Çârgâh–Tiz Çârgâh',
+    tur: 'tiz',
+    perdeler: ['cargah', 'tiz-cargah'],
+    dersId: 'etut:tiz',
+    notasyon: oktavKalibi('C5', 'C6'),
+  }),
+  seviye4({
+    id: 'tiz-neva-oktav',
+    baslik: 'Oktav: Nevâ–Tiz Nevâ',
+    tur: 'tiz',
+    perdeler: ['neva', 'tiz-neva'],
+    dersId: 'etut:tiz',
+    notasyon: oktavKalibi('D5', 'D6'),
+  }),
+  seviye4({
+    id: 'kapali-oktav',
+    baslik: 'Oktav: Rast–Gerdâniye, Dügâh–Muhayyer (kapalı)',
+    tur: 'tiz',
+    perdeler: ['rast', 'kapali-gerdaniye', 'dugah', 'kapali-muhayyer'],
+    dersId: 'etut:tiz',
+    notasyon: 'G4:1 | G5:1 | G4:2 G5:2 | G5:2 G4:2 | A4:1 | A5:1 | A4:2 A5:2 | A5:2 A4:2 | A4:1',
+  }),
+  seviye4({
+    id: 'tiz-nim-hicaz-oktav',
+    baslik: 'Oktav: Nim Hicaz–Tiz Nim Hicaz',
+    tur: 'tiz',
+    perdeler: ['nim-hicaz', 'tiz-nim-hicaz', 'neva'],
+    dersId: 'etut:tiz',
+    notasyon: 'C5#4:1 | C6#4:1 | C5#4:2 C6#4:2 | C6#4:2 C5#4:2 | C5#4:4 C6#4:4 C5#4:4 C6#4:4 | C6#4:2. r:4 | C5#4:2 D5:2 | D5:1',
+  }),
+  seviye4({
+    id: 'dizi-ussak-tiz',
+    baslik: "Uşşak dizisi Tiz Nevâ'ya kadar",
+    tur: 'dizi',
+    perdeler: ['dugah', 'segah', 'cargah', 'neva', 'huseyni', 'acem', 'gerdaniye', 'muhayyer', 'tiz-segah', 'tiz-cargah', 'tiz-neva'],
+    dersId: 'makam:ussak',
+    notasyon:
+      'A4:4 B4b1:4 C5:4 D5:4 | E5:4 F5:4 G5:4 A5:4 | B5b1:4 C6:4 D6:2 | D6:4 C6:4 B5b1:4 A5:4 | G5:4 F5:4 E5:4 D5:4 | ' +
+      'C5:4 B4b1:4 A4:2 | A4:1',
+  }),
+  seviye4({
+    id: 'dizi-bayati',
+    baslik: "Bayâtî: Nevâ'dan başla",
+    tur: 'dizi',
+    perdeler: ['neva', 'huseyni', 'cargah', 'segah', 'acem', 'gerdaniye', 'muhayyer', 'dugah'],
+    dersId: 'makam:bayati',
+    notasyon: 'D5:2 E5:4 D5:4 | C5:4 B4b1:4 C5:2 | D5:4 E5:4 F5:4 G5:4 | A5:2 G5:4 F5:4 | E5:4 D5:4 C5:4 B4b1:4 | A4:1',
+  }),
+  seviye4({
+    id: 'dizi-huseyni',
+    baslik: 'Hüseynî dizisi (çıkışta Eviç, inişte Acem)',
+    tur: 'dizi',
+    perdeler: ['dugah', 'segah', 'cargah', 'neva', 'huseyni', 'evic', 'gerdaniye', 'muhayyer', 'acem'],
+    dersId: 'makam:huseyni',
+    notasyon: 'A4:4 B4b1:4 C5:4 D5:4 | E5:4 F5#4:4 G5:4 A5:4 | A5:1 | A5:4 G5:4 F5:4 E5:4 | D5:4 C5:4 B4b1:4 A4:4 | A4:1',
+  }),
+  seviye4({
+    id: 'dizi-muhayyer',
+    baslik: 'Muhayyer: tizden iniş',
+    tur: 'dizi',
+    perdeler: ['muhayyer', 'tiz-segah', 'gerdaniye', 'evic', 'huseyni', 'neva', 'acem', 'cargah', 'segah', 'dugah'],
+    dersId: 'makam:muhayyer',
+    notasyon: 'A5:2 B5b1:4 A5:4 | G5:4 F5#4:4 E5:2 | D5:4 E5:4 F5#4:4 G5:4 | A5:1 | A5:4 G5:4 F5:4 E5:4 | D5:4 C5:4 B4b1:4 A4:4 | A4:1',
+  }),
+  seviye4({
+    id: 'dizi-kurdi',
+    baslik: 'Kürdî dizisi',
+    tur: 'dizi',
+    perdeler: ['dugah', 'kurdi', 'cargah', 'neva', 'huseyni', 'acem', 'gerdaniye', 'muhayyer'],
+    dersId: 'makam:kurdi',
+    notasyon: 'A4:4 B4b5:4 C5:4 D5:4 | E5:4 F5:4 G5:4 A5:4 | A5:1 | A5:4 G5:4 F5:4 E5:4 | D5:4 C5:4 B4b5:4 A4:4 | A4:1',
+  }),
+  seviye4({
+    id: 'dizi-hicaz',
+    baslik: 'Hicaz dizisi',
+    tur: 'dizi',
+    perdeler: ['dugah', 'dik-kurdi', 'nim-hicaz', 'neva', 'huseyni', 'evic', 'gerdaniye', 'muhayyer'],
+    dersId: 'makam:hicaz',
+    notasyon: 'A4:4 B4b4:4 C5#4:4 D5:4 | E5:4 F5#4:4 G5:4 A5:4 | A5:1 | A5:4 G5:4 F5#4:4 E5:4 | D5:4 C5#4:4 B4b4:4 A4:4 | A4:1',
+  }),
+  seviye4({
+    id: 'dil-2',
+    baslik: 'Dil: bağsız, bağlı, kesik',
+    tur: 'dil',
+    perdeler: ['dugah', 'segah', 'cargah', 'neva', 'huseyni'],
+    dersId: 'dil:teknikler',
+    notasyon:
+      'A4:4 B4b1:4 C5:4 D5:4 | E5:4 D5:4 C5:2 | B4b1:4 C5:4 D5:4 C5:4 | B4b1:2 A4:2 | ' +
+      'A4:4_ B4b1:4 C5:4_ D5:4 | E5:4_ D5:4 C5:2 | B4b1:4_ C5:4 D5:4_ C5:4 | B4b1:2_ A4:2 | ' +
+      'A4:4! B4b1:4! C5:4! D5:4! | E5:4! D5:4! C5:2 | B4b1:4! C5:4! D5:4! C5:4! | B4b1:2 A4:2',
+  }),
+  seviye4({
+    id: 'usul-turk-aksagi',
+    baslik: 'Usul: Türk Aksağı',
+    tur: 'usul',
+    usulId: 'turk-aksagi',
+    perdeler: ['rast', 'dugah', 'segah', 'cargah', 'neva', 'huseyni'],
+    dersId: 'usul:turk-aksagi',
+    notasyon:
+      'D5:4 C5:4 B4b1:8 | A4:4 B4b1:4 C5:8 | D5:4 E5:4 D5:8 | D5:2 r:8 | C5:4 B4b1:4 A4:8 | B4b1:4 C5:4 B4b1:8 | ' +
+      'A4:4 B4b1:4 G4:8 | A4:2 r:8',
+  }),
+  seviye4({
+    id: 'usul-devr-i-hindi',
+    baslik: 'Usul: Devr-i Hindî',
+    tur: 'usul',
+    usulId: 'devr-i-hindi',
+    perdeler: ['rast', 'dugah', 'segah', 'cargah', 'neva', 'huseyni'],
+    dersId: 'usul:devr-i-hindi',
+    notasyon:
+      'A4:8 B4b1:8 C5:8 D5:4 C5:4 | B4b1:8 C5:8 D5:8 E5:4 D5:4 | C5:8 D5:8 C5:8 B4b1:4 A4:4 | A4:2. r:8 | ' +
+      'D5:8 E5:8 D5:8 C5:4 B4b1:4 | C5:8 B4b1:8 A4:8 B4b1:4 C5:4 | B4b1:8 C5:8 B4b1:8 A4:4 G4:4 | A4:2. r:8',
+  }),
+]
+
 export const ETUTLER: Etut[] = [
   tek('neva'),
   tek('cargah'),
@@ -389,4 +538,5 @@ export const ETUTLER: Etut[] = [
   ...DORTLU_ETUTLERI,
   ...DIL_ETUTLERI,
   ...SEVIYE3_ETUTLERI,
+  ...SEVIYE4_ETUTLERI,
 ]

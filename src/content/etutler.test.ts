@@ -118,6 +118,20 @@ describe('ETUTLER', () => {
       'neva-buselik-besli',
       'dizi-rast',
       'dizi-neva',
+      'tiz-segah-oktav',
+      'tiz-cargah-oktav',
+      'tiz-neva-oktav',
+      'kapali-oktav',
+      'tiz-nim-hicaz-oktav',
+      'dizi-ussak-tiz',
+      'dizi-bayati',
+      'dizi-huseyni',
+      'dizi-muhayyer',
+      'dizi-kurdi',
+      'dizi-hicaz',
+      'dil-2',
+      'usul-turk-aksagi',
+      'usul-devr-i-hindi',
     ])
   })
 
@@ -174,7 +188,7 @@ describe('ETUTLER', () => {
 
   it("usul etütlerinin usulId'si USULLER'de var ve vuruşu null değil", () => {
     const usulluler = ETUTLER.filter((e) => e.tur === 'usul')
-    expect(usulluler).toHaveLength(3)
+    expect(usulluler).toHaveLength(5)
     for (const e of usulluler) {
       const u = USULLER.find((x) => x.id === e.usulId)
       expect(u, e.id).toBeDefined()
@@ -183,12 +197,16 @@ describe('ETUTLER', () => {
     expect(ETUTLER.filter((e) => e.tur !== 'usul').every((e) => e.usulId === undefined)).toBe(true)
   })
 
-  it("usul etütlerinde her ölçünün ilk olayı düm'e denk gelen bir notadır ve ölçünün en uzun sesidir", () => {
+  it("usul etütlerinde her ölçünün ilk olayı düm'e denk gelen bir notadır; dörtlük birimli usullerde ölçünün en uzun sesidir, sekizlik birimlilerde düm'ü doldurur", () => {
     for (const e of ETUTLER.filter((x) => x.tur === 'usul')) {
+      const usul = USULLER.find((u) => u.id === e.usulId)!
+      const dum = (usul.vurus![0]!.sure * 4) / usul.mertebe
       for (const [i, olcu] of e.olcu.entries()) {
         const ilk = olcu[0]!
         expect(ilk.kind, `${e.id} ${i + 1}. ölçü`).toBe('note')
-        expect(beats(ilk), `${e.id} ${i + 1}. ölçü`).toBeGreaterThanOrEqual(Math.max(...olcu.map(beats)))
+        // Sekizlik birimli usulde (Devr-i Hindî düm'ü bir sekizliktir) ilk ses kısa olabilir; en az düm süresi kadardır.
+        if (usul.mertebe === 4) expect(beats(ilk), `${e.id} ${i + 1}. ölçü`).toBeGreaterThanOrEqual(Math.max(...olcu.map(beats)))
+        else expect(beats(ilk), `${e.id} ${i + 1}. ölçü`).toBeGreaterThanOrEqual(dum - 1e-6)
       }
     }
   })
@@ -246,7 +264,8 @@ describe('ETUTLER', () => {
     expect(ETUTLER.every((e) => e.bpm === 60)).toBe(true)
     expect(ETUTLER.slice(0, 11).every((e) => e.seviye === 1 && e.usulId === undefined)).toBe(true)
     expect(ETUTLER.slice(11, 18).every((e) => e.seviye === 2)).toBe(true)
-    expect(ETUTLER.slice(18).every((e) => e.seviye === 3)).toBe(true)
+    expect(ETUTLER.slice(18, 27).every((e) => e.seviye === 3)).toBe(true)
+    expect(ETUTLER.slice(27).every((e) => e.seviye === 4)).toBe(true)
   })
 
   it('tek-neva içeriği', () => {
@@ -279,8 +298,8 @@ describe('ETUTLER', () => {
 describe('Seviye 3 etütleri', () => {
   const s3 = ETUTLER.filter((e) => e.seviye === 3)
 
-  it("dokuz etüt ETUTLER'in sonunda, brief sırasıyla; tür, perdeler, ders ve tempo", () => {
-    expect(ETUTLER.slice(-9)).toEqual(s3)
+  it("dokuz etüt Seviye 2'nin ardından, brief sırasıyla; tür, perdeler, ders ve tempo", () => {
+    expect(ETUTLER.slice(18, 27)).toEqual(s3)
     expect(s3.map((e) => [e.id, e.baslik, e.tur, e.perdeler, e.dersId, e.bpm, e.usulId])).toEqual([
       ['kademe-dugah-huseyni', 'Aynı parmak: Dügâh–Hüseynî', 'kademe', ['dugah', 'huseyni'], 'etut:kademe', 60, undefined],
       ['kademe-rast-kapali-neva', 'Aynı parmak: Rast–Nevâ (kapalı)', 'kademe', ['rast', 'kapali-neva'], 'etut:kademe', 60, undefined],
@@ -387,5 +406,149 @@ describe('Seviye 3 etütleri', () => {
     if (hedef.olcut.tur !== 'etutler') throw new Error('etütler ölçütü bekleniyordu')
     expect(hedef.olcut.etutIds).toHaveLength(9)
     for (const id of hedef.olcut.etutIds) expect(id.startsWith('tek-') || id.startsWith('iki-'), id).toBe(true)
+  })
+})
+
+describe('Seviye 4 etütleri', () => {
+  const s4 = ETUTLER.filter((e) => e.seviye === 4)
+  const get = (id: string) => s4.find((e) => e.id === id)!
+
+  it('on dört etüt ETUTLER\'in sonunda, brief sırasıyla; tür, perdeler, ders, usul ve tempo', () => {
+    expect(ETUTLER.slice(-14)).toEqual(s4)
+    expect(s4.map((e) => [e.id, e.baslik, e.tur, e.perdeler, e.dersId, e.usulId, e.bpm])).toEqual([
+      ['tiz-segah-oktav', 'Oktav: Segâh–Tiz Segâh', 'tiz', ['segah', 'tiz-segah'], 'etut:tiz', undefined, 60],
+      ['tiz-cargah-oktav', 'Oktav: Çârgâh–Tiz Çârgâh', 'tiz', ['cargah', 'tiz-cargah'], 'etut:tiz', undefined, 60],
+      ['tiz-neva-oktav', 'Oktav: Nevâ–Tiz Nevâ', 'tiz', ['neva', 'tiz-neva'], 'etut:tiz', undefined, 60],
+      [
+        'kapali-oktav',
+        'Oktav: Rast–Gerdâniye, Dügâh–Muhayyer (kapalı)',
+        'tiz',
+        ['rast', 'kapali-gerdaniye', 'dugah', 'kapali-muhayyer'],
+        'etut:tiz',
+        undefined,
+        60,
+      ],
+      [
+        'tiz-nim-hicaz-oktav',
+        'Oktav: Nim Hicaz–Tiz Nim Hicaz',
+        'tiz',
+        ['nim-hicaz', 'tiz-nim-hicaz', 'neva'],
+        'etut:tiz',
+        undefined,
+        60,
+      ],
+      [
+        'dizi-ussak-tiz',
+        "Uşşak dizisi Tiz Nevâ'ya kadar",
+        'dizi',
+        ['dugah', 'segah', 'cargah', 'neva', 'huseyni', 'acem', 'gerdaniye', 'muhayyer', 'tiz-segah', 'tiz-cargah', 'tiz-neva'],
+        'makam:ussak',
+        undefined,
+        60,
+      ],
+      [
+        'dizi-bayati',
+        "Bayâtî: Nevâ'dan başla",
+        'dizi',
+        ['neva', 'huseyni', 'cargah', 'segah', 'acem', 'gerdaniye', 'muhayyer', 'dugah'],
+        'makam:bayati',
+        undefined,
+        60,
+      ],
+      [
+        'dizi-huseyni',
+        'Hüseynî dizisi (çıkışta Eviç, inişte Acem)',
+        'dizi',
+        ['dugah', 'segah', 'cargah', 'neva', 'huseyni', 'evic', 'gerdaniye', 'muhayyer', 'acem'],
+        'makam:huseyni',
+        undefined,
+        60,
+      ],
+      [
+        'dizi-muhayyer',
+        'Muhayyer: tizden iniş',
+        'dizi',
+        ['muhayyer', 'tiz-segah', 'gerdaniye', 'evic', 'huseyni', 'neva', 'acem', 'cargah', 'segah', 'dugah'],
+        'makam:muhayyer',
+        undefined,
+        60,
+      ],
+      [
+        'dizi-kurdi',
+        'Kürdî dizisi',
+        'dizi',
+        ['dugah', 'kurdi', 'cargah', 'neva', 'huseyni', 'acem', 'gerdaniye', 'muhayyer'],
+        'makam:kurdi',
+        undefined,
+        60,
+      ],
+      [
+        'dizi-hicaz',
+        'Hicaz dizisi',
+        'dizi',
+        ['dugah', 'dik-kurdi', 'nim-hicaz', 'neva', 'huseyni', 'evic', 'gerdaniye', 'muhayyer'],
+        'makam:hicaz',
+        undefined,
+        60,
+      ],
+      ['dil-2', 'Dil: bağsız, bağlı, kesik', 'dil', ['dugah', 'segah', 'cargah', 'neva', 'huseyni'], 'dil:teknikler', undefined, 60],
+      ['usul-turk-aksagi', 'Usul: Türk Aksağı', 'usul', ['rast', 'dugah', 'segah', 'cargah', 'neva', 'huseyni'], 'usul:turk-aksagi', 'turk-aksagi', 60],
+      [
+        'usul-devr-i-hindi',
+        'Usul: Devr-i Hindî',
+        'usul',
+        ['rast', 'dugah', 'segah', 'cargah', 'neva', 'huseyni'],
+        'usul:devr-i-hindi',
+        'devr-i-hindi',
+        60,
+      ],
+    ])
+  })
+
+  it("ölçü vuruşu: usulsüzde 4, Türk Aksağı'nda 2.5, Devr-i Hindî'de 3.5; usul etütleri 8 ölçü", () => {
+    for (const e of s4) {
+      const beklenen = e.id === 'usul-turk-aksagi' ? 2.5 : e.id === 'usul-devr-i-hindi' ? 3.5 : 4
+      for (const [i, o] of e.olcu.entries()) {
+        const toplam = o.reduce((t, n) => t + beats(n), 0)
+        expect(Math.abs(toplam - beklenen), `${e.id} ${i + 1}. ölçü: ${toplam}`).toBeLessThan(1e-6)
+      }
+    }
+    expect(get('usul-turk-aksagi').olcu).toHaveLength(8)
+    expect(get('usul-devr-i-hindi').olcu).toHaveLength(8)
+  })
+
+  it('her notanın yazılı perdesi etüdün perdelerinden biridir; her perde notalarda geçer (G5 ve A5 açık ve kapalı için ortak)', () => {
+    for (const e of s4) {
+      const yazimlar = e.perdeler.map(yazim)
+      const kullanilan = e.olcu.flat().flatMap((n) => (n.kind === 'note' ? [n.pitch] : []))
+      for (const p of kullanilan) expect(yazimlar.some((y) => samePitch(y, p)), `${e.id} ${p.step}${p.octave}${p.acc}`).toBe(true)
+      for (const y of yazimlar) expect(kullanilan.some((p) => samePitch(y, p)), `${e.id} ${y.step}${y.octave}${y.acc}`).toBe(true)
+    }
+  })
+
+  it('oktav etütleri aynı kalıpta: alt ve tiz perde bir oktav arayla', () => {
+    const kalip = (alt: string, tiz: string) =>
+      parseEtut(`${alt}:1 | ${tiz}:1 | ${alt}:2 ${tiz}:2 | ${tiz}:2 ${alt}:2 | ${alt}:4 ${tiz}:4 ${alt}:4 ${tiz}:4 | ${tiz}:2. r:4 | ${alt}:1`)
+    expect(get('tiz-segah-oktav').olcu).toEqual(kalip('B4b1', 'B5b1'))
+    expect(get('tiz-cargah-oktav').olcu).toEqual(kalip('C5', 'C6'))
+    expect(get('tiz-neva-oktav').olcu).toEqual(kalip('D5', 'D6'))
+  })
+
+  it('dil-2: ilk 4 ölçüde bağ ve kesik yok; 5–8. ölçülerde bağ var; 9–12. ölçülerde kesik var', () => {
+    const e = get('dil-2')
+    expect(e.olcu).toHaveLength(12)
+    const notalar = (a: number, b: number) => e.olcu.slice(a, b).flat().filter((n) => n.kind === 'note')
+    for (const n of notalar(0, 4)) expect(n.bag || n.kesik, 'ilk dört ölçü').toBeFalsy()
+    expect(notalar(4, 8).filter((n) => n.bag).length).toBeGreaterThanOrEqual(4)
+    expect(notalar(4, 8).some((n) => n.kesik)).toBe(false)
+    expect(notalar(8, 12).filter((n) => n.kesik).length).toBeGreaterThanOrEqual(8)
+    expect(notalar(8, 12).some((n) => n.bag)).toBe(false)
+  })
+
+  it("usullerin USULLER'de olması: yalnız usul etütlerinde usulId var", () => {
+    for (const e of s4) {
+      if (e.tur === 'usul') expect(USULLER.some((u) => u.id === e.usulId), e.id).toBe(true)
+      else expect(e.usulId, e.id).toBeUndefined()
+    }
   })
 })

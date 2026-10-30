@@ -347,6 +347,21 @@ describe('EtutCalisma', () => {
     expect(document.querySelectorAll('[data-testid="score-row"]')).toHaveLength(4)
   })
 
+  it('Türk Aksağı (5/8) etüdü açılır; satırlar ölçü sınırında bölünür: satırda üç ölçü, 8 ölçü → 3 satır', async () => {
+    for (const id of ['okuma:olcu', 'usul:giris', 'usul:turk-aksagi']) await isaretEkle('okunanDersler', id)
+    render(<EtutDetail etutId="usul-turk-aksagi" />)
+    expect(await screen.findByRole('heading', { name: '🎼 Usul: Türk Aksağı' })).toBeTruthy()
+    expect(await dinleBtn()).toBeTruthy()
+    expect(screen.getByRole('checkbox', { name: '🥁 Usul eşliği (Türk Aksağı)' })).toBeTruthy()
+    expect(document.querySelectorAll('[data-testid="score-row"]')).toHaveLength(3)
+  })
+
+  it('Devr-i Hindî (7/8) satırda iki ölçü: 8 ölçü → 4 satır', () => {
+    render(<EtutCalisma etut={etut('usul-devr-i-hindi')} />)
+    expect(screen.getByRole('checkbox', { name: '🥁 Usul eşliği (Devr-i Hindî)' })).toBeTruthy()
+    expect(document.querySelectorAll('[data-testid="score-row"]')).toHaveLength(4)
+  })
+
   it('mikrofonla takip açıktır: "🎤 Dinlesin" çubukta, deneme notu görünür', async () => {
     render(<EtutCalisma etut={NEVA} />)
     await dinleBtn()

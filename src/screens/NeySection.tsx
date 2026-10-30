@@ -21,7 +21,7 @@ import { Calibration } from './Calibration'
 const ICONS: Record<PerdeStatus, string> = { kilitli: '🔒', acik: '▶', gecildi: '✓' }
 const LABELS: Record<PerdeStatus, string> = { kilitli: 'kilitli', acik: 'açık', gecildi: 'geçildi' }
 /** Etüt listesi bu seviye başlıkları altında gruplanır. */
-const ETUT_SEVIYELERI: readonly Etut['seviye'][] = [1, 2, 3]
+const ETUT_SEVIYELERI: readonly Etut['seviye'][] = [1, 2, 3, 4]
 /** Tek perde sayfasında gösterilen son deneme sayısı. */
 const HISTORY_SIZE = 5
 

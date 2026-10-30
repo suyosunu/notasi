@@ -568,6 +568,24 @@ describe('etüt adımı', () => {
     expect(oneri(new Set([...s1, ...s2]))).toEqual(['kademe-dugah-huseyni'])
   })
 
+  it('Seviye 4 etüdü, Seviye 1–3 etütlerinin hepsi çalınmadan önerilmez', () => {
+    const tum = statuses(Object.fromEntries(NEY_PERDELER.map((p) => [p.id, 'gecildi'])) as Record<PerdeId, PerdeStatus>)
+    const oneri = (calinan: ReadonlySet<string>) =>
+      etutAdimlari(buildEveningPlan(girdi({ perdeStatus: tum, calinanEtutler: calinan }))).map((s) => s.etutId)
+    const alt = ETUTLER.filter((e) => e.seviye <= 3).map((e) => e.id)
+    expect(alt.length).toBe(27)
+    // Her perde geçilmiş olsa da bir Seviye 1–3 etüdü eksikse Seviye 4 etüdü araya girmez; eksik olan önerilir.
+    for (const eksik of [alt[0]!, 'usul-sofyan', 'dizi-neva']) {
+      expect(oneri(new Set(alt.filter((id) => id !== eksik)))).toEqual([eksik])
+    }
+    // Seviye 1–3'ün hepsi çalınınca ilk Seviye 4 etüdü gelir.
+    expect(oneri(new Set(alt))).toEqual(['tiz-segah-oktav'])
+    // Seviye 4 etütleri sırayla önerilir; hepsi çalınınca etüt adımı kalmaz.
+    const s4 = ETUTLER.filter((e) => e.seviye === 4).map((e) => e.id)
+    expect(oneri(new Set([...alt, 'tiz-segah-oktav']))).toEqual(['tiz-cargah-oktav'])
+    expect(oneri(new Set([...alt, ...s4]))).toEqual([])
+  })
+
   it('sıra: ısınma, güncel perde ×3, başpâre, etüt, diğer geçilen perdeler', () => {
     const plan = buildEveningPlan(
       girdi({

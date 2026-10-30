@@ -93,7 +93,8 @@ export interface TakipSonucu {
  * Seçili ölçülerin notaları (sus yok; `tie` ile bağlanan notalar ilkinde birleşir), `bas`/`son` = t0 + (girisVurus + vuruş) × 60 / bpm.
  * `olcu` indisi tüm etütteki indistir (`ilkOlcu` + dilim içi). Birleşen nota ilk notanın indislerini ve perdesini taşır;
  * bağ ölçü sınırını da aşabilir. Yalnız aynı perdeye bağlı `tie` birleşir (çalımla aynı kural);
- * farklı perdeye bağ iki ayrı nota verir.
+ * farklı perdeye bağ iki ayrı nota verir. Kesik (`kesik`, staccato) nota yalnız ilk yarısında sesli beklenir: `son`
+ * yarı noktadadır (çalımla aynı kural: bağlı zincirde yalnız son notanın kesiği sayılır); sonraki notanın `bas`ı değişmez.
  */
 export function beklenenNotalar(
   olcu: MusicEvent[][],
@@ -115,12 +116,16 @@ export function beklenenNotalar(
       const e = olcu[i][j]
       const bas = t0 + vurus * sn
       vurus += beats(e)
-      const son = t0 + vurus * sn
+      const bitis = t0 + vurus * sn
       if (e.kind === 'rest') {
         // Sus, bağı koparır (bağlı nota susa bağlanmış olamaz; olsa bile ilk nota kendi süresiyle kalır).
         bekleyen = null
         continue
       }
+      // Çalımla (`toToneEvents`) aynı kural: kesik nota, bir sonrakine aynı perdeyle bağlı değilse sürenin yarısında susar.
+      const sonraki = olcu[i][j + 1] ?? olcu[i + 1]?.[0]
+      const bagliDevam = e.tie && sonraki?.kind === 'note' && samePitch(e.pitch, sonraki.pitch)
+      const son = e.kesik && !bagliDevam ? bas + (bitis - bas) / 2 : bitis
       // Çalımla (`toToneEvents`) aynı kural: yalnız aynı perdeye bağlı `tie` birleşir.
       if (bekleyen && bekleyenPerde && samePitch(bekleyenPerde, e.pitch)) bekleyen.son = son
       else {

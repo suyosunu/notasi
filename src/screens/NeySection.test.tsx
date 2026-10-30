@@ -169,6 +169,17 @@ describe('NeySection', () => {
       expect(linkler[0]!.textContent).toContain('Aynı parmak: Dügâh–Hüseynî')
     })
 
+    it('"Seviye 4 etütleri" başlığı ve on dört etüt', async () => {
+      render(<NeySection />)
+      const baslik = await screen.findByRole('heading', { name: 'Seviye 4 etütleri' })
+      const linkler = within(baslik.nextElementSibling as HTMLElement).getAllByRole('link')
+      const beklenen = ETUTLER.filter((e) => e.seviye === 4)
+      expect(linkler).toHaveLength(14)
+      expect(linkler.map((a) => a.getAttribute('href'))).toEqual(beklenen.map((e) => `#/etut/${e.id}`))
+      expect(linkler[0]!.textContent).toContain('Oktav: Segâh–Tiz Segâh')
+      expect(linkler.at(-1)!.textContent).toContain('Usul: Devr-i Hindî')
+    })
+
     it('çalınan etütte ✓ vardır, çalınmayanda yoktur', async () => {
       await isaretEkle('calinanEtutler', 'tek-neva')
       render(<NeySection />)
@@ -196,7 +207,7 @@ describe('NeySection', () => {
       }
       render(<NeySection />)
       await screen.findByRole('heading', { name: 'Etütler' })
-      for (const e of ETUTLER.filter((x) => x.seviye === 1 || x.tur === 'usul' || x.tur === 'dil')) {
+      for (const e of ETUTLER.filter((x) => x.seviye === 1 || (x.seviye === 2 && (x.tur === 'usul' || x.tur === 'dil')))) {
         expect(etutSatiri(e.baslik).getAttribute('data-soluk'), e.id).toBe('false')
       }
       for (const e of ETUTLER.filter((x) => x.tur === 'dortlu')) {

@@ -534,3 +534,57 @@ describe('degerlendir', () => {
     })
   })
 })
+
+describe('kesik (staccato) notalar', () => {
+  const kesik = (pitch: WrittenPitch, dur: NoteEvent['dur'] = 'quarter', ek: Partial<NoteEvent> = {}) => nota(pitch, dur, { kesik: true, ...ek })
+
+  it('kesik nota yalnız ilk yarısında sesli beklenir; sonraki notanın başı değişmez', () => {
+    const olcu: MusicEvent[][] = [[kesik(RAST, 'half'), nota(DUGAH, 'half')]]
+    const [a, b] = beklenenNotalar(olcu, 0, T, 60, 10, 0)
+    expect(a.bas).toBe(10)
+    expect(a.son).toBe(11)
+    expect(b.bas).toBe(12)
+    expect(b.son).toBe(14)
+    // Noktalı kesik de yarısı kadar.
+    const [n] = beklenenNotalar([[nota(RAST, 'quarter', { dotted: true, kesik: true })]], 0, T, 60, 0, 0)
+    expect(n.son - n.bas).toBeCloseTo(0.75, 9)
+  })
+
+  it('bağlı zincirde yalnız son notanın kesiği sayılır; ortadaki kesik yok sayılır', () => {
+    const sonKesik: MusicEvent[][] = [[nota(RAST, 'quarter', { tie: true }), kesik(RAST)]]
+    const [a] = beklenenNotalar(sonKesik, 0, T, 60, 0, 0)
+    expect(a.bas).toBe(0)
+    expect(a.son).toBe(1.5)
+    const ortada: MusicEvent[][] = [[kesik(RAST, 'quarter', { tie: true }), nota(RAST)]]
+    const [b] = beklenenNotalar(ortada, 0, T, 60, 0, 0)
+    expect(b.son).toBe(2)
+  })
+
+  it('doğru çalınan kesik nota (yalnız ilk yarı sesli) kısa değil doğru sayılır', () => {
+    const olcu: MusicEvent[][] = [[kesik(RAST, 'half')]]
+    const notalar = beklenenNotalar(olcu, 0, T, 60, 10, 0)
+    const hz = soundingHz(RAST, T)
+    // 2 sn'lik kesik ikilikte ses 1 sn sürer, sonrası sessizdir (gecikme 0.12 sn ile 10.12–11.12).
+    const s = degerlendir(notalar, iz(notalar, 0.12, (n, _i, t) => (t < n.bas + 0.12 + 1 ? hz : null), 13), T)
+    expect(s.notalar.map((n) => n.durum)).toEqual(['dogru'])
+  })
+
+  it('aynı izle kesiksiz ikilik kısa sayılır; kesik ikilikte kısa denetimi çalışmaz', () => {
+    const hz = soundingHz(RAST, T)
+    const yariSesli = (n: BeklenenNota, t: number) => (t < n.bas + 0.12 + 1 ? hz : null)
+    const duz = beklenenNotalar([[nota(RAST, 'half')]], 0, T, 60, 10, 0)
+    expect(degerlendir(duz, iz(duz, 0.12, (n, _i, t) => yariSesli(n, t)), T).notalar[0].durum).toBe('kisa')
+    const kes = beklenenNotalar([[kesik(RAST, 'half')]], 0, T, 60, 10, 0)
+    expect(degerlendir(kes, iz(kes, 0.12, (n, _i, t) => yariSesli(n, t)), T).notalar[0].durum).toBe('dogru')
+  })
+
+  it('bağlı (legato) uzun nota değişmez: tam süre tutulan doğru, yarıda bırakılan kısa', () => {
+    const hz = soundingHz(RAST, T)
+    const bagli = beklenenNotalar([[nota(RAST, 'half', { bag: true }), nota(DUGAH, 'half')]], 0, T, 60, 10, 0)
+    expect(bagli[0].son - bagli[0].bas).toBe(2)
+    const tam = degerlendir(bagli, iz(bagli, 0.12, (n) => n.hz), T)
+    expect(tam.notalar[0].durum).toBe('dogru')
+    const yarim = degerlendir(bagli, iz(bagli, 0.12, (n, _i, t) => (t < n.bas + 0.12 + 1 ? hz : null)), T)
+    expect(yarim.notalar[0].durum).toBe('kisa')
+  })
+})
