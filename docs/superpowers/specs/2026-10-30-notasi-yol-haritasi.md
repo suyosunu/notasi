@@ -11,11 +11,12 @@ Bu belge uygulamanın tamamı için bir sıra önerir. Her seviyede neyin öğre
 ## 1. Bugün neredeyiz
 
 **Hazır olanlar (yayında):**
-- **Seviye 0–3 tam.** Her konunun önce dersi var, sonra alıştırması. Bunların yanında etütler, usul vurma ve hedeflerin işaretlendiği "Yolum" ekranı var.
+- **Seviye 0–4 tam.** Her konunun önce dersi var, sonra alıştırması. Bunların yanında etütler, usul vurma ve hedeflerin işaretlendiği "Yolum" ekranı var.
 - **Seviye 3 (2026-10-30).** Üçüncü kademe perdeleri, kademe geçiş etütleri, dörtlü ve beşliler, Rast ve Nevâ makamları ve "Yine Bağlandı Dil" aranağmesi.
+- **Seviye 4 (2026-10-30).** Tiz sesler, otuzikilik nota, bağsız-bağlı-kesik dil etütleri, çeşni, Bayâtî, Hüseynî, Muhayyer ve Kürdî makamları, Türk Aksağı ve Devr-i Hindî usulleri ve dört yeni eser.
 - **Ney araçları.** Kalibrasyon, akort göstergesi, uzun ses takibi, başpare koy-çek alıştırması ve nefes egzersizi.
-- **Parçalar.** 4 parça var: Dertli Dolap, Dağlar ile Taşlar ile, Hak Teâlâ ve Yine Bağlandı Dil aranağmesi. Her biri dinlenebilir; hız ayarlanabilir, usul eşliği açılabilir.
-- **Makam ve usul.** 4 makam ve 8 usul.
+- **Parçalar.** 8 parça var: Dertli Dolap, Dağlar ile Taşlar ile, Hak Teâlâ, Yine Bağlandı Dil aranağmesi, Allah Emrin Tutalım, Hicran Oku aranağmesi, Gül Yüzlülerin ve Çeçen Kızı. Her biri dinlenebilir; hız ayarlanabilir, usul eşliği açılabilir.
+- **Makam ve usul.** 8 makam ve 10 usul.
 - **Sesler.** Varsayılan ney sesi Shakuhachi. Usul için 6 ses seçeneği var; varsayılanı Tahta. İnsan sesi seçeneği deneme aşamasında.
 
 **Büyük eksik:**
@@ -78,11 +79,11 @@ Bu araçlar hem etütlerde hem parçalarda çalışır:
 
 perde-2 sorularındaki çeldirici havuzu da bu aşamada düzeltildi.
 
-### Adım 5 — Aşama D: Seviye 4 (orta-büyük)
-- **Ses ve teknik:** tiz sesler, dil teknikleri.
+### Adım 5 — Aşama D: Seviye 4 (orta-büyük) — yapıldı (2026-10-30)
+- **Ses ve teknik:** tiz sesler, otuzikilik nota, dil teknikleri (bağsız, bağlı, kesik).
 - **Makamlar:** Bayâtî, Hüseynî, Muhayyer, Kürdî.
-- **Usuller:** Türk aksağı, Devr-i Hindî.
-- **Eserler:** Uşşak saz semaisi, Çeçen Kızı, Bayâtî yürük semâî.
+- **Usuller:** Türk Aksağı, Devr-i Hindî.
+- **Eserler:** "Allah Emrin Tutalım", Hicran Oku aranağmesi, "Gül Yüzlülerin" (1–16. ölçü) ve Çeçen Kızı. Aziz Dede Uşşak saz semaisi Seviye 6'ya kaldı (Aksak Semâî 10/8, eser içinde usul değişimi, 1/32 ve üçleme gerektiriyor).
 
 ### Adım 6 — Ürün karar noktası (konuşma, küçük)
 Bu noktada neyin ilk yılı (Seviye 0–4) ve çalışma araçları sağlam olur; satılabilir bir çekirdek oluşur. Konuşulacaklar:

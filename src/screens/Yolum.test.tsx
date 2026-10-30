@@ -105,9 +105,9 @@ describe('Yolum', () => {
   it('hedefsiz seviyede özet ve "sonraki aşamalarda" metni görünür', async () => {
     render(<Yolum />)
     await screen.findByText('Neyin bölümlerini öğrendim')
-    const ozet = [...document.querySelectorAll('details')].find((d) => d.textContent?.includes('Seviye 4 ·'))!
-    expect(ozet.textContent).toContain('Seviye 4 · Tiz sesler, basit makamlar')
-    expect(ozet.textContent).toContain(SEVIYELER[4]!.ozet)
+    const ozet = [...document.querySelectorAll('details')].find((d) => d.textContent?.includes('Seviye 5 ·'))!
+    expect(ozet.textContent).toContain('Seviye 5 · Dem ve köprü perdeler')
+    expect(ozet.textContent).toContain(SEVIYELER[5]!.ozet)
     expect(ozet.textContent).toContain('Bu seviyenin hedefleri sonraki aşamalarda gelecek.')
   })
 
@@ -129,6 +129,25 @@ describe('Yolum', () => {
     expect(within(satir(makam.metin)).getByRole('img', { name: 'tamam' }).textContent).toBe('✓')
     const besli = SEVIYELER[3]!.hedefler.find((h) => h.id === 's3-besli')!
     expect(within(satir(besli.metin)).getByRole('img', { name: 'eksik' })).toBeTruthy()
+  })
+
+  it('Seviye 4 hedefleri listelenir; okunan çeşni dersi ve vurulan usul ✓', async () => {
+    await isaretEkle('okunanDersler', 'dortlu:cesni')
+    await isaretEkle('vurulanUsuller', 'turk-aksagi')
+    render(<Yolum />)
+    await screen.findByText('Neyin bölümlerini öğrendim')
+    const bolum = [...document.querySelectorAll('details')].find((d) => d.textContent?.includes('Seviye 4 ·'))!
+    expect(within(bolum as HTMLElement).getAllByRole('listitem')).toHaveLength(SEVIYELER[4]!.hedefler.length)
+    expect(bolum.textContent).not.toContain('Bu seviyenin hedefleri sonraki aşamalarda gelecek.')
+    expect(bolum.textContent).toContain('Tiz Nim Hicaz: 5 sn uzun ses')
+    expect(bolum.textContent).toContain('Oktav etütleri')
+    const git = (ad: string | RegExp) => within(satir(ad)).getByRole('link', { name: 'Git' }).getAttribute('href')
+    expect(git("Tiz Nevâ'ya kadar dizi")).toBe('#/etut/dizi-ussak-tiz')
+    expect(git('Devr-i Hindî usulünü vurdum')).toBe('#/usul/vur/devr-i-hindi')
+    expect(git("Çeçen Kızı'nı çaldım")).toBe('#/parcalar/cecen-kizi')
+    expect(within(satir('Çeşni ve üçlüler dersini okudum')).getByRole('img', { name: 'tamam' }).textContent).toBe('✓')
+    expect(within(satir('Türk Aksağı usulünü vurdum')).getByRole('img', { name: 'tamam' }).textContent).toBe('✓')
+    expect(within(satir('Yürük Semâî usulünü vurdum')).getByRole('img', { name: 'eksik' })).toBeTruthy()
   })
 
   it('Seviye 2 hedefleri liste olarak görünür; s2-ezgi onaylanabilir', async () => {

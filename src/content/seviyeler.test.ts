@@ -23,8 +23,8 @@ describe('SEVIYELER', () => {
     expect(SEVIYELER[1]).toMatchObject({ ad: 'İlk beş ses', sure: '3–10. hafta' })
   })
 
-  it('seviye 4–7 henüz hedefsizdir', () => {
-    for (const s of SEVIYELER.slice(4)) expect(s.hedefler).toEqual([])
+  it('seviye 5–7 henüz hedefsizdir', () => {
+    for (const s of SEVIYELER.slice(5)) expect(s.hedefler).toEqual([])
     expect(SEVIYELER[0]!.hedefler).toHaveLength(7)
     expect(SEVIYELER[1]!.hedefler).toHaveLength(10)
   })
@@ -265,6 +265,134 @@ describe('Seviye 3 hedefleri', () => {
       }
       if (x.rota) expect(rotaBilinir(x.rota), `${x.id} → ${x.rota}`).toBe(true)
     }
+  })
+})
+
+describe('Seviye 4 hedefleri', () => {
+  const s4 = SEVIYELER[4]!
+  const h = (id: string) => s4.hedefler.find((x) => x.id === id)!
+  const dorduncuKademe = NEY_PERDELER.filter((p) => p.kademe === 4)
+
+  it('kimlikler kararlaştırılan sırada; özet ve altı 4. kademe perdesi', () => {
+    expect(dorduncuKademe.map((p) => p.id)).toEqual([
+      'tiz-segah',
+      'tiz-cargah',
+      'tiz-neva',
+      'kapali-gerdaniye',
+      'kapali-muhayyer',
+      'tiz-nim-hicaz',
+    ])
+    expect(s4.hedefler.map((x) => x.id)).toEqual([
+      's4-nota',
+      ...dorduncuKademe.map((p) => `s4-${p.id}-5`),
+      's4-tiz',
+      's4-dizi-tiz',
+      's4-dil',
+      's4-vur-turk-aksagi',
+      's4-vur-yuruk-semai',
+      's4-vur-devr-i-hindi',
+      's4-usul-etut',
+      's4-cesni',
+      's4-makamlar',
+      's4-ilahi',
+      's4-hane',
+      's4-cecen',
+    ])
+    expect(s4.ozet).toBe(
+      'Tiz Segâh, Tiz Çârgâh, Tiz Nevâ, Tiz Nim Hicaz; kapalı Gerdâniye ve Muhayyer; bağsız, bağlı, kesik; Uşşak, Bayâtî, Hüseynî, Muhayyer, Kürdî, Hicaz; Türk Aksağı, Yürük Semâî, Devr-i Hindî.',
+    )
+  })
+
+  it('ölçütler, metinler ve rotalar kararlaştırıldığı gibi', () => {
+    expect(h('s4-nota')).toMatchObject({
+      metin: 'Tiz perde adları ve otuzikilik',
+      olcut: { tur: 'konular', topicIds: ['perde-6', 'sure-5'] },
+      rota: '/nota',
+    })
+    for (const p of dorduncuKademe) {
+      expect(h(`s4-${p.id}-5`)).toMatchObject({
+        metin: `${p.name}: 5 sn uzun ses`,
+        olcut: { tur: 'uzun-ses', perdeId: p.id, ms: 5000, cent: 20 },
+        rota: `/ney/${p.id}`,
+      })
+    }
+    expect(h('s4-tiz')).toMatchObject({
+      metin: 'Oktav etütleri',
+      olcut: {
+        tur: 'etutler',
+        etutIds: ['tiz-segah-oktav', 'tiz-cargah-oktav', 'tiz-neva-oktav', 'kapali-oktav', 'tiz-nim-hicaz-oktav'],
+      },
+      rota: '/ney',
+    })
+    expect(h('s4-dizi-tiz')).toMatchObject({
+      metin: "Tiz Nevâ'ya kadar dizi",
+      olcut: { tur: 'etutler', etutIds: ['dizi-ussak-tiz'] },
+      rota: '/etut/dizi-ussak-tiz',
+    })
+    expect(h('s4-dil')).toMatchObject({
+      metin: 'Üç farklı artikülasyon (bağsız, bağlı, kesik)',
+      olcut: { tur: 'etutler', etutIds: ['dil-2'] },
+      rota: '/etut/dil-2',
+    })
+    for (const [id, ad] of [
+      ['turk-aksagi', 'Türk Aksağı'],
+      ['yuruk-semai', 'Yürük Semâî'],
+      ['devr-i-hindi', 'Devr-i Hindî'],
+    ] as const) {
+      expect(h(`s4-vur-${id}`)).toMatchObject({
+        metin: `${ad} usulünü vurdum`,
+        olcut: { tur: 'usul-vurma', usulId: id },
+        rota: `/usul/vur/${id}`,
+      })
+    }
+    expect(h('s4-usul-etut')).toMatchObject({
+      metin: 'Türk Aksağı ve Devr-i Hindî etütleri',
+      olcut: { tur: 'etutler', etutIds: ['usul-turk-aksagi', 'usul-devr-i-hindi'] },
+    })
+    expect(h('s4-cesni')).toMatchObject({
+      metin: 'Çeşni ve üçlüler dersini okudum',
+      olcut: { tur: 'ders', dersId: 'dortlu:cesni' },
+    })
+    expect(h('s4-makamlar')).toMatchObject({
+      metin: 'Bayâtî, Hüseynî, Muhayyer, Kürdî ve Hicaz dizileri',
+      olcut: { tur: 'etutler', etutIds: ['dizi-bayati', 'dizi-huseyni', 'dizi-muhayyer', 'dizi-kurdi', 'dizi-hicaz'] },
+      rota: '/ney',
+    })
+    expect(h('s4-ilahi')).toMatchObject({
+      metin: 'Bir ilahiyi çaldım (Allah Emrin Tutalım ya da Dağlar ile Taşlar ile)',
+      olcut: { tur: 'onay' },
+      rota: '/parcalar/allah-emrin-tutalim',
+    })
+    expect(h('s4-hane')).toMatchObject({
+      metin: 'Bir eserin bir bölümünü metronomla çaldım (Gül Yüzlülerin ya da Hicran Oku aranağmesi)',
+      olcut: { tur: 'onay' },
+      rota: '/parcalar/gul-yuzlulerin',
+    })
+    expect(h('s4-cecen')).toMatchObject({
+      metin: "Çeçen Kızı'nı çaldım",
+      olcut: { tur: 'onay' },
+      rota: '/parcalar/cecen-kizi',
+    })
+  })
+
+  it('ders, etüt, konu, usul ve parça kimlikleri var; uzun ses perdeleri 4. kademe; rotalar çözülür', () => {
+    for (const x of s4.hedefler) {
+      if (x.olcut.tur === 'ders') expect(dersById(x.olcut.dersId), x.id).toBeTruthy()
+      if (x.olcut.tur === 'etutler') for (const id of x.olcut.etutIds) expect(ETUTLER.some((e) => e.id === id), `${x.id}:${id}`).toBe(true)
+      if (x.olcut.tur === 'konular') for (const id of x.olcut.topicIds) expect(NOTA_TOPICS.some((t) => t.id === id), `${x.id}:${id}`).toBe(true)
+      if (x.olcut.tur === 'usul-vurma') {
+        const { usulId } = x.olcut
+        expect(USULLER.find((u) => u.id === usulId)?.vurus, x.id).toBeTruthy()
+      }
+      if (x.olcut.tur === 'uzun-ses') {
+        const { perdeId } = x.olcut
+        expect(NEY_PERDELER.find((p) => p.id === perdeId)?.kademe, x.id).toBe(4)
+      }
+      if (x.rota) expect(rotaBilinir(x.rota), `${x.id} → ${x.rota}`).toBe(true)
+      if (x.rota?.startsWith('/parcalar/')) expect(PARCALAR.some((p) => '/parcalar/' + p.id === x.rota), x.id).toBe(true)
+    }
+    for (const id of ['allah-emrin-tutalim', 'daglar-ile-taslar-ile', 'gul-yuzlulerin', 'hicran-oku-aranagme', 'cecen-kizi'])
+      expect(PARCALAR.some((p) => p.id === id), id).toBe(true)
   })
 })
 

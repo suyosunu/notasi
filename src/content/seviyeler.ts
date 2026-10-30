@@ -253,6 +253,87 @@ const SEVIYE_3: Hedef[] = [
   },
 ]
 
+// Seviye 4'te 4. kademe (tiz) perdeleri NEY_PERDELER sırasıyla çalışılır; tizde süre kısa tutulur (öneri: 5 sn).
+const SEVIYE_4_USULLER = ['turk-aksagi', 'yuruk-semai', 'devr-i-hindi']
+
+const SEVIYE_4: Hedef[] = [
+  {
+    id: 's4-nota',
+    metin: 'Tiz perde adları ve otuzikilik',
+    olcut: { tur: 'konular', topicIds: ['perde-6', 'sure-5'] },
+    rota: '/nota',
+  },
+  ...NEY_PERDELER.filter((p) => p.kademe === 4).map(
+    (p): Hedef => ({
+      id: `s4-${p.id}-5`,
+      metin: `${p.name}: 5 sn uzun ses`,
+      olcut: { tur: 'uzun-ses', perdeId: p.id, ms: 5000, cent: 20 },
+      rota: `/ney/${p.id}`,
+    }),
+  ),
+  {
+    id: 's4-tiz',
+    metin: 'Oktav etütleri',
+    olcut: {
+      tur: 'etutler',
+      etutIds: ['tiz-segah-oktav', 'tiz-cargah-oktav', 'tiz-neva-oktav', 'kapali-oktav', 'tiz-nim-hicaz-oktav'],
+    },
+    rota: '/ney',
+  },
+  {
+    id: 's4-dizi-tiz',
+    metin: "Tiz Nevâ'ya kadar dizi",
+    olcut: { tur: 'etutler', etutIds: ['dizi-ussak-tiz'] },
+    rota: '/etut/dizi-ussak-tiz',
+  },
+  {
+    id: 's4-dil',
+    metin: 'Üç farklı artikülasyon (bağsız, bağlı, kesik)',
+    olcut: { tur: 'etutler', etutIds: ['dil-2'] },
+    rota: '/etut/dil-2',
+  },
+  ...SEVIYE_4_USULLER.map((id): Hedef => {
+    const ad = USULLER.find((u) => u.id === id)!.name
+    return {
+      id: `s4-vur-${id}`,
+      metin: `${ad} usulünü vurdum`,
+      olcut: { tur: 'usul-vurma', usulId: id },
+      rota: `/usul/vur/${id}`,
+    }
+  }),
+  {
+    id: 's4-usul-etut',
+    metin: 'Türk Aksağı ve Devr-i Hindî etütleri',
+    olcut: { tur: 'etutler', etutIds: ['usul-turk-aksagi', 'usul-devr-i-hindi'] },
+    rota: '/ney',
+  },
+  {
+    id: 's4-cesni',
+    metin: 'Çeşni ve üçlüler dersini okudum',
+    olcut: { tur: 'ders', dersId: 'dortlu:cesni' },
+    rota: dersRotasi('dortlu:cesni'),
+  },
+  {
+    id: 's4-makamlar',
+    metin: 'Bayâtî, Hüseynî, Muhayyer, Kürdî ve Hicaz dizileri',
+    olcut: { tur: 'etutler', etutIds: ['dizi-bayati', 'dizi-huseyni', 'dizi-muhayyer', 'dizi-kurdi', 'dizi-hicaz'] },
+    rota: '/ney',
+  },
+  {
+    id: 's4-ilahi',
+    metin: 'Bir ilahiyi çaldım (Allah Emrin Tutalım ya da Dağlar ile Taşlar ile)',
+    olcut: { tur: 'onay' },
+    rota: '/parcalar/allah-emrin-tutalim',
+  },
+  {
+    id: 's4-hane',
+    metin: 'Bir eserin bir bölümünü metronomla çaldım (Gül Yüzlülerin ya da Hicran Oku aranağmesi)',
+    olcut: { tur: 'onay' },
+    rota: '/parcalar/gul-yuzlulerin',
+  },
+  { id: 's4-cecen', metin: "Çeçen Kızı'nı çaldım", olcut: { tur: 'onay' }, rota: '/parcalar/cecen-kizi' },
+]
+
 export const SEVIYELER: Seviye[] = [
   {
     no: 0,
@@ -286,8 +367,8 @@ export const SEVIYELER: Seviye[] = [
     no: 4,
     ad: 'Tiz sesler, basit makamlar',
     sure: '9–13. ay',
-    ozet: 'Tiz sesler ve dil teknikleri; Uşşak, Bayâtî, Hüseynî, Muhayyer, Kürdî, Hicaz; Aksak, Yürük Semâî, Devr-i Hindî.',
-    hedefler: [],
+    ozet: 'Tiz Segâh, Tiz Çârgâh, Tiz Nevâ, Tiz Nim Hicaz; kapalı Gerdâniye ve Muhayyer; bağsız, bağlı, kesik; Uşşak, Bayâtî, Hüseynî, Muhayyer, Kürdî, Hicaz; Türk Aksağı, Yürük Semâî, Devr-i Hindî.',
+    hedefler: SEVIYE_4,
   },
   {
     no: 5,

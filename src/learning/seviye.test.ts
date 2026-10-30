@@ -184,10 +184,10 @@ describe('mevcutSeviye ve siradakiHedef', () => {
     expect(siradakiHedef(s, d)!.id).toBe('s2-nota')
   })
 
-  it('hepsi tamamsa mevcut seviye 4 (hedefsiz); sıradaki hedef null', () => {
+  it('hepsi tamamsa mevcut seviye 5 (hedefsiz); sıradaki hedef null', () => {
     const d = hepsiTamam()
     const s = mevcutSeviye(SEVIYELER, d)
-    expect(s.no).toBe(4)
+    expect(s.no).toBe(5)
     expect(siradakiHedef(s, d)).toBeNull()
   })
 

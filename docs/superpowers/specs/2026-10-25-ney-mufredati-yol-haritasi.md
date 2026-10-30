@@ -38,7 +38,7 @@ Bütün seviyelerde geçerli kurallar (kaynakların ortak noktası):
 | **1 İlk beş ses** | 3–10. hafta | Porte, sol anahtarı, süreler, sus, ölçü çizgisi, nefes işareti; perde ↔ solfej eşlemesi | **Nevâ → Çârgâh → Segâh → Dügâh → Rast** (her ses için ≈1 hafta uzun ses) | — | Tek ve iki perde etütleri, ♩ = 60–80; rast beşlisi etüdü | Rast gür ve sağlam; beş sesin hepsi akort içinde; her seste en az 8 sn (öneri) |
 | **2 Ara sesler, ilk usuller** | 2,5–5. ay | Diyez, bemol, Türk müziği koma işaretleri; noktalı nota, onaltılık, üçleme; usul kavramı | Ara sesler: Nim Hicaz, Kürdî, Bûselik; dille başlatma ve bağlı çalma | Usuller: **Nim Sofyan → Semâî → Sofyan**. Çârgâh, Kürdî ve Hicaz dörtlüleri tanıtılır | Usul etütleri; seviye sonunda uzun seslerden oluşan basit ilahi ve türküler | Yedi perde akort içinde; üç usulde birer etüt; bir ezgi ezbere |
 | **3 Üçüncü kademe, ilk makam** | 5–9. ay | Dörtlüler ve beşliler; makamın unsurları (dizi, durak, güçlü, yeden, seyir) | Hüseynî, Acem, açık Gerdâniye, açık Muhayyer; sonra Eviç, Nim Şehnaz, Nim Hisar; kapalı Nevâ; **kademe geçiş etütleri** | **Rast → Nevâ** | Rast beşlisi etütleri; "Yine Bağlandı Dil" aranağmesi (Zekâî Dede); "Yine bir gülnihal" ve Rast peşrevi Aşama E'ye taşındı | Rast–Muhayyer arası bütün sesler; 2. ve 3. kademe arasında kırılmadan geçiş; bir eser (Yine Bağlandı Dil aranağmesi) |
-| **4 Tiz sesler, basit makamlar** | 9–13. ay | Çeşni; basit makamların seyri | Tiz Segâh, Çârgâh, Nim Hicaz, Nevâ; dil teknikleri (legato, staccato) | **Uşşak → Bayâtî → Hüseynî → Muhayyer; Kürdî, Hicaz**. Usuller: Türk aksağı, Yürük Semâî, Devr-i Hindî | Aziz Dede Uşşak saz semaisi; "Dağlar ile taşlar ile"; Tanburi Cemil Bey Muhayyer peşrevi; Bayâtî yürük semâî | Tiz Nevâ'ya kadar dizi; üç farklı artikülasyon; bir hane ve bir ilahi |
+| **4 Tiz sesler, basit makamlar** | 9–13. ay | Çeşni; basit makamların seyri | Tiz Segâh, Tiz Çârgâh, Tiz Nevâ, Tiz Nim Hicaz; kapalı Gerdâniye ve kapalı Muhayyer; dil teknikleri (bağsız, bağlı, kesik) | **Uşşak → Bayâtî → Hüseynî → Muhayyer; Kürdî, Hicaz**. Usuller: Türk aksağı, Yürük Semâî, Devr-i Hindî | "Allah Emrin Tutalım" (Zekâî Dede); "Dağlar ile Taşlar ile"; Hicran Oku aranağmesi (Şevki Bey); "Gül Yüzlülerin" (Tab'î Mustafa Efendi, 1–16. ölçü); Çeçen Kızı (Tanburi Cemil Bey) | Tiz Nevâ'ya kadar dizi; üç farklı artikülasyon; bir ilahi, bir eserin bir bölümü ve Çeçen Kızı |
 | **5 Dem ve köprü perdeler** | 13–17. ay | Şed makam, transpoze, geçki | Dem sesler (Yegâh, kaba Çârgâh, kaba Dügâh, kaba Rast); köprü perdeler (Irak, Acemaşiran, Hüseynîaşiran) | **Segâh, Bûselik, Karcığar, Acemaşiran, Nihâvend**. Usuller: Düyek, Aksak | Yusuf Paşa Segâh peşrevi; Salih Dede Acemaşiran peşrevi; Segâh ilahisi | Yegâh–tiz Nevâ arası 2,5 oktav akort içinde; düyek ya da aksak usulünde bir eser |
 | **6 Süslemeler** | 17–21. ay | Nüans işaretleri | Çarpma, portamento, **vibrato**; ara perdelerin tamamı | Hüzzam, Sabâ, Mâhur, Hicazkâr, Nikriz…; Aksak Semâî | Saz semaisinin tamamı; Rauf Yekta Mâhur peşrevi | Kontrollü vibrato; bir saz semaisinin tamamı |
 | **7 Taksime giriş** | 21–24. ay | Açış ve taksim türleri | Kaba ara sesler, geveşt; farklı ahenkte ney | Bildiği makamlarda açış ve taksim | Peşrev ve saz semaisi çifti | Bir makamda kısa taksim ve ardından o makamda bir eser |
@@ -87,10 +87,15 @@ Aşama C ile bu seviye tamamlandı (2026-10-30).
 - ✅ **Yolum:** Seviye 3'ün hedefleri tanımlı.
 
 ### Seviye 4
-- ❌ **Tiz sesler ve dil teknikleri:** Yok.
-- 🟡 **Makamlar:** Uşşak ve Hicaz var. Bayâtî, Hüseynî, Muhayyer ve Kürdî yok.
-- 🟡 **Usuller:** Yürük Semâî var. Türk aksağı ve Devr-i Hindî yok.
-- 🟡 **Eserler:** "Dağlar ile Taşlar ile" var ve bu seviyeye ait. "Hak Teâlâ" (Uşşak, 3. kademe sesleri gerektiriyor) seviye 3–4'e ait. Çeçen Kızı bu seviyeye uyar.
+Aşama D ile bu seviye tamamlandı (2026-10-30).
+- ✅ **Tiz sesler:** Tiz Segâh, Tiz Çârgâh, Tiz Nevâ, kapalı Gerdâniye, kapalı Muhayyer ve Tiz Nim Hicaz; her birinin dersi, parmak şeması ve 5 sn uzun ses hedefi var. Beş oktav etüdü ve Uşşak'ta Tiz Nevâ'ya kadar dizi etüdü eklendi.
+- ✅ **Nota okuma:** "Tiz perdeler" ve "Otuzikilik" konuları; porte, etüt ve parçalar otuzikilik notayı gösterir ve çalar.
+- ✅ **Dil teknikleri:** Bağsız, bağlı ve kesik (staccato) çalma dersi ve üç artikülasyonu birlikte içeren `dil-2` etüdü. Kesik işareti bu uygulamadaki gösterimdir; kaynaklar Türk müziği notasında standart bir işaret vermez.
+- ✅ **Çeşni ve üçlüler:** Çeşni dersi.
+- ✅ **Makamlar:** Bayâtî, Hüseynî, Muhayyer ve Kürdî eklendi (Uşşak ve Hicaz zaten vardı). Her birinin dersi ve dizi etüdü var.
+- ✅ **Usuller:** Türk Aksağı (5/8), Devr-i Hindî (7/8) ve Yürük Semâî'nin 6/4 yazılışı eklendi; ilk ikisinin vurma alıştırması ve etüdü var. 5/8 ve 7/8 ölçüler porte, etüt ve çalma tarafında doğru sayılır.
+- ✅ **Eserler:** "Allah Emrin Tutalım" (Uşşak ilahisi, Zekâî Dede), "Dağlar ile Taşlar ile", Hicran Oku aranağmesi (Hüseynî, Türk Aksağı), "Gül Yüzlülerin" (Bayâtî, Yürük Semâî, 1–16. ölçü) ve Çeçen Kızı (Hüseynî, Nim Sofyan; otuzikilik desteğiyle tam).
+- ✅ **Yolum:** Seviye 4'ün hedefleri tanımlı.
 
 ### Seviye 5–7
 - 🟡 **Usuller:** Düyek ve Aksak var.
@@ -138,11 +143,14 @@ Her aşama tamamlandığında uygulama o seviyeyi eksiksiz destekler. Kullanıc�
 4. Makam: Nevâ.
 5. Eser: "Yine Bağlandı Dil" aranağmesi (Zekâî Dede, Nevâ). "Hak Teâlâ" bu seviyeye bağlanır. "Yine bir gülnihal" ve Benli Hasan Ağa Rast peşrevi Aşama E'ye taşındı (aşağıya bakın).
 
-**Aşama D: Seviye 4**
-1. Tiz sesler ve dil teknikleri etütleri.
+**Aşama D: Seviye 4** — **tamamlandı ve yayında (2026-10-30)**; plan: `docs/superpowers/plans/2026-10-30-asama-d.md`
+1. Tiz sesler (Tiz Segâh, Tiz Çârgâh, Tiz Nevâ, Tiz Nim Hicaz, kapalı Gerdâniye ve kapalı Muhayyer), otuzikilik nota ve dil teknikleri etütleri (bağsız, bağlı, kesik).
 2. Makamlar: Bayâtî, Hüseynî, Muhayyer, Kürdî.
-3. Usuller: Türk aksağı, Devr-i Hindî.
-4. Eserler: Aziz Dede Uşşak saz semaisi, Çeçen Kızı (otuzikilik nota desteğiyle), Bayâtî yürük semâî. "Dağlar ile Taşlar ile" bu seviyeye bağlanır.
+3. Usuller: Türk Aksağı, Devr-i Hindî.
+4. Eserler: "Allah Emrin Tutalım", "Dağlar ile Taşlar ile", Hicran Oku aranağmesi, "Gül Yüzlülerin" (1–16. ölçü) ve Çeçen Kızı (otuzikilik nota desteğiyle tam).
+5. Eser değişikliği: Aziz Dede'nin Uşşak saz semaisi Seviye 6'ya kaldı; Aksak Semâî 10/8, eser içinde usul değişimi, 1/32 ve üçleme gerektiriyor. Yerine Uşşak ilahisi "Allah Emrin Tutalım" geldi.
+6. Muhayyer ve Kürdî için bu seviyede eser yok; ikisi dizi etüdü ve dersle çalışılır.
+7. Çeçen Kızı otuzikilik desteğiyle tam olarak eklendi.
 
 **Aşama E: Seviye 5**
 1. Dem sesler ve köprü perdeler, Irak dahil (parmak şeması kaynaktan doğrulanabilirse).
