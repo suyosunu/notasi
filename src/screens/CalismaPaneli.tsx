@@ -104,7 +104,7 @@ function say(adlar: string[]): [string, number][] {
 
 /**
  * Takip sonucunun özeti: başlık ("16 notadan 12'si doğru."; hiçbir nota değerlendirilemediyse yavaşlama önerisi), varsa
- * ayrıntı satırları (pes, tiz, başka perde, duyulmadı, kısa tutuldu, değerlendirilmeyen) ve tanılama satırı (gecikme ve
+ * ayrıntı satırları (pes, tiz, bir oktav pes/tiz, başka perde, duyulmadı, kısa tutuldu, değerlendirilmeyen) ve tanılama satırı (gecikme ve
  * kaynağı, nota pencerelerindeki ses oranı, kısa/uzun notalarda doğru sayısı, ortanca sapma, turun temposu). Perde adı
  * beklenen notanın yazılı perdesinden (`NEY_PERDELER`; listede yoksa solfej adı); `olcu` sonucun ölçü indislerinin
  * işaret ettiği (bütün) nota dizisidir.
@@ -121,11 +121,14 @@ export function takipOzeti(
   }
   const durumda = (d: TakipDurumu) => sonuc.notalar.filter((s) => s.durum === d)
   const satirlar: string[] = []
-  for (const [d, etiket] of [
-    ['pes', 'Pes'],
-    ['tiz', 'Tiz'],
+  // Bir oktav pes/tiz çalınanlar (`oktav` alanı; yalnız katlama kapalıyken) sıradan pes/tizden ayrı satırdadır.
+  for (const [d, oktav, etiket] of [
+    ['pes', false, 'Pes'],
+    ['tiz', false, 'Tiz'],
+    ['pes', true, 'Bir oktav pes'],
+    ['tiz', true, 'Bir oktav tiz'],
   ] as const) {
-    const sayim = say(durumda(d).map(ad))
+    const sayim = say(durumda(d).filter((s) => (s.oktav !== undefined) === oktav).map(ad))
     if (sayim.length) satirlar.push(`${etiket}: ${sayim.map(([a, k]) => `${a} (${k})`).join(', ')}`)
   }
   const yanlis = say(durumda('yanlis').map((s) => `${ad(s)} yerine ${s.calinan ?? 'başka bir perde'}`))
@@ -179,8 +182,10 @@ export function CalismaPaneli(props: {
   beamBeats?: number
   durdurRef?: { current: (() => void) | null }
   takip?: boolean
+  /** Takipte oktav hatası doğru sayılır (varsayılan true); tiz etütlerde false: bir oktav pes/tiz çalınan nota hata sayılır. */
+  oktavKatla?: boolean
 }): JSX.Element {
-  const { olcu, soz, usul, varsayilanBpm, bpmMin, bpmMax, olcuPerSatir, beamBeats, durdurRef, takip } = props
+  const { olcu, soz, usul, varsayilanBpm, bpmMin, bpmMax, olcuPerSatir, beamBeats, durdurRef, takip, oktavKatla = true } = props
   const [settings, setSettings] = useState<Settings | null>(null)
   const [bpm, setBpm] = useState(varsayilanBpm)
   const [eslik, setEslik] = useState(true)
@@ -482,7 +487,7 @@ export function CalismaPaneli(props: {
         setWarn({ metin: SES_BASLAMADI })
         return
       }
-      const takipSonucu = degerlendir(beklenenNotalar(dilim, bas, tuning, tempo, t0, kod.girisVurus), ornekler, tuning)
+      const takipSonucu = degerlendir(beklenenNotalar(dilim, bas, tuning, tempo, t0, kod.girisVurus), ornekler, tuning, { oktavKatla })
       setSonuc({ sonuc: takipSonucu, tempo })
     } catch {
       if (run === runRef.current) setWarn({ metin: SOUND_WARNING })

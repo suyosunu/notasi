@@ -60,6 +60,19 @@ export interface NotaSonucu {
   sent: number | null
   /** 'yanlis' iken en yakın perdenin adı */
   calinan?: string
+  /**
+   * Oktav katlaması kapalıyken (`oktavKatla: false`) nota hedefin bir oktav altında (−1, `pes`) ya da üstünde (1, `tiz`)
+   * çalındıysa; `sent` o zaman oktav içindeki sapmadır. Doğru oktavda ya da katlama açıkken yoktur.
+   */
+  oktav?: -1 | 1
+}
+/** `degerlendir` seçenekleri. */
+export interface DegerlendirSecenek {
+  /**
+   * Hedefin ±1200 sent çevresi katlanır (oktav hatası doğru sayılır; varsayılan true). Kapalıyken bir oktav pes/tiz çalınan
+   * nota `pes`/`tiz` olur ve `oktav` taşır (tiz etütlerinde oktav hatası asıl hatadır).
+   */
+  oktavKatla?: boolean
 }
 /**
  * Gecikmenin kaynağı: `olcum` = izden bulundu, `varsayilan` = yeterli eşleşme yok (kestirilemedi),
@@ -139,14 +152,18 @@ export function beklenenNotalar(
   return sonuc
 }
 
+/** Hedefe sent `c`; ±1200'e 100 sentten yakınsa o oktava katlanır: katlanmış sapma ve oktav kayması (−1 pes, 0 yok, 1 tiz). */
+function oktavAyir(c: number): { sent: number; oktav: -1 | 0 | 1 } {
+  for (const k of [-1, 1] as const) {
+    const f = c - 1200 * k
+    if (Math.abs(f) < OKTAV_KATLAMA_SENT) return { sent: f, oktav: k }
+  }
+  return { sent: c, oktav: 0 }
+}
+
 /** Hedefe sent; ±1200'e 100 sentten yakınsa o oktava katlanır (oktav hatası doğru sayılır). */
 export function katlanmisSent(hz: number, hedefHz: number): number {
-  const c = centsBetween(hz, hedefHz)
-  for (const k of [-1, 1]) {
-    const f = c - 1200 * k
-    if (Math.abs(f) < OKTAV_KATLAMA_SENT) return f
-  }
-  return c
+  return oktavAyir(centsBetween(hz, hedefHz)).sent
 }
 
 /** En yakın ney perdesinin kaydı (NEY_PERDELER, soundingHz ile; oktav katlanmadan). */
@@ -237,8 +254,16 @@ export function gecikmeBul(notalar: BeklenenNota[], ornekler: TakipOrnegi[]): nu
  * değilse eşikler: ≤ 25 doğru, ≤ 70 pes/tiz, ötesi yanlış. Pencere 0.04 sn'den kısaysa nota değerlendirilmez
  * (`atlanan`). Tanılama alanları (gecikme kaynağı, pencere içi sesli oran, kısa/uzun sayımı, ortanca sapma) da
  * döner. `ornekler` zamana göre sıralı olmak zorunda değildir (sıralı kopya kullanılır, girdi değişmez).
+ * `oktavKatla: false` ise hedefin bir oktav altı/üstü çalınan nota katlanmaz: `pes`/`tiz` olur ve `oktav` taşır
+ * (gecikme aramasında katlama her zaman açıktır).
  */
-export function degerlendir(notalar: BeklenenNota[], ornekler: TakipOrnegi[], tuning: Tuning): TakipSonucu {
+export function degerlendir(
+  notalar: BeklenenNota[],
+  ornekler: TakipOrnegi[],
+  tuning: Tuning,
+  secenek: DegerlendirSecenek = {},
+): TakipSonucu {
+  const oktavKatla = secenek.oktavKatla ?? true
   const { ms: gecikmeMs, kaynak: gecikmeKaynagi } = gecikmeKestir(notalar, ornekler)
   const kayma = gecikmeMs / 1000
   const sirali = zamanaGoreSirala(ornekler)
@@ -272,7 +297,10 @@ export function degerlendir(notalar: BeklenenNota[], ornekler: TakipOrnegi[], tu
       say(sure, r)
       continue
     }
-    const m = median(sesli.map((o) => katlanmisSent(o.hz, n.hz)))
+    // Katlama kapalıyken ham medyan alınır, sonra oktava ayrılır (sapma oktav içinde ölçülür).
+    const { sent: m, oktav } = oktavKatla
+      ? { sent: median(sesli.map((o) => katlanmisSent(o.hz, n.hz))), oktav: 0 as const }
+      : oktavAyir(median(sesli.map((o) => centsBetween(o.hz, n.hz))))
     // Bir koma komşusu: beklenen perde ney perdesiyse medyan sesin (katlanmış, beklenen oktavda) en yakın perdesine bakılır.
     const beklenenPerde = NEY_PERDELER.find((p) => samePitch(p.written, n.perde))
     const komsu =
@@ -284,6 +312,7 @@ export function degerlendir(notalar: BeklenenNota[], ornekler: TakipOrnegi[], tu
     else if (Math.abs(m) <= TAKIP_TOLERANS_SENT) r = { olcu: n.olcu, nota: n.nota, durum: 'dogru', sent: m }
     else if (Math.abs(m) <= YANLIS_PERDE_SENT) r = { olcu: n.olcu, nota: n.nota, durum: m < 0 ? 'pes' : 'tiz', sent: m }
     else r = { olcu: n.olcu, nota: n.nota, durum: 'yanlis', sent: m, calinan: enYakinPerde(median(sesli.map((o) => o.hz)), tuning) }
+    if (oktav !== 0 && r.durum !== 'yanlis') r = { ...r, durum: oktav < 0 ? 'pes' : 'tiz', oktav }
     if (sure >= KISA_DENETIM_SURE_S && r.durum !== 'yanlis') {
       // Kuyrukta hiç örnek yoksa (kayıt notanın ortasında bitti) nota kısa sayılmaz; yalnız örnekli ama sessiz kuyruk sayılır.
       const kuyruk = aralik(sirali, n.son + kayma - 0.35 * sure, n.son + kayma - 0.05 * sure)

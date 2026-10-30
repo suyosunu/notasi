@@ -267,6 +267,44 @@ describe('degerlendir', () => {
     expect(s.notalar[3].sent).toBeCloseTo(40, 0)
   })
 
+  describe('oktav katlama seçeneği', () => {
+    /** Dört dörtlük, `kayma` sentle (ör. −1200 = bir oktav pes) çalınır; `secenek` degerlendir'e geçer. */
+    const kos = (kayma: number, secenek?: { oktavKatla?: boolean }) => {
+      const { notalar, hzler } = dortluk()
+      return degerlendir(notalar, iz(notalar, 0.12, (_n, i) => sentAt(hzler[i], kayma)), T, secenek).notalar
+    }
+
+    it('katlama açıkken (varsayılan) bir oktav pes ya da tiz çalınan nota doğru sayılır, oktav alanı yoktur', () => {
+      for (const kayma of [-1200, 1200]) {
+        for (const secenek of [undefined, { oktavKatla: true }]) {
+          const r = kos(kayma, secenek)
+          expect(r.map((n) => n.durum)).toEqual(['dogru', 'dogru', 'dogru', 'dogru'])
+          expect(r.every((n) => n.oktav === undefined)).toBe(true)
+        }
+      }
+    })
+
+    it('katlama kapalıyken bir oktav pes nota "pes", bir oktav tiz nota "tiz" olur ve oktav alanı taşır', () => {
+      const pes = kos(-1200, { oktavKatla: false })
+      expect(pes.map((n) => n.durum)).toEqual(['pes', 'pes', 'pes', 'pes'])
+      expect(pes.every((n) => n.oktav === -1)).toBe(true)
+      expect(pes[0].sent).toBeCloseTo(0, 0) // sapma oktav içinde ölçülür
+      const tiz = kos(1200, { oktavKatla: false })
+      expect(tiz.map((n) => n.durum)).toEqual(['tiz', 'tiz', 'tiz', 'tiz'])
+      expect(tiz.every((n) => n.oktav === 1)).toBe(true)
+    })
+
+    it('katlama kapalıyken doğru oktavdaki nota yine doğru; pes/tiz ve yanlış sınıflaması değişmez, oktav alanı yoktur', () => {
+      const { notalar, hzler } = dortluk()
+      const sapma = [0, -40, 0, 0]
+      const s = degerlendir(notalar, iz(notalar, 0.12, (_n, i) => sentAt(hzler[i], sapma[i])), T, { oktavKatla: false })
+      expect(s.notalar.map((n) => n.durum)).toEqual(['dogru', 'pes', 'dogru', 'dogru'])
+      expect(s.notalar.every((n) => n.oktav === undefined)).toBe(true)
+      // Oktav dışında da yanlış perde yine yanlış (örn. +300 sent, oktav yok).
+      expect(kos(300, { oktavKatla: false }).map((n) => n.durum)).toEqual(['yanlis', 'yanlis', 'yanlis', 'yanlis'])
+    })
+  })
+
   describe('bir koma komşu perdeler', () => {
     /** Dört dörtlük aynı perde, hepsi `sapma` sentle çalınır. */
     const kos = (perde: WrittenPitch, sapma: number) => {

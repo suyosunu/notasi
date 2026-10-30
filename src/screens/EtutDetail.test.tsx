@@ -9,7 +9,14 @@ import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
 import { USULLER } from '../content/usuller'
 import { DEFAULT_TUNING } from '../music/ahenk'
 import { getSettings, isaretEkle, resetDbForTests, saveSettings } from '../store/db'
+import { CalismaPaneli } from './CalismaPaneli'
 import { EtutCalisma, EtutDetail, olcuPerSatir } from './EtutDetail'
+
+// Çalışma paneli gerçek çalışır; yalnız aldığı özellikler (oktavKatla) sınanabilsin diye sarılır.
+vi.mock('./CalismaPaneli', async (orig) => {
+  const m = await orig<typeof import('./CalismaPaneli')>()
+  return { ...m, CalismaPaneli: vi.fn(m.CalismaPaneli) }
+})
 
 vi.mock('../audio/player', () => ({
   unlockAudio: vi.fn(() => Promise.resolve()),
@@ -368,6 +375,16 @@ describe('EtutCalisma', () => {
     const btn = screen.getByRole('button', { name: '🎤 Dinlesin' })
     expect(document.querySelector('.calisma-cubugu')!.contains(btn)).toBe(true)
     expect(screen.getByText(/^Deneme: telefonu neyin önüne koy\./)).toBeTruthy()
+  })
+
+  it('tiz etütte takip oktavı katlamaz (oktavKatla=false); diğer etütlerde katlar', () => {
+    const son = () => vi.mocked(CalismaPaneli).mock.calls.at(-1)![0]
+    const tiz = ETUTLER.find((e) => e.tur === 'tiz')!
+    render(<EtutCalisma etut={tiz} />)
+    expect(son().oktavKatla).toBe(false)
+    cleanup()
+    render(<EtutCalisma etut={NEVA} />)
+    expect(son().oktavKatla).not.toBe(false)
   })
 
   it('baslikGizle: başlık çizilmez (akşam adımında üst başlık vardır)', () => {

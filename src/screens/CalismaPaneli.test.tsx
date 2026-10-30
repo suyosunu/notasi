@@ -590,6 +590,35 @@ describe('CalismaPaneli: mikrofonla takip', () => {
     sonucYok()
   })
 
+  describe('oktav katlama', () => {
+    /** Dört ölçülük DORTLUK'u `kayma` sentle çalıp sonucu bekler (♩ = 60, giriş 4: k. nota 14 + k sn). */
+    async function oktavKos(kayma: number, ek: Partial<Parameters<typeof CalismaPaneli>[0]>) {
+      panel({ olcu: DORTLUK, olcuPerSatir: 1, takip: true, ...ek })
+      await takipBaslat()
+      vi.mocked(sonIsaret).mockReturnValue(10)
+      const hedef = DORTLUK.flat().map((e) => soundingHz((e as Extract<MusicEvent, { kind: 'note' }>).pitch, DEFAULT_TUNING))
+      for (let i = 0; i < 800; i++) {
+        vi.mocked(sesSaatiSimdi).mockReturnValue(14 + i * 0.02 + ANALIZ_PENCERESI_S)
+        micOrnek!({ t: 0, hz: hedef[Math.floor(i / 50)]! * 2 ** (kayma / 1200), clarity: 1 })
+      }
+      finishPlay()
+      await screen.findByText(/^16 notadan /, {}, SONUC_BEKLE)
+    }
+
+    it('varsayılan: bir oktav pes çalınan notalar doğru sayılır', async () => {
+      await oktavKos(-1200, {})
+      expect(screen.getByText("16 notadan 16'sı doğru.")).toBeTruthy()
+      expect(screen.queryByText(/Bir oktav/)).toBeNull()
+    })
+
+    it('oktavKatla={false} (tiz etütler): bir oktav pes çalınan notalar pes sayılır ve özette "Bir oktav pes" yazar', async () => {
+      await oktavKos(-1200, { oktavKatla: false })
+      expect(screen.getByText("16 notadan 0'ı doğru.")).toBeTruthy()
+      expect(screen.getByText('Bir oktav pes: Rast (4), Dügâh (4), Bûselik (4), Do (4)')).toBeTruthy()
+      expect(document.querySelectorAll('[data-durum="pes"]')).toHaveLength(16)
+    })
+  })
+
   it('hiç çalınmazsa bütün notalar duyulmadı, gecikme varsayılan; yeni çalım ya da yeni seçim sonucu temizler', async () => {
     panel({ olcu: DORTLUK, olcuPerSatir: 1, takip: true })
     await sonucUret()
@@ -877,6 +906,24 @@ describe('takipOzeti', () => {
       '3 nota çok kısa olduğu için değerlendirilmedi.',
     ])
     expect(o.tani).toBe(TANI)
+  })
+
+  it('bir oktav pes/tiz çalınan notalar ayrı satırda "Bir oktav pes/tiz" diye sayılır; sıradan pes/tiz sayısına karışmaz', () => {
+    const k = (olcu: number, nota: number, durum: TakipDurumu, oktav?: -1 | 1) => ({
+      ...n(olcu, nota, durum),
+      ...(oktav ? { oktav } : {}),
+    })
+    const o = takipOzeti(
+      sonuc([k(0, 3, 'pes', -1), k(0, 3, 'pes', -1), k(0, 0, 'pes'), k(0, 1, 'tiz', 1), k(0, 2, 'tiz')]),
+      OLCU,
+      60,
+    )
+    expect(o.satirlar).toEqual([
+      'Pes: Segâh (1)',
+      'Tiz: Çârgâh (1)',
+      'Bir oktav pes: Nevâ (2)',
+      'Bir oktav tiz: Dügâh (1)',
+    ])
   })
 
   it('hepsi doğruysa ek satır yok; listede olmayan perde solfej adıyla', () => {

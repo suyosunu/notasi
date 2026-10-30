@@ -67,6 +67,7 @@ export function EtutCalisma(props: { etut: Etut; onDone?: () => void; baslikGizl
         beamBeats={KIRIS_VURUSU}
         durdurRef={durdurRef}
         takip
+        oktavKatla={etut.tur !== 'tiz'}
       />
 
       <div class="tools etut-caldim">
