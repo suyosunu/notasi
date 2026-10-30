@@ -9,7 +9,9 @@ import {
   degerlendir,
   enYakinPerde,
   gecikmeBul,
+  gecikmeKestir,
   katlanmisSent,
+  KOMA_AYIRT_SENT,
   VARSAYILAN_GECIKME_MS,
   type BeklenenNota,
   type TakipOrnegi,
@@ -21,6 +23,13 @@ const DUGAH: WrittenPitch = { step: 'A', octave: 4, acc: 0 }
 const SEGAH: WrittenPitch = { step: 'B', octave: 4, acc: -1 }
 const CARGAH: WrittenPitch = { step: 'C', octave: 5, acc: 0 }
 const NEVA: WrittenPitch = { step: 'D', octave: 5, acc: 0 }
+const BUSELIK: WrittenPitch = { step: 'B', octave: 4, acc: 0 }
+const KURDI: WrittenPitch = { step: 'B', octave: 4, acc: -5 }
+const DIK_KURDI: WrittenPitch = { step: 'B', octave: 4, acc: -4 }
+/** Ney perdeleri listesinde olmayan yazılı perde (Do4). */
+const DO4: WrittenPitch = { step: 'C', octave: 4, acc: 0 }
+/** Bir koma (sent). */
+const KOMA = 1200 / 53
 
 const nota = (pitch: WrittenPitch, dur: NoteEvent['dur'] = 'quarter', ek: Partial<NoteEvent> = {}): NoteEvent => ({
   kind: 'note',
@@ -63,6 +72,7 @@ describe('beklenenNotalar', () => {
     expect(notalar.map((n) => n.son)).toEqual([15, 16, 17, 18])
     expect(notalar.map((n) => n.nota)).toEqual([0, 1, 2, 3])
     expect(notalar[0].hz).toBeCloseTo(soundingHz(RAST, T), 6)
+    expect(notalar.map((n) => n.perde)).toEqual([RAST, DUGAH, SEGAH, CARGAH])
   })
 
   it('tie ile bağlı iki dörtlük tek nota olur (süre 2)', () => {
@@ -205,6 +215,28 @@ describe('gecikmeBul', () => {
   })
 })
 
+describe('gecikmeKestir', () => {
+  it('ölçülen gecikmede kaynak olcum', () => {
+    const { notalar, hzler } = dortluk()
+    const r = gecikmeKestir(notalar, iz(notalar, 0.15, (_n, i) => hzler[i]))
+    expect(Math.abs(r.ms - 150)).toBeLessThanOrEqual(10)
+    expect(r.kaynak).toBe('olcum')
+  })
+  it('kestirilemezse varsayılan ve kaynak varsayilan', () => {
+    const { notalar } = dortluk()
+    expect(gecikmeKestir(notalar, iz(notalar, 0, () => null))).toEqual({ ms: VARSAYILAN_GECIKME_MS, kaynak: 'varsayilan' })
+    expect(gecikmeKestir(notalar, [])).toEqual({ ms: VARSAYILAN_GECIKME_MS, kaynak: 'varsayilan' })
+  })
+  it('aralığın ucunda kaynak sinir (gerçek gecikme aralığın dışında olsa da)', () => {
+    const { notalar, hzler } = dortluk()
+    for (const d of [-100, 400, 600]) {
+      const r = gecikmeKestir(notalar, iz(notalar, d / 1000, (_n, i) => hzler[i]))
+      expect(r.ms).toBe(Math.min(400, d))
+      expect(r.kaynak).toBe('sinir')
+    }
+  })
+})
+
 describe('degerlendir', () => {
   it('kusursuz çalım (150 ms gecikme) bütün notaları doğru sayar', () => {
     const { notalar, hzler } = dortluk()
@@ -222,13 +254,77 @@ describe('degerlendir', () => {
     expect(s.notalar.every((n) => n.durum === 'dogru')).toBe(true)
   })
 
-  it('-40 sent pes, +40 sent tiz', () => {
+  it('-40 sent pes, +40 sent tiz (bir koma komşusu olmayan perdelerde)', () => {
     const { notalar, hzler } = dortluk()
-    const sapma = [0, -40, 40, 0]
+    const sapma = [0, -40, 0, 40]
     const s = degerlendir(notalar, iz(notalar, 0.12, (_n, i) => sentAt(hzler[i], sapma[i])), T)
-    expect(s.notalar.map((n) => n.durum)).toEqual(['dogru', 'pes', 'tiz', 'dogru'])
+    expect(s.notalar.map((n) => n.durum)).toEqual(['dogru', 'pes', 'dogru', 'tiz'])
     expect(s.notalar[1].sent).toBeCloseTo(-40, 0)
-    expect(s.notalar[2].sent).toBeCloseTo(40, 0)
+    expect(s.notalar[3].sent).toBeCloseTo(40, 0)
+  })
+
+  describe('bir koma komşu perdeler', () => {
+    /** Dört dörtlük aynı perde, hepsi `sapma` sentle çalınır. */
+    const kos = (perde: WrittenPitch, sapma: number) => {
+      const olcu: MusicEvent[][] = [[nota(perde), nota(perde), nota(perde), nota(perde)]]
+      const notalar = beklenenNotalar(olcu, 0, T, 60, 10, 4)
+      return degerlendir(notalar, iz(notalar, 0.12, (n) => sentAt(n.hz, sapma)), T).notalar
+    }
+
+    it('KOMA_AYIRT_SENT 15', () => {
+      expect(KOMA_AYIRT_SENT).toBe(15)
+    })
+
+    it('Bûselik yerine Segâh (−1 koma) yanlış; −12 sent doğru', () => {
+      const r = kos(BUSELIK, -KOMA)
+      expect(r.map((n) => n.durum)).toEqual(['yanlis', 'yanlis', 'yanlis', 'yanlis'])
+      expect(r[0].calinan).toBe('Segâh')
+      expect(r[0].sent).toBeCloseTo(-KOMA, 0)
+      expect(kos(BUSELIK, -12).map((n) => n.durum)).toEqual(['dogru', 'dogru', 'dogru', 'dogru'])
+    })
+
+    it('Segâh yerine Bûselik (+1 koma) yanlış', () => {
+      const r = kos(SEGAH, KOMA)
+      expect(r[0].durum).toBe('yanlis')
+      expect(r[0].calinan).toBe('Bûselik')
+    })
+
+    it('Dik Kürdî ile Kürdî birbirinden ayrılır; 12 sent sapma doğru', () => {
+      const dik = kos(DIK_KURDI, -KOMA)
+      expect(dik[0].durum).toBe('yanlis')
+      expect(dik[0].calinan).toBe('Kürdî')
+      const kurdi = kos(KURDI, KOMA)
+      expect(kurdi[0].durum).toBe('yanlis')
+      expect(kurdi[0].calinan).toBe('Dik Kürdî')
+      expect(kos(DIK_KURDI, -12)[0].durum).toBe('dogru')
+      expect(kos(KURDI, 12)[0].durum).toBe('dogru')
+    })
+
+    it('en yakın perde komşu olsa da 15 sentten az sapma doğru', () => {
+      // −11.3 sentten aşağısı Segâh'a daha yakındır, ama −14 sent eşiğin altındadır.
+      expect(kos(BUSELIK, -14)[0].durum).toBe('dogru')
+      expect(kos(BUSELIK, -16)[0].durum).toBe('yanlis')
+    })
+
+    it('Segâh +40 sent tiz değil: en yakın perde Bûselik', () => {
+      const r = kos(SEGAH, 40)
+      expect(r[0].durum).toBe('yanlis')
+      expect(r[0].calinan).toBe('Bûselik')
+    })
+
+    it('ney perdesi olmayan yazılı nota eski eşiklerle: −1 koma doğru, −40 pes', () => {
+      expect(kos(DO4, -KOMA)[0].durum).toBe('dogru')
+      expect(kos(DO4, -40)[0].durum).toBe('pes')
+    })
+
+    it('oktav hatasında karşılaştırma katlanmış perdeyle yapılır', () => {
+      // Bir oktav üstte −1 koma Bûselik Segâh sayılır (katlanmadan en yakın perde başka olurdu).
+      const ust = kos(BUSELIK, 1200 - KOMA)
+      expect(ust[0].durum).toBe('yanlis')
+      expect(ust[0].calinan).toBe('Segâh')
+      // Bir oktav üstte −20 sent Rast doğru kalır (katlanmadan en yakın perde Gerdâniye olurdu).
+      expect(kos(RAST, 1200 - 20)[0].durum).toBe('dogru')
+    })
   })
 
   it('+300 sent yanlış; calinan o hz\'e en yakın perdenin adıdır', () => {
@@ -381,5 +477,56 @@ describe('degerlendir', () => {
       [5, 0],
       [5, 1],
     ])
+  })
+
+  describe('tanılama', () => {
+    it('pencereSesliOran yalnız notaların çekirdek pencerelerine bakar; sesliOran bütün izedir', () => {
+      const { notalar, hzler } = dortluk()
+      const tam = degerlendir(notalar, iz(notalar, 0.12, (_n, i) => hzler[i]), T)
+      expect(tam.pencereSesliOran).toBe(1)
+      expect(tam.sesliOran).toBeLessThan(0.75) // izin önü ve ardı 1'er sn sessiz
+      const bos = degerlendir(notalar, iz(notalar, 0.12, (_n, i) => (i === 2 ? null : hzler[i])), T)
+      expect(bos.pencereSesliOran).toBeCloseTo(0.75, 1)
+      expect(degerlendir(notalar, [], T).pencereSesliOran).toBe(0)
+    })
+
+    it('gecikmenin kaynağını taşır', () => {
+      const { notalar, hzler } = dortluk()
+      expect(degerlendir(notalar, iz(notalar, 0.15, (_n, i) => hzler[i]), T).gecikmeKaynagi).toBe('olcum')
+      expect(degerlendir(notalar, [], T).gecikmeKaynagi).toBe('varsayilan')
+      expect(degerlendir(notalar, iz(notalar, 0.4, (_n, i) => hzler[i]), T).gecikmeKaynagi).toBe('sinir')
+    })
+
+    it("0.5 sn'den kısa ve uzun notalar ayrı sayılır; ortanca |sent| duyulan notalardan", () => {
+      // ♩=60: dört onaltılık Rast (0.25 sn; sonuncusu +50 → tiz), sonra dörtlük Dügâh (+10), Çârgâh (−30 → pes), Nevâ (sessiz).
+      const olcu: MusicEvent[][] = [
+        [nota(RAST, 'sixteenth'), nota(RAST, 'sixteenth'), nota(RAST, 'sixteenth'), nota(RAST, 'sixteenth')],
+        [nota(DUGAH), nota(CARGAH), nota(NEVA)],
+      ]
+      const notalar = beklenenNotalar(olcu, 0, T, 60, 10, 4)
+      expect(notalar).toHaveLength(4 + 3)
+      const sapma = [0, 0, 0, 50, 10, -30, 0]
+      const s = degerlendir(notalar, iz(notalar, 0.12, (n, i) => (i === 6 ? null : sentAt(n.hz, sapma[i]))), T)
+      expect(s.notalar.map((n) => n.durum)).toEqual(['dogru', 'dogru', 'dogru', 'tiz', 'dogru', 'pes', 'yok'])
+      expect(s.kisaNotalar).toEqual({ dogru: 3, toplam: 4 })
+      expect(s.uzunNotalar).toEqual({ dogru: 1, toplam: 3 })
+      // |sent|: 0, 0, 0, 50, 10, 30 → ortanca 5
+      expect(s.ortancaSapmaSent).toBeCloseTo(5, 0)
+    })
+
+    it('hiç duyulan nota yoksa ortanca sapma null; atlanan notalar sayılmaz', () => {
+      const { notalar } = dortluk()
+      const s = degerlendir(notalar, [], T)
+      expect(s.ortancaSapmaSent).toBeNull()
+      expect(s.kisaNotalar).toEqual({ dogru: 0, toplam: 0 })
+      expect(s.uzunNotalar).toEqual({ dogru: 0, toplam: 4 })
+      const hz = soundingHz(RAST, T)
+      const olcu: MusicEvent[][] = [[nota(RAST, 'sixteenth'), nota(RAST, 'sixteenth')]]
+      const hizli = beklenenNotalar(olcu, 0, T, 200, 10, 0)
+      const sh = degerlendir(hizli, iz(hizli, 0.12, () => hz), T)
+      expect(sh.atlanan).toBe(2)
+      expect(sh.kisaNotalar).toEqual({ dogru: 0, toplam: 0 })
+      expect(sh.pencereSesliOran).toBe(0)
+    })
   })
 })
