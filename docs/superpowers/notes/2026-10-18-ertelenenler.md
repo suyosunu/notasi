@@ -103,3 +103,11 @@ Görev incelemelerinde "şimdilik kalabilir" denen bulgular. Sürüm 2'ye başla
 - Task 50: minor (deferred): spy not restored in seviye.test.ts; s2-usul-etut/s2-dortlu could route to first etüt
 - Final review fix wave (cfa95af) fixed: usul etüt gate (okuma:olcu + usul:giris), okuma:olcu wording, beamed triplet quiz, usul lesson → vurma route, Nim Hicaz spelling, dörtlü sign names, dil lesson source, mean deviation shown, sure-4 names out of early distractors.
 - Still open (from final review): perde-2 distractor pool of 15 names — revisit in Aşama C; T47 e.timeStamp / shared latency constant; Placement beam has no dedicated test.
+
+## Adım 2 — satır satır çalışma (2026-10-30)
+- Ruling: tek kod üreticisi `calisma.ts`; parça da artık bir ölçü giriş sayımıyla çalar. Kısa ilk ölçüyle (anacrusis) başlayan seçimde giriş `2·ölçü − lead` vuruş sürer, tıklar ölçü ızgarasında kalır — cost if wrong: sayım biraz uzun gelir.
+- Ruling: döngü JS'te sıralı `playCode` çağrılarıdır, her tur kendi giriş sayımıyla başlar (nefes payı) — cost if wrong: turlar arası ~0.3 sn boşluk; ileride yalnız ilk turda / tempo değişince sayım seçeneği.
+- Ruling: vurgu ses saatinden (sessiz işaret sesi + `currentTime − outputLatency`); AirPods gibi gecikmesi bildirilmeyen çıkışta vurgu önde gidebilir — iPhone'da denenecek, gerekirse kullanıcı gecikme payı.
+- Açık (minor): yalnız kısa SON ölçü seçilirse anacrusis gibi çalınır (melodi vuruş başında başlamaz, usul yok). Bugünkü içerikte kısa ölçü yok; anacrusisli içerik eklenirken (Adım 4) `lead` yalnız gerçek ilk ölçü (bas = 0) için hesaplanmalı.
+- Açık (minor): kendi kaydırmamızdan sonraki 1 sn içinde dokunmasız kullanıcı kaydırması (klavye, kaydırma çubuğu) algılanmaz; telefonda etkisi küçük.
+- Açık (minor): etüt ekranı ayarları iki kez okur (EtutCalisma + panel); çalarken kaydırıcı sürüklenirken "Tur" satırı henüz çalınmayan hızı gösterir; uzun parçada "Tümü" çalımında satır takibi yalnız otomatik kaydırmaya dayanır.

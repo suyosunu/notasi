@@ -18,7 +18,7 @@
 - iOS: `unlockAudio()` dokunuş işleyicisinde, ilk `await`'ten ÖNCE eşzamanlı çağrılır (mevcut `calis`/`listen` deseni).
 - 375 px genişlikte yatay kaydırma yok.
 - Döngü adımı: `HIZ_ADIMI = 5` (♩). Hızlanma ekranın üst sınırında durur (etüt 90, parça 100).
-- Giriş sayımı: her turun başında bir ölçü. Ölçü uzunluğu (dörtlük cinsinden) usul varsa `zaman × 4 / mertebe`, yoksa 4.
+- Giriş sayımı: her turun başında bir ölçü (seçim kısa bir ilk ölçüyle başlıyorsa `2·ölçü − lead`: tıklar ölçü ızgarasında kalır; son düzeltme turu). Ölçü uzunluğu (dörtlük cinsinden) usul varsa `zaman × 4 / mertebe`, yoksa 4.
 - Usul katmanının tempo birimi: `buildUsulBody(usul, bpm × mertebe / 4, usulSesi)` (parçadaki mevcut kural; mertebe 4'te bpm).
 - `npm run build` (tsc --noEmit + vite build) ve `npx vitest run` temiz kalır.
 
