@@ -420,10 +420,10 @@ describe('DayPractice (ders kapısı)', () => {
     expect(screen.queryByRole('button', { name: ANLADIM })).toBeNull()
   })
 
-  it('dersi olmayan bir konu (perde-2) doğrudan soruya geçer', async () => {
+  it('Seviye 3 konusu (perde-2) dersi okunmamışsa önce dersi gösterir', async () => {
     render(<DayPractice topicId="perde-2" />)
-    expect(await screen.findByText('☀️ Nota okuma · 1/8')).toBeTruthy()
-    expect(screen.queryByRole('button', { name: ANLADIM })).toBeNull()
+    expect(await screen.findByRole('heading', { name: dersBasligi('perde-2') })).toBeTruthy()
+    expect(screen.queryByText(/Nota okuma ·/)).toBeNull()
   })
 
   it('Seviye 2 konusu (koma-1) dersi okunmamışsa önce dersi gösterir', async () => {

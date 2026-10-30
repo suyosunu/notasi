@@ -1,5 +1,5 @@
 import type { DurationKind, MusicEvent, NoteEvent } from '../../music/notation'
-import { n, S2, S3, s4, S6, sus } from './nota'
+import { meb, n, S2, S3, s4, S6, sus } from './nota'
 import type { Ders } from './types'
 
 // Seviye 2 okuma dersleri (ve Seviye 1'in ölçü dersi). Bilgiler yalnızca araştırma notundan
@@ -409,5 +409,107 @@ export const NOTA_2_DERSLERI: Ders[] = [
       },
     ],
     kaynaklar: [s4(3), s4(15)],
+  },
+]
+
+// Seviye 3 okuma dersleri: üçüncü kademe perdelerinin portedeki yeri (perde-2: Hüseynî, Acem, Gerdâniye, Muhayyer;
+// perde-5: Nim Şehnaz, Nim Hisar). Bilgiler araştırma C §1'den (neyzenim _6, MEB ünite 1217, 1226, 1232), koma
+// işaretleri `nota:koma-1` ve `nota:koma-2` derslerinden gelir. Perde adları PERDE_ADLARI ile aynı yazılır.
+export const NOTA_3_DERSLERI: Ders[] = [
+  {
+    id: 'nota:perde-2',
+    seviye: 3,
+    baslik: "Perde adları: Hüseynî'den Muhayyer'e",
+    bloklar: [
+      {
+        tur: 'metin',
+        metin:
+          "Nevâ'yı (Re) biliyorsun. Onun üstünde dört perde daha var ve dördünün de önünde işaret yoktur: işaretsiz Mi, Fa, Sol ve La. Notaların adlarını nota derslerinden biliyorsun; bu derste onların perde adlarını öğreneceksin.",
+      },
+      {
+        tur: 'liste',
+        maddeler: [
+          'Hüseynî = Mi (4. aralık, 4. ile 5. çizgi arası).',
+          'Acem = Fa (5. çizgi, portenin en üst çizgisi).',
+          'Gerdâniye = Sol (5. çizginin hemen üstündeki boşluk, tiz Sol).',
+          'Muhayyer = La (portenin üstündeki ilk ek çizgi, tiz La).',
+        ],
+      },
+      { tur: 'porte', olaylar: [n('E5')], aciklama: 'Hüseynî: Mi, 4. aralık.' },
+      { tur: 'porte', olaylar: [n('F5')], aciklama: 'Acem: Fa, 5. çizgi.' },
+      { tur: 'porte', olaylar: [n('G5')], aciklama: 'Gerdâniye: tiz Sol, portenin üstündeki boşluk.' },
+      { tur: 'porte', olaylar: [n('A5')], aciklama: 'Muhayyer: tiz La, üstteki ilk ek çizgi.' },
+      {
+        tur: 'porte',
+        olaylar: [n('D5'), n('E5'), n('F5'), n('G5'), n('A5')],
+        aciklama: 'Soldan sağa: Nevâ, Hüseynî, Acem, Gerdâniye, Muhayyer. Her adımda bir basamak yukarı.',
+      },
+      {
+        tur: 'metin',
+        metin:
+          "Acem ile Eviç'i karıştırma: ikisi de 5. çizgidedir. Acem işaretsiz Fa'dır; Eviç, Fa'nın önünde bakiye diyezi olan sestir (Seviye 2'de öğrendin). Yani işarete bak.",
+      },
+      {
+        tur: 'metin',
+        metin:
+          "Re, her zaman Nevâ'dır. Neyde Nevâ'yı iki şemayla çalabilirsin (açık ve kapalı Nevâ); portede ikisi de aynı notadır.",
+      },
+      {
+        tur: 'dene',
+        adimlar: [
+          'Her portede notanın perde adını sesli söyle: Hüseynî, Acem, Gerdâniye, Muhayyer.',
+          '▶ Dinle ile beşli porteyi dinle; her adımda sesin bir basamak yükseldiğini duy.',
+          "Gözünü porteden ayır ve ezberden say: Hüseynî 4. aralıkta, Acem 5. çizgide, Gerdâniye portenin üstünde, Muhayyer ek çizgide.",
+        ],
+      },
+    ],
+    kaynaklar: [s4(6), meb(1217, 'üçüncü kademe ana sesler'), S2],
+    alistirma: '/nota/perde-2',
+  },
+  {
+    id: 'nota:perde-5',
+    seviye: 3,
+    baslik: 'Perdeler: Nim Şehnaz, Nim Hisar',
+    bloklar: [
+      {
+        tur: 'metin',
+        metin:
+          "Üçüncü kademede iki ara ses daha var: Nim Şehnaz ve Nim Hisar. İkisi de işaretli notadır; işaretleri koma derslerinden tanıyorsun.",
+      },
+      {
+        tur: 'liste',
+        maddeler: [
+          'Nim Şehnaz = Sol bakiye diyezi (4 koma tiz): portenin üstündeki boşlukta Sol, önünde bakiye diyezi.',
+          'Nim Hisar = Mi küçük mücenneb bemolü (5 koma pes): 4. aralıkta Mi, önünde düz bemol.',
+        ],
+      },
+      { tur: 'porte', olaylar: [n('G5#4')], aciklama: 'Nim Şehnaz: Sol bakiye diyezi (iki gövde, iki çubuk).' },
+      { tur: 'porte', olaylar: [n('E5b5')], aciklama: 'Nim Hisar: Mi küçük mücenneb bemolü (düz bemol).' },
+      {
+        tur: 'porte',
+        olaylar: [n('G5'), n('G5#4')],
+        aciklama: 'Gerdâniye, sonra Nim Şehnaz: aynı yer, ikincisinin önünde bakiye diyezi var. Ses 4 koma yükselir.',
+      },
+      {
+        tur: 'porte',
+        olaylar: [n('E5'), n('E5b5')],
+        aciklama: 'Hüseynî, sonra Nim Hisar: aynı aralık, ikincisinin önünde düz bemol var. Ses 5 koma pesleşir.',
+      },
+      {
+        tur: 'metin',
+        metin:
+          "İşaretler tanıdık: Nim Şehnaz'daki, Nim Hicaz'daki Do bakiye diyezi ile aynı işarettir. Nim Hisar'daki, Kürdî'deki Si küçük mücenneb bemolü ile aynı işarettir. Yalnız notalar farklı: Sol ve Mi.",
+      },
+      {
+        tur: 'dene',
+        adimlar: [
+          'İki tek notalı portede perde adını sesli söyle; önce notanın adını (Sol, Mi), sonra işareti söyle.',
+          "İşaretlere bak: iki gövde ve iki çubuk bakiye diyezidir, düz bir b küçük mücenneb bemolüdür.",
+          "▶ Dinle ile iki karşılaştırma portesini dinle; Nim Şehnaz Gerdâniye'den biraz tiz, Nim Hisar Hüseynî'den belirgin pestir.",
+        ],
+      },
+    ],
+    kaynaklar: [s4(6), meb(1226, 'üçüncü kademe ara sesler'), meb(1232, 'ikinci ve üçüncü kademe ara sesler'), S2],
+    alistirma: '/nota/perde-5',
   },
 ]

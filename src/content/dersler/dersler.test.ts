@@ -5,9 +5,10 @@ import { NOTA_TOPICS } from '../nota-topics'
 import { DERSLER, dersById, etutDersleri, notaDersId, perdeDersId, usulDersId, usulDersleri } from './index'
 import { HAZIRLIK_DERSLERI } from './hazirlik'
 import { NOTA_DERSLERI } from './nota'
-import { NOTA_2_DERSLERI } from './nota-2'
+import { NOTA_2_DERSLERI, NOTA_3_DERSLERI } from './nota-2'
 import { ETUT_DERSLERI } from './etut'
 import { PERDE_DERSLERI } from './perdeler'
+import { PERDE_3_DERSLERI } from './perdeler-3'
 import { USUL_DERSLERI } from './usul'
 import { ETUTLER } from '../etutler'
 import { USULLER } from '../usuller'
@@ -574,6 +575,204 @@ describe('Seviye 2 ara ses perde dersleri', () => {
       const m = tumMetin(id)
       if (!ikisiKapali) expect(m, id).not.toMatch(/iki elinin orta parmağı/)
     }
+  })
+})
+
+describe('Seviye 3 perde dersleri', () => {
+  const UCUNCU = ['huseyni', 'acem', 'gerdaniye', 'muhayyer', 'kapali-neva', 'evic', 'nim-sehnaz', 'nim-hisar'] as const
+  // Aynı parmakla çalınan pest eş (araştırma C §1 beşli tablosu); Nim Hisar'ın pest eşi Nim Zirgüle uygulamada olmadığından Hüseynî.
+  const ONCEKI = {
+    huseyni: 'dugah',
+    acem: 'kurdi',
+    gerdaniye: 'cargah',
+    muhayyer: 'neva',
+    'kapali-neva': 'rast',
+    evic: 'segah',
+    'nim-sehnaz': 'nim-hicaz',
+    'nim-hisar': 'huseyni',
+  } as const
+  const perde = (id: string) => NEY_PERDELER.find((p) => p.id === id)!
+  const ders = (id: string) => dersById(perdeDersId(id))!
+  const porteler = (id: string) => ders(id).bloklar.flatMap((b) => (b.tur === 'porte' ? [b.olaylar] : []))
+  const tumMetin = (id: string) => metinler(ders(id)).join(' ')
+  const yukseklik = (e: MusicEvent) => (e.kind === 'note' ? e.pitch : null)
+
+  it('NEY_PERDELER 3. kademe sırası ders sırasıyla aynıdır', () => {
+    expect(NEY_PERDELER.filter((p) => p.kademe === 3).map((p) => p.id)).toEqual([...UCUNCU])
+  })
+
+  it('Seviye 3 perde dersleri her 3. kademe perdesi için var, seviye 3, parmak bloğu doğru perdeyi gösterir', () => {
+    expect(PERDE_3_DERSLERI.map((d) => d.id)).toEqual(UCUNCU.map(perdeDersId))
+    for (const id of UCUNCU) {
+      const d = ders(id)
+      expect(d, id).toBeDefined()
+      expect(DERSLER, id).toContain(d)
+      expect(d.seviye, id).toBe(3)
+      expect(d.alistirma, id).toBe(`/ney/${id}`)
+      const parmaklar = d.bloklar.flatMap((b) => (b.tur === 'parmak' ? [b.perdeId] : []))
+      // Kapalı Nevâ dersi karşılaştırma için açık Nevâ şemasını da gösterir; ötekiler yalnız kendi perdesini.
+      const beklenen = id === 'kapali-neva' ? ['kapali-neva', 'neva'] : [id]
+      expect([...new Set(parmaklar)].sort(), id).toEqual([...beklenen].sort())
+    }
+  })
+
+  it.each(UCUNCU)('%s: yazılı notası birlik olarak tek başına, pest eşinden geçiş iki ikilik portede gösterilir', (id) => {
+    expect(porteler(id)).toContainEqual([{ kind: 'note', pitch: perde(id).written, dur: 'whole' }])
+    const gecisler = porteler(id).filter((o) => o.length === 2 && o.every((e) => e.kind === 'note' && e.dur === 'half'))
+    expect(gecisler.map((o) => o.map(yukseklik))).toContainEqual([perde(ONCEKI[id]).written, perde(id).written])
+  })
+
+  it('porte örneklerinin notaları perdelerin yazılı notalarıdır', () => {
+    const yazilar = NEY_PERDELER.map((p) => JSON.stringify(p.written))
+    for (const d of PERDE_3_DERSLERI)
+      for (const b of d.bloklar)
+        if (b.tur === 'porte')
+          for (const e of b.olaylar) {
+            expect(e.kind, d.id).toBe('note')
+            expect(yazilar, d.id).toContain(JSON.stringify(yukseklik(e)))
+          }
+  })
+
+  it.each(UCUNCU)('%s: pest eşiyle aynı parmak (Nim Hisar: yalnız son delik açıktan 3/4 kapalıya)', (id) => {
+    const a = perde(ONCEKI[id]).fingering!
+    const b = perde(id).fingering!
+    expect(a.thumb).toBe(b.thumb)
+    const degisen = a.front.flatMap((h, i) => (h === b.front[i] ? [] : [[i, h, b.front[i]]]))
+    expect(degisen).toEqual(id === 'nim-hisar' ? [[5, 'acik', 'yarim']] : [])
+  })
+
+  it.each(UCUNCU)('%s: kaynaklar şema kaynağını, ders numarasını ve MEB ünitesini içerir', (id) => {
+    const k = ders(id).kaynaklar
+    expect(k.some((x) => x.includes(perde(id).source!))).toBe(true)
+    const no = perde(id).source!.match(/neydersleri_(\d+)/)![1]
+    expect(k.some((x) => x.includes(`Ney Dersleri ${no}:`))).toBe(true)
+    expect(k.some((x) => x.includes('tymm.meb.gov.tr/muzik-okullari-bireysel-calgi-egitimi-dersi-ney-modulu/unite/'))).toBe(true)
+  })
+
+  it.each(UCUNCU)('%s: daha sert üfleme, "Kendin dene" ve 8 sn / ±20 sent öneri hedefi', (id) => {
+    const m = tumMetin(id)
+    expect(m).toMatch(/Seviye 3/)
+    expect(m).toMatch(/sert/)
+    expect(m).toMatch(/8 sn/)
+    expect(m).toMatch(/±20 sent/)
+    expect(m).toMatch(/öneri/i)
+    const dene = ders(id).bloklar.find((b) => b.tur === 'dene')!
+    const adimlar = dene.tur === 'dene' ? dene.adimlar.join(' ') : ''
+    expect(adimlar).toMatch(/uzun ses/i)
+    expect(adimlar).toMatch(/▶ Dinle/)
+    expect(adimlar).toMatch(/kulağın/)
+    expect(adimlar).toMatch(/akort göstergesi/i)
+    expect(adimlar).toMatch(/8 sn, ±20 sent/)
+    // Üçüncü kademede ılık nefes önerilmez.
+    expect(adimlar).not.toMatch(/Ilık nefesle/)
+  })
+
+  it.each(UCUNCU)('%s: perdenin adı derste geçer', (id) => {
+    expect(tumMetin(id)).toContain(perde(id).name.replace(' (açık)', '').replace(' (kapalı)', ''))
+  })
+
+  it('perde:huseyni kademe kavramını öğretir: aynı parmak, daha sert nefes, bir beşli (31 koma)', () => {
+    const m = tumMetin('huseyni')
+    expect(m).toMatch(/kademe/i)
+    expect(m).toMatch(/aynı parmak/)
+    expect(m).toMatch(/soğuk/)
+    expect(m).toMatch(/beşli/)
+    expect(m).toMatch(/31 koma/)
+  })
+
+  it('perde:huseyni kademe eşlerini sayar: liste altı çifti içerir', () => {
+    const liste = ders('huseyni').bloklar.find((b) => b.tur === 'liste')
+    const maddeler = liste?.tur === 'liste' ? liste.maddeler : []
+    expect(maddeler).toHaveLength(6)
+    const CIFTLER = [
+      ['Dügâh', 'Hüseynî'],
+      ['Kürdî', 'Acem'],
+      ['Çârgâh', 'Gerdâniye'],
+      ['Nevâ', 'Muhayyer'],
+      ['Segâh', 'Eviç'],
+      ['Nim Hicaz', 'Nim Şehnaz'],
+    ]
+    CIFTLER.forEach(([pest, tiz], i) => {
+      expect(maddeler[i], `${pest} → ${tiz}`).toContain(pest!)
+      expect(maddeler[i], `${pest} → ${tiz}`).toContain(tiz!)
+    })
+    // Listede olmayan iki 3. kademe sesi metinde anılır.
+    expect(tumMetin('huseyni')).toMatch(/kapalı Nevâ/)
+    expect(tumMetin('huseyni')).toContain('Nim Hisar')
+  })
+
+  it('perde:kapali-neva aynı yazılı notanın iki şemasını anlatır, nefes şiddetinin yazılı olmadığını söyler ve "tiz" geçer', () => {
+    const m = tumMetin('kapali-neva')
+    expect(perde('kapali-neva').written).toEqual(perde('neva').written)
+    expect(m).toMatch(/açık Nevâ/)
+    expect(m).toMatch(/iki şema/)
+    expect(m).toMatch(/nefes şiddeti[^.]*(yazılı değil|yazmaz|yazılmaz)/)
+    expect(m).toMatch(/tiz/)
+    expect(m).toMatch(/orta/)
+    expect(m).toMatch(/Ders 9/)
+  })
+
+  it('perde:nim-hisar 3/4 ve sola bilgisini verir; Hüseynî ve Nevâ ile konumunu söyler', () => {
+    const m = tumMetin('nim-hisar')
+    expect(m).toMatch(/3\/4/)
+    expect(m).toMatch(/sola/)
+    expect(m).toMatch(/bir koma ve bir bakiye/)
+    expect(m).toMatch(/Hüseynî/)
+    expect(m).toMatch(/Nevâ/)
+    const parmak = ders('nim-hisar').bloklar.find((b) => b.tur === 'parmak')
+    expect(parmak?.tur === 'parmak' && parmak.aciklama).toMatch(/3\/4/)
+  })
+
+  it('Nim Şehnaz Nim Hicaz parmağıyla çalındığı için derste Nim Hicaz anılır', () => {
+    expect(tumMetin('nim-sehnaz')).toContain('Nim Hicaz')
+  })
+
+  it('BELİRSİZ hiçbir ders metninde geçmez', () => {
+    for (const d of [...PERDE_3_DERSLERI, ...NOTA_3_DERSLERI]) for (const m of metinler(d)) expect(m, d.id).not.toMatch(/BELİRSİZ/i)
+  })
+})
+
+describe('Seviye 3 okuma dersleri', () => {
+  const IDS = ['nota:perde-2', 'nota:perde-5']
+  const ders = (id: string) => dersById(id)!
+  const porteler = (id: string) => ders(id).bloklar.flatMap((b) => (b.tur === 'porte' ? [b.olaylar] : []))
+  const anahtar = (e: MusicEvent) =>
+    e.kind === 'note'
+      ? `${e.pitch.step}${e.pitch.octave}${e.pitch.acc === 0 ? '' : `${e.pitch.acc < 0 ? 'b' : '#'}${Math.abs(e.pitch.acc)}`}`
+      : 'sus'
+
+  it('nota:perde-2 ve nota:perde-5 var, alistirma rotaları doğru', () => {
+    expect(NOTA_3_DERSLERI.map((d) => d.id)).toEqual(IDS)
+    for (const id of IDS) {
+      expect(DERSLER, id).toContain(ders(id))
+      expect(ders(id).seviye, id).toBe(3)
+      expect(ders(id).alistirma, id).toBe(`/nota/${id.slice('nota:'.length)}`)
+      expect(rotaBilinir(ders(id).alistirma!), id).toBe(true)
+    }
+  })
+
+  it.each(IDS)('%s: konunun kartlarındaki her perde adıyla anılır ve portede gösterilir; porteler telefona sığar', (id) => {
+    const goster = new Set(porteler(id).flat().map(anahtar))
+    const m = metinler(ders(id)).join(' ')
+    for (const kart of NOTA_TOPICS.find((x) => x.id === id.slice('nota:'.length))!.cards) {
+      const key = perdeKey(kart)
+      expect(m).toContain(PERDE_ADLARI[key])
+      expect(goster).toContain(key)
+    }
+    for (const o of porteler(id)) expect(o.length).toBeLessThanOrEqual(8)
+  })
+
+  it('nota:perde-2: Hüseynî, Acem, Gerdâniye, Muhayyer işaretsiz Mi, Fa, Sol, La; Re hep Nevâ', () => {
+    const m = metinler(ders('nota:perde-2')).join(' ')
+    for (const s of ['Hüseynî = Mi', 'Acem = Fa', 'Gerdâniye = Sol', 'Muhayyer = La', 'Nevâ']) expect(m).toContain(s)
+    expect(m).toMatch(/Eviç/)
+  })
+
+  it('nota:perde-5: Nim Şehnaz Sol bakiye diyezi, Nim Hisar Mi küçük mücenneb bemolü', () => {
+    const m = metinler(ders('nota:perde-5')).join(' ')
+    expect(m).toContain(`Sol ${ACCIDENTAL_NAMES[4]}`)
+    expect(m).toContain(`Mi ${ACCIDENTAL_NAMES[-5]}`)
+    expect(m).not.toMatch(/mücennep/)
   })
 })
 

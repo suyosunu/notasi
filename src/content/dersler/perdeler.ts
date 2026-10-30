@@ -13,27 +13,27 @@ import type { Ders, DersBlok } from './types'
 
 const S2 =
   'S2 MEB, Çalgı Eğitimi Ney Dersi Öğretim Programı (GSL 9–12, 2022): https://mufredat.meb.gov.tr/Dosyalar/2024118143640484-2022%20%C3%87ALGI%20E%C4%9E%C4%B0T%C4%B0M%C4%B0%20NEY.pdf'
-const S5 = 'S5 Mehmet Yücel, Ney Metodu: https://www.neyzen.com/ney_metodu.html'
+export const S5 = 'S5 Mehmet Yücel, Ney Metodu: https://www.neyzen.com/ney_metodu.html'
 
-function perde(id: PerdeId): NeyPerde {
+export function perde(id: PerdeId): NeyPerde {
   const p = NEY_PERDELER.find((x) => x.id === id)
   if (!p) throw new Error(`Bilinmeyen perde: ${id}`)
   return p
 }
 
 /** Perdenin şema kaynağı (neyzenim.com Ney Dersleri <no>) künyesiyle; ders numarası adresten okunur. */
-function semaKaynagi(p: NeyPerde): string {
+export function semaKaynagi(p: NeyPerde): string {
   const no = p.source?.match(/neydersleri_(\d+)/)?.[1] ?? '2'
   return `S4 neyzenim.com, Zeki Sözen, Ney Dersleri ${no}: ${p.source}`
 }
 
 /** Perdenin yazılı notası, birlik (♩ = 60'ta 4 sn). */
-function birlik(p: NeyPerde): MusicEvent[] {
+export function birlik(p: NeyPerde): MusicEvent[] {
   return [{ kind: 'note', pitch: p.written, dur: 'whole' }]
 }
 
 /** Önceki perdeden bu perdeye geçiş: iki ikilik. */
-function gecis(onceki: NeyPerde, p: NeyPerde): MusicEvent[] {
+export function gecis(onceki: NeyPerde, p: NeyPerde): MusicEvent[] {
   return [
     { kind: 'note', pitch: onceki.written, dur: 'half' },
     { kind: 'note', pitch: p.written, dur: 'half' },
@@ -64,18 +64,20 @@ function yediSes(belirtme: string): string {
 
 /**
  * Her dersin "Kendin dene" adımları: uzun ses, ▶ Dinle ile kulakla karşılaştırma, akort göstergesi.
- * `onceki.hareket` geçişte parmağın ne yaptığını söyler (öntanımlı: parmak eklenir); `ekAdimlar` ▶ Dinle'den sonra eklenir.
+ * `onceki.hareket` geçişte parmağın ne yaptığını söyler (öntanımlı: parmak eklenir); `ekAdimlar` ▶ Dinle'den sonra eklenir;
+ * `nefes` uzun sesin nefes türüdür (öntanımlı ılık; 3. kademede daha sert).
  */
-function deneAdimlari(
+export function deneAdimlari(
   ad: { belirtme: string },
   onceki?: { ad: string; gecis: string; hareket?: string },
   ekAdimlar: string[] = [],
+  nefes = 'Ilık',
 ): DersBlok {
   const adimlar = [
     'Parmaklarını şemadaki gibi yerleştir; deliklerin tam kapandığını kontrol et.',
     `▶ Dinle ile ${ad.belirtme} dinle.`,
     ...ekAdimlar,
-    `Ilık nefesle uzun ses çal: ${ad.belirtme} nefesin bitene kadar aynı güçte, dalgalanmadan tut.`,
+    `${nefes} nefesle uzun ses çal: ${ad.belirtme} nefesin bitene kadar aynı güçte, dalgalanmadan tut.`,
     'Kendi sesini kulağınla dinlediğin sesle karşılaştır: aynı mı, daha pes mi, daha tiz mi?',
     'Akort göstergesine bak; ibreyi yeşil bantta tut ve saniyeleri say.',
   ]

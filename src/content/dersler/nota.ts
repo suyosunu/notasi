@@ -11,6 +11,9 @@ export const S2 =
 export const S3 =
   'S3 MEB TYMM, Müzik Okulları Türk Müziği Teori ve Uygulaması Dersi (1–8): https://tymm.meb.gov.tr/assets/pdf/muzik-okullari-turk-muzigi-teori-uygulamasi-dersi.pdf'
 export const s4 = (n: number) => `S4 neyzenim.com, Zeki Sözen, Ney Dersleri ${n}: https://www.neyzenim.com/neydersleri_${n}.html`
+/** MEB Ney Modülü ünitesi (tymm.meb.gov.tr); `ad` ünitenin konusudur. */
+export const meb = (no: number, ad: string) =>
+  `S1 MEB TYMM, Bireysel Çalgı Eğitimi Ney Modülü, ünite ${no} (${ad}): https://tymm.meb.gov.tr/muzik-okullari-bireysel-calgi-egitimi-dersi-ney-modulu/unite/${no}`
 export const S6 = 'S6 Bursa Uludağ Üniv., NEY I ders bilgi paketi: https://bilgipaketi.uludag.edu.tr/DersProgramiRapor/DersIcerikRapor/915137?Dil=0'
 
 /** 'D5' → Re5; 'B4b1' → Si4 koma bemolü. Süre verilmezse dörtlük (soru kartlarındaki gibi). */

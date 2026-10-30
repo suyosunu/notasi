@@ -108,7 +108,7 @@ describe('NeySection', () => {
     expect(screen.queryByRole('button', { name: /Acem/ })).toBeNull()
   })
 
-  it('dersi olan perdenin yanında 📖 ders bağlantısı vardır; kilitli perdede de görünür, dersi olmayanda yoktur', async () => {
+  it('dersi olan perdenin yanında 📖 ders bağlantısı vardır; kilitli perdede de görünür', async () => {
     render(<NeySection />)
     await screen.findByText('Nevâ')
     const link = within(row('Nevâ')).getByRole('link', { name: 'Nevâ dersi' })
@@ -118,7 +118,8 @@ describe('NeySection', () => {
     expect(within(row('Rast')).getByText('🔒')).toBeTruthy()
     expect(within(row('Rast')).getByRole('link', { name: 'Rast dersi' }).getAttribute('href')).toBe('#/ders/perde%3Arast')
     for (const name of ['Çârgâh', 'Segâh', 'Dügâh']) expect(within(row(name)).getByRole('link', { name: `${name} dersi` })).toBeTruthy()
-    expect(within(row('Hüseynî')).queryByRole('link')).toBeNull()
+    // Seviye 3 perdelerinin de dersi vardır.
+    expect(within(row('Hüseynî')).getByRole('link', { name: 'Hüseynî dersi' }).getAttribute('href')).toBe('#/ders/perde%3Ahuseyni')
   })
 
   it('Bûselik satırında ders bağlantısı görünür; Kürdî, Dik Kürdî ve Nim Hicaz için de', async () => {
@@ -267,12 +268,17 @@ describe('NeyPerdePractice ders kapısı', () => {
     expect(screen.queryByRole('heading', { name: /Rast perdesi/ })).toBeNull()
   })
 
-  it('dersi olmayan perde (Hüseynî) kapısız açılır', async () => {
+  it('Seviye 3 perdesi (Hüseynî) açıkken okunmamış dersi önce gelir, okunmuşsa trainer görünür', async () => {
     await saveSettings({ calibrated: true })
     for (const id of ['neva', 'cargah', 'segah', 'dugah', 'rast']) {
       await addLongTone({ perdeId: id, durationMs: 4000, passed: true, toleranceCents: 25 })
     }
     for (const id of NOTA_TOPICS.map((t) => t.id)) await setPlacedOut(id)
+    const { unmount } = render(<NeyPerdePractice perdeId="huseyni" />)
+    expect(await screen.findByRole('heading', { name: /Hüseynî perdesi/ })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Başla' })).toBeNull()
+    unmount()
+    await isaretEkle('okunanDersler', 'perde:huseyni')
     render(<NeyPerdePractice perdeId="huseyni" />)
     expect(await screen.findByRole('button', { name: 'Başla' })).toBeTruthy()
   })
