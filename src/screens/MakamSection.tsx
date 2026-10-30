@@ -2,6 +2,7 @@ import { useState } from 'preact/hooks'
 import { MAKAM_TOPICS } from '../content/makam-topics'
 import { MAKAMLAR } from '../content/makamlar'
 import { ONERILEN_SEVIYE } from '../content/seviyeler'
+import { DersKapisi } from '../ders/DersKapisi'
 import { makeQuestion } from '../learning/questions'
 import type { Question } from '../learning/questions'
 import { seededRng, shuffle } from '../util/rng'
@@ -42,8 +43,17 @@ export function MakamSection() {
   )
 }
 
-/** On iki makam kartından (dizi, durak, güçlü) karıştırılıp dönülen 8 soruluk serbest tur. */
+/** Önce "Makam nedir?" dersi (ders kuralı), sonra makam kartlarından 8 soruluk serbest tur. */
 export function MakamQuiz() {
+  return (
+    <DersKapisi dersId="makam:giris" geri={BACK}>
+      <MakamSoruTuru />
+    </DersKapisi>
+  )
+}
+
+/** On iki makam kartından (dizi, durak, güçlü) karıştırılıp dönülen 8 soruluk serbest tur. */
+function MakamSoruTuru() {
   const [questions] = useState<Question[]>(() => {
     const rng = seededRng(Date.now())
     const cards = shuffle(

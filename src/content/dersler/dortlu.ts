@@ -1,4 +1,5 @@
-import { n, S3, S6 } from './nota'
+import { n, S2, S3, S6 } from './nota'
+import { TDV_RAST } from './makam'
 import type { Ders } from './types'
 
 // Seviye 2 dörtlü dersleri: Çârgâh dörtlüsü (Rast'ta), Kürdî dörtlüsü ve Hicaz dörtlüsü (Dügâh'ta). Araştırma notu,
@@ -9,6 +10,16 @@ import type { Ders } from './types'
 
 const S8 =
   'S8 Aydın Adnan Menderes Üniv. Devlet Konservatuvarı THM, Ney I (KGTM133): https://ects.adu.edu.tr/programme-detail/3/7506/lecture/43295/'
+
+// Seviye 3: beşli dersi (`dortlu:besli`). Araştırma C §3: beşli = dörtlü + bir tanini (9 koma), dörtlü 22, beşli 31 koma.
+// Komaları açıkça yazan tek sayfa amatör bir blogdur; Wikipedia'nın perde tablosu (Çârgâh'a göre koma) ve TDV'nin çeşni
+// tanımlarıyla çapraz kontrol edildi (Hicaz 5+12+5 yalnız perde konumlarından çıkarıldı). Beşli sütunu "dörtlü + 9" kuralıyla
+// hesaplandı. Uşşak'ın beşlisi yoktur: kaynaklar Uşşak'ı yalnız dörtlü olarak kullanır.
+
+const KOMA_BLOG =
+  'muzikteorisiveegitimi.blogspot.com, Makam (dörtlü ve beşli komaları; amatör kaynak, perde konumlarıyla çapraz kontrol edildi): https://muzikteorisiveegitimi.blogspot.com/2013/01/makam.html'
+const WIKI_PERDE =
+  'en.wikipedia.org, List of notes in Turkish makam theory (Çârgâh’a göre koma farkı): https://en.wikipedia.org/wiki/List_of_notes_in_Turkish_makam_theory'
 
 const ARALIK_NOTU = 'Aralığın büyüklüğü koma ile ölçülür; koma, Türk müziğinin en küçük aralık birimidir.'
 
@@ -143,5 +154,72 @@ export const DORTLU_DERSLERI: Ders[] = [
     ],
     kaynaklar: [S3, S6, S8],
     alistirma: '/etut/dortlu-hicaz',
+  },
+  {
+    id: 'dortlu:besli',
+    seviye: 3,
+    baslik: 'Beşli nedir?',
+    bloklar: [
+      {
+        tur: 'metin',
+        metin:
+          'Beşli, birbirini izleyen beş sesten oluşan bir dizidir. Beşlide dört aralık vardır. Beşli, bir dörtlünün sonuna bir tanini aralığı (9 koma) eklenerek kurulur. Dörtlü 22 koma olduğu için beşli 22 + 9 = 31 komadır. Kademe geçişinde gördüğün 31 koma da bir beşlidir.',
+      },
+      { tur: 'metin', metin: 'Altı çeşninin aralıkları (komayla; önce dörtlü, sonra beşli):' },
+      {
+        tur: 'liste',
+        maddeler: [
+          'Çârgâh: dörtlü 9+9+4, beşli 9+9+4+9',
+          'Bûselik: dörtlü 9+4+9, beşli 9+4+9+9',
+          'Kürdî: dörtlü 4+9+9, beşli 4+9+9+9',
+          'Rast: dörtlü 9+8+5, beşli 9+8+5+9',
+          'Uşşak: dörtlü 8+5+9; beşlisi yoktur, yalnız dörtlü olarak kullanılır',
+          'Hicaz: dörtlü 5+12+5, beşli 5+12+5+9',
+        ],
+      },
+      {
+        tur: 'metin',
+        metin:
+          "Uşşak'ın beşlisi yoktur: kaynaklar Uşşak'ı yalnız dörtlü olarak kullanır. Uşşak dörtlüsünün sonuna tanini eklesen bile ortaya \"Uşşak beşlisi\" denen bir çeşni çıkmaz. Rakamlar aralıkların büyüklüğüdür: 9+8+5+9 demek, ilk aralık 9, ikincisi 8, üçüncüsü 5, dördüncüsü 9 komadır.",
+      },
+      {
+        tur: 'porte',
+        olaylar: [n('G4'), n('A4'), n('B4b1'), n('C5'), n('D5')],
+        aciklama: "Rast'ta Rast beşlisi: Rast, Dügâh, Segâh, Çârgâh, Nevâ; her ses bir vuruş. Aralıklar 9+8+5+9 komadır. Segâh'ın önünde koma bemolü vardır.",
+        bpm: 60,
+      },
+      {
+        tur: 'porte',
+        olaylar: [n('A4'), n('B4'), n('C5'), n('D5'), n('E5')],
+        aciklama: "Dügâh'ta Bûselik beşlisi: Dügâh, Bûselik, Çârgâh, Nevâ, Hüseynî; her ses bir vuruş. Aralıklar 9+4+9+9 komadır. Hüseynî, üçüncü kademeden bir sestir.",
+        bpm: 60,
+      },
+      {
+        tur: 'porte',
+        olaylar: [n('D5'), n('E5'), n('F5#4'), n('G5'), n('A5')],
+        aciklama: "Nevâ'da Rast beşlisi: Nevâ, Hüseynî, Eviç, Gerdâniye, Muhayyer; her ses bir vuruş. Eviç'in önünde bakiye diyezi vardır. Aralıklar yine 9+8+5+9 komadır.",
+        bpm: 60,
+      },
+      {
+        tur: 'metin',
+        metin:
+          "Rast beşlisini iki yerde çalabilirsin: Rast'ta ve Nevâ'da. Dizi aynı aralıkları izler, yalnız yükseklik değişir. Nevâ'da Bûselik beşlisi de çalınır: Nevâ'dan başlar, Rast beşlisiyle aynı seslerden geçer, yalnız üçüncü ses Eviç yerine Acem olur (9+4+9+9). Etütte ikisini art arda çalarsın.",
+      },
+      {
+        tur: 'metin',
+        metin: 'Beşli, makamın yapı taşıdır. Sonraki derste makamı bir dörtlü ve bir beşliden kuracaksın. Beşliyi çalarken ♩ = 60 önerilen hızdır; bu bir öneridir, zorlanırsan yavaşlat.',
+      },
+      {
+        tur: 'dene',
+        adimlar: [
+          '"▶ Dinle" ile Rast beşlisini dinle; beş sesi say.',
+          "Rast'tan Nevâ'ya beş sesi tek tek çal; son aralığın Rast dörtlüsünün sonuna eklenen tanini olduğunu duy.",
+          "Nevâ'da Rast beşlisi etüdünü aç ve ♩ = 60'ta metronomla çal.",
+          "Sonra Nevâ'da Bûselik beşlisi etüdünü çal ve üçüncü sesin (Eviç yerine Acem) değiştiğini dinle.",
+        ],
+      },
+    ],
+    kaynaklar: [S3, S6, S2, TDV_RAST, KOMA_BLOG, WIKI_PERDE],
+    alistirma: '/etut/neva-rast-besli',
   },
 ]

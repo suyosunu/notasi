@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/preact'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MAKAMLAR } from '../content/makamlar'
-import { listAttempts, listCards, resetDbForTests } from '../store/db'
+import { getSettings, isaretEkle, listAttempts, listCards, resetDbForTests } from '../store/db'
 import { MakamQuiz, MakamSection } from './MakamSection'
 
 vi.mock('../audio/player', () => ({
@@ -56,6 +56,27 @@ describe('MakamSection', () => {
 })
 
 describe('MakamQuiz', () => {
+  beforeEach(async () => {
+    await isaretEkle('okunanDersler', 'makam:giris') // ders kapısı açık; kapı testi kaydı kendisi siler
+  })
+
+  it('Sorularla çalış önce makam:giris dersini gösterir', async () => {
+    await resetDbForTests() // giriş dersi okunmamış
+    render(<MakamQuiz />)
+    expect((await screen.findByRole('heading', { level: 1 })).textContent).toBe('📖 Makam nedir?')
+    expect(screen.queryByText(/Makam · 1\/8/)).toBeNull()
+    expect(screen.getByRole('link', { name: 'Makam bölümüne dön' }).getAttribute('href')).toBe('#/makam')
+    fireEvent.click(screen.getByRole('button', { name: 'Anladım, alıştırmaya geç' }))
+    expect(await screen.findByText(/Makam · 1\/8/)).toBeTruthy()
+    expect((await getSettings()).okunanDersler).toEqual(['makam:giris'])
+  })
+
+  it('giriş okunmuşsa sorular doğrudan gelir', async () => {
+    render(<MakamQuiz />)
+    expect(await screen.findByText(/Makam · 1\/8/)).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Anladım, alıştırmaya geç' })).toBeNull()
+  })
+
   it('8 soruluk serbest tur: başlık, soru ve 4 farklı seçenek', async () => {
     render(<MakamQuiz />)
     expect(await screen.findByText(/Makam · 1\/8/)).toBeTruthy()

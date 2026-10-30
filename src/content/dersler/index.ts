@@ -1,6 +1,7 @@
 import { DORTLU_DERSLERI } from './dortlu'
-import { DIL_ESER_DERSLERI, ETUT_DERSLERI } from './etut'
+import { DIL_ESER_DERSLERI, ETUT_3_DERSLERI, ETUT_DERSLERI } from './etut'
 import { HAZIRLIK_DERSLERI } from './hazirlik'
+import { MAKAM_DERSLERI } from './makam'
 import { NOTA_DERSLERI } from './nota'
 import { NOTA_2_DERSLERI, NOTA_3_DERSLERI } from './nota-2'
 import { PERDE_DERSLERI } from './perdeler'
@@ -9,8 +10,8 @@ import { USUL_DERSLERI } from './usul'
 import type { Etut } from '../etutler'
 import type { Ders } from './types'
 
-/** Tüm dersler (Task 35–37, 39, 46, 49 ve 54). */
-export const DERSLER: Ders[] = [...HAZIRLIK_DERSLERI, ...NOTA_DERSLERI, ...NOTA_2_DERSLERI, ...NOTA_3_DERSLERI, ...PERDE_DERSLERI, ...PERDE_3_DERSLERI, ...ETUT_DERSLERI, ...USUL_DERSLERI, ...DORTLU_DERSLERI, ...DIL_ESER_DERSLERI]
+/** Tüm dersler (Task 35–37, 39, 46, 49, 54 ve 55). */
+export const DERSLER: Ders[] = [...HAZIRLIK_DERSLERI, ...NOTA_DERSLERI, ...NOTA_2_DERSLERI, ...NOTA_3_DERSLERI, ...PERDE_DERSLERI, ...PERDE_3_DERSLERI, ...ETUT_DERSLERI, ...ETUT_3_DERSLERI, ...USUL_DERSLERI, ...DORTLU_DERSLERI, ...DIL_ESER_DERSLERI, ...MAKAM_DERSLERI]
 
 export function dersById(id: string): Ders | undefined {
   return DERSLER.find((d) => d.id === id)
@@ -40,6 +41,16 @@ export function usulDersId(usulId: string): string {
 export function usulDersleri(usulId: string): string[] {
   const kendi = usulDersId(usulId)
   return dersById(kendi) ? ['usul:giris', kendi] : ['usul:giris']
+}
+
+export function makamDersId(makamId: string): string {
+  return `makam:${makamId}`
+}
+
+/** Makam ekranında sırayla okunacak dersler: önce giriş, sonra (varsa) makamın kendi dersi. */
+export function makamDersleri(makamId: string): string[] {
+  const kendi = makamDersId(makamId)
+  return dersById(kendi) ? ['makam:giris', kendi] : ['makam:giris']
 }
 
 /** Ölçü, ölçü çizgisi ve nefes işareti dersi: usul etütlerinde ölçüler usule göre bölünür ve nefes (`,`) işareti çıkar. */

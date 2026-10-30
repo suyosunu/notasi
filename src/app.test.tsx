@@ -136,14 +136,23 @@ describe('App', () => {
     expect(screen.getByRole('link', { name: /Uşşak/ })).toBeTruthy()
   })
 
-  it('#/makam/<id> rotası makam sayfasını açar', () => {
+  it('#/makam/<id> rotası makam sayfasını açar (Uşşak ve Hicaz için yalnız makam:giris dersi gerekir)', async () => {
+    await saveSettings({ okunanDersler: ['makam:giris'] })
     location.hash = '#/makam/hicaz'
     render(<App />)
-    expect(screen.getByRole('heading', { name: /Hicaz/ })).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: /Hicaz/ })).toBeTruthy()
     expect(screen.getByRole('button', { name: '🔊 Diziyi dinle' })).toBeTruthy()
   })
 
+  it('#/makam/<id> rotası okunmamış makam:giris dersini önce gösterir', async () => {
+    location.hash = '#/makam/hicaz'
+    render(<App />)
+    expect(await screen.findByRole('heading', { name: /Makam nedir\?/ })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: '🔊 Diziyi dinle' })).toBeNull()
+  })
+
   it('#/makam/sorular rotası makam sorularını açar, makam sayfası sanılmaz', async () => {
+    await saveSettings({ okunanDersler: ['makam:giris'] })
     location.hash = '#/makam/sorular'
     render(<App />)
     expect(await screen.findByText(/Makam · 1\/8/)).toBeTruthy()

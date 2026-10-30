@@ -16,7 +16,7 @@ export type DersBlok =
   | { tur: 'dene'; adimlar: string[] } // "Kendin dene" kutusu
 
 export interface Ders {
-  /** 's0:<ad>', 'nota:<topicId>', 'okuma:<ad>', 'perde:<PerdeId>', 'usul:giris', 'usul:<usulId>', 'dortlu:<ad>', 'dil:<ad>', 'eser:<ad>', 'etut:<ad>' */
+  /** 's0:<ad>', 'nota:<topicId>', 'okuma:<ad>', 'perde:<PerdeId>', 'usul:giris', 'usul:<usulId>', 'makam:giris', 'makam:<makamId>', 'dortlu:<ad>', 'dil:<ad>', 'eser:<ad>', 'etut:<ad>' */
   id: string
   seviye: number
   baslik: string

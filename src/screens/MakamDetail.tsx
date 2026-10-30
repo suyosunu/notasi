@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'preact/hooks'
 import { playWritten, stopAudio, unlockAudio } from '../audio/player'
+import { makamDersleri } from '../content/dersler'
 import { MAKAMLAR } from '../content/makamlar'
 import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
 import { ACCIDENTAL_NAMES } from '../music/accidentals'
+import { DersKapisi } from '../ders/DersKapisi'
 import { cikisInisEvents, diziEvents } from '../music/makam'
 import { SOLFEJ } from '../music/pitch'
 import type { Accidental, WrittenPitch } from '../music/pitch'
@@ -17,9 +19,34 @@ function donanimAdi(p: WrittenPitch): string {
   return `${SOLFEJ[p.step]} ${ACCIDENTAL_NAMES[p.acc as Exclude<Accidental, 0 | 9 | -9>]}`
 }
 
-/** Tek makam: dizisi, durak/güçlü/yeden/donanım bilgileri, seyir, dizi sesi ve sorulara bağlantı. */
+const GERI = { href: '#/makam', label: 'Makam bölümüne dön' }
+
+/**
+ * Tek makam: önce dersler (`makam:giris`, varsa makamın kendi dersi; ders kuralı), sonra dizisi, durak/güçlü/yeden/donanım
+ * bilgileri, seyir, dizi sesi ve sorulara bağlantı. Bilinmeyen makamda ders kapısı yoktur.
+ */
 export function MakamDetail({ makamId }: { makamId: string }) {
-  const makam = MAKAMLAR.find((m) => m.id === makamId)
+  if (!MAKAMLAR.some((m) => m.id === makamId)) return <MakamBulunamadi />
+  return (
+    <DersKapisi dersId={makamDersleri(makamId)} geri={GERI}>
+      <MakamIcerik makamId={makamId} />
+    </DersKapisi>
+  )
+}
+
+function MakamBulunamadi() {
+  return (
+    <main class="screen">
+      <p class="muted">Makam bulunamadı.</p>
+      <a class="back" href={GERI.href}>
+        {GERI.label}
+      </a>
+    </main>
+  )
+}
+
+function MakamIcerik({ makamId }: { makamId: string }) {
+  const makam = MAKAMLAR.find((m) => m.id === makamId)!
   const [settings, setSettings] = useState<Settings | null>(null)
   const [soundWarn, setSoundWarn] = useState<string | null>(null)
 
@@ -36,16 +63,6 @@ export function MakamDetail({ makamId }: { makamId: string }) {
   // Sayfadan çıkınca çalan dizi susar.
   useEffect(() => () => stopAudio(), [])
 
-  if (!makam) {
-    return (
-      <main class="screen">
-        <p class="muted">Makam bulunamadı.</p>
-        <a class="back" href="#/makam">
-          Makam bölümüne dön
-        </a>
-      </main>
-    )
-  }
   const { dizi, inis } = makam
 
   async function listen() {

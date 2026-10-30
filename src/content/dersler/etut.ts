@@ -254,3 +254,79 @@ export const DIL_ESER_DERSLERI: Ders[] = [
     kaynaklar: [S1, S2, S5, s4(3)],
   },
 ]
+
+/** Kademe geçiş etütlerinin ilk ölçüleri (porte örneği); etütle ders aynı notayı gösterir. */
+function kademeOlculeri(etutId: string): MusicEvent[] {
+  return ETUTLER.find((e) => e.id === etutId)!.olcu.slice(0, 3).flat()
+}
+
+const MEB_1218 =
+  'S1 MEB TYMM, Bireysel Çalgı Eğitimi Ney Modülü, ünite 1218 (ikinci ve üçüncü kademe ana seslerden oluşan etütler): https://tymm.meb.gov.tr/muzik-okullari-bireysel-calgi-egitimi-dersi-ney-modulu/unite/1218'
+const MEB_1232 =
+  'S1 MEB TYMM, Bireysel Çalgı Eğitimi Ney Modülü, ünite 1232 (nim hisar, eviç ve nim şehnaz etütleri): https://tymm.meb.gov.tr/muzik-okullari-bireysel-calgi-egitimi-dersi-ney-modulu/unite/1232'
+
+/**
+ * Seviye 3 etüt dersi: kademe geçiş etütleri (araştırma C §5). Kaynaklar yalnız ilkeyi destekler (aynı parmak ve nefes
+ * şiddeti, uzun sesler, basit usul; MEB 1218, neyzenim _6/_8/_9); etütlerin kalıpları bu uygulamanın önerisidir.
+ */
+export const ETUT_3_DERSLERI: Ders[] = [
+  {
+    id: 'etut:kademe',
+    seviye: 3,
+    baslik: 'Kademe geçiş etütleri',
+    bloklar: [
+      {
+        tur: 'metin',
+        metin:
+          'Bir ses, ikinci kademedeki eşiyle aynı parmakla çalınır. Kademe geçiş etütleri bu iki sesi art arda çaldırır: parmak aynı kalır, yalnız nefes değişir. İkinci kademe sesini ılık nefesle, üçüncü kademe sesini daha sert nefesle çalarsın. Amaç, geçişte sesin kırılmamasıdır; nefesi değiştirirken ses ne kopar ne de başka bir perdeye kayar.',
+      },
+      {
+        tur: 'porte',
+        olaylar: kademeOlculeri('kademe-dugah-huseyni'),
+        aciklama: 'Dügâh–Hüseynî etüdünün ilk üç ölçüsü: birlik Dügâh, birlik Hüseynî, sonra ikilikler. Parmak aynı: yalnız en alttaki delik açık.',
+        bpm: 60,
+      },
+      {
+        tur: 'porte',
+        olaylar: kademeOlculeri('kademe-rast-kapali-neva'),
+        aciklama: "Rast–kapalı Nevâ etüdünün ilk üç ölçüsü: birlik Rast, birlik Nevâ, sonra ikilikler. Parmak aynı: bütün delikler kapalı.",
+        bpm: 60,
+      },
+      { tur: 'metin', metin: 'Nasıl çalışılır:' },
+      {
+        tur: 'liste',
+        maddeler: [
+          'Önce uzun değerlerle başla: ilk ölçülerde her sesi birlik olarak, tam süre tut. Nefes değişirken ses kırılmasın; akort göstergesine bak.',
+          'Sonra kısa değerlere geç: ikilikler, sonra dörtlükler. İki ses ne kadar sık değişirse nefesi o kadar çabuk ayarlaman gerekir.',
+          'Parmağı oynatma. Ses tutmuyorsa parmağı değil nefesi değiştir.',
+        ],
+      },
+      { tur: 'metin', metin: 'Uygulamadaki kademe etütleri şunlardır:' },
+      {
+        tur: 'liste',
+        maddeler: ETUTLER.filter((e) => e.tur === 'kademe').map((e) => e.baslik),
+      },
+      {
+        tur: 'metin',
+        metin:
+          "Rast–kapalı Nevâ çiftinde yukarıdaki Nevâ, açık Nevâ değil kapalı Nevâ'dır: Rast parmağıyla, yani bütün delikler kapalı çalınır. Zeki Sözen, kapalı Nevâ'yı tiz seslerden orta seslere inerken çok kullanacağımızı yazar. Son etütte Nim Hisar da var: Hüseynî ile Nevâ arasında çalınır. Nim Hisar için yüzük parmağı deliğin 3/4'ünü kapatır, baş hafifçe sola çevrilir.",
+      },
+      {
+        tur: 'metin',
+        metin:
+          "Bu etütlerin kalıpları bu uygulamanın önerisidir. Kaynaklar yalnız ilkeyi söyler: aynı parmakla farklı nefes şiddeti, uzun sesler, basit usul. MEB programında etütlerin metronomla hızlandırılabildiği de yazılıdır. ♩ = 60 de bir öneridir; zorlanırsan yavaşlat.",
+      },
+      {
+        tur: 'dene',
+        adimlar: [
+          'Dügâh–Hüseynî etüdünü aç ve "▶ Dinle" ile dinle; iki sesin aynı parmaktan çıktığını düşün.',
+          'Birliklerle Dügâh\'tan Hüseynî\'ye geç: parmağını oynatma, nefesini güçlendir.',
+          'Ses kırılıyorsa ya da Hüseynî Dügâh\'ta kalıyorsa yavaşla; akort göstergesine bak.',
+          'Birlikler temizse ikiliklere, sonra dörtlüklere geç; ♩ = 60\'ta metronomla çal.',
+        ],
+      },
+    ],
+    kaynaklar: [MEB_1218, MEB_1232, s4(6), s4(8), s4(9)],
+    alistirma: '/etut/kademe-dugah-huseyni',
+  },
+]
