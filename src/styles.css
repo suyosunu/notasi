@@ -763,8 +763,35 @@ h2.setting-label {
   flex: 0 1 auto;
 }
 
-.calisma-cubugu .notice {
+.calisma-cubugu .notice,
+.calisma-cubugu .mic-error-detail {
   margin: 0;
+}
+
+/* Mikrofonla takip özeti: çubuğun altında, akışta; uzun perde adları satır kırar. */
+.takip-ozet {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid #e6dfd1;
+  border-radius: 0.5rem;
+  background: #fff;
+  overflow-wrap: anywhere;
+}
+
+.takip-ozet p {
+  margin: 0 0 0.25rem;
+}
+
+.takip-ozet-baslik {
+  font-weight: 700;
+}
+
+.takip-ozet .takip-tani {
+  font-size: 0.8rem;
+}
+
+.takip-ozet .tool {
+  margin-top: 0.5rem;
 }
 
 .toggle {

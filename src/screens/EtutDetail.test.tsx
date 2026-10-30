@@ -335,6 +335,14 @@ describe('EtutCalisma', () => {
     expect(document.querySelectorAll('[data-testid="score-row"]')).toHaveLength(4)
   })
 
+  it('mikrofonla takip açıktır: "🎤 Çal, dinlesin" çubukta, deneme notu görünür', async () => {
+    render(<EtutCalisma etut={NEVA} />)
+    await dinleBtn()
+    const btn = screen.getByRole('button', { name: '🎤 Çal, dinlesin' })
+    expect(document.querySelector('.calisma-cubugu')!.contains(btn)).toBe(true)
+    expect(screen.getByText(/^Deneme: telefonu neyin önüne koy\./)).toBeTruthy()
+  })
+
   it('baslikGizle: başlık çizilmez (akşam adımında üst başlık vardır)', () => {
     render(<EtutCalisma etut={NEVA} baslikGizle />)
     expect(screen.queryByRole('heading')).toBeNull()

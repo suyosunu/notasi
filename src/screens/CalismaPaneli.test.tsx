@@ -2,17 +2,24 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { buildCalismaCode } from '../audio/calisma'
 import type { CalismaSecenek } from '../audio/calisma'
+import { setKayitSession, setPlaybackSession } from '../audio/ios'
+import { MIC_HATA_METINLERI, MicError, startPitchStream } from '../audio/mic'
+import type { PitchSample } from '../audio/mic'
 import { playCode, sesSaatiSimdi, stopAudio, unlockAudio } from '../audio/player'
 import { sonIsaret } from '../audio/sesSaati'
 import { SHAKUHACHI_SOUND } from '../audio/shakuhachi'
 import { acquireWakeLock, releaseWakeLock } from '../audio/wakeLock'
 import { ETUTLER } from '../content/etutler'
+import { NEY_PERDELER } from '../content/ney-perdeler'
+import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
 import { USULLER } from '../content/usuller'
-import { DEFAULT_TUNING } from '../music/ahenk'
+import { ANALIZ_PENCERESI_S } from '../learning/takip'
+import type { TakipDurumu, TakipSonucu } from '../learning/takip'
+import { DEFAULT_TUNING, soundingHz } from '../music/ahenk'
 import { beats } from '../music/notation'
 import type { MusicEvent } from '../music/notation'
-import { resetDbForTests } from '../store/db'
-import { CalismaPaneli } from './CalismaPaneli'
+import { resetDbForTests, saveSettings } from '../store/db'
+import { CalismaPaneli, takipOzeti } from './CalismaPaneli'
 
 vi.mock('../audio/player', () => ({
   unlockAudio: vi.fn(() => Promise.resolve()),
@@ -27,6 +34,17 @@ vi.mock('../audio/sesSaati', async (orig) => ({
   sonIsaret: vi.fn(() => null),
 }))
 
+vi.mock('../audio/mic', async (orig) => ({
+  ...(await orig<typeof import('../audio/mic')>()),
+  startPitchStream: vi.fn(),
+}))
+
+vi.mock('../audio/ios', async (orig) => ({
+  ...(await orig<typeof import('../audio/ios')>()),
+  setKayitSession: vi.fn(),
+  setPlaybackSession: vi.fn(),
+}))
+
 vi.mock('../audio/wakeLock', () => ({
   acquireWakeLock: vi.fn(() => Promise.resolve()),
   releaseWakeLock: vi.fn(),
@@ -34,6 +52,10 @@ vi.mock('../audio/wakeLock', () => ({
 
 /** Bekleyen (son) çalımı bitirir. */
 let finishPlay: () => void = () => {}
+/** Sahte mikrofon: son `startPitchStream` çağrısının örnek işlevi ve iptal sinyali; durdurucu `micDurdur`. */
+let micOrnek: ((s: PitchSample) => void) | null = null
+let micSinyal: AbortSignal | undefined
+const micDurdur = vi.fn()
 
 beforeEach(async () => {
   await resetDbForTests()
@@ -43,6 +65,18 @@ beforeEach(async () => {
   vi.mocked(sesSaatiSimdi).mockReset().mockReturnValue(null)
   vi.mocked(acquireWakeLock).mockClear()
   vi.mocked(releaseWakeLock).mockClear()
+  vi.mocked(setKayitSession).mockClear()
+  vi.mocked(setPlaybackSession).mockClear()
+  micDurdur.mockReset()
+  micOrnek = null
+  micSinyal = undefined
+  vi.mocked(startPitchStream)
+    .mockReset()
+    .mockImplementation((cb, signal) => {
+      micOrnek = cb
+      micSinyal = signal
+      return Promise.resolve(micDurdur)
+    })
   vi.mocked(playCode)
     .mockReset()
     .mockImplementation(() => new Promise<void>((r) => (finishPlay = r)))
@@ -429,5 +463,352 @@ describe('CalismaPaneli: çıkış', () => {
     expect(await screen.findByRole('button', { name: '▶ Dinle' })).toBeTruthy()
     unmount()
     expect(durdurRef.current).toBeNull()
+  })
+})
+
+describe('CalismaPaneli: mikrofonla takip', () => {
+  const NOT = 'Deneme: telefonu neyin önüne koy. Eşlik çalar, sen neyle çalarsın; sonunda her nota için sonuç çıkar.'
+  const cubuk = () => document.querySelector('.calisma-cubugu') as HTMLElement
+  const takipBtn = () => screen.getByRole('button', { name: '🎤 Çal, dinlesin' }) as HTMLButtonElement
+  const sonucYok = () => {
+    expect(screen.queryByText(/ notadan /)).toBeNull()
+    expect(document.querySelector('[data-durum]')).toBeNull()
+  }
+  /** Takibi başlatır ve eşlik çalımı başlayana dek bekler. */
+  async function takipBaslat() {
+    const n = vi.mocked(playCode).mock.calls.length
+    await dinleBtn()
+    fireEvent.click(takipBtn())
+    await waitFor(() => expect(playCode).toHaveBeenCalledTimes(n + 1))
+  }
+  /** Hiç çalınmadan biten bir takip: sonuç özeti çıkar. */
+  async function sonucUret() {
+    await takipBaslat()
+    vi.mocked(sonIsaret).mockReturnValue(10)
+    finishPlay()
+    await screen.findByText(/^16 notadan /)
+  }
+
+  it('düğme ve deneme notu yalnız takip açıkken; düğme çubukta, not çubuğun ardında akışta', async () => {
+    panel()
+    await dinleBtn()
+    expect(screen.queryByRole('button', { name: '🎤 Çal, dinlesin' })).toBeNull()
+    expect(screen.queryByText(NOT)).toBeNull()
+    cleanup()
+    panel({ takip: true })
+    await dinleBtn()
+    expect(within(cubuk()).getByRole('button', { name: '🎤 Çal, dinlesin' })).toBeTruthy()
+    const not = screen.getByText(NOT)
+    expect(cubuk().contains(not)).toBe(false)
+    expect(cubuk().compareDocumentPosition(not) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it("dokunuşta unlockAudio, setKayitSession ve startPitchStream bu sırayla, ilk await'ten önce çağrılır", async () => {
+    panel({ takip: true })
+    await dinleBtn()
+    fireEvent.click(takipBtn())
+    expect(unlockAudio).toHaveBeenCalledTimes(1)
+    expect(setKayitSession).toHaveBeenCalledTimes(1)
+    expect(startPitchStream).toHaveBeenCalledTimes(1)
+    const sira = [unlockAudio, setKayitSession, startPitchStream].map((f) => vi.mocked(f).mock.invocationCallOrder[0]!)
+    expect(sira).toEqual([...sira].sort((a, b) => a - b))
+    expect(micSinyal?.aborted).toBe(false)
+    expect(playCode).not.toHaveBeenCalled()
+    await waitFor(() => expect(playCode).toHaveBeenCalledTimes(1))
+    expect(setPlaybackSession).not.toHaveBeenCalled()
+    expect(within(cubuk()).getByRole('button', { name: '⏹ Durdur' })).toBeTruthy()
+    expect(within(cubuk()).getByRole('status').textContent).toBe('🎤 Dinliyorum…')
+  })
+
+  it('melodi çalmaz; Tekrarla açık olsa da tek tur; eşlik açıksa usul, kapalıysa yalnız giriş sayımı', async () => {
+    panel({ olcu: DORTLUK, usul: SOFYAN, takip: true })
+    fireEvent.click(tekrarBox())
+    await takipBaslat()
+    const usullu = buildCalismaCode(DORTLUK, DEFAULT_TUNING, 60, { ...SES, melodi: false, usul: SOFYAN })
+    expect(vi.mocked(playCode).mock.calls[0]).toEqual([usullu.code, usullu.durationMs])
+    expect(usullu.code).not.toContain(SHAKUHACHI_SOUND)
+    finishPlay()
+    expect(await screen.findByRole('button', { name: '🎤 Çal, dinlesin' })).toBeTruthy()
+    await bekle()
+    expect(playCode).toHaveBeenCalledTimes(1)
+
+    fireEvent.click(screen.getByRole('checkbox', { name: '🥁 Usul eşliği (Sofyan)' }))
+    await takipBaslat()
+    const sayim = buildCalismaCode(DORTLUK, DEFAULT_TUNING, 60, { ...SES, melodi: false, eslik: 'yok', usul: SOFYAN })
+    expect(vi.mocked(playCode).mock.calls[1]).toEqual([sayim.code, sayim.durationMs])
+  })
+
+  it('tur doğal bitince mikrofon durur, oturum playback; çubuğun altında özet ve notada her notanın durumu', async () => {
+    panel({ olcu: DORTLUK, olcuPerSatir: 1, takip: true })
+    await takipBaslat()
+    vi.mocked(sonIsaret).mockReturnValue(10)
+    const hedef = DORTLUK.flat().map((e) => soundingHz((e as Extract<MusicEvent, { kind: 'note' }>).pitch, DEFAULT_TUNING))
+    const cargah = soundingHz(NEY_PERDELER.find((p) => p.id === 'cargah')!.written, DEFAULT_TUNING)
+    const sent = (hz: number, c: number) => hz * 2 ** (c / 1200)
+    // ♩ = 60, giriş 4: k. nota 14 + k ile 15 + k sn arasında. 0 pes, 1 sessiz, 2 başka perde, 3 tiz, 4 kısa tutuldu.
+    for (let i = 0; i < 800; i++) {
+      const k = Math.floor(i / 50)
+      let hz: number | null = hedef[k]!
+      if (k === 0) hz = sent(hz, -40)
+      else if (k === 1) hz = null
+      else if (k === 2) hz = cargah
+      else if (k === 3) hz = sent(hz, 40)
+      else if (k === 4 && i % 50 > 30) hz = null
+      // Örnek, analiz penceresinin yarısı kadar önce çalınan sese aittir.
+      vi.mocked(sesSaatiSimdi).mockReturnValue(14 + i * 0.02 + ANALIZ_PENCERESI_S)
+      micOrnek!({ t: 0, hz, clarity: 1 })
+    }
+    vi.mocked(sesSaatiSimdi).mockReturnValue(null)
+    micOrnek!({ t: 0, hz: 440, clarity: 1 }) // ses saati yokken gelen örnek atlanır
+    expect(micDurdur).not.toHaveBeenCalled()
+    sonucYok()
+    finishPlay()
+    const baslik = await screen.findByText("16 notadan 11'i doğru.")
+    expect(micDurdur).toHaveBeenCalledTimes(1)
+    expect(micSinyal!.aborted).toBe(true)
+    expect(setPlaybackSession).toHaveBeenCalledTimes(1)
+    const kutu = baslik.closest('[role="status"]') as HTMLElement
+    expect(cubuk().contains(kutu)).toBe(false)
+    expect(cubuk().compareDocumentPosition(kutu) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    for (const satir of [
+      'Pes: Rast (1)',
+      'Tiz: Do (1)',
+      'Başka perde: Bûselik yerine Çârgâh',
+      'Duyulmadı: 1 nota',
+      'Kısa tutuldu: 1 nota',
+    ]) {
+      expect(within(kutu).getByText(satir)).toBeTruthy()
+    }
+    expect(within(kutu).getByText(/^Gecikme -?\d+ ms · ses duyulan kare %\d+$/)).toBeTruthy()
+    const durumlar = [...document.querySelectorAll('[data-durum]')].map((e) => e.getAttribute('data-durum'))
+    expect(durumlar).toEqual(['pes', 'yok', 'yanlis', 'tiz', 'kisa', ...Array<string>(11).fill('dogru')])
+
+    fireEvent.click(within(kutu).getByRole('button', { name: 'Sonucu temizle' }))
+    sonucYok()
+  })
+
+  it('hiç çalınmazsa bütün notalar duyulmadı, gecikme varsayılan; yeni çalım ya da yeni seçim sonucu temizler', async () => {
+    panel({ olcu: DORTLUK, olcuPerSatir: 1, takip: true })
+    await sonucUret()
+    expect(screen.getByText("16 notadan 0'ı doğru.")).toBeTruthy()
+    expect(screen.getByText('Duyulmadı: 16 nota')).toBeTruthy()
+    expect(screen.getByText('Gecikme 120 ms · ses duyulan kare %0')).toBeTruthy()
+    expect(document.querySelectorAll('[data-durum="yok"]')).toHaveLength(16)
+    fireEvent.click(await dinleBtn())
+    sonucYok()
+    await waitFor(() => expect(playCode).toHaveBeenCalledTimes(2))
+    fireEvent.click(screen.getByRole('button', { name: '⏹ Durdur' }))
+
+    await sonucUret()
+    fireEvent.click(satirlar()[1]!)
+    sonucYok()
+  })
+
+  it('işaret yoksa (ses başlamadı) sonuç yerine uyarı; mikrofon yine durur', async () => {
+    panel({ olcu: DORTLUK, takip: true })
+    await takipBaslat()
+    finishPlay()
+    expect(await screen.findByText('Ses başlamadı, sonuç çıkarılamadı.')).toBeTruthy()
+    sonucYok()
+    expect(micDurdur).toHaveBeenCalledTimes(1)
+    expect(setPlaybackSession).toHaveBeenCalledTimes(1)
+  })
+
+  it('mikrofon açılamazsa Türkçe uyarı ve ayrıntı; eşlik çalmaz, oturum playback, düğmeler geri gelir', async () => {
+    vi.mocked(startPitchStream).mockImplementation(() => Promise.reject(new MicError('izin-yok', 'NotAllowedError: x')))
+    panel({ takip: true })
+    await dinleBtn()
+    fireEvent.click(takipBtn())
+    expect(await screen.findByText(MIC_HATA_METINLERI['izin-yok'])).toBeTruthy()
+    expect(within(cubuk()).getByText('Ayrıntı: NotAllowedError: x')).toBeTruthy()
+    expect(setPlaybackSession).toHaveBeenCalledTimes(1)
+    expect(await screen.findByRole('button', { name: '🎤 Çal, dinlesin' })).toBeTruthy()
+    expect(releaseWakeLock).toHaveBeenCalled()
+    await bekle()
+    expect(playCode).not.toHaveBeenCalled()
+    // Yeni çalım uyarıyı kaldırır.
+    fireEvent.click(await dinleBtn())
+    expect(screen.queryByText(MIC_HATA_METINLERI['izin-yok'])).toBeNull()
+    expect(screen.queryByText(/^Ayrıntı:/)).toBeNull()
+  })
+
+  it('eşlik çalınamazsa ses uyarısı; mikrofon durur, oturum playback', async () => {
+    vi.mocked(playCode).mockImplementation(() => Promise.reject(new Error('strudel yok')))
+    panel({ takip: true })
+    await dinleBtn()
+    fireEvent.click(takipBtn())
+    expect(await screen.findByText(SOUND_WARNING)).toBeTruthy()
+    expect(micDurdur).toHaveBeenCalledTimes(1)
+    expect(setPlaybackSession).toHaveBeenCalledTimes(1)
+    sonucYok()
+  })
+
+  it('ses kapalıyken uyarır; mikrofonu açmaz', async () => {
+    await saveSettings({ soundOn: false })
+    panel({ takip: true })
+    await dinleBtn()
+    fireEvent.click(takipBtn())
+    expect(await screen.findByText(SOUND_OFF)).toBeTruthy()
+    expect(startPitchStream).not.toHaveBeenCalled()
+    expect(setKayitSession).not.toHaveBeenCalled()
+    expect(unlockAudio).not.toHaveBeenCalled()
+  })
+
+  it('Durdur: mikrofon durur ve iptal edilir, oturum playback; tur sonra bitse de sonuç çıkmaz', async () => {
+    panel({ olcu: DORTLUK, takip: true })
+    await takipBaslat()
+    vi.mocked(sonIsaret).mockReturnValue(10)
+    vi.mocked(stopAudio).mockClear()
+    fireEvent.click(screen.getByRole('button', { name: '⏹ Durdur' }))
+    expect(stopAudio).toHaveBeenCalledTimes(1)
+    expect(micDurdur).toHaveBeenCalledTimes(1)
+    expect(micSinyal!.aborted).toBe(true)
+    expect(setPlaybackSession).toHaveBeenCalledTimes(1)
+    finishPlay()
+    await bekle()
+    sonucYok()
+    expect(micDurdur).toHaveBeenCalledTimes(1)
+    expect(setPlaybackSession).toHaveBeenCalledTimes(1)
+  })
+
+  it('mikrofon açılırken Durdur: iptal sinyali; geç açılan mikrofon hemen kapanır, eşlik çalmaz, uyarı yok', async () => {
+    let ac: (d: () => void) => void = () => {}
+    vi.mocked(startPitchStream).mockImplementation((_cb, signal) => {
+      micSinyal = signal
+      return new Promise((r) => (ac = r))
+    })
+    panel({ takip: true })
+    await dinleBtn()
+    fireEvent.click(takipBtn())
+    fireEvent.click(await screen.findByRole('button', { name: '⏹ Durdur' }))
+    expect(micSinyal!.aborted).toBe(true)
+    expect(setPlaybackSession).toHaveBeenCalledTimes(1)
+    ac(micDurdur)
+    await bekle()
+    expect(micDurdur).toHaveBeenCalledTimes(1)
+    expect(playCode).not.toHaveBeenCalled()
+    expect(document.querySelector('.calisma-cubugu .notice')).toBeNull()
+  })
+
+  it('takip sürerken satır, hız ya da eşlik değişince mikrofon durur', async () => {
+    panel({ olcu: DORTLUK, olcuPerSatir: 1, takip: true })
+    const degisimler = [
+      () => fireEvent.click(satirlar()[1]!),
+      () => fireEvent.change(slider(), { target: { value: '70' } }),
+      () => fireEvent.click(screen.getByRole('checkbox', { name: '🥁 Metronom' })),
+    ]
+    for (const [i, degis] of degisimler.entries()) {
+      await takipBaslat()
+      degis()
+      expect(micDurdur).toHaveBeenCalledTimes(i + 1)
+      expect(setPlaybackSession).toHaveBeenCalledTimes(i + 1)
+      expect(await screen.findByRole('button', { name: '🎤 Çal, dinlesin' })).toBeTruthy()
+    }
+  })
+
+  it('sayfadan çıkınca mikrofon durur, oturum playback; bekleyen tur bir şey yapmaz', async () => {
+    const { unmount } = panel({ olcu: DORTLUK, takip: true })
+    await takipBaslat()
+    vi.mocked(sonIsaret).mockReturnValue(10)
+    unmount()
+    expect(micDurdur).toHaveBeenCalledTimes(1)
+    expect(micSinyal!.aborted).toBe(true)
+    expect(setPlaybackSession).toHaveBeenCalledTimes(1)
+    finishPlay()
+    await bekle()
+    expect(setPlaybackSession).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('takipOzeti', () => {
+  const not = (step: 'G' | 'A' | 'B' | 'C' | 'D', octave: number, acc: -1 | 0 = 0): MusicEvent => ({
+    kind: 'note',
+    pitch: { step, octave, acc },
+    dur: 'quarter',
+  })
+  /** Segâh, Dügâh, Çârgâh, Nevâ | Segâh, Rast, Do (perde listesinde yok), sus. */
+  const OLCU: MusicEvent[][] = [
+    [not('B', 4, -1), not('A', 4), not('C', 5), not('D', 5)],
+    [not('B', 4, -1), not('G', 4), not('C', 4), { kind: 'rest', dur: 'quarter' }],
+  ]
+  const sonuc = (notalar: TakipSonucu['notalar'], ek: Partial<TakipSonucu> = {}): TakipSonucu => ({
+    notalar,
+    gecikmeMs: 130,
+    sesliOran: 0.734,
+    atlanan: 0,
+    ...ek,
+  })
+  const n = (olcu: number, nota: number, durum: TakipDurumu, calinan?: string) => ({
+    olcu,
+    nota,
+    durum,
+    sent: null,
+    ...(calinan ? { calinan } : {}),
+  })
+
+  it('başlık, pes/tiz perde sayıları (çoktan aza), başka perde, duyulmadı, kısa, atlanan ve tanılama', () => {
+    const o = takipOzeti(
+      sonuc(
+        [
+          n(0, 1, 'pes'),
+          n(0, 0, 'pes'),
+          n(1, 0, 'pes'),
+          n(0, 2, 'yanlis', 'Nevâ'),
+          n(0, 3, 'tiz'),
+          n(1, 1, 'yok'),
+          n(1, 2, 'kisa'),
+          n(1, 1, 'yok'),
+          n(0, 2, 'yanlis', 'Nevâ'),
+          n(1, 1, 'yanlis', 'Dügâh'),
+          n(0, 0, 'dogru'),
+          n(0, 1, 'dogru'),
+        ],
+        { atlanan: 3 },
+      ),
+      OLCU,
+    )
+    expect(o.baslik).toBe("12 notadan 2'si doğru.")
+    expect(o.satirlar).toEqual([
+      'Pes: Segâh (2), Dügâh (1)',
+      'Tiz: Nevâ (1)',
+      'Başka perde: Çârgâh yerine Nevâ (2), Rast yerine Dügâh',
+      'Duyulmadı: 2 nota',
+      'Kısa tutuldu: 1 nota',
+      '3 nota çok kısa olduğu için değerlendirilmedi.',
+    ])
+    expect(o.tani).toBe('Gecikme 130 ms · ses duyulan kare %73')
+  })
+
+  it('hepsi doğruysa ek satır yok; listede olmayan perde solfej adıyla', () => {
+    expect(takipOzeti(sonuc([n(0, 0, 'dogru'), n(0, 1, 'dogru')]), OLCU).satirlar).toEqual([])
+    expect(takipOzeti(sonuc([n(1, 2, 'pes')]), OLCU).satirlar).toEqual(['Pes: Do (1)'])
+  })
+
+  it.each([
+    [0, "0'ı"],
+    [1, "1'i"],
+    [2, "2'si"],
+    [3, "3'ü"],
+    [4, "4'ü"],
+    [5, "5'i"],
+    [6, "6'sı"],
+    [7, "7'si"],
+    [8, "8'i"],
+    [9, "9'u"],
+    [10, "10'u"],
+    [12, "12'si"],
+    [16, "16'sı"],
+    [20, "20'si"],
+    [30, "30'u"],
+    [40, "40'ı"],
+    [50, "50'si"],
+    [60, "60'ı"],
+    [70, "70'i"],
+    [80, "80'i"],
+    [90, "90'ı"],
+    [100, "100'ü"],
+  ])('%i doğru: "%s"', (k, ek) => {
+    const notalar = [...Array.from({ length: k }, () => n(0, 0, 'dogru')), n(0, 1, 'yok')]
+    expect(takipOzeti(sonuc(notalar), OLCU).baslik).toBe(`${k + 1} notadan ${ek} doğru.`)
   })
 })

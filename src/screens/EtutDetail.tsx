@@ -16,7 +16,7 @@ const olcuPerSatir = (zaman: number) => (zaman === 2 || zaman === 3 ? 3 : 2)
 
 /**
  * Etüdün çalışma bölümü (etüt ekranında ve akşam planında ortak): başlık, çalışma paneli (nota, bölüm seçimi, hız,
- * metronom ya da usul eşliği, tekrar ve hızlanma) ve "Çaldım" işareti. `baslikGizle`: başlığı üst ekran gösteriyorsa
+ * metronom ya da usul eşliği, tekrar ve hızlanma, mikrofonla takip denemesi) ve "Çaldım" işareti. `baslikGizle`: başlığı üst ekran gösteriyorsa
  * (akşam adımı) çizilmez.
  */
 export function EtutCalisma(props: { etut: Etut; onDone?: () => void; baslikGizle?: boolean }) {
@@ -62,6 +62,7 @@ export function EtutCalisma(props: { etut: Etut; onDone?: () => void; baslikGizl
         olcuPerSatir={olcuPerSatir(usul?.zaman ?? 4)}
         beamBeats={KIRIS_VURUSU}
         durdurRef={durdurRef}
+        takip
       />
 
       <div class="tools etut-caldim">

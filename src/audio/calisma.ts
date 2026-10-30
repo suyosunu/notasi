@@ -68,12 +68,12 @@ export function olcuVurusu(usul?: Usul): number {
  *   sonraki bölüme `.compress` edilir). İlk ölçü tam usul ölçüsünden kısaysa (anacrusis) usul ilk tam ölçüde başlar.
  *   Vuruş kalıbı olmayan usul (Dolap) metronom olarak çalar. Bir usul ölçüsü `measureBeats` dörtlük sürer; sesler
  *   saniye cinsinden söndüğü için usulün kendi biriminde tempo `bpm · mertebe / 4`'tür.
- * - `eslik: 'yok'`: yalnız sayım.
+ * - `eslik: 'yok'`: yalnız sayım. Melodi de kapalıysa (mikrofonla takip, eşlik kapalı) çalım sayımdan sonra sessizdir;
+ *   süre yine seçimin tamamıdır.
  * - `isaret` (varsayılan açık): başa ses saati işareti katmanı.
  * `olcu` çalınacak (seçili) ölçülerdir; `toplamVurus` bunların toplamıdır.
  */
 export function buildCalismaCode(olcu: MusicEvent[][], tuning: Tuning, bpm: number, s: CalismaSecenek): CalismaKodu {
-  if (!s.melodi && s.eslik === 'yok') throw new RangeError('Çalınacak melodi ya da eşlik seçilmedi')
   const tones = toToneEvents(olcu.flat(), tuning)
   const total = tones.reduce((sum, e) => sum + e.beats, 0)
   if (!(total > 0) || !(bpm > 0)) throw new RangeError('Çalınacak ses ya da geçerli tempo yok')

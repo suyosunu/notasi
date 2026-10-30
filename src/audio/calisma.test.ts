@@ -308,8 +308,15 @@ describe('buildCalismaCode: etüt', () => {
     }
   })
 
-  it('ikisi de kapalıysa ya da tempo geçersizse RangeError', () => {
-    expect(() => buildCalismaCode(tekNeva.olcu, DEFAULT_TUNING, 60, { ...opts, melodi: false, eslik: 'yok' })).toThrow(RangeError)
+  it('melodi ve eşlik kapalıyken (mikrofonla takip) yalnız giriş sayımı; süre yine seçimin tamamıdır', () => {
+    const total = toplam(tekNeva.olcu)
+    const r = buildCalismaCode(tekNeva.olcu, DEFAULT_TUNING, 60, { ...opts, melodi: false, eslik: 'yok' })
+    expect(r.code).toBe(`${metronomeBody(4, 60)}.compress(0, 4 / ${4 + total})${ONE_SHOT}.cpm(${60 / (4 + total)})`)
+    expect(r.durationMs).toBe((4 + total) * 1000)
+    expect(r.girisVurus).toBe(4)
+  })
+
+  it('tempo geçersizse ya da ses yoksa RangeError', () => {
     expect(() => buildCalismaCode(tekNeva.olcu, DEFAULT_TUNING, 0, opts)).toThrow(RangeError)
     expect(() => buildCalismaCode([], DEFAULT_TUNING, 60, opts)).toThrow(RangeError)
   })
