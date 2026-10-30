@@ -119,3 +119,12 @@ Görev incelemelerinde "şimdilik kalabilir" denen bulgular. Sürüm 2'ye başla
 - Ruling: takip sırasında ses oturumu `play-and-record`, bitince `playback` — iPhone'da eşlik sesi kısılabilir ya da ahizeye gidebilir; deneme gösterecek.
 - Ruling: tur bitince mikrofon 500 ms daha açık kalır (gecikme penceresi), sonra değerlendirilir.
 - Açık (minor): değerlendirilmeyen (çok kısa) ve bağın devam notaları notada işaretsiz kalır; SVG `role="img"` içindeki `<title>` ekran okuyucuya ulaşmaz (özet `role="status"` erişilebilir kanal); 48000 Hz sabit örnekleme varsayımı; >70 sent dalı `calinan`'ı katlanmamış ortancadan adlandırır; kuyruk sırasında sayfadan çıkış testi yok; takipEt/calis kurulum tekrarı.
+
+## Aşama C — Seviye 3 (2026-10-30)
+- Ruling: Nim Hisar şeması `verified: true` (sol yüzük 3/4 kapalı, baş hafif sola; neyzenim _6 metni tek başına kesin değil, fotoğraf ve 31 koma tutarlılığı destekliyor) — cost if wrong: yalnız bu perdenin şeması ve dersi düzeltilir.
+- Ruling: "Yine bir gülnihal" (35 aralık dışı notanın 32'si 1. kademe pest seslerde) ve Benli Hasan Ağa Rast peşrevi (Sakîl 48/4) Seviye 5'e; Seviye 3 eseri "Yine Bağlandı Dil" aranağmesi (ölçü 1–20, sözsüz) — cost if wrong: Seviye 3'te Rast eseri yok.
+- Ruling: denenmiş (uzun ses kaydı olan) perde hiçbir zaman kilitlenmez; yeni sıra (kapalı Nevâ Eviç'ten önce) eski kullanıcıda açık perdeyi kapatmasın diye — cost if wrong: sıra değişse de denenmiş perde açık kalır.
+- Ruling: makam dizi sorularında 5 seçenek (dört makam + Hüseynî); Yürük Semâî usulü Seviye 4 etiketli kalırken eseri Seviye 3 (kilit yok, zararsız).
+- Deferred: `octaveCounterpart` G5#4 için "Sol"u oktav karşılığı sayıyor (makul çeldirici); evening-plan.test'te kullanılmayan `_yok`; Seviye 3 etüt testinde 7 notasyon sabitlenmedi ve "durakta biter" başlığı denetlenmiyor; `etut.ts` MEB künyelerini `meb()` yerine düz yazıyor; dönüştürücünün "bayt bayt" testi kaynağa sadakati değil biçimi koruyor, `olcuAraligi` sonunun nota ortasına düşmesi test edilmedi.
+- Deferred: SymbTr aynı komayı farklı yazıyor (A4#4/B4b5, D5#4/E5b5); ileride bu yazımlı bir eser eklenirse dönüştürücü KomaAE'ye göre uygulama yazımına çevirmeli. `Hole` kesir taşımıyor (Bûselik yarım, Nim Hisar 3/4 ikisi de `yarim`).
+- Deferred: Çanakkale İçinde (Nevâ türkü, aralık tam, Nim Hisar ×32) telif durumu belirsiz; doğrulanırsa Nim Hisar için iyi bir eser.
