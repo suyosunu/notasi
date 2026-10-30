@@ -82,7 +82,9 @@ describe('DERSLER değişmezleri', () => {
     for (const b of d.bloklar) if (b.tur === 'parmak') expect(NEY_PERDELER.map((p) => p.id)).toContain(b.perdeId)
   })
 
-  it.each(DERSLER.filter((d) => d.alistirma).map((d) => [d.id, d.alistirma!] as const))(
+  // Task 62'nin makam dersleri, Task 63'ün ekleyeceği dizi etütlerine gider; etütler gelince bu liste silinir.
+  const TASK_63_ETUT_ROTALARI = ['dizi-ussak-tiz', 'dizi-bayati', 'dizi-huseyni', 'dizi-muhayyer', 'dizi-kurdi', 'dizi-hicaz'].map((id) => `/etut/${id}`)
+  it.each(DERSLER.filter((d) => d.alistirma && !TASK_63_ETUT_ROTALARI.includes(d.alistirma)).map((d) => [d.id, d.alistirma!] as const))(
     '%s: alıştırma rotası (%s) bilinir',
     (_id, rota) => {
       expect(rotaBilinir(rota)).toBe(true)
@@ -1166,7 +1168,7 @@ describe('Seviye 3 teori ve makam dersleri', () => {
       expect(DERSLER, id).toContain(ders(id))
       expect(ders(id).seviye, id).toBe(3)
     }
-    expect(MAKAM_DERSLERI.map((d) => d.id)).toEqual(['makam:giris', 'makam:rast', 'makam:neva'])
+    expect(MAKAM_DERSLERI.slice(0, 3).map((d) => d.id)).toEqual(['makam:giris', 'makam:rast', 'makam:neva'])
     expect(ETUT_3_DERSLERI.map((d) => d.id)).toEqual(['etut:kademe'])
     expect(ders('dortlu:besli').alistirma).toBe('/etut/neva-rast-besli')
     expect(ders('makam:rast').alistirma).toBe('/etut/dizi-rast')
@@ -1226,7 +1228,7 @@ describe('Seviye 3 teori ve makam dersleri', () => {
     expect(m).toContain(neva.yapi!)
   })
 
-  it('makam:neva Uşşak farkını (Eviç / Acem) ve asma karardaki Acem’i söyler; Uşşak ve Hicaz için ders yoktur', () => {
+  it('makam:neva Uşşak farkını (Eviç / Acem) ve asma karardaki Acem’i söyler', () => {
     const m = metin('makam:neva')
     expect(m).toMatch(/Uşşak/)
     expect(m).toMatch(/Eviç/)
@@ -1235,8 +1237,8 @@ describe('Seviye 3 teori ve makam dersleri', () => {
     expect(m).toMatch(/bûselik/)
     expect(m).toMatch(/segâh/)
     expect(m).toMatch(/seyir/i)
-    expect(dersById('makam:ussak')).toBeUndefined()
-    expect(dersById('makam:hicaz')).toBeUndefined()
+    // Segâh çeşnisinin yapısı hiçbir derste verilmez; Nevâ dersi bunu "Seviye 4'te" diye vaat etmez.
+    expect(m).not.toMatch(/segâh çeşnisinin ayrıntısı Seviye 4/)
     // Uşşak ile Nevâ'nın farkı portede de gösterilir: Hüseynî, Acem (F5) ya da Eviç (F5#4), Gerdâniye.
     const p = porteler('makam:neva').map((b) => perdeler(b.olaylar))
     expect(p).toContainEqual(makam('ussak').dizi.slice(4, 7))
@@ -1285,8 +1287,11 @@ describe('Seviye 3 teori ve makam dersleri', () => {
     expect(ders('makam:giris').alistirma).toBe('/makam')
   })
 
-  it('makam:giris Uşşak ve Hicaz derslerini Seviye 4’e bırakır', () => {
-    expect(metin('makam:giris')).toMatch(/Seviye 4/)
+  it('makam:giris öteki altı makamın derslerini Seviye 4’e bırakır; bu dersler gerçekten vardır', () => {
+    const m = metin('makam:giris')
+    expect(m).toMatch(/Seviye 4/)
+    for (const ad of ['Uşşak', 'Bayâtî', 'Hüseynî', 'Muhayyer', 'Kürdî', 'Hicaz']) expect(m, ad).toContain(ad)
+    for (const id of ['ussak', 'bayati', 'huseyni', 'muhayyer', 'kurdi', 'hicaz']) expect(dersById(`makam:${id}`)?.seviye, id).toBe(4)
   })
 
   it('makam portelerinin hepsi telefona sığar (en çok sekiz olay) ve diziEvents ile aynı sayıdadır', () => {
@@ -1297,10 +1302,8 @@ describe('Seviye 3 teori ve makam dersleri', () => {
   })
 
   it('makamDersleri: giriş ve makamın kendi dersi; dersi olmayan makamda yalnız giriş', () => {
-    expect(makamDersleri('rast')).toEqual(['makam:giris', 'makam:rast'])
-    expect(makamDersleri('neva')).toEqual(['makam:giris', 'makam:neva'])
-    expect(makamDersleri('ussak')).toEqual(['makam:giris'])
-    expect(makamDersleri('hicaz')).toEqual(['makam:giris'])
+    for (const m of MAKAMLAR) expect(makamDersleri(m.id), m.id).toEqual(['makam:giris', `makam:${m.id}`])
+    expect(makamDersleri('bilinmeyen')).toEqual(['makam:giris'])
   })
 
   it('etut:kademe "öneri" der: aynı parmak, yalnız nefes değişir; önce uzun sonra kısa değerler; kalıplar bu uygulamanın önerisi', () => {
@@ -1314,6 +1317,183 @@ describe('Seviye 3 teori ve makam dersleri', () => {
     // Porte örneği Dügâh–Hüseynî etüdünün ilk ölçüleridir.
     const etut = ETUTLER.find((e) => e.id === 'kademe-dugah-huseyni')!
     expect(porteler('etut:kademe').map((b) => b.olaylar)).toContainEqual(etut.olcu.slice(0, 3).flat())
+  })
+
+  it.each(IDS)('%s: BELİRSİZ yazılmaz, "Kendin dene" ve dolu kaynaklar var', (id) => {
+    expect(metin(id)).not.toMatch(/BELİRSİZ/i)
+    expect(ders(id).bloklar.some((b) => b.tur === 'dene')).toBe(true)
+    expect(ders(id).kaynaklar.length).toBeGreaterThan(0)
+  })
+})
+
+describe('Seviye 4 makam dersleri, çeşni ve üçlüler', () => {
+  const ders = (id: string) => dersById(id)!
+  const metin = (id: string) => metinler(ders(id)).join(' ')
+  /** Kaynak satırları hariç ders metni. */
+  const govde = (id: string) => metinler(ders(id)).slice(0, -ders(id).kaynaklar.length).join(' ')
+  const porteler = (id: string) => ders(id).bloklar.flatMap((b) => (b.tur === 'porte' ? [b] : []))
+  const perdeler = (olaylar: MusicEvent[]) => olaylar.map((e) => (e.kind === 'note' ? e.pitch : null))
+  const makam = (id: string) => MAKAMLAR.find((m) => m.id === id)!
+  const ETUT_ROTALARI: Record<string, string> = {
+    ussak: 'dizi-ussak-tiz',
+    bayati: 'dizi-bayati',
+    huseyni: 'dizi-huseyni',
+    muhayyer: 'dizi-muhayyer',
+    kurdi: 'dizi-kurdi',
+    hicaz: 'dizi-hicaz',
+  }
+  const MAKAM_IDLERI = Object.keys(ETUT_ROTALARI)
+  const IDS = [...MAKAM_IDLERI.map((id) => `makam:${id}`), 'dortlu:cesni']
+
+  it('altı makam dersi ve çeşni dersi var, hepsi seviye 4 ve DERSLER içinde; makam dersleri dizi etüdüne gider', () => {
+    for (const id of IDS) {
+      expect(DERSLER, id).toContain(ders(id))
+      expect(ders(id).seviye, id).toBe(4)
+    }
+    expect(MAKAM_DERSLERI.map((d) => d.id)).toEqual([
+      'makam:giris',
+      'makam:rast',
+      'makam:neva',
+      'makam:ussak',
+      'makam:bayati',
+      'makam:huseyni',
+      'makam:muhayyer',
+      'makam:kurdi',
+      'makam:hicaz',
+    ])
+    for (const [id, etut] of Object.entries(ETUT_ROTALARI)) expect(ders(`makam:${id}`).alistirma, id).toBe(`/etut/${etut}`)
+  })
+
+  it.each(MAKAM_IDLERI)('makam:%s: porte dizisi MAKAMLAR ile aynı; yapı, durak, güçlü, yeden, seyir ve asma karar yazılı; porteler telefona sığar', (id) => {
+    const m = makam(id)
+    const p = porteler(`makam:${id}`).map((b) => perdeler(b.olaylar))
+    expect(p).toContainEqual(m.dizi)
+    if (m.inis) expect(p).toContainEqual([...m.inis].reverse())
+    for (const b of porteler(`makam:${id}`)) expect(b.olaylar.length).toBeLessThanOrEqual(8)
+    // Dizi, ney perdelerinin yazılı notalarıdır.
+    const yazilar = NEY_PERDELER.map((x) => JSON.stringify(x.written))
+    for (const pitch of m.dizi) expect(yazilar).toContain(JSON.stringify(pitch))
+    const t = metin(`makam:${id}`)
+    expect(t).toContain(m.yapi!)
+    for (const x of [m.durak, m.guclu, m.yeden]) expect(t).toContain(x)
+    expect(t).toMatch(/seyir/i)
+    expect(t).toMatch(/asma karar/)
+  })
+
+  it('Hüseynî ve Muhayyer acemli iniş portesini de gösterir; öteki dört makamda ayrı iniş yoktur', () => {
+    for (const id of ['huseyni', 'muhayyer']) {
+      expect(makam(id).inis).toBeDefined()
+      expect(porteler(`makam:${id}`).length, id).toBeGreaterThanOrEqual(2)
+      expect(metin(`makam:${id}`), id).toMatch(/acemli/)
+    }
+    for (const id of ['ussak', 'bayati', 'kurdi', 'hicaz']) expect(makam(id).inis, id).toBeUndefined()
+  })
+
+  it('Uşşak: Dügâh’tan başlar, çıkıcıdır, Segâh asma kararı pest basılır; Bayâtî ile aynı dizi', () => {
+    const t = metin('makam:ussak')
+    expect(t).toContain("Dügâh'tan")
+    expect(t).toMatch(/çıkıcı/)
+    expect(t).toMatch(/Segâh/)
+    expect(t).toMatch(/pest/)
+    expect(t).toContain('Bayâtî')
+    expect(makam('ussak').dizi).toEqual(makam('bayati').dizi)
+  })
+
+  it('Bayâtî: Uşşak ile aynı dizi, Nevâ’dan başlar, seyir yönü söylenmez (kaynaklar ayrışıyor)', () => {
+    const t = govde('makam:bayati')
+    expect(t).toContain('Uşşak')
+    expect(t).toContain("Nevâ'dan")
+    expect(t).toMatch(/aynı (dizi|sekiz ses)/)
+    expect(t).not.toMatch(/çıkıcı|inici/i)
+    expect(t).toMatch(/seyir/i)
+    // Aynı sekiz ses: Bayâtî dersi Uşşak dizisini, Uşşak dersi Bayâtî dizisini aynen gösterir.
+    expect(porteler('makam:bayati').map((b) => perdeler(b.olaylar))).toContainEqual(makam('ussak').dizi)
+    expect(porteler('makam:ussak').map((b) => perdeler(b.olaylar))).toContainEqual(makam('bayati').dizi)
+  })
+
+  it('Hüseynî: Hüseynî’den başlar, Nevâ ile aynı dizi, Çârgâh ve Segâh asma kararları, acemli iniş', () => {
+    const t = metin('makam:huseyni')
+    expect(t).toContain("Hüseynî'den")
+    expect(t).toMatch(/Nevâ/)
+    expect(t).toMatch(/Çârgâh/)
+    expect(t).toMatch(/Segâh/)
+    expect(t).toMatch(/Muhayyer/)
+    expect(makam('huseyni').dizi).toEqual(makam('neva').dizi)
+  })
+
+  it('Muhayyer: Hüseynî ile aynı dizi, Muhayyer’den başlar, inicidir, tiz bölgeyi (Tiz Segâh, Tiz Çârgâh, Tiz Nevâ) anar', () => {
+    const t = metin('makam:muhayyer')
+    expect(t).toContain('Hüseynî')
+    expect(t).toContain("Muhayyer'den")
+    for (const ad of ['Tiz Segâh', 'Tiz Çârgâh', 'Tiz Nevâ']) expect(t, ad).toContain(ad)
+    expect(t).toMatch(/inici/)
+    expect(makam('muhayyer').dizi).toEqual(makam('huseyni').dizi)
+    // Tiz bölge portede: üç tiz perdenin yazılı notaları aynı portede.
+    const tiz = NEY_PERDELER.filter((x) => ['tiz-segah', 'tiz-cargah', 'tiz-neva'].includes(x.id)).map((x) => JSON.stringify(x.written))
+    const p = porteler('makam:muhayyer').map((b) => perdeler(b.olaylar).map((x) => JSON.stringify(x)))
+    expect(p.some((l) => tiz.every((w) => l.includes(w)))).toBe(true)
+  })
+
+  it('Kürdî: ikinci ses Kürdî perdesi, Uşşak’tan farkı yalnız bu ses; Kürdî dörtlüsü ve Bûselik beşlisi', () => {
+    const t = metin('makam:kurdi')
+    expect(t).toContain(`Si ${ACCIDENTAL_NAMES[-5]}`)
+    expect(t).toMatch(/Uşşak/)
+    expect(t).toContain('4+9+9')
+    expect(t).toContain('9+4+9+9')
+    expect(makam('kurdi').dizi.slice(2)).toEqual(makam('ussak').dizi.slice(2))
+  })
+
+  it('Hicaz: 5+12+5 dörtlü, Nevâ’da Rast beşlisi, donanımdaki üç ses anılır', () => {
+    const t = metin('makam:hicaz')
+    expect(t).toContain('5+12+5')
+    expect(t).toContain('9+8+5+9')
+    expect(t).toContain('Dik Kürdî')
+    expect(t).toContain('Nim Hicaz')
+    expect(t).toContain('Eviç')
+  })
+
+  it('hiçbir Seviye 4 dersi Segâh, Ferahnâk ya da Karcığar çeşnisinin yapısını (koma dizisini) vermez', () => {
+    for (const id of IDS) expect(metin(id), id).not.toMatch(/(Segâh|Ferahnâk|Karcığar)[^.]*\d+\+\d+/i)
+  })
+
+  it('dortlu:cesni: çeşni tanımı, altı üçlü ve koma toplamları (18, 13, 13, 17, 13, 17), üçlü = dörtlünün ilk üç sesi', () => {
+    const t = govde('dortlu:cesni')
+    expect(t).toMatch(/[Çç]eşni/)
+    expect(t).toMatch(/dörtlünün ilk üç sesi/)
+    const uclular: [string, string, number][] = [
+      ['Çârgâh', '9+9', 18],
+      ['Bûselik', '9+4', 13],
+      ['Kürdî', '4+9', 13],
+      ['Rast', '9+8', 17],
+      ['Uşşak', '8+5', 13],
+      ['Hicaz', '5+12', 17],
+    ]
+    const liste = ders('dortlu:cesni')
+      .bloklar.flatMap((b) => (b.tur === 'liste' ? [b.maddeler] : []))
+      .find((l) => l.length === 6)!
+    expect(liste).toBeDefined()
+    for (const [ad, aralik, toplam] of uclular) {
+      const madde = liste.find((x) => x.startsWith(ad))!
+      expect(madde, ad).toContain(aralik)
+      expect(madde, ad).toMatch(new RegExp(`\\b${toplam} koma`))
+      const [a, b] = aralik.split('+').map(Number)
+      expect(a! + b!).toBe(toplam)
+    }
+  })
+
+  it('dortlu:cesni: porteler üç sesli ve yazılı perdeler; kaynaklar MEB 1115, 1113, TDV Makam ve zayıf koma kaynağı notu', () => {
+    const d = ders('dortlu:cesni')
+    expect(porteler('dortlu:cesni').length).toBeGreaterThan(0)
+    const yazilar = NEY_PERDELER.map((x) => JSON.stringify(x.written))
+    for (const b of porteler('dortlu:cesni')) {
+      expect(b.olaylar).toHaveLength(3)
+      for (const e of b.olaylar) expect(yazilar).toContain(JSON.stringify(e.kind === 'note' ? e.pitch : null))
+    }
+    expect(d.kaynaklar.some((k) => /1115/.test(k))).toBe(true)
+    expect(d.kaynaklar.some((k) => /1113/.test(k))).toBe(true)
+    expect(d.kaynaklar.some((k) => /Makam/.test(k) && /islamansiklopedisi/.test(k))).toBe(true)
+    expect(d.kaynaklar.some((k) => /zayıf/.test(k))).toBe(true)
+    expect(d.alistirma).toBe('/makam')
   })
 
   it.each(IDS)('%s: BELİRSİZ yazılmaz, "Kendin dene" ve dolu kaynaklar var', (id) => {

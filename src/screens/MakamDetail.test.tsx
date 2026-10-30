@@ -187,14 +187,25 @@ describe('MakamDetail: ders kapısı', () => {
     await sayfa()
   })
 
-  it("Uşşak'ta yalnız makam:giris kapısı", async () => {
+  it('Hüseynî: makam:giris ve makam:huseyni kapısını sırayla gösterir, sonra dizi ekranı', async () => {
     await resetDbForTests()
-    render(<MakamDetail makamId="ussak" />)
+    render(<MakamDetail makamId="huseyni" />)
     expect((await screen.findByRole('heading', { level: 1 })).textContent).toBe('📖 Makam nedir?')
+    expect(screen.queryByRole('button', { name: '🔊 Diziyi dinle' })).toBeNull()
+    fireEvent.click(await anladim())
+    await waitFor(() => expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('📖 Hüseynî makamı'))
+    expect(screen.queryByRole('button', { name: '🔊 Diziyi dinle' })).toBeNull()
     fireEvent.click(await anladim())
     await sayfa()
     expect(screen.queryByRole('button', { name: 'Anladım, alıştırmaya geç' })).toBeNull()
-    expect((await getSettings()).okunanDersler).toEqual(['makam:giris'])
+    expect((await getSettings()).okunanDersler).toEqual(['makam:giris', 'makam:huseyni'])
+  })
+
+  it.each(MAKAMLAR.map((m) => m.id))('%s: giriş okunduktan sonra makamın kendi dersi vardır (kapıda iki ders)', async (id) => {
+    await resetDbForTests()
+    await isaretEkle('okunanDersler', 'makam:giris')
+    render(<MakamDetail makamId={id} />)
+    expect((await screen.findByRole('heading', { level: 1 })).textContent).toBe(`📖 ${MAKAM_DERSLERI.find((d) => d.id === `makam:${id}`)!.baslik}`)
   })
 
   it('bilinmeyen makamda kapı yok: "Makam bulunamadı" hemen görünür', async () => {

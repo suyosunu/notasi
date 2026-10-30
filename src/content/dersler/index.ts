@@ -10,7 +10,7 @@ import { USUL_DERSLERI } from './usul'
 import type { Etut } from '../etutler'
 import type { Ders } from './types'
 
-/** Tüm dersler (Task 35–37, 39, 46, 49, 54 ve 55). */
+/** Tüm dersler (Task 35–37, 39, 46, 49, 54, 55 ve 62). */
 export const DERSLER: Ders[] = [...HAZIRLIK_DERSLERI, ...NOTA_DERSLERI, ...NOTA_2_DERSLERI, ...NOTA_3_DERSLERI, ...PERDE_DERSLERI, ...PERDE_3_DERSLERI, ...ETUT_DERSLERI, ...ETUT_3_DERSLERI, ...USUL_DERSLERI, ...DORTLU_DERSLERI, ...DIL_ESER_DERSLERI, ...MAKAM_DERSLERI]
 
 export function dersById(id: string): Ders | undefined {

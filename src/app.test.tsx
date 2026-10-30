@@ -136,8 +136,8 @@ describe('App', () => {
     expect(screen.getByRole('link', { name: /Uşşak/ })).toBeTruthy()
   })
 
-  it('#/makam/<id> rotası makam sayfasını açar (Uşşak ve Hicaz için yalnız makam:giris dersi gerekir)', async () => {
-    await saveSettings({ okunanDersler: ['makam:giris'] })
+  it('#/makam/<id> rotası makam sayfasını açar (Hicaz için makam:giris ve makam:hicaz dersleri gerekir)', async () => {
+    await saveSettings({ okunanDersler: ['makam:giris', 'makam:hicaz'] })
     location.hash = '#/makam/hicaz'
     render(<App />)
     expect(await screen.findByRole('heading', { name: /Hicaz/ })).toBeTruthy()

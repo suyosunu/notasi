@@ -1,3 +1,4 @@
+import { ACCIDENTAL_NAMES } from '../../music/accidentals'
 import { n, S2, S3, S6 } from './nota'
 import { TDV_RAST } from './makam'
 import type { Ders } from './types'
@@ -20,6 +21,20 @@ const KOMA_BLOG =
   'muzikteorisiveegitimi.blogspot.com, Makam (dörtlü ve beşli komaları; amatör kaynak, perde konumlarıyla çapraz kontrol edildi): https://muzikteorisiveegitimi.blogspot.com/2013/01/makam.html'
 const WIKI_PERDE =
   'en.wikipedia.org, List of notes in Turkish makam theory (Çârgâh’a göre koma farkı): https://en.wikipedia.org/wiki/List_of_notes_in_Turkish_makam_theory'
+
+// Seviye 4 çeşni ve üçlüler dersi (`dortlu:cesni`, araştırma D §4). Çeşni tanımı MEB ünite 1115'ten, altı üçlünün adları MEB ünite 1113'ten,
+// güçlü tanımı TDV "Makam" maddesinden. MEB üçlülerin komasını vermez; koma değerleri turkumuzikmerkezi.net'ten ve dörtlü komalarıyla
+// tutarlıdır (üçlü = dörtlünün ilk iki aralığı). Tek ve zayıf bir kaynak olduğu için ders üçlüyü kısa tutar. Segâh, Ferahnâk, Nikriz
+// ve Karcığar çeşnilerinin yapısı kaynaklarda açık olmadığından verilmez, yalnız adları anılır.
+const MEB_CESNI =
+  'MEB TYMM, Türk Müziği Teori ve Uygulaması, ünite 1115 (çeşni tanımı): https://tymm.meb.gov.tr/muzik-okullari-turk-muzigi-teori-uygulamasi-dersi/unite/1115'
+const MEB_UCLU =
+  'MEB TYMM, Türk Müziği Teori ve Uygulaması 6. sınıf, ünite 1113 (altı üçlünün adı; koma vermez): https://tymm.meb.gov.tr/muzik-okullari-turk-muzigi-teori-uygulamasi-dersi/unite/1113'
+const TDV_MAKAM = 'TDV İslâm Ansiklopedisi, Makam (müzik; güçlü ve çeşni): https://islamansiklopedisi.org.tr/makam--musiki'
+const KOMA_UCLU =
+  'turkumuzikmerkezi.net, Makamlar (üçlülerin koma değerleri; tek ve zayıf kaynak, dörtlü komalarıyla tutarlı olduğu için kullanıldı): https://turkumuzikmerkezi.net/makamlar.php'
+const BAKIYE_BEMOLU = ACCIDENTAL_NAMES[-4]
+const BAKIYE_DIYEZI = ACCIDENTAL_NAMES[4]
 
 const ARALIK_NOTU = 'Aralığın büyüklüğü koma ile ölçülür; koma, Türk müziğinin en küçük aralık birimidir.'
 
@@ -221,5 +236,77 @@ export const DORTLU_DERSLERI: Ders[] = [
     ],
     kaynaklar: [S3, S6, S2, TDV_RAST, KOMA_BLOG, WIKI_PERDE],
     alistirma: '/etut/neva-rast-besli',
+  },
+  {
+    id: 'dortlu:cesni',
+    seviye: 4,
+    baslik: 'Çeşni ve üçlüler',
+    bloklar: [
+      {
+        tur: 'metin',
+        metin:
+          'Çeşni, bir ezgiye renk veren kısa melodik yapıdır. Üçlü, dörtlü ya da beşli bir dizi parçasıyla kurulur. Dörtlüleri ve beşlileri çaldın; bu parçaların her biri bir çeşnidir.',
+      },
+      {
+        tur: 'metin',
+        metin:
+          "Çeşniyi makam derslerinde zaten duydun: \"Nevâ'da bûselik çeşnili yarım karar\", \"Dügâh'ta uşşak çeşnili tam karar\". Yani çeşni, ezginin o perdede kalış yaptığı dörtlü ya da beşlidir. Güçlü ses, çeşnisini veren dörtlü ile beşlinin birleştiği ortak sestir.",
+      },
+      {
+        tur: 'metin',
+        metin:
+          'Temel çeşniler altıdır: Çârgâh, Bûselik, Kürdî, Rast, Uşşak ve Hicaz. Bunların dörtlü ve beşli aralıklarını dörtlü ve beşli derslerinde gördün. Segâh, Ferahnâk, Nikriz ve Karcığar gibi başka çeşni adlarını da makam anlatımlarında duyarsın; bu uygulama onların yapısını anlatmaz, yalnız adlarını bil.',
+      },
+      {
+        tur: 'metin',
+        metin:
+          'Üçlü, bir dörtlünün ilk üç sesidir; iki aralığı vardır. Yani üçlü, aynı adlı dörtlünün ilk iki aralığıdır. Altı üçlü vardır, çeşit adları dörtlülerle aynıdır. Aralıkların büyüklüğü komayla ölçülür (aşağıda önce iki aralık, sonra toplamı):',
+      },
+      {
+        tur: 'liste',
+        maddeler: [
+          'Çârgâh üçlüsü: 9+9 = 18 koma',
+          'Bûselik üçlüsü: 9+4 = 13 koma',
+          'Kürdî üçlüsü: 4+9 = 13 koma',
+          'Rast üçlüsü: 9+8 = 17 koma',
+          'Uşşak üçlüsü: 8+5 = 13 koma',
+          'Hicaz üçlüsü: 5+12 = 17 koma',
+        ],
+      },
+      {
+        tur: 'porte',
+        olaylar: [n('G4'), n('A4'), n('B4')],
+        aciklama: "Çârgâh üçlüsü (Rast'ta): Rast, Dügâh, Bûselik; her ses bir vuruş. Çârgâh dörtlüsünün ilk üç sesidir; iki aralık da geniştir (9+9).",
+        bpm: 60,
+      },
+      {
+        tur: 'porte',
+        olaylar: [n('A4'), n('B4b1'), n('C5')],
+        aciklama: "Uşşak üçlüsü (Dügâh'ta): Dügâh, Segâh, Çârgâh; her ses bir vuruş. Uşşak dörtlüsünün ilk üç sesidir (8+5). Segâh'ın önünde koma bemolü vardır.",
+        bpm: 60,
+      },
+      {
+        tur: 'porte',
+        olaylar: [n('A4'), n('B4b4'), n('C5#4')],
+        aciklama: `Hicaz üçlüsü (Dügâh'ta): Dügâh, Dik Kürdî, Nim Hicaz; her ses bir vuruş. Hicaz dörtlüsünün ilk üç sesidir (5+12). Dik Kürdî'nin önünde ${BAKIYE_BEMOLU}, Nim Hicaz'ın önünde ${BAKIYE_DIYEZI} vardır.`,
+        bpm: 60,
+      },
+      {
+        tur: 'metin',
+        metin:
+          'Toplamlar üçlüleri ikiye ayırır: Bûselik, Kürdî ve Uşşak üçlüleri dar (13 koma), Rast ve Hicaz üçlüleri geniş (17 koma), Çârgâh üçlüsü en geniştir (18 koma). Üçlü kavramı ders kitaplarında kısa geçer; üçlülerin koma değerlerini yazan kaynak da sınırlıdır (kaynaklar bölümüne bak). Bu yüzden üçlüleri ezberleme: dörtlünün ilk üç sesi olduğunu bilmen yeter.',
+      },
+      {
+        tur: 'dene',
+        adimlar: [
+          '"▶ Dinle" ile üç üçlüyü sırayla dinle; Çârgâh üçlüsünün iki geniş adımını, Hicaz üçlüsünün ortadaki çok geniş adımını duy.',
+          "Rast'ta Çârgâh üçlüsünü çal; sonra dördüncü sesi (Çârgâh) ekleyip Çârgâh dörtlüsünü tamamla.",
+          "Dügâh'ta Uşşak üçlüsünü ve Hicaz üçlüsünü çal; hangisinin daha geniş duyulduğunu söyle (Uşşak 13, Hicaz 17 koma).",
+          'Makam bölümünden bir makam aç ve seyir yazısında geçen çeşni adlarını (bûselik, uşşak, rast …) bul.',
+        ],
+      },
+    ],
+    kaynaklar: [MEB_CESNI, MEB_UCLU, TDV_MAKAM, KOMA_UCLU],
+    alistirma: '/makam',
   },
 ]
