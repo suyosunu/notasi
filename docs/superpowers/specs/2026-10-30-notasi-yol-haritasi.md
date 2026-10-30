@@ -1,7 +1,7 @@
 # Notası Yol Haritası
 
 Tarih: 2026-10-30
-Durum: **Taslak**, kullanıcının onayını bekliyor.
+Durum: **Onaylandı** (2026-10-30). Kullanıcı: "Araçlarla başla, tek tek kontrollerle ilerle, eksikleri tamamla." Çalışma araçları Aşama C'den önce gelir. Oğlunun kanunda çaldığı parçalar kullanıcı tarafından bildirilecek.
 
 Bu belge uygulamanın tamamı için bir sıra önerir. Her seviyede neyin öğretileceği (Aşama C–F'nin içeriği) müfredat belgesinde, ayrıntısıyla yazılı:
 `docs/superpowers/specs/2026-10-25-ney-mufredati-yol-haritasi.md`.
