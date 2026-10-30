@@ -7,12 +7,15 @@ import type { PerdeId } from './ney-perdeler'
 // - Seviye 1: tek perde, iki perde ve rast beşlisi (4/4).
 // - Seviye 2: usul (Nim Sofyan 2/4, Semâî 3/4, Sofyan 4/4), dörtlü (Çârgâh, Kürdî, Hicaz; 4/4) ve dil (tu ve bağ; 4/4).
 //   Yalnız birlik, ikilik, dörtlük ve sekizlik (noktalısı da) kullanılır; onaltılık ve üçleme yoktur.
+// - Seviye 3: kademe geçişi (aynı parmakla iki şiddet: 2. kademe sesi ve 31 koma üstündeki eşi), Nevâ'da Rast ve
+//   Bûselik beşlileri ve Rast ile Nevâ dizileri (4/4). Usulsüz, yalnız uzun seslerle; kapalı Nevâ inişte kullanılır.
+//   İlke MEB 1218 ve 1232 ile neyzenim _9'dan (araştırma C §5); kalıplar bizim önerimizdir.
 // Çalış sırası: uzun ses → etüt → eser (araştırma notu, ortak kalıp S1, S2, S5; etüt tempoları S4 ders 3–4).
 
 export interface Etut {
   id: string
   baslik: string
-  tur: 'tek' | 'iki' | 'besli' | 'usul' | 'dortlu' | 'dil'
+  tur: 'tek' | 'iki' | 'besli' | 'usul' | 'dortlu' | 'dil' | 'kademe' | 'dizi'
   /** Hepsi geçilince etüt akşam planına girer. */
   perdeler: PerdeId[]
   /** Ölçüler: usulsüz etütte 4/4, usullü etütte `usul.zaman`/4. */
@@ -20,7 +23,7 @@ export interface Etut {
   bpm: number
   /** Etütten önce okunan ders. */
   dersId: string
-  seviye: 1 | 2
+  seviye: 1 | 2 | 3
   /** `USULLER` kimliği: eşlik usul sesiyle çalar. Yoksa 4/4 metronom. */
   usulId?: string
 }
@@ -155,6 +158,12 @@ function seviye2(e: Omit<Etut, 'olcu' | 'bpm' | 'seviye'> & { notasyon: string }
   return { ...rest, olcu: parseEtut(notasyon), bpm: 60, seviye: 2 }
 }
 
+/** Seviye 3 etüdü: ♩ = 60. */
+function seviye3(e: Omit<Etut, 'olcu' | 'bpm' | 'seviye'> & { notasyon: string }): Etut {
+  const { notasyon, ...rest } = e
+  return { ...rest, olcu: parseEtut(notasyon), bpm: 60, seviye: 3 }
+}
+
 /**
  * Usul etütleri: her ölçünün ilk notası düm'e denk gelir ve ölçünün en uzun sesidir (Nim Sofyan ve Semâî'de düm
  * 1. vuruşta, Sofyan'da 1–2. vuruşlarda).
@@ -243,6 +252,92 @@ const DIL_ETUTLERI: Etut[] = [
   }),
 ]
 
+/** Nevâ'da Rast beşlisi (Eviç F5#4); Bûselik beşlisi aynı kalıpta F5#4 yerine F5 (Acem) ile çalınır. */
+const NEVA_BESLI =
+  'D5:4 E5:4 F5#4:4 G5:4 | A5:1 | A5:4 G5:4 F5#4:4 E5:4 | D5:1 | D5:4 E5:4 F5#4:2 | G5:4 A5:4 G5:2 | ' +
+  'F5#4:4 E5:4 F5#4:4 E5:4 | D5:1'
+
+/**
+ * Seviye 3 etütleri. Kademe etütlerinde aynı parmakla önce 2. kademe sesi, sonra 31 koma üstündeki eşi çalınır
+ * (nefes güçlenir). Bûselik beşliği Nevâ'da D5 E5 F5 G5 A5'tir (9+4+9+9; S2 10.1.1.2: "Nevâda rast ve bûselik beşlisi").
+ */
+const SEVIYE3_ETUTLERI: Etut[] = [
+  seviye3({
+    id: 'kademe-dugah-huseyni',
+    baslik: 'Aynı parmak: Dügâh–Hüseynî',
+    tur: 'kademe',
+    perdeler: ['dugah', 'huseyni'],
+    dersId: 'etut:kademe',
+    notasyon: 'A4:1 | E5:1 | A4:2 E5:2 | A4:2 E5:2 | E5:2 A4:2 | A4:4 E5:4 A4:4 E5:4 | E5:2. r:4 | A4:1',
+  }),
+  seviye3({
+    id: 'kademe-rast-kapali-neva',
+    baslik: 'Aynı parmak: Rast–Nevâ (kapalı)',
+    tur: 'kademe',
+    perdeler: ['rast', 'kapali-neva'],
+    dersId: 'etut:kademe',
+    notasyon: 'G4:1 | D5:1 | G4:2 D5:2 | G4:2 D5:2 | D5:2 G4:2 | G4:4 D5:4 G4:4 D5:4 | D5:2. r:4 | G4:1',
+  }),
+  seviye3({
+    id: 'kademe-cargah-gerdaniye',
+    baslik: 'Aynı parmak: Çârgâh–Gerdâniye, Nevâ–Muhayyer',
+    tur: 'kademe',
+    perdeler: ['cargah', 'gerdaniye', 'neva', 'muhayyer'],
+    dersId: 'etut:kademe',
+    notasyon: 'C5:1 | G5:1 | C5:2 G5:2 | G5:2 C5:2 | D5:1 | A5:1 | D5:2 A5:2 | A5:2 D5:2 | D5:1',
+  }),
+  seviye3({
+    id: 'kademe-ara',
+    baslik: 'Aynı parmak: Segâh–Eviç, Nim Hicaz–Nim Şehnaz',
+    tur: 'kademe',
+    perdeler: ['segah', 'evic', 'nim-hicaz', 'nim-sehnaz', 'neva'],
+    dersId: 'etut:kademe',
+    notasyon:
+      'B4b1:1 | F5#4:1 | B4b1:2 F5#4:2 | F5#4:2 B4b1:2 | C5#4:1 | G5#4:1 | C5#4:2 G5#4:2 | G5#4:2 C5#4:2 | D5:1',
+  }),
+  seviye3({
+    id: 'kademe-nim-hisar',
+    baslik: 'Nim Hisar: Hüseynî ile Nevâ arasında',
+    tur: 'kademe',
+    perdeler: ['huseyni', 'nim-hisar', 'neva'],
+    dersId: 'etut:kademe',
+    notasyon:
+      'E5:1 | E5b5:1 | E5:2 E5b5:2 | D5:2 E5b5:2 | E5:4 E5b5:4 D5:2 | D5:4 E5b5:4 E5:2 | E5:2 E5b5:4 D5:4 | D5:1',
+  }),
+  seviye3({
+    id: 'neva-rast-besli',
+    baslik: "Nevâ'da Rast beşlisi",
+    tur: 'besli',
+    perdeler: ['neva', 'huseyni', 'evic', 'gerdaniye', 'muhayyer'],
+    dersId: 'dortlu:besli',
+    notasyon: NEVA_BESLI,
+  }),
+  seviye3({
+    id: 'neva-buselik-besli',
+    baslik: "Nevâ'da Bûselik beşlisi",
+    tur: 'besli',
+    perdeler: ['neva', 'huseyni', 'acem', 'gerdaniye', 'muhayyer'],
+    dersId: 'dortlu:besli',
+    notasyon: NEVA_BESLI.replaceAll('F5#4', 'F5'),
+  }),
+  seviye3({
+    id: 'dizi-rast',
+    baslik: 'Rast dizisi: çıkışta Eviç, inişte Acem',
+    tur: 'dizi',
+    perdeler: ['rast', 'dugah', 'segah', 'cargah', 'neva', 'huseyni', 'evic', 'gerdaniye', 'acem'],
+    dersId: 'makam:rast',
+    notasyon: 'G4:4 A4:4 B4b1:4 C5:4 | D5:4 E5:4 F5#4:4 G5:4 | G5:1 | G5:4 F5:4 E5:4 D5:4 | C5:4 B4b1:4 A4:4 G4:4 | G4:1',
+  }),
+  seviye3({
+    id: 'dizi-neva',
+    baslik: 'Nevâ dizisi (inişte kapalı Nevâ)',
+    tur: 'dizi',
+    perdeler: ['dugah', 'segah', 'cargah', 'neva', 'huseyni', 'evic', 'gerdaniye', 'muhayyer', 'kapali-neva'],
+    dersId: 'makam:neva',
+    notasyon: 'A4:4 B4b1:4 C5:4 D5:4 | E5:4 F5#4:4 G5:4 A5:4 | A5:1 | A5:4 G5:4 F5#4:4 E5:4 | D5:2 C5:4 B4b1:4 | A4:1',
+  }),
+]
+
 export const ETUTLER: Etut[] = [
   tek('neva'),
   tek('cargah'),
@@ -268,4 +363,5 @@ export const ETUTLER: Etut[] = [
   ...USUL_ETUTLERI,
   ...DORTLU_ETUTLERI,
   ...DIL_ETUTLERI,
+  ...SEVIYE3_ETUTLERI,
 ]

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { beats } from '../music/notation'
+import { samePitch } from '../music/pitch'
 import { NEY_PERDELER } from './ney-perdeler'
+import { SEVIYELER } from './seviyeler'
 import { USULLER } from './usuller'
 import { ETUTLER, parseEtut } from './etutler'
 
@@ -85,6 +87,15 @@ describe('ETUTLER', () => {
       'dortlu-kurdi',
       'dortlu-hicaz',
       'dil-1',
+      'kademe-dugah-huseyni',
+      'kademe-rast-kapali-neva',
+      'kademe-cargah-gerdaniye',
+      'kademe-ara',
+      'kademe-nim-hisar',
+      'neva-rast-besli',
+      'neva-buselik-besli',
+      'dizi-rast',
+      'dizi-neva',
     ])
   })
 
@@ -211,7 +222,8 @@ describe('ETUTLER', () => {
     expect(get('rast-besli-2').baslik).toBe('Rast beşlisi 2 (sekizlikler)')
     expect(ETUTLER.every((e) => e.bpm === 60)).toBe(true)
     expect(ETUTLER.slice(0, 11).every((e) => e.seviye === 1 && e.usulId === undefined)).toBe(true)
-    expect(ETUTLER.slice(11).every((e) => e.seviye === 2)).toBe(true)
+    expect(ETUTLER.slice(11, 18).every((e) => e.seviye === 2)).toBe(true)
+    expect(ETUTLER.slice(18).every((e) => e.seviye === 3)).toBe(true)
   })
 
   it('tek-neva içeriği', () => {
@@ -238,5 +250,119 @@ describe('ETUTLER', () => {
     expect(b2.olcu).toHaveLength(5)
     expect(b2.olcu.flat().some((n) => n.dur === 'eighth')).toBe(true)
     expect(b1.olcu.flat().some((n) => n.dur === 'eighth')).toBe(false)
+  })
+})
+
+describe('Seviye 3 etütleri', () => {
+  const s3 = ETUTLER.filter((e) => e.seviye === 3)
+
+  it("dokuz etüt ETUTLER'in sonunda, brief sırasıyla; tür, perdeler, ders ve tempo", () => {
+    expect(ETUTLER.slice(-9)).toEqual(s3)
+    expect(s3.map((e) => [e.id, e.baslik, e.tur, e.perdeler, e.dersId, e.bpm, e.usulId])).toEqual([
+      ['kademe-dugah-huseyni', 'Aynı parmak: Dügâh–Hüseynî', 'kademe', ['dugah', 'huseyni'], 'etut:kademe', 60, undefined],
+      ['kademe-rast-kapali-neva', 'Aynı parmak: Rast–Nevâ (kapalı)', 'kademe', ['rast', 'kapali-neva'], 'etut:kademe', 60, undefined],
+      [
+        'kademe-cargah-gerdaniye',
+        'Aynı parmak: Çârgâh–Gerdâniye, Nevâ–Muhayyer',
+        'kademe',
+        ['cargah', 'gerdaniye', 'neva', 'muhayyer'],
+        'etut:kademe',
+        60,
+        undefined,
+      ],
+      [
+        'kademe-ara',
+        'Aynı parmak: Segâh–Eviç, Nim Hicaz–Nim Şehnaz',
+        'kademe',
+        ['segah', 'evic', 'nim-hicaz', 'nim-sehnaz', 'neva'],
+        'etut:kademe',
+        60,
+        undefined,
+      ],
+      [
+        'kademe-nim-hisar',
+        'Nim Hisar: Hüseynî ile Nevâ arasında',
+        'kademe',
+        ['huseyni', 'nim-hisar', 'neva'],
+        'etut:kademe',
+        60,
+        undefined,
+      ],
+      [
+        'neva-rast-besli',
+        "Nevâ'da Rast beşlisi",
+        'besli',
+        ['neva', 'huseyni', 'evic', 'gerdaniye', 'muhayyer'],
+        'dortlu:besli',
+        60,
+        undefined,
+      ],
+      [
+        'neva-buselik-besli',
+        "Nevâ'da Bûselik beşlisi",
+        'besli',
+        ['neva', 'huseyni', 'acem', 'gerdaniye', 'muhayyer'],
+        'dortlu:besli',
+        60,
+        undefined,
+      ],
+      [
+        'dizi-rast',
+        'Rast dizisi: çıkışta Eviç, inişte Acem',
+        'dizi',
+        ['rast', 'dugah', 'segah', 'cargah', 'neva', 'huseyni', 'evic', 'gerdaniye', 'acem'],
+        'makam:rast',
+        60,
+        undefined,
+      ],
+      [
+        'dizi-neva',
+        'Nevâ dizisi (inişte kapalı Nevâ)',
+        'dizi',
+        ['dugah', 'segah', 'cargah', 'neva', 'huseyni', 'evic', 'gerdaniye', 'muhayyer', 'kapali-neva'],
+        'makam:neva',
+        60,
+        undefined,
+      ],
+    ])
+  })
+
+  it('her ölçü 4 vuruştur', () => {
+    for (const e of s3) {
+      for (const [i, olcu] of e.olcu.entries()) {
+        const toplam = olcu.reduce((t, n) => t + beats(n), 0)
+        expect(Math.abs(toplam - 4), `${e.id} ${i + 1}. ölçü: ${toplam}`).toBeLessThan(1e-6)
+      }
+    }
+  })
+
+  it('her notanın yazılı perdesi etüdün perdelerinden biridir; her perde notalarda geçer (Nevâ ve kapalı Nevâ aynı D5)', () => {
+    for (const e of s3) {
+      const yazimlar = e.perdeler.map(yazim)
+      const kullanilan = e.olcu.flat().flatMap((n) => (n.kind === 'note' ? [n.pitch] : []))
+      for (const p of kullanilan) expect(yazimlar.some((y) => samePitch(y, p)), `${e.id} ${p.step}${p.octave}${p.acc}`).toBe(true)
+      for (const y of yazimlar) expect(kullanilan.some((p) => samePitch(y, p)), `${e.id} ${y.step}${y.octave}${y.acc}`).toBe(true)
+    }
+  })
+
+  it('beşli ve dizi etütleri durak perdesinde biter; buselik beşlisinde Eviç yerine Acem (F5) vardır', () => {
+    const get = (id: string) => ETUTLER.find((e) => e.id === id)!
+    const notalar = (id: string) => get(id).olcu.flat().flatMap((n) => (n.kind === 'note' ? [n.pitch] : []))
+    expect(notalar('neva-rast-besli')).toContainEqual({ step: 'F', octave: 5, acc: 4 })
+    expect(notalar('neva-rast-besli')).not.toContainEqual({ step: 'F', octave: 5, acc: 0 })
+    expect(notalar('neva-buselik-besli')).toContainEqual({ step: 'F', octave: 5, acc: 0 })
+    expect(notalar('neva-buselik-besli')).not.toContainEqual({ step: 'F', octave: 5, acc: 4 })
+    expect(get('neva-buselik-besli').olcu).toEqual(
+      parseEtut(
+        'D5:4 E5:4 F5:4 G5:4 | A5:1 | A5:4 G5:4 F5:4 E5:4 | D5:1 | D5:4 E5:4 F5:2 | G5:4 A5:4 G5:2 | F5:4 E5:4 F5:4 E5:4 | D5:1',
+      ),
+    )
+  })
+
+  it('s1-etut-iki hedefi yeni türleri saymaz', () => {
+    const hedef = SEVIYELER[1]!.hedefler.find((h) => h.id === 's1-etut-iki')!
+    if (hedef.olcut.tur !== 'etutler') throw new Error('etütler ölçütü bekleniyordu')
+    expect(hedef.olcut.etutIds).toHaveLength(9)
+    for (const id of hedef.olcut.etutIds) expect(id.startsWith('tek-') || id.startsWith('iki-'), id).toBe(true)
   })
 })

@@ -158,6 +158,16 @@ describe('NeySection', () => {
       }
     })
 
+    it('"Seviye 3 etütleri" başlığı ve dokuz etüt', async () => {
+      render(<NeySection />)
+      const baslik = await screen.findByRole('heading', { name: 'Seviye 3 etütleri' })
+      const linkler = within(baslik.nextElementSibling as HTMLElement).getAllByRole('link')
+      const beklenen = ETUTLER.filter((e) => e.seviye === 3)
+      expect(linkler).toHaveLength(9)
+      expect(linkler.map((a) => a.getAttribute('href'))).toEqual(beklenen.map((e) => `#/etut/${e.id}`))
+      expect(linkler[0]!.textContent).toContain('Aynı parmak: Dügâh–Hüseynî')
+    })
+
     it('çalınan etütte ✓ vardır, çalınmayanda yoktur', async () => {
       await isaretEkle('calinanEtutler', 'tek-neva')
       render(<NeySection />)

@@ -91,17 +91,15 @@ function baspareStep(): EveningStep {
 }
 
 /**
- * `ETUTLER` sırasında, bütün perdeleri geçilmiş ve henüz çalınmamış ilk etüt; yoksa adım da yoktur. Seviye 2 etütleri
- * (usul, dörtlü, dil) Seviye 1 etütlerinin hepsi çalınınca önerilir: perdeleri Seviye 1 perdeleri olsa da Rast
- * geçilmeden araya girmezler. Ney bölümünde hepsi her zaman açıktır (kilit yok).
+ * `ETUTLER` sırasında, bütün perdeleri geçilmiş ve henüz çalınmamış ilk etüt; yoksa adım da yoktur. N seviyeli etüt,
+ * kendisinden küçük seviyelerin bütün etütleri çalınınca önerilir: Seviye 2 etütleri (usul, dörtlü, dil) Seviye 1'in,
+ * Seviye 3 etütleri (kademe, Nevâ beşlileri, diziler) Seviye 1 ve 2'nin hepsi çalınmadan araya girmez; perdeleri
+ * geçilmiş olsa da. Seviye 1 her zaman öneriye açıktır. Ney bölümünde hepsi her zaman açıktır (kilit yok).
  */
 function etutStep(perdeStatus: Record<PerdeId, PerdeStatus>, calinan: ReadonlySet<string>): EveningStep | null {
-  const seviye1Bitti = ETUTLER.every((e) => e.seviye !== 1 || calinan.has(e.id))
+  const altBitti = (seviye: number) => ETUTLER.every((e) => e.seviye >= seviye || calinan.has(e.id))
   const etut = ETUTLER.find(
-    (e) =>
-      (e.seviye === 1 || seviye1Bitti) &&
-      !calinan.has(e.id) &&
-      e.perdeler.every((id) => perdeStatus[id] === 'gecildi'),
+    (e) => !calinan.has(e.id) && altBitti(e.seviye) && e.perdeler.every((id) => perdeStatus[id] === 'gecildi'),
   )
   if (!etut) return null
   const step: EveningStep = { kind: 'etut', etutId: etut.id, label: `Etüt · ${etut.baslik}`, tries: 1, dersId: etut.dersId }
