@@ -29,6 +29,9 @@ export type PerdeId =
   | 'nim-hicaz'
   | 'gerdaniye'
   | 'muhayyer'
+  | 'kapali-neva'
+  | 'nim-sehnaz'
+  | 'nim-hisar'
 
 export interface NeyPerde {
   id: PerdeId
@@ -65,7 +68,11 @@ const SRC_BUSELIK = 'https://www.neyzenim.com/neydersleri_10.html'
 const SRC_KOMA = 'https://www.neyzenim.com/neydersleri_5.html'
 /** Ney Dersleri 10 – Hicaz bölümü: Nim Hicaz ve Dik Kürdî. */
 const SRC_HICAZ = 'https://www.neyzenim.com/neydersleri_10.html'
-/** Ney Dersleri 6 – orta perdeler: Hüseynî, Acem, Eviç, açık Gerdâniye, açık Muhayyer. */
+/**
+ * Ney Dersleri 6 – orta perdeler: Hüseynî, Acem, Eviç, açık Gerdâniye, açık Muhayyer; ayrıca kapalı Nevâ
+ * ("Re sesini tüm perdeler kapalı olarak üfleyeceğiz"), Nim Şehnaz ve Nim Hisar ("yüzük parmağımızın 3/4 ünü
+ * kapatıyoruz", "kafamızı hafifçe sola doğru çeviriyoruz"). Kapalı Nevâ ayrıca neydersleri_9'da da yazılıdır.
+ */
 const SRC_ORTA = 'https://www.neyzenim.com/neydersleri_6.html'
 
 const SERT = 'Daha sert üfle: '
@@ -75,9 +82,16 @@ export const KOMA_FARKI = 'aradaki koma farkını dudak ve baş açısıyla veri
  * İlk beş perde Nevâ, Çârgâh, Segâh, Dügâh, Rast sırasıyla öğretilir (2. kademe; araştırma §4.1,
  * S2, S4, S5, S13 Segâh der). Sonrası nota konularının açılma sırasını izler: kullanıcı perde adını
  * okumayı öğrendiği sırayla çalar. Önce Seviye 2 ara sesleri: perde-3 (Bûselik, Kürdî, Dik Kürdî),
- * perde-4 (Nim Hicaz); sonra 3. kademe: perde-2 (Hüseynî, Acem, Gerdâniye, Muhayyer) ve perde-4'ün
- * Eviç'i. Perde-2 konusu NOTA_TOPICS'in sonundadır, bu yüzden Hüseynî, Seviye 2 nota konuları
- * öğrenilmeden açılmaz. Her perde, kendi nota konusu açılınca ve aynı kademedeki önceki perde geçilince
+ * perde-4 (Nim Hicaz); sonra 3. kademe: perde-2 (Hüseynî, Acem, Gerdâniye, Muhayyer), kapalı Nevâ,
+ * perde-4'ün Eviç'i, en sonda perde-5 (Nim Şehnaz, Nim Hisar). Sıra MEB'i izler: önce ana sesler (ünite 1217),
+ * sonra ara sesler (Eviç ve Nim Şehnaz ünite 1226; Nim Hisar ünite 1232'de en geç anılır). Kapalı Nevâ açık
+ * Nevâ'dan sonra gelir: aynı yazılı perdeye göre arama "Nevâ"yı bulur. 3. kademe perdeleri 2. kademedeki
+ * eşiyle aynı parmakla, daha sert üfleyerek çalınır ve ondan 31 koma (bir beşli) yüksektir
+ * (araştırma C §1: Rast→kapalı Nevâ, Dügâh→Hüseynî, Kürdî→Acem, Segâh→Eviç, Çârgâh→Gerdâniye,
+ * Nim Hicaz→Nim Şehnaz, Nevâ→Muhayyer). Nim Hisar'ın şeması Dügâh parmağının son deliğini 3/4 kapatır;
+ * `Hole` kesir taşımadığı için `yarim` yazılır, 3/4 ipucundadır. MEB: tymm.meb.gov.tr ünite 1217, 1226, 1232.
+ * Perde-2 ve perde-5 konuları NOTA_TOPICS'in sonundadır, bu yüzden Hüseynî ve Nim Şehnaz, Seviye 2 nota
+ * konuları öğrenilmeden açılmaz. Her perde, kendi nota konusu açılınca ve aynı kademedeki önceki perde geçilince
  * açılır (3. kademenin ilk perdesi Hüseynî için ayrıca Rast'ın geçilmesi yeter).
  */
 export const NEY_PERDELER: NeyPerde[] = [
@@ -225,6 +239,17 @@ export const NEY_PERDELER: NeyPerde[] = [
     notaTopicId: 'perde-2',
   },
   {
+    id: 'kapali-neva',
+    name: 'Nevâ (kapalı)',
+    kademe: 3,
+    written: { step: 'D', octave: 5, acc: 0 },
+    fingering: { thumb: 'kapali', front: ['kapali', 'kapali', 'kapali', 'kapali', 'kapali', 'kapali'] },
+    verified: true,
+    source: SRC_ORTA,
+    tip: SERT + 'Rast parmağıyla çalınır (bütün delikler kapalı); açık Nevâ ile aynı sestir. Rast’tan bir beşli yukarı çıkmak için nefesini güçlendirirsin.',
+    notaTopicId: 'perde-2',
+  },
+  {
     id: 'evic',
     name: 'Eviç',
     kademe: 3,
@@ -234,6 +259,28 @@ export const NEY_PERDELER: NeyPerde[] = [
     source: SRC_ORTA,
     tip: SERT + 'Segâh parmağıyla çalınır (dördüncü ve altıncı delik açık); nefesi güçlendirerek sesi yukarı taşı.',
     notaTopicId: 'perde-4',
+  },
+  {
+    id: 'nim-sehnaz',
+    name: 'Nim Şehnaz',
+    kademe: 3,
+    written: { step: 'G', octave: 5, acc: 4 },
+    fingering: { thumb: 'kapali', front: ['kapali', 'acik', 'acik', 'acik', 'kapali', 'acik'] },
+    verified: true,
+    source: SRC_ORTA,
+    tip: SERT + 'Nim Hicaz parmağıyla çalınır (yalnızca ilk delik ve alttaki elin orta parmağı kapalı); nefesi güçlendirerek sesi yukarı taşı.',
+    notaTopicId: 'perde-5',
+  },
+  {
+    id: 'nim-hisar',
+    name: 'Nim Hisar',
+    kademe: 3,
+    written: { step: 'E', octave: 5, acc: -5 },
+    fingering: { thumb: 'kapali', front: ['kapali', 'kapali', 'kapali', 'kapali', 'kapali', 'yarim'] },
+    verified: true,
+    source: SRC_ORTA,
+    tip: SERT + 'Dügâh parmağıyla çalınır, ama alttaki elin yüzük parmağı en alt deliğin 3/4’ünü kapatır; başını hafifçe sola çevir.',
+    notaTopicId: 'perde-5',
   },
 ]
 

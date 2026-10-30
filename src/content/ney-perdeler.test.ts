@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { samePitch, writtenKoma } from '../music/pitch'
 import { NOTA_TOPICS } from './nota-topics'
 import { ILK_SES_REHBER, NEY_PERDELER, visibleFingering } from './ney-perdeler'
 
@@ -10,11 +11,13 @@ describe('NEY_PERDELER', () => {
   it('sıra: ilk beş, Seviye 2 ara sesleri, ardından üçüncü kademe; Bûselik Rast’tan sonra gelir', () => {
     expect(NEY_PERDELER.map((p) => p.id)).toEqual([
       'neva', 'cargah', 'segah', 'dugah', 'rast',
-      'buselik', 'kurdi', 'dik-kurdi', 'nim-hicaz', 'huseyni', 'acem', 'gerdaniye', 'muhayyer', 'evic',
+      'buselik', 'kurdi', 'dik-kurdi', 'nim-hicaz', 'huseyni', 'acem', 'gerdaniye', 'muhayyer', 'kapali-neva', 'evic',
+      'nim-sehnaz', 'nim-hisar',
     ])
     expect(NEY_PERDELER.map((p) => p.name)).toEqual([
       'Nevâ', 'Çârgâh', 'Segâh', 'Dügâh', 'Rast',
-      'Bûselik', 'Kürdî', 'Dik Kürdî', 'Nim Hicaz', 'Hüseynî', 'Acem', 'Gerdâniye (açık)', 'Muhayyer (açık)', 'Eviç',
+      'Bûselik', 'Kürdî', 'Dik Kürdî', 'Nim Hicaz', 'Hüseynî', 'Acem', 'Gerdâniye (açık)', 'Muhayyer (açık)', 'Nevâ (kapalı)', 'Eviç',
+      'Nim Şehnaz', 'Nim Hisar',
     ])
   })
 
@@ -61,10 +64,79 @@ describe('NEY_PERDELER', () => {
       ['acem', 'F', 5, 0, 'perde-2'],
       ['gerdaniye', 'G', 5, 0, 'perde-2'],
       ['muhayyer', 'A', 5, 0, 'perde-2'],
+      ['kapali-neva', 'D', 5, 0, 'perde-2'],
       ['evic', 'F', 5, 4, 'perde-4'],
+      ['nim-sehnaz', 'G', 5, 4, 'perde-5'],
+      ['nim-hisar', 'E', 5, -5, 'perde-5'],
     ])
     const topicIds = NOTA_TOPICS.map((t) => t.id)
     for (const p of NEY_PERDELER) expect(topicIds).toContain(p.notaTopicId)
+  })
+
+  it('Seviye 3 perde sırası: ana sesler, kapalı Nevâ, ara sesler; Nevâ kapalı Nevâ’dan önce gelir', () => {
+    const ids = NEY_PERDELER.filter((p) => p.kademe === 3).map((p) => p.id)
+    expect(ids).toEqual(['huseyni', 'acem', 'gerdaniye', 'muhayyer', 'kapali-neva', 'evic', 'nim-sehnaz', 'nim-hisar'])
+    const hepsi = NEY_PERDELER.map((p) => p.id)
+    expect(hepsi.indexOf('neva')).toBeLessThan(hepsi.indexOf('kapali-neva'))
+  })
+
+  it('yeni perdelerin şeması ve yazımı tabloya birebir uyar', () => {
+    const K = 'kapali'
+    const A = 'acik'
+    const Y = 'yarim'
+    const byId = Object.fromEntries(NEY_PERDELER.map((p) => [p.id, p]))
+    const SRC = 'https://www.neyzenim.com/neydersleri_6.html'
+    const want = {
+      'kapali-neva': { name: 'Nevâ (kapalı)', written: { step: 'D', octave: 5, acc: 0 }, front: [K, K, K, K, K, K], topic: 'perde-2' },
+      'nim-sehnaz': { name: 'Nim Şehnaz', written: { step: 'G', octave: 5, acc: 4 }, front: [K, A, A, A, K, A], topic: 'perde-5' },
+      'nim-hisar': { name: 'Nim Hisar', written: { step: 'E', octave: 5, acc: -5 }, front: [K, K, K, K, K, Y], topic: 'perde-5' },
+    }
+    for (const [id, w] of Object.entries(want)) {
+      const p = byId[id]!
+      expect(p.name, id).toBe(w.name)
+      expect(p.kademe, id).toBe(3)
+      expect(p.written, id).toEqual(w.written)
+      expect(p.fingering, id).toEqual({ thumb: 'kapali', front: w.front })
+      expect(p.verified, id).toBe(true)
+      expect(p.source, id).toBe(SRC)
+      expect(p.notaTopicId, id).toBe(w.topic)
+    }
+  })
+
+  it('aynı parmak, 31 koma: 2. kademe sesi ve eşi', () => {
+    const byId = Object.fromEntries(NEY_PERDELER.map((p) => [p.id, p]))
+    const ciftler: [string, string][] = [
+      ['dugah', 'huseyni'],
+      ['rast', 'kapali-neva'],
+      ['cargah', 'gerdaniye'],
+      ['neva', 'muhayyer'],
+      ['segah', 'evic'],
+      ['nim-hicaz', 'nim-sehnaz'],
+    ]
+    for (const [pest, tiz] of ciftler) {
+      expect(byId[tiz]!.fingering, tiz).toEqual(byId[pest]!.fingering)
+      expect(writtenKoma(byId[tiz]!.written) - writtenKoma(byId[pest]!.written), tiz).toBe(31)
+    }
+  })
+
+  it('Nim Hisar: Dügâh şemasının son deliği yarım; ipucu 3/4 ve baş çevirmeyi söyler', () => {
+    const byId = Object.fromEntries(NEY_PERDELER.map((p) => [p.id, p]))
+    const dugah = byId.dugah.fingering!
+    expect(byId['nim-hisar'].fingering).toEqual({ thumb: dugah.thumb, front: [...dugah.front.slice(0, 5), 'yarim'] })
+    expect(byId['nim-hisar'].tip).toContain('3/4')
+    expect(byId['nim-hisar'].tip).toContain('sola')
+  })
+
+  it('kapalı Nevâ ipucu Rast parmağını ve nefesi anar, Nim Şehnaz Nim Hicaz parmağını', () => {
+    const byId = Object.fromEntries(NEY_PERDELER.map((p) => [p.id, p]))
+    expect(byId['kapali-neva'].tip).toContain('Rast')
+    expect(byId['kapali-neva'].tip).toContain('nefesini güçlendirirsin')
+    expect(byId['nim-sehnaz'].tip).toContain('Nim Hicaz')
+  })
+
+  it('yazılı perdeyle arama Nevâ’yı bulur, kapalı Nevâ’yı değil', () => {
+    const neva = NEY_PERDELER.find((p) => p.id === 'neva')!
+    expect(NEY_PERDELER.find((p) => samePitch(p.written, neva.written))!.id).toBe('neva')
   })
 
   it('her doğrulanmış perdenin kaynağı ve şeması doludur', () => {
@@ -118,17 +190,20 @@ describe('NEY_PERDELER', () => {
     }
   })
 
-  it('kademe: ilk beşi ve ikinci kademe perdeleri 2, Hüseynî/Acem/Eviç/Gerdâniye/Muhayyer 3', () => {
+  it('kademe: ilk beşi ve ikinci kademe perdeleri 2, Hüseynî/Acem/Eviç/Gerdâniye/Muhayyer ve yeni üç perde 3', () => {
     const kademe = Object.fromEntries(NEY_PERDELER.map((p) => [p.id, p.kademe]))
     for (const id of ['neva', 'cargah', 'buselik', 'dugah', 'rast', 'segah', 'kurdi', 'dik-kurdi', 'nim-hicaz']) {
       expect(kademe[id], id).toBe(2)
     }
-    for (const id of ['huseyni', 'acem', 'evic', 'gerdaniye', 'muhayyer']) expect(kademe[id], id).toBe(3)
+    for (const id of ['huseyni', 'acem', 'evic', 'gerdaniye', 'muhayyer', 'kapali-neva', 'nim-sehnaz', 'nim-hisar']) {
+      expect(kademe[id], id).toBe(3)
+    }
   })
 
   it('3. kademe tarifi "Daha sert üfle: " ile ve parmak ailesiyle başlar', () => {
     const family: Record<string, string> = {
       huseyni: 'Dügâh', acem: 'Kürdî', evic: 'Segâh', gerdaniye: 'Çârgâh', muhayyer: 'Nevâ',
+      'kapali-neva': 'Rast', 'nim-sehnaz': 'Nim Hicaz', 'nim-hisar': 'Dügâh',
     }
     for (const [id, name] of Object.entries(family)) {
       const p = NEY_PERDELER.find((x) => x.id === id)!

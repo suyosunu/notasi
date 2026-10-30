@@ -233,10 +233,34 @@ describe('perde isimleri (perde: / perde-ters:)', () => {
     }
   })
 
-  it('perde-2 ileri soruda çeldiriciler önceki bütün perde konularının ve perde-2 adlarından gelir', () => {
-    const seen = new Set<string>()
-    for (let s = 1; s <= 200; s++) for (const o of makeQuestion('perde:E5', seededRng(s)).options) seen.add(o)
-    expect([...seen].sort()).toEqual([...ONBES].sort())
+  it('perde-2 ileri soru çeldiricileri önce kendi konusundan: Acem, Gerdâniye, Muhayyer', () => {
+    const KENDI = ['Acem', 'Gerdâniye', 'Muhayyer']
+    for (let s = 1; s <= 200; s++) {
+      const q = makeQuestion('perde:E5', seededRng(s))
+      expect(q.answer).toBe('Hüseynî')
+      expect([...q.options].sort()).toEqual(['Hüseynî', ...KENDI].sort())
+    }
+  })
+
+  it('perde-5 ileri soruda konunun öbür adı her zaman çeldiricidir; kalanlar en yakın önceki konudan (perde-2)', () => {
+    const PERDE_2 = ['Hüseynî', 'Acem', 'Gerdâniye', 'Muhayyer']
+    for (let s = 1; s <= 200; s++) {
+      for (const [card, other] of [['perde:G5#4', 'Nim Hisar'], ['perde:E5b5', 'Nim Şehnaz']] as const) {
+        const q = makeQuestion(card, seededRng(s))
+        expect(q.options).toContain(other)
+        for (const o of q.options.filter((x) => x !== q.answer && x !== other)) expect(PERDE_2).toContain(o)
+      }
+    }
+  })
+
+  it('perde-4 ileri soruda konunun iki öbür adı çeldiricidir, üçüncüsü perde-3 adlarından gelir', () => {
+    const PERDE_3 = ['Bûselik', 'Kürdî', 'Dik Kürdî']
+    for (let s = 1; s <= 100; s++) {
+      const q = makeQuestion('perde:C5#4', seededRng(s))
+      expect(q.options).toContain('Hicaz')
+      expect(q.options).toContain('Eviç')
+      expect(PERDE_3).toContain(q.options.find((x) => !['Nim Hicaz', 'Hicaz', 'Eviç'].includes(x)))
+    }
   })
 
   it('perde-ters:D5 → porte yok, perde adından nota sor', () => {
@@ -326,6 +350,55 @@ describe('perde-3 / perde-4 ipuçları ve Irak', () => {
           }
         }
       }
+    }
+  })
+})
+
+describe('perde-5 soruları (Nim Şehnaz, Nim Hisar)', () => {
+  const H5 = 'Sol üzerinde: Nim Şehnaz bakiye diyezi; Mi üzerinde: Nim Hisar küçük mücenneb bemolü.'
+
+  it('perde:E5b5 ve perde-ters:G5#4: dört farklı seçenek, cevap içinde (50 tohum)', () => {
+    for (let s = 1; s <= 50; s++) {
+      const ileri = makeQuestion('perde:E5b5', seededRng(s))
+      expect(ileri.answer).toBe('Nim Hisar')
+      expect(ileri.prompt).toBe('Bu notanın perde adı ne?')
+      expect(ileri.options).toHaveLength(4)
+      expect(new Set(ileri.options).size).toBe(4)
+      expect(ileri.options).toContain(ileri.answer)
+      const ters = makeQuestion('perde-ters:G5#4', seededRng(s))
+      expect(ters.prompt).toBe('Nim Şehnaz hangi nota?')
+      expect(ters.answer).toBe('Sol (bakiye diyezi)')
+      expect(ters.options).toHaveLength(4)
+      expect(new Set(ters.options).size).toBe(4)
+      expect(ters.options).toContain(ters.answer)
+    }
+  })
+
+  it('diğer perde-5 kartları da dört farklı seçenek üretir', () => {
+    for (const card of ['perde:G5#4', 'perde-ters:E5b5']) {
+      for (let s = 1; s <= 50; s++) {
+        const q = makeQuestion(card, seededRng(s))
+        expect(new Set(q.options).size).toBe(4)
+        expect(q.options).toContain(q.answer)
+      }
+    }
+    expect(makeQuestion('perde-ters:E5b5', seededRng(1)).answer).toBe('Mi (küçük mücenneb bemolü)')
+  })
+
+  it('perde-5 ipucu Nim Şehnaz’ın Sol üzerindeki bakiye diyezini ve Nim Hisar’ın Mi üzerindeki küçük mücenneb bemolünü anar', () => {
+    for (const c of ['perde:G5#4', 'perde:E5b5', 'perde-ters:G5#4', 'perde-ters:E5b5']) {
+      const hint = makeQuestion(c, seededRng(1)).hint!
+      expect(hint).toBe(H5)
+      expect(hint).toContain('Sol')
+      expect(hint).toContain('bakiye diyezi')
+      expect(hint).toContain('Mi')
+      expect(hint).toContain('küçük mücenneb bemolü')
+    }
+  })
+
+  it('perde-5 soruları Irak adı içermez', () => {
+    for (const card of ['perde:G5#4', 'perde:E5b5']) {
+      for (let s = 1; s <= 40; s++) expect(makeQuestion(card, seededRng(s)).options).not.toContain('Irak')
     }
   })
 })

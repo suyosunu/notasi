@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { notaEtiketi, PERDE_ADLARI, perdeEtiketi } from './perde-adlari'
 
 describe('PERDE_ADLARI', () => {
-  it('dokuz perde adı ile yeni koma perdelerini birebir içerir', () => {
+  it('dokuz perde adı ile koma perdelerini birebir içerir', () => {
     expect(PERDE_ADLARI).toEqual({
       B4b1: 'Segâh',
       B4b5: 'Kürdî',
@@ -10,6 +10,8 @@ describe('PERDE_ADLARI', () => {
       'C5#4': 'Nim Hicaz',
       'C5#5': 'Hicaz',
       'F5#4': 'Eviç',
+      'G5#4': 'Nim Şehnaz',
+      E5b5: 'Nim Hisar',
       'F4#4': 'Irak',
       G4: 'Rast',
       A4: 'Dügâh',
@@ -40,6 +42,8 @@ describe('notaEtiketi', () => {
     expect(notaEtiketi('C5#5')).toBe('Do (küçük mücenneb diyezi)')
     expect(notaEtiketi('F5#4')).toBe('Fa (bakiye diyezi)')
     expect(notaEtiketi('F4#4')).toBe('Fa (bakiye diyezi)')
+    expect(notaEtiketi('G5#4')).toBe('Sol (bakiye diyezi)')
+    expect(notaEtiketi('E5b5')).toBe('Mi (küçük mücenneb bemolü)')
   })
 })
 

@@ -126,7 +126,7 @@ describe('topicOfCard', () => {
     const ids = NOTA_TOPICS.map((t) => t.id)
     expect(ids).toEqual([
       'nota-1', 'sure-1', 'nota-2', 'sure-2', 'nota-3', 'sure-3', 'nota-4', 'nota-5',
-      'dizi-1', 'perde-1', 'dizi-2', 'koma-1', 'koma-2', 'perde-3', 'perde-4', 'sure-4', 'perde-2',
+      'dizi-1', 'perde-1', 'dizi-2', 'koma-1', 'koma-2', 'perde-3', 'perde-4', 'sure-4', 'perde-2', 'perde-5',
     ])
   })
   it('dizi konuları sequence türünde ve 6 karttan oluşur', () => {
@@ -170,6 +170,11 @@ describe('perde kartları', () => {
       'perde-ters:E5', 'perde-ters:F5', 'perde-ters:G5', 'perde-ters:A5',
     ])
     expect(topicOfCard('perde-ters:A5').id).toBe('perde-2')
+    const p5 = NOTA_TOPICS.find((t) => t.id === 'perde-5')!
+    expect(p5.kind).toBe('perde-name')
+    expect(p5.title).toBe('Perdeler: Nim Şehnaz, Nim Hisar')
+    expect(p5.cards).toEqual(['perde:G5#4', 'perde:E5b5', 'perde-ters:G5#4', 'perde-ters:E5b5'])
+    expect(topicOfCard('perde-ters:E5b5').id).toBe('perde-5')
   })
   it("Segâh kartları perde-1'de, Bûselik kartları perde-3'tedir; hiçbir kart yetim kalmaz", () => {
     const p1 = NOTA_TOPICS.find((t) => t.id === 'perde-1')!

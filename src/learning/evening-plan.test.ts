@@ -27,7 +27,7 @@ function statuses(over: Partial<Record<PerdeId, PerdeStatus>>): Record<PerdeId, 
 /** Her nota konusu açık, `kilitli` verilenler dışında. */
 function topics(locked: string[] = []): Record<string, TopicStatus> {
   const out: Record<string, TopicStatus> = {}
-  for (const id of ['nota-1', 'nota-2', 'perde-2', 'perde-3', 'perde-4']) out[id] = locked.includes(id) ? 'kilitli' : 'acik'
+  for (const id of ['nota-1', 'nota-2', 'perde-2', 'perde-3', 'perde-4', 'perde-5']) out[id] = locked.includes(id) ? 'kilitli' : 'acik'
   return out
 }
 
@@ -136,7 +136,7 @@ describe('perdeStatuses', () => {
     const p3 = [...p2, 'buselik', 'kurdi', 'dik-kurdi']
     expect(perdeStatuses(upTo(p3), topics(['perde-4']))['nim-hicaz']).toBe('kilitli')
     expect(perdeStatuses(upTo(p3), topics())['nim-hicaz']).toBe('acik')
-    expect(perdeStatuses(upTo([...p3, 'nim-hicaz']), topics()).evic).toBe('acik')
+    expect(perdeStatuses(upTo([...p3, 'nim-hicaz', 'kapali-neva']), topics()).evic).toBe('acik')
     // Önceki (aynı kademedeki) geçilmeden sonraki açılmaz.
     expect(perdeStatuses(upTo(['neva', 'cargah', 'segah', 'dugah']), topics()).buselik).toBe('kilitli')
   })
@@ -164,14 +164,68 @@ describe('perdeStatuses', () => {
     expect(perdeStatuses(withRast, topics()).huseyni).toBe('acik')
   })
 
-  it('Eviç, Muhayyer geçilmesini ve perde-4 açık olmasını ister; Nim Hicaz geçilmesi yetmez', () => {
+  it('Eviç, kapalı Nevâ geçilmesini ve perde-4 açık olmasını ister; Nim Hicaz geçilmesi yetmez', () => {
     const upTo = (ids: string[]) => ids.map((id) => tone(id, true))
     const base = ['neva', 'cargah', 'segah', 'dugah', 'rast']
-    const k3 = ['huseyni', 'acem', 'gerdaniye']
-    expect(perdeStatuses(upTo([...base, ...k3, 'muhayyer']), topics()).evic).toBe('acik')
-    expect(perdeStatuses(upTo([...base, ...k3, 'muhayyer']), topics(['perde-4'])).evic).toBe('kilitli')
+    const k3 = ['huseyni', 'acem', 'gerdaniye', 'muhayyer']
+    expect(perdeStatuses(upTo([...base, ...k3, 'kapali-neva']), topics()).evic).toBe('acik')
+    expect(perdeStatuses(upTo([...base, ...k3, 'kapali-neva']), topics(['perde-4'])).evic).toBe('kilitli')
     expect(perdeStatuses(upTo([...base, ...k3]), topics()).evic).toBe('kilitli')
     expect(perdeStatuses(upTo([...base, 'buselik', 'kurdi', 'dik-kurdi', 'nim-hicaz']), topics()).evic).toBe('kilitli')
+  })
+
+  it('kapalı Nevâ Muhayyer geçilince, perde-2 açıkken açılır', () => {
+    const upTo = (ids: string[]) => ids.map((id) => tone(id, true))
+    const k3 = ['neva', 'cargah', 'segah', 'dugah', 'rast', 'huseyni', 'acem', 'gerdaniye']
+    expect(perdeStatuses(upTo(k3), topics())['kapali-neva']).toBe('kilitli')
+    expect(perdeStatuses(upTo([...k3, 'muhayyer']), topics())['kapali-neva']).toBe('acik')
+    expect(perdeStatuses(upTo([...k3, 'muhayyer']), topics(['perde-2']))['kapali-neva']).toBe('kilitli')
+  })
+
+  describe("Eviç'e kadar geçmiş eski kullanıcı", () => {
+    // Eski listedeki bütün perdeler (Aşama B sonu): Seviye 2 ara sesleri, 3. kademe ana sesleri ve Eviç.
+    const eski = [
+      'neva', 'cargah', 'segah', 'dugah', 'rast', 'buselik', 'kurdi', 'dik-kurdi', 'nim-hicaz',
+      'huseyni', 'acem', 'gerdaniye', 'muhayyer', 'evic',
+    ].map((id) => tone(id, true))
+    // perde-2 öğrenilmiş, perde-5 henüz öğrenilmemiş (yeni konu, açık): önündeki bütün konular öğrenilmiş sayılır.
+    const notalar = topicStatuses(NOTA_TOPICS, [], new Set(NOTA_TOPICS.slice(0, NOTA_TOPICS.findIndex((t) => t.id === 'perde-5')).map((t) => t.id)))
+
+    it('geçilmişler geçilmiş kalır; kapalı Nevâ ve Nim Şehnaz açık, Nim Hisar kilitli', () => {
+      expect(notalar['perde-2']).toBe('ogrenildi')
+      expect(notalar['perde-5']).toBe('acik')
+      const s = perdeStatuses(eski, notalar)
+      for (const id of ['huseyni', 'acem', 'gerdaniye', 'muhayyer', 'evic']) expect(s[id as PerdeId], id).toBe('gecildi')
+      expect(s['kapali-neva']).toBe('acik')
+      expect(s['nim-sehnaz']).toBe('acik')
+      expect(s['nim-hisar']).toBe('kilitli')
+    })
+
+    it('akşam planının güncel adımı kapalı Nevâ’dır, ısınma Muhayyer', () => {
+      const s = perdeStatuses(eski, notalar)
+      const plan = buildEveningPlan({ ilkSesPassed: true, calibrated: true, baspareGecildi: true, calinanEtutler: HEPSI, perdeStatus: s })
+      const guncel = plan.find((st) => st.tries === 3)!
+      expect(guncel.perdeId).toBe('kapali-neva')
+      expect(guncel.dersId).toBe('perde:kapali-neva')
+      expect(plan[0]!.perdeId).toBe('muhayyer')
+    })
+
+    it('perde-5 konusu kayıtta yoksa ya da kilitliyse Nim Şehnaz ve Nim Hisar kilitli kalır', () => {
+      const { 'perde-5': _yok, ...eskiKayit } = notalar
+      const s = perdeStatuses(eski, eskiKayit)
+      expect(s['kapali-neva']).toBe('acik')
+      expect(s['nim-sehnaz']).toBe('kilitli')
+      expect(s['nim-hisar']).toBe('kilitli')
+      expect(perdeStatuses(eski, { ...notalar, 'perde-5': 'kilitli' })['nim-sehnaz']).toBe('kilitli')
+    })
+
+    it('Nim Hisar, Nim Şehnaz geçilene dek kilitli kalır; geçilince açılır', () => {
+      expect(perdeStatuses(eski, notalar)['nim-hisar']).toBe('kilitli')
+      const s = perdeStatuses([...eski, tone('nim-sehnaz', true)], notalar)
+      expect(s['nim-sehnaz']).toBe('gecildi')
+      expect(s['nim-hisar']).toBe('acik')
+      expect(perdeStatuses([...eski, tone('nim-sehnaz', true)], { ...notalar, 'perde-5': 'kilitli' })['nim-hisar']).toBe('kilitli')
+    })
   })
 
   it('ilk-ses kayıtları perde durumunu etkilemez', () => {

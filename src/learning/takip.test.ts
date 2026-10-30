@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { NEY_PERDELER } from '../content/ney-perdeler'
 import { soundingHz, DEFAULT_TUNING } from '../music/ahenk'
-import { centsBetween } from '../music/pitch'
+import { centsBetween, samePitch } from '../music/pitch'
 import type { MusicEvent, NoteEvent } from '../music/notation'
 import type { WrittenPitch } from '../music/pitch'
 import {
@@ -146,8 +146,12 @@ describe('katlanmisSent / enYakinPerde', () => {
     expect(katlanmisSent(sentAt(440, -1200 - 20), 440)).toBeCloseTo(-20, 6)
     expect(katlanmisSent(sentAt(440, 1200 + 150), 440)).toBeCloseTo(1350, 6)
   })
-  it('enYakinPerde, perdenin kendi sesi için o perdeyi bulur', () => {
-    for (const p of NEY_PERDELER) expect(enYakinPerde(soundingHz(p.written, T), T)).toBe(p.name)
+  it('enYakinPerde, perdenin kendi sesi için o perdeyi bulur; aynı yazılı perdede (Nevâ) ilk sıradaki ad döner', () => {
+    for (const p of NEY_PERDELER) {
+      const ilk = NEY_PERDELER.find((x) => samePitch(x.written, p.written))!
+      expect(enYakinPerde(soundingHz(p.written, T), T)).toBe(ilk.name)
+    }
+    expect(enYakinPerde(soundingHz(NEY_PERDELER.find((p) => p.id === 'kapali-neva')!.written, T), T)).toBe('Nevâ')
   })
 })
 

@@ -23,6 +23,8 @@ export const PERDE_ADLARI: Record<string, string> = {
   'C5#4': 'Nim Hicaz',
   'C5#5': 'Hicaz',
   'F5#4': 'Eviç',
+  'G5#4': 'Nim Şehnaz',
+  E5b5: 'Nim Hisar',
   'F4#4': 'Irak',
 }
 

@@ -134,10 +134,12 @@ const ACCIDENTAL_HINT = 'Bemol sesi pesleştirir, diyez tizleştirir; çizgi ve 
 const PERDE_HINT = 'Sırayla: Rast (Sol), Dügâh, Segâh, Çârgâh, Nevâ, Hüseynî, Acem, Gerdâniye, Muhayyer (tiz La).'
 const PERDE_3_HINT = 'Si üzerindeki işaretler: işaretsiz Si Bûselik, Dik Kürdî bakiye bemolü, Kürdî küçük mücenneb bemolü.'
 const PERDE_4_HINT = 'Do üzerinde: Nim Hicaz bakiye diyezi, Hicaz küçük mücenneb diyezi; Fa üzerinde: Eviç bakiye diyezi.'
+const PERDE_5_HINT = 'Sol üzerinde: Nim Şehnaz bakiye diyezi; Mi üzerinde: Nim Hisar küçük mücenneb bemolü.'
 
 function perdeHint(topicId: string): string {
   if (topicId === 'perde-3') return PERDE_3_HINT
   if (topicId === 'perde-4') return PERDE_4_HINT
+  if (topicId === 'perde-5') return PERDE_5_HINT
   return PERDE_HINT
 }
 
@@ -186,27 +188,23 @@ function accidentalOptions(acc: number, rng: () => number): string[] {
   return shuffle(family, rng)
 }
 
-/** Bu perde konusunun ve önceki perde konularının perde adları, konu sırasıyla. */
-function perdeNamesUpTo(topicId: string): string[] {
-  const upTo = PERDE_TOPICS.slice(0, PERDE_TOPICS.findIndex((t) => t.id === topicId) + 1)
-  return [...new Set(upTo.flatMap((t) => t.cards.map((c) => PERDE_ADLARI[perdeKey(c)]!)))]
-}
-
-/** İleri soru çeldiricileri: bu ve önceki perde konularının adları; 3'ten azsa Irak hariç tüm perde adlarından tamamlanır. */
+/**
+ * İleri soru çeldiricileri: önce konunun kendi öbür adları (karışık), sonra önceki perde konularının adları,
+ * konu sırasına göre en yakın (en son) konudan başlayarak; her konu kendi içinde karışıktır. Irak hiç gelmez
+ * (kartı yoktur). Perde-2 sorusunun üç çeldiricisi böylece hep Acem, Gerdâniye, Muhayyer gibi kendi konusundan gelir.
+ */
 function forwardPerdeOptions(topicId: string, perde: string, rng: () => number): string[] {
-  const distractors = shuffle(
-    perdeNamesUpTo(topicId).filter((n) => n !== perde),
-    rng,
-  )
-  if (distractors.length < 3) {
-    distractors.push(
-      ...shuffle(
-        Object.values(PERDE_ADLARI).filter((n) => n !== perde && n !== IRAK_NAME && !distractors.includes(n)),
-        rng,
-      ),
-    )
+  const at = PERDE_TOPICS.findIndex((t) => t.id === topicId)
+  const tiers = [PERDE_TOPICS[at]!, ...PERDE_TOPICS.slice(0, at).reverse()].map((t) => [
+    ...new Set(t.cards.map((c) => PERDE_ADLARI[perdeKey(c)]!)),
+  ])
+  const distractors: string[] = []
+  for (const tier of tiers) {
+    for (const n of shuffle(tier.filter((x) => x !== perde), rng)) {
+      if (distractors.length < 3 && !distractors.includes(n)) distractors.push(n)
+    }
   }
-  return shuffle([perde, ...distractors.slice(0, 3)], rng)
+  return shuffle([perde, ...distractors], rng)
 }
 
 const MAKAM_DIZI_HINT =
