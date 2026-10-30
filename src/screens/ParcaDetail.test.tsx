@@ -20,6 +20,7 @@ vi.mock('../audio/player', () => ({
   playLoop: vi.fn(() => Promise.resolve()),
   stopAudio: vi.fn(),
   getNeySesi: vi.fn(() => 'shakuhachi'),
+  sesSaatiSimdi: vi.fn(() => null),
 }))
 
 vi.mock('../audio/wakeLock', () => ({
@@ -58,15 +59,14 @@ const parcaKodu = (p: Parca, tuning: Tuning, bpm: number, withUsul: boolean, voi
     eslik: withUsul ? 'usul' : 'yok',
     voice,
     usul: USULLER.find((u) => u.id === p.usul)!,
-    isaret: false,
   })
 
 async function listenButton() {
-  const btn = screen.getByRole('button', { name: '🔊 Dinle' }) as HTMLButtonElement
+  const btn = screen.getByRole('button', { name: '▶ Dinle' }) as HTMLButtonElement
   await waitFor(() => expect(btn.disabled).toBe(false))
   return btn
 }
-const usulBox = () => screen.getByRole('checkbox', { name: '🥁 Usul eşliği' }) as HTMLInputElement
+const usulBox = () => screen.getByRole('checkbox', { name: '🥁 Usul eşliği (Sofyan)' }) as HTMLInputElement
 const slider = () => screen.getByRole('slider') as HTMLInputElement
 
 describe('ParcaDetail', () => {
@@ -74,7 +74,8 @@ describe('ParcaDetail', () => {
     await resetDbForTests()
     render(<ParcaDetail parcaId="hak-teala" />)
     expect(await screen.findByRole('heading', { name: /Bir eser nasıl çalışılır/ })).toBeTruthy()
-    expect(screen.queryByRole('button', { name: '🔊 Dinle' })).toBeNull()
+    // Ders sayfasının kendi "▶ Dinle" örnekleri olabilir; çalışma panelinin düğmesi yoktur.
+    expect(screen.queryByRole('button', { name: '🥁 Usulle çal' })).toBeNull()
     expect(screen.queryByRole('slider')).toBeNull()
     expect(screen.getByRole('link', { name: 'Parçalara dön' }).getAttribute('href')).toBe('#/parcalar')
     fireEvent.click(screen.getByRole('button', { name: 'Anladım, alıştırmaya geç' }))
@@ -188,36 +189,36 @@ describe('ParcaDetail', () => {
   it('çalarken Durdur gösterir; Durdur sesi keser ve Dinle geri gelir', async () => {
     await renderParca('hak-teala')
     fireEvent.click(await listenButton())
-    const stop = await screen.findByRole('button', { name: '■ Durdur' })
+    const stop = await screen.findByRole('button', { name: '⏹ Durdur' })
     vi.mocked(stopAudio).mockClear()
     fireEvent.click(stop)
     expect(stopAudio).toHaveBeenCalledTimes(1)
-    expect(await screen.findByRole('button', { name: '🔊 Dinle' })).toBeTruthy()
+    expect(await screen.findByRole('button', { name: '▶ Dinle' })).toBeTruthy()
   })
 
   it('parça bitince Dinle geri gelir', async () => {
     await renderParca('hak-teala')
     fireEvent.click(await listenButton())
-    await screen.findByRole('button', { name: '■ Durdur' })
+    await screen.findByRole('button', { name: '⏹ Durdur' })
     finishPlay()
-    expect(await screen.findByRole('button', { name: '🔊 Dinle' })).toBeTruthy()
+    expect(await screen.findByRole('button', { name: '▶ Dinle' })).toBeTruthy()
   })
 
   it('çalarken hız ya da usul anahtarı değişirse çalma durur', async () => {
     await renderParca('hak-teala')
     fireEvent.click(await listenButton())
-    await screen.findByRole('button', { name: '■ Durdur' })
+    await screen.findByRole('button', { name: '⏹ Durdur' })
     vi.mocked(stopAudio).mockClear()
     fireEvent.change(slider(), { target: { value: '70' } })
     expect(stopAudio).toHaveBeenCalledTimes(1)
-    expect(await screen.findByRole('button', { name: '🔊 Dinle' })).toBeTruthy()
+    expect(await screen.findByRole('button', { name: '▶ Dinle' })).toBeTruthy()
 
     fireEvent.click(await listenButton())
-    await screen.findByRole('button', { name: '■ Durdur' })
+    await screen.findByRole('button', { name: '⏹ Durdur' })
     vi.mocked(stopAudio).mockClear()
     fireEvent.click(usulBox())
     expect(stopAudio).toHaveBeenCalledTimes(1)
-    expect(await screen.findByRole('button', { name: '🔊 Dinle' })).toBeTruthy()
+    expect(await screen.findByRole('button', { name: '▶ Dinle' })).toBeTruthy()
   })
 
   it('ses kapalıyken uyarır, çalmaz', async () => {
@@ -234,7 +235,7 @@ describe('ParcaDetail', () => {
     await renderParca('hak-teala')
     fireEvent.click(await listenButton())
     expect(await screen.findByText(SOUND_WARNING)).toBeTruthy()
-    expect(screen.getByRole('button', { name: '🔊 Dinle' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: '▶ Dinle' })).toBeTruthy()
   })
 
   it('sesi açma başarısız olursa da ses uyarısı gösterir', async () => {
@@ -248,7 +249,7 @@ describe('ParcaDetail', () => {
   it('sayfadan çıkınca (unmount) ses durur', async () => {
     const { unmount } = await renderParca('hak-teala')
     fireEvent.click(await listenButton())
-    await screen.findByRole('button', { name: '■ Durdur' })
+    await screen.findByRole('button', { name: '⏹ Durdur' })
     vi.mocked(stopAudio).mockClear()
     unmount()
     await waitFor(() => expect(stopAudio).toHaveBeenCalledTimes(1))
@@ -258,21 +259,21 @@ describe('ParcaDetail', () => {
     // Durdur
     const first = await renderParca('hak-teala')
     fireEvent.click(await listenButton())
-    await screen.findByRole('button', { name: '■ Durdur' })
+    await screen.findByRole('button', { name: '⏹ Durdur' })
     expect(acquireWakeLock).toHaveBeenCalledTimes(1)
     vi.mocked(releaseWakeLock).mockClear() // önceki testin geç temizliği sayıma karışmasın
-    fireEvent.click(screen.getByRole('button', { name: '■ Durdur' }))
+    fireEvent.click(screen.getByRole('button', { name: '⏹ Durdur' }))
     expect(releaseWakeLock).toHaveBeenCalledTimes(1)
     // Bitiş
     fireEvent.click(await listenButton())
-    await screen.findByRole('button', { name: '■ Durdur' })
+    await screen.findByRole('button', { name: '⏹ Durdur' })
     vi.mocked(releaseWakeLock).mockClear()
     finishPlay()
-    await screen.findByRole('button', { name: '🔊 Dinle' })
+    await screen.findByRole('button', { name: '▶ Dinle' })
     expect(releaseWakeLock).toHaveBeenCalledTimes(1)
     // Unmount
     fireEvent.click(await listenButton())
-    await screen.findByRole('button', { name: '■ Durdur' })
+    await screen.findByRole('button', { name: '⏹ Durdur' })
     vi.mocked(releaseWakeLock).mockClear()
     first.unmount()
     await waitFor(() => expect(releaseWakeLock).toHaveBeenCalledTimes(1))
@@ -291,6 +292,49 @@ describe('ParcaDetail', () => {
     fireEvent.click(await listenButton())
     await screen.findByText(SOUND_OFF)
     expect(acquireWakeLock).not.toHaveBeenCalled()
+  })
+
+  it('"🥁 Usulle çal": melodisiz, yalnız giriş sayımı + usul eşliği çalar', async () => {
+    await renderParca('hak-teala')
+    await listenButton()
+    fireEvent.click(screen.getByRole('button', { name: '🥁 Usulle çal' }))
+    await waitFor(() => expect(playCode).toHaveBeenCalledTimes(1))
+    const p = byId('hak-teala')
+    const expected = buildCalismaCode(p.olcu, DEFAULT_TUNING, 60, {
+      melodi: false,
+      eslik: 'usul',
+      voice: 'shakuhachi',
+      usul: USULLER.find((u) => u.id === p.usul)!,
+    })
+    expect(vi.mocked(playCode).mock.calls[0]).toEqual([expected.code, expected.durationMs])
+    expect(expected.code).toContain('usul_tahta')
+    expect(expected.code).not.toContain(melodyChain('shakuhachi'))
+  })
+
+  it('satır seçilince yalnız o bölüm çalar; tekrar anahtarı vardır', async () => {
+    await renderParca('hak-teala')
+    expect(screen.getByRole('checkbox', { name: '🔁 Tekrarla' })).toBeTruthy()
+    fireEvent.click(document.querySelectorAll<HTMLElement>('[data-testid="score-row"]')[1]!)
+    expect(screen.getByText('Bölüm: 3–4. ölçüler')).toBeTruthy()
+    fireEvent.click(await listenButton())
+    await waitFor(() => expect(playCode).toHaveBeenCalledTimes(1))
+    const p = byId('hak-teala')
+    expect(vi.mocked(playCode).mock.calls[0]![0]).toBe(
+      parcaKodu({ ...p, olcu: p.olcu.slice(2, 4) }, DEFAULT_TUNING, 60, true).code,
+    )
+  })
+
+  it('usulü bilinmeyen parça sessizce metronomla çalınmaz: nota ve ses uyarısı gösterilir, çalma düğmesi yoktur', async () => {
+    PARCALAR.push({ ...byId('hak-teala'), id: 'usulu-yok', usul: 'bilinmeyen-usul' })
+    try {
+      await renderParca('usulu-yok')
+      expect(screen.getByText(SOUND_WARNING)).toBeTruthy()
+      expect(document.querySelectorAll('[data-testid="score-row"]').length).toBeGreaterThan(0)
+      expect(screen.queryByRole('button', { name: '▶ Dinle' })).toBeNull()
+      expect(screen.queryByRole('slider')).toBeNull()
+    } finally {
+      PARCALAR.pop()
+    }
   })
 
   it('bilinmeyen parça için bulunamadı mesajı', async () => {

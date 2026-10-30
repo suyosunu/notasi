@@ -169,7 +169,7 @@ describe('App', () => {
     location.hash = '#/parcalar/daglar-ile-taslar-ile'
     render(<App />)
     expect(await screen.findByRole('heading', { name: /Dağlar ile Taşlar ile/ })).toBeTruthy()
-    expect(screen.getByRole('button', { name: '🔊 Dinle' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: '▶ Dinle' })).toBeTruthy()
   })
 
   it('bilinmeyen parça için bulunamadı ekranını gösterir', () => {

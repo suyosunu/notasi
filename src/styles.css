@@ -700,6 +700,12 @@ h2.setting-label {
   outline-offset: 2px;
 }
 
+/* Çalışma paneli: seçili bölümün etiketi ve "Tümü" düğmesi */
+.calisma-bolum {
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
 .toggle {
   display: flex;
   align-items: center;

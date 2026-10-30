@@ -36,6 +36,7 @@ vi.mock('../audio/player', () => ({
   playCode: vi.fn(() => Promise.resolve()),
   stopAudio: vi.fn(),
   getNeySesi: vi.fn(() => 'shakuhachi'),
+  sesSaatiSimdi: vi.fn(() => null),
 }))
 
 import { EveningPractice } from './EveningPractice'

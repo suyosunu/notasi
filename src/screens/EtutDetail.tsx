@@ -1,16 +1,11 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks'
-import { buildCalismaCode } from '../audio/calisma'
-import { getNeySesi, playCode, stopAudio, unlockAudio } from '../audio/player'
-import { acquireWakeLock, releaseWakeLock } from '../audio/wakeLock'
+import { useEffect, useRef, useState } from 'preact/hooks'
 import { etutDersleri } from '../content/dersler'
 import { ETUTLER } from '../content/etutler'
 import type { Etut } from '../content/etutler'
-import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
 import { USULLER } from '../content/usuller'
 import { DersKapisi } from '../ders/DersKapisi'
-import { ScoreView } from '../notation/ScoreView'
 import { DEFAULT_SETTINGS, getSettings, isaretEkle } from '../store/db'
-import type { Settings } from '../store/db'
+import { CalismaPaneli } from './CalismaPaneli'
 
 const BPM_MIN = 40
 const BPM_MAX = 90
@@ -20,91 +15,32 @@ const KIRIS_VURUSU = 1
 const olcuPerSatir = (zaman: number) => (zaman === 2 || zaman === 3 ? 3 : 2)
 
 /**
- * Etüdün çalışma bölümü (etüt ekranında ve akşam planında ortak): nota, hız, metronom (usullü etütte usul) anahtarı,
- * dinle / metronomla (usulle) çal / durdur ve "Çaldım" işareti. `baslikGizle`: başlığı üst ekran gösteriyorsa (akşam adımı) çizilmez.
+ * Etüdün çalışma bölümü (etüt ekranında ve akşam planında ortak): başlık, çalışma paneli (nota, bölüm seçimi, hız,
+ * metronom ya da usul eşliği, tekrar ve hızlanma) ve "Çaldım" işareti. `baslikGizle`: başlığı üst ekran gösteriyorsa
+ * (akşam adımı) çizilmez.
  */
 export function EtutCalisma(props: { etut: Etut; onDone?: () => void; baslikGizle?: boolean }) {
   const { etut, onDone, baslikGizle } = props
   /** Usullü etütte eşlik usul sesidir; usulsüzde (ya da usul bulunamazsa) 4/4 metronom. */
   const usul = etut.usulId ? USULLER.find((u) => u.id === etut.usulId) : undefined
-  const [settings, setSettings] = useState<Settings | null>(null)
-  const [bpm, setBpm] = useState(etut.bpm)
-  const [metronom, setMetronom] = useState(true)
-  const [playing, setPlaying] = useState(false)
-  const [warn, setWarn] = useState<string | null>(null)
   const [calindi, setCalindi] = useState(false)
-  /** Her başlatma/durdurmada artar: yalnızca son çalmanın sonucu ekranı değiştirir. */
-  const runRef = useRef(0)
+  /** Panelin durdurma işlevi: "Çaldım" çalan sesi keser. */
+  const durdurRef = useRef<(() => void) | null>(null)
 
   useEffect(() => {
     let alive = true
     getSettings()
-      .catch(() => DEFAULT_SETTINGS) // ayarlar okunamazsa varsayılanlarla çalınır
+      .catch(() => DEFAULT_SETTINGS)
       .then((cfg) => {
-        if (!alive) return
-        setSettings(cfg)
-        setCalindi(cfg.calinanEtutler.includes(etut.id))
+        if (alive) setCalindi(cfg.calinanEtutler.includes(etut.id))
       })
     return () => {
       alive = false
     }
   }, [etut.id])
 
-  // Sayfadan çıkınca çalan ses susar ve bekleyen unlockAudio çıkıştan sonra çalmaz. Preact edilgen (useEffect)
-  // temizliklerini çizimden sonraya erteler; geçersiz kılma eşzamanlı çalışsın diye useLayoutEffect'tedir.
-  useLayoutEffect(
-    () => () => {
-      runRef.current++
-      stopAudio()
-      releaseWakeLock()
-    },
-    [],
-  )
-
-  /** Dokunuş işleyicisinden çağrılır: unlockAudio eşzamanlı, kod üretiminden önce başlatılır (iOS). */
-  async function calis(melodi: boolean) {
-    if (!settings) return
-    const run = ++runRef.current
-    setWarn(null)
-    if (!settings.soundOn) {
-      setWarn(SOUND_OFF)
-      return
-    }
-    setPlaying(true)
-    void acquireWakeLock() // uzun etüt çalarken ekran kararmasın
-    try {
-      const unlocked = unlockAudio()
-      unlocked.catch(() => {}) // kod üretimi fırlatırsa işlenmemiş ret kalmasın; hata aşağıda await ile yakalanır
-      // "Metronomla çal" / "Usulle çal": yalnız eşlik; melodi kapalıyken anahtar anlamsızdır.
-      const { code, durationMs } = buildCalismaCode(etut.olcu, settings.tuning, bpm, {
-        melodi,
-        eslik: melodi ? (metronom ? 'usul' : 'yok') : 'usul',
-        voice: getNeySesi(),
-        ...(usul ? { usul } : {}),
-        isaret: false,
-      })
-      await unlocked
-      if (run !== runRef.current) return
-      await playCode(code, durationMs)
-    } catch {
-      if (run === runRef.current) setWarn(SOUND_WARNING)
-    } finally {
-      if (run === runRef.current) {
-        setPlaying(false)
-        releaseWakeLock()
-      }
-    }
-  }
-
-  function stop() {
-    runRef.current++
-    stopAudio()
-    releaseWakeLock()
-    setPlaying(false)
-  }
-
   async function caldim() {
-    if (playing) stop()
+    durdurRef.current?.()
     try {
       await isaretEkle('calinanEtutler', etut.id)
       setCalindi(true)
@@ -117,58 +53,16 @@ export function EtutCalisma(props: { etut: Etut; onDone?: () => void; baslikGizl
   return (
     <>
       {!baslikGizle && <h1>🎼 {etut.baslik}</h1>}
-      <ScoreView olcu={etut.olcu} olcuPerSatir={olcuPerSatir(usul?.zaman ?? 4)} beamBeats={KIRIS_VURUSU} />
-
-      <label class="usul-speed">
-        <span>{`Hız: ♩ = ${bpm}`}</span>
-        <input
-          type="range"
-          min={BPM_MIN}
-          max={BPM_MAX}
-          step={1}
-          value={bpm}
-          onInput={(e) => setBpm(Number(e.currentTarget.value))}
-          // Bırakınca: çalıyorsa durur, yeni hızla yeniden başlatılır.
-          onChange={(e) => {
-            setBpm(Number(e.currentTarget.value))
-            if (playing) stop()
-          }}
-        />
-      </label>
-
-      <label class="toggle">
-        <input
-          type="checkbox"
-          checked={metronom}
-          onChange={(e) => {
-            setMetronom(e.currentTarget.checked)
-            if (playing) stop()
-          }}
-        />
-        {usul ? ` 🥁 Usul (${usul.name})` : ' 🥁 Metronom'}
-      </label>
-
-      <div class="tools">
-        {playing ? (
-          <button type="button" class="primary" onClick={stop}>
-            ⏹ Durdur
-          </button>
-        ) : (
-          <>
-            <button type="button" class="primary" disabled={!settings} onClick={() => void calis(true)}>
-              ▶ Dinle
-            </button>
-            <button type="button" class="tool" disabled={!settings} onClick={() => void calis(false)}>
-              {usul ? '🥁 Usulle çal' : '🎵 Metronomla çal'}
-            </button>
-          </>
-        )}
-      </div>
-      {warn && (
-        <p class="notice" role="status">
-          {warn}
-        </p>
-      )}
+      <CalismaPaneli
+        olcu={etut.olcu}
+        usul={usul}
+        varsayilanBpm={etut.bpm}
+        bpmMin={BPM_MIN}
+        bpmMax={BPM_MAX}
+        olcuPerSatir={olcuPerSatir(usul?.zaman ?? 4)}
+        beamBeats={KIRIS_VURUSU}
+        durdurRef={durdurRef}
+      />
 
       <div class="tools etut-caldim">
         <button type="button" class="tool" onClick={() => void caldim()}>

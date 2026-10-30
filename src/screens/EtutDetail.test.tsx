@@ -17,6 +17,7 @@ vi.mock('../audio/player', () => ({
   playLoop: vi.fn(() => Promise.resolve()),
   stopAudio: vi.fn(),
   getNeySesi: vi.fn(() => 'shakuhachi'),
+  sesSaatiSimdi: vi.fn(() => null),
 }))
 
 vi.mock('../audio/wakeLock', () => ({
@@ -41,7 +42,7 @@ afterEach(() => cleanup())
 
 const etut = (id: string) => ETUTLER.find((e) => e.id === id)!
 const NEVA = etut('tek-neva')
-const SES = { melodi: true, eslik: 'usul', voice: 'shakuhachi', isaret: false } as const
+const SES = { melodi: true, eslik: 'usul', voice: 'shakuhachi' } as const
 
 /** Etüt dersleri okunmuş sayılır; kapı açılır. */
 async function dersleriOku() {
@@ -297,11 +298,11 @@ describe('EtutCalisma', () => {
     expect(await screen.findByText('Çalındı ✓')).toBeTruthy()
   })
 
-  it('usullü etütte anahtar "Usul (Semâî)" ve "Usulle çal"; usulsüzde eski etiketler', async () => {
+  it('usullü etütte anahtar "Usul eşliği (Semâî)" ve "Usulle çal"; usulsüzde eski etiketler', async () => {
     const semaiEtut = etut('usul-semai')
     const semai = USULLER.find((u) => u.id === 'semai')!
     render(<EtutCalisma etut={semaiEtut} />)
-    const box = screen.getByRole('checkbox', { name: '🥁 Usul (Semâî)' }) as HTMLInputElement
+    const box = screen.getByRole('checkbox', { name: '🥁 Usul eşliği (Semâî)' }) as HTMLInputElement
     expect(box.checked).toBe(true)
     expect(screen.queryByRole('checkbox', { name: '🥁 Metronom' })).toBeNull()
     expect(screen.queryByRole('button', { name: '🎵 Metronomla çal' })).toBeNull()
@@ -326,11 +327,11 @@ describe('EtutCalisma', () => {
 
   it('Nim Sofyan (2/4) satırda üç ölçü, Sofyan (4/4) satırda iki ölçü', () => {
     render(<EtutCalisma etut={etut('usul-nim-sofyan')} />)
-    expect(screen.getByRole('checkbox', { name: '🥁 Usul (Nim Sofyan)' })).toBeTruthy()
+    expect(screen.getByRole('checkbox', { name: '🥁 Usul eşliği (Nim Sofyan)' })).toBeTruthy()
     expect(document.querySelectorAll('[data-testid="score-row"]')).toHaveLength(3)
     cleanup()
     render(<EtutCalisma etut={etut('usul-sofyan')} />)
-    expect(screen.getByRole('checkbox', { name: '🥁 Usul (Sofyan)' })).toBeTruthy()
+    expect(screen.getByRole('checkbox', { name: '🥁 Usul eşliği (Sofyan)' })).toBeTruthy()
     expect(document.querySelectorAll('[data-testid="score-row"]')).toHaveLength(4)
   })
 

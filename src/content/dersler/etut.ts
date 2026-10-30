@@ -244,7 +244,7 @@ export const DIL_ESER_DERSLERI: Ders[] = [
       {
         tur: 'dene',
         adimlar: [
-          'Parçalar bölümünden basit bir eser seç ve "🔊 Dinle" ile baştan sona dinle.',
+          'Parçalar bölümünden basit bir eser seç ve "▶ Dinle" ile baştan sona dinle.',
           'Notayı usulü sayarak oku, sonra aynı notayı solfejle oku.',
           'Eseri neyle yavaş çal; hatasız çalınca hızlan.',
           'Parçayı ezberle ve notaya bakmadan çalmayı dene.',
