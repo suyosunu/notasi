@@ -19,6 +19,16 @@ describe('ParcalarSection', () => {
     expect(dolap.textContent).toContain('Uşşak · Dolap · Anonim')
   })
 
+  it('aranağme "Seviye 3" etiketiyle ikinci sırada; makam Nevâ, usul Yürük Semâî', () => {
+    render(<ParcalarSection />)
+    const links = screen.getAllByRole('link').filter((a) => a.getAttribute('href')?.startsWith('#/parcalar/'))
+    const ikinci = links[1]!
+    expect(ikinci.getAttribute('href')).toBe('#/parcalar/yine-baglandi-dil-aranagme')
+    expect(ikinci.textContent).toContain('Yine Bağlandı Dil (aranağme)')
+    expect(ikinci.textContent).toContain('Nevâ · Yürük Semâî · Zekâî Dede')
+    expect(ikinci.querySelector('.seviye-etiket')?.textContent).toBe('Seviye 3')
+  })
+
   it('önerilen seviye etiketi: Dolap 2, Hak Teâlâ 3, Dağlar ile Taşlar ile 4', () => {
     render(<ParcalarSection />)
     const etiket = (ad: string) => screen.getByText(ad).closest('a')!.querySelector('.seviye-etiket')?.textContent

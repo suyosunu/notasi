@@ -6,7 +6,9 @@
 //   node scripts/symbtr-to-json.mjs                 # kaynakları SymbTr deposundan indirir
 //   node scripts/symbtr-to-json.mjs --src <klasör>  # yerel kopyaları (aynı dosya adlarıyla) okur
 //
-// Perde NotaAE/KomaAE sütunlarından, süre Pay/Payda'dan okunur. Temsil edilemeyen süreler
+// Perde NotaAE/KomaAE sütunlarından, süre Pay/Payda'dan okunur. Kod 9 (nota/sus), Kod 10 (ardçarpmalı
+// nota) ve Kod 11 (sessiz çarpma) süreli nota sayılır; Kod 8 (süresiz çarpma) atlanır. Bir eserin yalnız
+// belli ölçüleri alınabilir (`olcuAraligi`), söz gösterilmeyecekse `soz: false` verilir. Temsil edilemeyen süreler
 // (üçleme, 1/32, 5/8 gibi bağ gerektiren değerler) ya da desteklenmeyen işaretler dönüştürmeyi
 // durdurur; yaklaştırma yapılmaz. Bir parça başarısız olursa diğerleri yine üretilir.
 import { readFileSync, writeFileSync } from 'node:fs'
@@ -29,6 +31,17 @@ export const PIECES = [
     file: 'ussak--ilahi--dolap--benim_adim--.txt',
   },
   {
+    // Ölçü 1–20 aranağme (saz). Güfte sahibi bilinmediği için söz yazılmaz.
+    id: 'yine-baglandi-dil-aranagme',
+    title: 'Yine Bağlandı Dil (aranağme)',
+    makam: 'neva',
+    usul: 'yuruk-semai',
+    composer: 'Zekâî Dede',
+    file: 'neva--sarki--yuruksemai_ii--yine_baglandi--zekai_dede.txt',
+    olcuAraligi: [1, 20],
+    soz: false,
+  },
+  {
     id: 'hak-teala',
     title: 'Hak Teâlâ',
     makam: 'ussak',
@@ -47,7 +60,8 @@ export const PIECES = [
 ]
 
 const COLUMNS = ['Sira', 'Kod', 'NotaAE', 'KomaAE', 'Pay', 'Payda', 'Soz1', 'Offset']
-const KOD_NOTA = 9
+/** Kod 9 nota/sus, Kod 10 ardçarpmalı nota, Kod 11 sessiz çarpma: üçü de süreli nota satırıdır. */
+const KOD_NOTA = [9, 10, 11]
 const KOD_USUL = 51
 /** Süreler bu birimin (tam notanın 1/64'ü) tam katı olarak hesaplanır. */
 const UNIT = 64
@@ -177,9 +191,26 @@ function nearInt(x) {
 /**
  * SymbTr txt → { olcu, soz, skipped, summary }. Hatalar toplanır ve dosya + Sira numaralarıyla
  * tek bir Error olarak fırlatılır.
+ *
+ * `olcuAraligi: [bas, son]` (1 tabanlı, kapsayıcı) yalnız o ölçüleri alır. Satır, bittiği Offset'in
+ * ölçüsüne aittir; aralığın dışındaki satırlar hiç dönüştürülmez. Aralığın ilk satırı `bas` ölçüsünün
+ * başında başlamalı, son satırı `son` ölçüsünün sonunda bitmelidir.
  */
-export function convertSymbTr(text, { file, usul }) {
-  const rows = parseSymbTrTxt(text)
+export function convertSymbTr(text, { file, usul, olcuAraligi }) {
+  const allRows = parseSymbTrTxt(text)
+  let bas = 1
+  let son = Infinity
+  if (olcuAraligi) {
+    ;[bas, son] = olcuAraligi
+    if (!(Number.isInteger(bas) && Number.isInteger(son) && bas >= 1 && son >= bas)) {
+      throw new Error(`${file}: geçersiz aralık [${olcuAraligi}] (1 tabanlı tam sayılar, bas ≤ son)`)
+    }
+  }
+  // Satırın ölçüsü (1 tabanlı): bitiş Offset'i tam sayıya denk gelirse o ölçünün son satırıdır.
+  const measureOf = (row) => Math.ceil(row.offset - OFFSET_TOL)
+  const rows = olcuAraligi
+    ? allRows.filter((r, i) => i === 0 || (measureOf(r) >= bas && measureOf(r) <= son))
+    : allRows
   const errors = []
   const fail = (row, msg) => errors.push(`Sira ${row.sira}: ${msg}`)
   const skipped = []
@@ -199,7 +230,8 @@ export function convertSymbTr(text, { file, usul }) {
   let events = []
   let syllables = []
   let measureTotal = 0
-  let prevOffset = null
+  // Aralık ilk ölçüden başlamıyorsa, ilk satırın başlangıcı `bas` ölçüsünün başı olmalı.
+  let prevOffset = bas > 1 ? bas - 1 : null
   let notes = 0
   let rests = 0
   let komaChecked = 0
@@ -210,7 +242,7 @@ export function convertSymbTr(text, { file, usul }) {
       fail(row, `usul değişimi (${row.soz}) desteklenmiyor`)
       continue
     }
-    if (row.kod !== KOD_NOTA) {
+    if (!KOD_NOTA.includes(row.kod)) {
       skipped.push({ sira: row.sira, reason: `Kod ${row.kod} (nota/sus değil)`, soz: row.soz })
       continue
     }
@@ -255,13 +287,18 @@ export function convertSymbTr(text, { file, usul }) {
 
     // Offset olayın bitişidir; ardışık iki olay arasındaki fark süreye eşit olmalı.
     if (prevOffset !== null && Math.abs(row.offset - prevOffset - len / UNIT / measureLen) > OFFSET_TOL) {
-      fail(row, `Offset ${row.offset}, süreyle beklenen ${(prevOffset + len / UNIT / measureLen).toFixed(4)}`)
+      if (bas > 1 && notes + rests === 1) {
+        fail(row, `aralık ölçü ${bas} sınırında başlamıyor (Offset ${row.offset}, süre ${row.pay}/${row.payda})`)
+      } else {
+        fail(row, `Offset ${row.offset}, süreyle beklenen ${(prevOffset + len / UNIT / measureLen).toFixed(4)}`)
+      }
     }
     prevOffset = row.offset
     measureTotal += len
 
     if (nearInt(row.offset)) {
-      const isFirst = olcu.length === 0
+      // Yalnız dosyanın ilk ölçüsü anacrusis olabilir.
+      const isFirst = olcu.length === 0 && bas === 1
       const ok = isFirst ? measureTotal > 0 && measureTotal <= measureUnits : measureTotal === measureUnits
       if (!ok) {
         fail(row, `ölçü ${olcu.length + 1} toplamı ${measureTotal}/${UNIT}, usul ${measureUnits}/${UNIT}`)
@@ -275,6 +312,9 @@ export function convertSymbTr(text, { file, usul }) {
   }
   if (measureTotal > 0) {
     errors.push(`son ölçü tamamlanmamış (${measureTotal}/${UNIT}, Offset ${prevOffset})`)
+  }
+  if (olcuAraligi && errors.length === 0 && olcu.length !== son - bas + 1) {
+    throw new Error(`${file}: aralık [${bas}, ${son}] ${son - bas + 1} ölçü istiyor, dosyada ${olcu.length} ölçü var`)
   }
   if (errors.length > 0) {
     throw new Error(`${file}: ${errors.length} satır dönüştürülemedi:\n  ${errors.join('\n  ')}`)
@@ -305,7 +345,7 @@ export function convertSymbTr(text, { file, usul }) {
  * bağ yalnızca aynı satırın son parçası dışındaki notalarda bulunur.
  */
 function verifyAgainstSource(olcu, rows, file) {
-  const src = rows.filter((r) => r.kod === KOD_NOTA && r.pay !== 0)
+  const src = rows.filter((r) => KOD_NOTA.includes(r.kod) && r.pay !== 0)
   const flat = olcu.flat()
   const fail = (r, msg) => {
     throw new Error(`${file}: doğrulama Sira ${r.sira}: ${msg}`)
@@ -356,6 +396,21 @@ export function formatParca(parca) {
   return out.join('\n') + '\n'
 }
 
+/** Parça tanımı + dönüştürme sonucu → JSON'a yazılacak parça (`soz: false` ise söz alanı olmaz). */
+export function buildParca(p, r) {
+  const sozVar = p.soz !== false && r.soz.some((m) => m.some((s) => s !== ''))
+  return {
+    id: p.id,
+    title: p.title,
+    makam: p.makam,
+    usul: p.usul,
+    composer: p.composer,
+    source: RAW_BASE + p.file,
+    olcu: r.olcu,
+    ...(sozVar ? { soz: r.soz } : {}),
+  }
+}
+
 async function main() {
   const args = process.argv.slice(2)
   const srcIdx = args.indexOf('--src')
@@ -374,18 +429,8 @@ async function main() {
             if (!r.ok) throw new Error(`${source}: HTTP ${r.status}`)
             return r.text()
           })
-      const r = convertSymbTr(text, { file: p.file, usul })
-      const parca = {
-        id: p.id,
-        title: p.title,
-        makam: p.makam,
-        usul: p.usul,
-        composer: p.composer,
-        source,
-        olcu: r.olcu,
-        ...(r.soz.some((m) => m.some((s) => s !== '')) ? { soz: r.soz } : {}),
-      }
-      writeFileSync(join(outDir, `${p.id}.json`), formatParca(parca))
+      const r = convertSymbTr(text, { file: p.file, usul, olcuAraligi: p.olcuAraligi })
+      writeFileSync(join(outDir, `${p.id}.json`), formatParca(buildParca(p, r)))
       const s = r.summary
       console.log(
         `✓ ${p.id}: ${s.measures} ölçü (${usul.zaman}/${usul.mertebe}), ${s.notes} nota, ${s.rests} sus; ` +

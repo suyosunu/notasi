@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { beats } from '../../music/notation'
 import type { MusicEvent } from '../../music/notation'
-import { writtenKoma } from '../../music/pitch'
+import { samePitch, writtenKoma } from '../../music/pitch'
+import { NEY_PERDELER } from '../ney-perdeler'
 import { USULLER } from '../usuller'
 import { PARCALAR, toParca } from './index'
 import lisans from './LISANS.md?raw'
@@ -12,15 +13,31 @@ const durKey = (e: MusicEvent): string => `${e.dur}${e.dotted ? '.' : ''}`
 const byId = (id: string) => PARCALAR.find((p) => p.id === id)!
 
 describe('PARCALAR', () => {
-  it('üç parça kolaydan zora sıralı', () => {
-    expect(PARCALAR.map((p) => p.id)).toEqual(['benim-adim-dertli-dolap', 'hak-teala', 'daglar-ile-taslar-ile'])
-    expect(PARCALAR.map((p) => p.title)).toEqual(['Benim Adım Dertli Dolap', 'Hak Teâlâ', 'Dağlar ile Taşlar ile'])
+  it('dört parça kolaydan zora sıralı', () => {
+    expect(PARCALAR.map((p) => p.id)).toEqual([
+      'benim-adim-dertli-dolap',
+      'yine-baglandi-dil-aranagme',
+      'hak-teala',
+      'daglar-ile-taslar-ile',
+    ])
+    expect(PARCALAR.map((p) => p.title)).toEqual([
+      'Benim Adım Dertli Dolap',
+      'Yine Bağlandı Dil (aranağme)',
+      'Hak Teâlâ',
+      'Dağlar ile Taşlar ile',
+    ])
   })
 
   it('makam, usul ve kaynak bilgisi', () => {
     expect(byId('benim-adim-dertli-dolap')).toMatchObject({ makam: 'ussak', usul: 'dolap' })
     expect(byId('hak-teala')).toMatchObject({ makam: 'ussak', usul: 'sofyan', composer: 'Ali Ufkî' })
     expect(byId('daglar-ile-taslar-ile')).toMatchObject({ makam: 'hicaz', usul: 'sofyan', composer: 'Kutbî Dede' })
+    expect(byId('yine-baglandi-dil-aranagme')).toMatchObject({
+      makam: 'neva',
+      usul: 'yuruk-semai',
+      composer: 'Zekâî Dede',
+      source: 'https://raw.githubusercontent.com/MTG/SymbTr/master/txt/neva--sarki--yuruksemai_ii--yine_baglandi--zekai_dede.txt',
+    })
     for (const p of PARCALAR) {
       expect(p.source).toMatch(/^https:\/\/raw\.githubusercontent\.com\/MTG\/SymbTr\/master\/txt\/.+\.txt$/)
     }
@@ -47,23 +64,26 @@ describe('PARCALAR', () => {
         })
       })
 
-      it('söz ölçü başına olaylarla hizalı, suslarda boş', () => {
-        expect(p.soz).toBeDefined()
-        expect(p.soz!).toHaveLength(p.olcu.length)
-        p.olcu.forEach((m, i) => {
-          expect(p.soz![i]).toHaveLength(m.length)
-          m.forEach((e, j) => {
-            if (e.kind === 'rest') expect(p.soz![i]![j]).toBe('')
+      // Aranağmenin sözü yoktur (aşağıda ayrıca sınanır); diğer parçaların sözü olaylarla hizalıdır.
+      if (p.id !== 'yine-baglandi-dil-aranagme') {
+        it('söz ölçü başına olaylarla hizalı, suslarda boş', () => {
+          expect(p.soz).toBeDefined()
+          expect(p.soz!).toHaveLength(p.olcu.length)
+          p.olcu.forEach((m, i) => {
+            expect(p.soz![i]).toHaveLength(m.length)
+            m.forEach((e, j) => {
+              if (e.kind === 'rest') expect(p.soz![i]![j]).toBe('')
+            })
           })
         })
-      })
 
-      it('heceler kırpılmış, ulama ‿ ile yazılmış', () => {
-        for (const s of p.soz!.flat()) {
-          expect(s).toBe(s.trim())
-          expect(s).not.toContain('_')
-        }
-      })
+        it('heceler kırpılmış, ulama ‿ ile yazılmış', () => {
+          for (const s of p.soz!.flat()) {
+            expect(s).toBe(s.trim())
+            expect(s).not.toContain('_')
+          }
+        })
+      }
 
       it('bağ yalnızca aynı ölçüdeki aynı perdeye gider; bağlı parçanın hecesi boştur', () => {
         p.olcu.forEach((m, i) => {
@@ -73,7 +93,7 @@ describe('PARCALAR', () => {
             expect(next, `ölçü ${i + 1} olay ${j + 1}`).toBeDefined()
             expect(next!.kind).toBe('note')
             if (next!.kind === 'note') expect(next!.pitch).toEqual(e.pitch)
-            expect(p.soz![i]![j + 1]).toBe('')
+            if (p.soz) expect(p.soz[i]![j + 1]).toBe('')
           })
         })
       })
@@ -138,8 +158,29 @@ describe('PARCALAR', () => {
     expect(ties).toHaveLength(4)
   })
 
+  it('Yine Bağlandı Dil aranağmesi: 20 ölçü, her ölçü 6/8, söz yok, Nevâ, perdeler ney perdelerinde', () => {
+    const p = byId('yine-baglandi-dil-aranagme')
+    expect(p.makam).toBe('neva')
+    expect(p.olcu).toHaveLength(20)
+    for (const [i, m] of p.olcu.entries()) {
+      // beats dörtlük vuruş sayar; tam nota = 4 vuruş. 6/8 = 0.75 tam nota (ilk ölçü de tam).
+      const whole = m.reduce((s, e) => s + beats(e), 0) / 4
+      expect(Math.abs(whole - 0.75), `ölçü ${i + 1}`).toBeLessThan(1e-6)
+    }
+    expect(p.soz).toBeUndefined()
+    // Sira 2–9: Kod 10 satırları (D5 ×2) nota sayılır, Kod 8 süresiz çarpmalar (E5) yoktur.
+    expect(p.olcu[0]!.map(komaAE)).toEqual([327, 327, 318, 327, 318, 313])
+    expect(p.olcu[0]!.map(durKey)).toEqual(Array(6).fill('eighth'))
+    for (const e of p.olcu.flat()) {
+      if (e.kind === 'note') {
+        expect(NEY_PERDELER.some((n) => samePitch(n.written, e.pitch)), JSON.stringify(e.pitch)).toBe(true)
+      }
+    }
+    expect(p.olcu.flat().some((e) => e.kind === 'note' && e.tie)).toBe(false)
+  })
+
   it('başka parçada bağ yok', () => {
-    for (const id of ['benim-adim-dertli-dolap', 'hak-teala']) {
+    for (const id of ['benim-adim-dertli-dolap', 'yine-baglandi-dil-aranagme', 'hak-teala']) {
       expect(byId(id).olcu.flat().some((e) => e.kind === 'note' && e.tie)).toBe(false)
     }
   })
@@ -159,6 +200,17 @@ describe('PARCALAR', () => {
       return c
     }
     expect(counts('benim-adim-dertli-dolap')).toEqual({ G4: 4, A4: 16, B4b1: 28, C5: 20, D5: 4 })
+    // Ölçü 1–20, Kod 9/10/11 satırları (SymbTr Offset ≤ 20); 4 sus ayrıca sayılmaz.
+    expect(counts('yine-baglandi-dil-aranagme')).toEqual({
+      A4: 4,
+      B4b1: 13,
+      C5: 25,
+      D5: 33,
+      E5: 18,
+      'F5#4': 6,
+      G5: 10,
+      A5: 8,
+    })
     expect(counts('hak-teala')).toEqual({ G4: 6, A4: 45, B4b1: 37, C5: 27, D5: 21, E5: 7, F5: 2, G5: 4 })
     expect(counts('daglar-ile-taslar-ile')).toEqual({
       'F4#4': 4,

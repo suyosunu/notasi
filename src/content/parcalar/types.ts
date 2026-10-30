@@ -1,6 +1,6 @@
 import type { MusicEvent } from '../../music/notation'
 
-export type ParcaMakam = 'rast' | 'ussak' | 'hicaz'
+export type ParcaMakam = 'rast' | 'neva' | 'ussak' | 'hicaz'
 
 /**
  * SymbTr'den `scripts/symbtr-to-json.mjs` ile üretilmiş parça (CC BY-NC-SA 4.0, bkz. LISANS.md).

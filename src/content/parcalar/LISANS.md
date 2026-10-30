@@ -18,6 +18,7 @@ Depo: https://github.com/MTG/SymbTr (CC BY-NC-SA 4.0)
 | Parça | Makam / usul | Besteci | SymbTr dosyası |
 |---|---|---|---|
 | Benim Adım Dertli Dolap | Uşşak / Dolap (12/8) | Anonim (güfte: Yunus Emre) | https://raw.githubusercontent.com/MTG/SymbTr/master/txt/ussak--ilahi--dolap--benim_adim--.txt |
+| Yine Bağlandı Dil (aranağme) | Nevâ / Yürük Semâî (6/8) | Zekâî Dede | https://raw.githubusercontent.com/MTG/SymbTr/master/txt/neva--sarki--yuruksemai_ii--yine_baglandi--zekai_dede.txt |
 | Hak Teâlâ | Uşşak / Sofyan (4/4) | Ali Ufkî | https://raw.githubusercontent.com/MTG/SymbTr/master/txt/ussak--ilahi--sofyan--hak_taala--ali_ufki.txt |
 | Dağlar ile Taşlar ile | Hicaz / Sofyan (4/4) | Kutbî Dede (güfte: Yunus Emre) | https://raw.githubusercontent.com/MTG/SymbTr/master/txt/hicaz--ilahi--sofyan--daglar_ile--kutbi_dede.txt |
 
@@ -29,6 +30,9 @@ Depo: https://github.com/MTG/SymbTr (CC BY-NC-SA 4.0)
   işareti `_` yerine `‿` yazıldı.
 - Tek bir nota değeriyle yazılamayan süreler (ör. 5/8) aynı ölçü içinde bağlı notalara bölündü
   (5/8 → ikilik + sekizlik). Toplam süre ve perde değişmedi.
+- "Yine Bağlandı Dil" şarkısından yalnız ölçü 1–20 (aranağme, saz bölümü) alındı; söz gösterilmez. Nota
+  satırlarından Kod 9, 10 (ardçarpmalı nota) ve 11 (sessiz çarpma) süreli nota olarak alındı; Kod 8
+  (süresiz çarpma) satırları alınmadı.
 - Ms, LNS, Bas ve Nota53/Koma53 sütunları alınmadı.
 
 Bu dosyaları paylaşırken ya da değiştirirken aynı lisansı ve yukarıdaki atfı koruyun.

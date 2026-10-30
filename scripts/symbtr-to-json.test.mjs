@@ -1,5 +1,9 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
+  PIECES,
+  buildParca,
   cleanSyllable,
   convertSymbTr,
   durationOf,
@@ -38,6 +42,7 @@ const BENIM_ADIM = [
 
 const DOLAP = { zaman: 12, mertebe: 8 }
 const SOFYAN = { zaman: 4, mertebe: 4 }
+const YURUK = { zaman: 6, mertebe: 8 }
 const n = (step, octave, acc, dur, dotted, tie) => ({
   kind: 'note',
   pitch: { step, octave, acc },
@@ -347,6 +352,182 @@ describe('convertSymbTr', () => {
     ]
     expect(() => convertSymbTr(txt(rows), { file: 'x.txt', usul: SOFYAN })).toThrow(/son ölçü/i)
   })
+})
+
+describe('Kod 10 ve 11 satırları', () => {
+  // Yine Bağlandı Dil (neva--sarki--yuruksemai_ii) biçimi: Kod 10 ardçarpmalı, Kod 11 sessiz çarpma, Kod 8 süresiz çarpma.
+  const rows = [
+    [1, 51, '', '', 0, 0, 6, 8, 0, 87, 0, 'Yürüksemâî II', '0.0'],
+    [2, 10, 'Re5', 'D5', 327, 327, 1, 8, 333, 95, 96, 'ARANAĞME', '0.166666666667'],
+    [3, 8, 'Mi5', 'E5', 336, 336, 0, 0, 0, 95, 96, '.', '0.166666666667'],
+    [4, 9, 'Do5', 'C5', 318, 318, 1, 4, 667, 95, 96, '.', '0.5'],
+    [5, 11, 'Re5', 'D5', 327, 327, 1, 8, 333, 95, 96, '.', '0.666666666667'],
+    [6, 8, 'Do5', 'C5', 318, 318, 0, 0, 0, 95, 96, '.', '0.666666666667'],
+    [7, 9, 'Es', 'Es', -1, -1, 1, 8, 333, 100, 0, '.', '0.833333333333'],
+    [8, 9, 'Re5', 'D5', 327, 327, 1, 8, 333, 95, 96, '.', '1.0'],
+  ]
+
+  it('Kod 10 ve 11 süreli nota sayılır; Kod 8 süresiz çarpma atlanır', () => {
+    const r = convertSymbTr(txt(rows), { file: 'neva.txt', usul: YURUK })
+    expect(r.olcu).toEqual([
+      [
+        n('D', 5, 0, 'eighth'),
+        n('C', 5, 0, 'quarter'),
+        n('D', 5, 0, 'eighth'),
+        { kind: 'rest', dur: 'eighth' },
+        n('D', 5, 0, 'eighth'),
+      ],
+    ])
+    expect(r.skipped.map((s) => [s.sira, s.reason])).toEqual([
+      [3, 'Kod 8 (nota/sus değil)'],
+      [6, 'Kod 8 (nota/sus değil)'],
+    ])
+    expect(r.summary).toMatchObject({ measures: 1, notes: 4, rests: 1, komaChecked: 4, events: 5, verifiedRows: 5 })
+  })
+
+  it('Kod 10 ve 11 satırları olmasaydı Offset zinciri tutmazdı', () => {
+    const without = rows.filter((r) => r[1] !== 10 && r[1] !== 11).map((r, i) => [i + 1, ...r.slice(1)])
+    expect(() => convertSymbTr(txt(without), { file: 'neva.txt', usul: YURUK })).toThrow(/Offset/)
+  })
+})
+
+describe('olcuAraligi', () => {
+  // 6/8; her ölçü iki noktalı dörtlük. Ölçü k (0'dan) için satırlar.
+  const m = (k, kod = 9) => [
+    [0, kod, 'Re5', 'D5', 327, 327, 3, 8, 500, 95, 96, `a${k}`, String(k + 0.5)],
+    [0, 9, 'Do5', 'C5', 318, 318, 3, 8, 500, 95, 96, `b${k}`, String(k + 1)],
+  ]
+  // Dördüncü ölçüde üçleme (1/12): aralığın dışında kaldığında dönüştürülmemeli.
+  const triplet = [0, 9, 'Re5', 'D5', 327, 327, 1, 12, 500, 95, 96, 'x', '3.1111111111']
+  const file = (rows) =>
+    txt([[0, 51, '', '', 0, 0, 6, 8, 0, 87, 0, 'Yürüksemâî II', '0.0'], ...rows].map((r, i) => [i + 1, ...r.slice(1)]))
+  const opts = { file: 'a.txt', usul: YURUK }
+  const all = [...m(0, 10), ...m(1), ...m(2)]
+
+  it('yalnız o ölçüleri alır', () => {
+    const r = convertSymbTr(file(all), { ...opts, olcuAraligi: [2, 3] })
+    expect(r.olcu).toEqual([
+      [n('D', 5, 0, 'quarter', true), n('C', 5, 0, 'quarter', true)],
+      [n('D', 5, 0, 'quarter', true), n('C', 5, 0, 'quarter', true)],
+    ])
+    expect(r.soz).toEqual([
+      ['a1', 'b1'],
+      ['a2', 'b2'],
+    ])
+    expect(r.summary).toMatchObject({ measures: 2, notes: 4, verifiedRows: 4 })
+    expect(convertSymbTr(file(all), { ...opts, olcuAraligi: [1, 1] }).soz).toEqual([['a0', 'b0']])
+    // Aralık verilmezse hepsi.
+    expect(convertSymbTr(file(all), opts).olcu).toHaveLength(3)
+  })
+
+  it('aralığın dışındaki satırlar dönüştürülmez; içinde kalırsa hata verir', () => {
+    const rows = [...all, triplet]
+    expect(convertSymbTr(file(rows), { ...opts, olcuAraligi: [1, 3] }).olcu).toHaveLength(3)
+    expect(() => convertSymbTr(file(rows), { ...opts, olcuAraligi: [3, 4] })).toThrow(/1\/12/)
+  })
+
+  it('aralık ölçü sınırında başlamazsa hata verir', () => {
+    // İkinci satır 1. ölçüyü aşıyor (3/8 + 4/8): 2. ölçüden başlayan aralık bir notanın ortasına denk gelir.
+    const rows = [
+      [0, 9, 'Re5', 'D5', 327, 327, 3, 8, 500, 95, 96, 'a', '0.5'],
+      [0, 9, 'Do5', 'C5', 318, 318, 4, 8, 500, 95, 96, 'b', '1.0833333333'],
+      [0, 9, 'Re5', 'D5', 327, 327, 2, 8, 500, 95, 96, 'c', '1.4166666667'],
+    ]
+    expect(() => convertSymbTr(file(rows), { ...opts, olcuAraligi: [2, 2] })).toThrow(/ölçü 2.*sınır/s)
+  })
+
+  it('geçersiz ya da dosyayı aşan aralık hata verir', () => {
+    for (const a of [[0, 2], [3, 2], [1.5, 2], [1, 4]]) {
+      expect(() => convertSymbTr(file(all), { ...opts, olcuAraligi: a }), String(a)).toThrow(/aralık/i)
+    }
+  })
+})
+
+describe('buildParca', () => {
+  const piece = { id: 'p', title: 'P', makam: 'neva', usul: 'yuruk-semai', composer: 'Z', file: 'x.txt' }
+  const r = { olcu: [[n('D', 5, 0, 'quarter', true)]], soz: [['.']] }
+
+  it('soz:false ile soz alanı yazılmaz', () => {
+    const parca = buildParca({ ...piece, soz: false }, r)
+    expect('soz' in parca).toBe(false)
+    expect(formatParca(parca)).not.toContain('"soz"')
+  })
+
+  it('varsayılan: boş olmayan hece varsa soz yazılır, hepsi boşsa yazılmaz', () => {
+    expect(buildParca(piece, r).soz).toEqual([['.']])
+    expect('soz' in buildParca(piece, { ...r, soz: [['']] })).toBe(false)
+  })
+
+  it('source SymbTr ham dosya adresidir', () => {
+    expect(buildParca(piece, r).source).toBe('https://raw.githubusercontent.com/MTG/SymbTr/master/txt/x.txt')
+  })
+})
+
+describe('PIECES', () => {
+  it('kolaydan zora sıralı; aranağme Nevâ, Yürük Semâî, ölçü 1–20, söz yok', () => {
+    expect(PIECES.map((p) => p.id)).toEqual([
+      'benim-adim-dertli-dolap',
+      'yine-baglandi-dil-aranagme',
+      'hak-teala',
+      'daglar-ile-taslar-ile',
+    ])
+    expect(PIECES[1]).toEqual({
+      id: 'yine-baglandi-dil-aranagme',
+      title: 'Yine Bağlandı Dil (aranağme)',
+      makam: 'neva',
+      usul: 'yuruk-semai',
+      composer: 'Zekâî Dede',
+      file: 'neva--sarki--yuruksemai_ii--yine_baglandi--zekai_dede.txt',
+      olcuAraligi: [1, 20],
+      soz: false,
+    })
+  })
+})
+
+describe('mevcut üç parça aynı JSON üretir (bayt bayt)', () => {
+  // SymbTr txt'leri depoya konmaz (CC BY-NC-SA, indirilir). Bu yüzden her parçanın depodaki JSON'undan
+  // kaynak biçiminde (Kod 9, Pay/Payda, Offset, Soz1) bir txt kurulur ve dönüştürücüden geçirilir; çıktı
+  // depodaki dosyayla bayt bayt aynı olmalı. Gerçek txt'lerle karşılaştırma elle yapılır: dönüştürücü
+  // çalıştırılır ve `git diff --exit-code src/content/parcalar/*.json` boş olmalı.
+  const UNITS = { whole: 64, half: 32, quarter: 16, eighth: 8, sixteenth: 4 }
+  const unitsOf = (e) => UNITS[e.dur] * (e.dotted ? 1.5 : 1)
+  const gcd = (a, b) => (b === 0 ? a : gcd(b, a % b))
+  const notaAE = ({ step, octave, acc }) => `${step}${octave}${acc === 0 ? '' : `${acc < 0 ? 'b' : '#'}${Math.abs(acc)}`}`
+
+  /** Parça JSON'u → SymbTr txt (bağlı parçalar tek satırda birleşir). */
+  function toSymbTr(parca, usul) {
+    const measureUnits = (usul.zaman * 64) / usul.mertebe
+    const rows = [[1, 51, '', '', 0, 0, usul.zaman, usul.mertebe, 0, 0, 0, 'Usul', '0.0']]
+    parca.olcu.forEach((events, mi) => {
+      const total = events.reduce((s, e) => s + unitsOf(e), 0)
+      let cum = 0
+      for (let i = 0; i < events.length; ) {
+        let j = i
+        let units = unitsOf(events[j])
+        while (events[j].kind === 'note' && events[j].tie) units += unitsOf(events[++j])
+        cum += units
+        const e = events[i]
+        const g = gcd(units, 64)
+        const offset = mi + 1 - (total - cum) / measureUnits
+        const hece = (parca.soz?.[mi]?.[i] ?? '').replaceAll('‿', '_')
+        const nota = e.kind === 'rest' ? 'Es' : notaAE(e.pitch)
+        const koma = e.kind === 'rest' ? -1 : komaAEOf(e.pitch)
+        rows.push([rows.length + 1, 9, '', nota, '', koma, units / g, 64 / g, 0, 0, 0, hece, String(offset)])
+        i = j + 1
+      }
+    })
+    return txt(rows)
+  }
+
+  for (const id of ['benim-adim-dertli-dolap', 'hak-teala', 'daglar-ile-taslar-ile']) {
+    it(id, () => {
+      const piece = PIECES.find((p) => p.id === id)
+      const repo = readFileSync(resolve('src/content/parcalar', `${id}.json`), 'utf8').replaceAll('\r\n', '\n')
+      const usul = { dolap: DOLAP, sofyan: SOFYAN }[piece.usul]
+      const r = convertSymbTr(toSymbTr(JSON.parse(repo), usul), { file: piece.file, usul, olcuAraligi: piece.olcuAraligi })
+      expect(formatParca(buildParca(piece, r))).toBe(repo)
+    })
+  }
 })
 
 describe('formatParca', () => {

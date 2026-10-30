@@ -92,7 +92,7 @@ describe('ScoreView', () => {
     expect(rows(container).map((r) => r.querySelectorAll('line[data-barline]').length)).toEqual([2, 1, 1])
   })
 
-  it('üç gerçek parçada hece boyu 375 pt telefondaki 325 px kapta en az 12 × 0,8 = 9,6 px', () => {
+  it('gerçek parçalarda hece boyu 375 pt telefondaki 325 px kapta en az 12 × 0,8 = 9,6 px', () => {
     // 375 − 2×20 (ekran dolgusu) − 2×4 (nota dolgusu) − 2×1 (kenarlık) = 325
     expect(ROW_WIDTH).toBe(325)
     for (const p of PARCALAR) {
@@ -116,16 +116,18 @@ describe('ScoreView', () => {
     expect(twelve.querySelectorAll('[data-flag]')).toHaveLength(0)
   })
 
-  it('üç gerçek parçada hiçbir kiriş hece bandına inmez (satır genişliğinde, usulün vuruş birimiyle)', () => {
+  it('gerçek parçalarda hiçbir kiriş hece bandına inmez (satır genişliğinde, usulün vuruş birimiyle)', () => {
     const nums = (d: string) => d.match(/-?\d+(?:\.\d+)?/g)!.map(Number)
     let beams = 0
     for (const p of PARCALAR) {
       const beat = beamBeatsFor(USULLER.find((u) => u.id === p.usul))
       const { container } = render(<ScoreView olcu={p.olcu} soz={p.soz} beamBeats={beat} />)
-      const syl = container.querySelector('text[data-syllable]')!
+      const syl = container.querySelector('text[data-syllable]')
+      // Sözsüz parçada (aranağme) hece bandı yoktur; kiriş sınırı sonsuz sayılır.
+      expect(syl === null, p.id).toBe(p.soz === undefined)
       // Hece kutusunun üstü: taban çizgisi − yazı boyu (tam em; gerçek büyük harf yüksekliğinden daha temkinli).
-      const bandTop = Number(syl.getAttribute('y')) - Number(syl.getAttribute('font-size'))
-      expect(bandTop).toBe(91)
+      const bandTop = syl ? Number(syl.getAttribute('y')) - Number(syl.getAttribute('font-size')) : Infinity
+      if (syl) expect(bandTop).toBe(91)
       for (const b of container.querySelectorAll('[data-beam]')) {
         beams++
         nums(b.getAttribute('d')!).forEach((v, i) => {
