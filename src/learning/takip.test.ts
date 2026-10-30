@@ -73,6 +73,24 @@ describe('beklenenNotalar', () => {
     expect(r[1]).toMatchObject({ nota: 2, bas: 16, son: 17 })
   })
 
+  it('farklı perdeye bağlı tie birleşmez (çalımdaki kuralla aynı): iki ayrı nota', () => {
+    const olcu: MusicEvent[][] = [[nota(RAST, 'quarter', { tie: true }), nota(DUGAH), nota(SEGAH), nota(CARGAH)]]
+    const r = beklenenNotalar(olcu, 0, T, 60, 10, 4)
+    expect(r).toHaveLength(4)
+    expect(r[0]).toMatchObject({ nota: 0, bas: 14, son: 15 })
+    expect(r[1]).toMatchObject({ nota: 1, bas: 15, son: 16 })
+    expect(r[1].hz).toBeCloseTo(soundingHz(DUGAH, T), 6)
+  })
+
+  it('tie ile bağlı nota susla kesilirse birleşmez', () => {
+    const olcu: MusicEvent[][] = [[nota(RAST, 'quarter', { tie: true }), { kind: 'rest', dur: 'quarter' }, nota(RAST)]]
+    const r = beklenenNotalar(olcu, 0, T, 60, 0, 0)
+    expect(r.map((n) => [n.nota, n.bas, n.son])).toEqual([
+      [0, 0, 1],
+      [2, 2, 3],
+    ])
+  })
+
   it('ölçü sınırını aşan bağ ilk notanın indislerini korur', () => {
     const olcu: MusicEvent[][] = [
       [nota(DUGAH, 'half'), nota(RAST, 'half', { tie: true })],
@@ -133,6 +151,50 @@ describe('gecikmeBul', () => {
     const { notalar } = dortluk()
     expect(gecikmeBul(notalar, iz(notalar, 0, () => null))).toBe(VARSAYILAN_GECIKME_MS)
   })
+  it('aralığın iki ucundaki gecikmeleri de bulur (-100 ve +400 ms)', () => {
+    const { notalar, hzler } = dortluk()
+    for (const d of [-100, 400]) {
+      const r = gecikmeBul(notalar, iz(notalar, d / 1000, (_n, i) => hzler[i]))
+      expect(Math.abs(r - d)).toBeLessThanOrEqual(10)
+    }
+  })
+  it('gerçekçi boyutta (100 nota, 3000+ örnek, sırasız) kaba kuvvet referansıyla aynı sonucu verir ve girdiyi değiştirmez', () => {
+    const olcu: MusicEvent[][] = [[]]
+    const perdeler = [RAST, DUGAH, SEGAH, CARGAH, NEVA]
+    for (let i = 0; i < 100; i++) olcu[0].push(nota(perdeler[(i * 7) % 5], 'eighth'))
+    const notalar = beklenenNotalar(olcu, 0, T, 60, 5, 0)
+    let tohum = 12345
+    const rast = () => {
+      tohum = (tohum * 1664525 + 1013904223) % 4294967296
+      return tohum / 4294967296
+    }
+    const ornekler = iz(notalar, 0.13, (n) => (rast() < 0.1 ? null : sentAt(n.hz, (rast() - 0.5) * 60)))
+    expect(ornekler.length).toBeGreaterThan(3000)
+    // Sırasız ver: sıralama girdiyi bozmamalı, sonuç sıradan bağımsız olmalı.
+    const karisik = [...ornekler].sort(() => rast() - 0.5)
+    const kopya = karisik.map((o) => ({ ...o }))
+    const kaba = (): number => {
+      let enIyiPuan = -1
+      let enIyi = VARSAYILAN_GECIKME_MS
+      const sesli = karisik.filter((o) => o.hz !== null)
+      for (let d = -100; d <= 400; d += 10) {
+        let puan = 0
+        for (const n of notalar)
+          for (const o of sesli)
+            if (o.t >= n.bas + d / 1000 && o.t <= n.son + d / 1000 && Math.abs(katlanmisSent(o.hz as number, n.hz)) <= 50) puan++
+        if (puan > enIyiPuan || (puan === enIyiPuan && Math.abs(d - 120) < Math.abs(enIyi - 120))) {
+          enIyiPuan = puan
+          enIyi = d
+        }
+      }
+      return enIyiPuan < 5 || enIyiPuan < 0.2 * sesli.length ? 120 : enIyi
+    }
+    const beklenen = kaba()
+    expect(Math.abs(beklenen - 130)).toBeLessThanOrEqual(10)
+    expect(gecikmeBul(notalar, karisik)).toBe(beklenen)
+    expect(gecikmeBul(notalar, ornekler)).toBe(beklenen)
+    expect(karisik).toEqual(kopya)
+  })
   it('örnek yoksa varsayılana düşer', () => {
     const { notalar } = dortluk()
     expect(gecikmeBul(notalar, [])).toBe(VARSAYILAN_GECIKME_MS)
@@ -153,9 +215,10 @@ describe('degerlendir', () => {
     expect(s.sesliOran).toBeGreaterThan(0.5)
   })
 
-  it('gecikme olmayan çalım da doğru değerlendirilir', () => {
+  it('gecikmesiz çalım da doğru değerlendirilir ve gecikme varsayılana düşmeden 0 bulunur', () => {
     const { notalar, hzler } = dortluk()
-    const s = degerlendir(notalar, iz(notalar, 0.12, (_n, i) => hzler[i]), T)
+    const s = degerlendir(notalar, iz(notalar, 0, (_n, i) => hzler[i]), T)
+    expect(Math.abs(s.gecikmeMs)).toBeLessThanOrEqual(10)
     expect(s.notalar.every((n) => n.durum === 'dogru')).toBe(true)
   })
 
@@ -257,6 +320,57 @@ describe('degerlendir', () => {
     const sh = degerlendir(hizli, iz(hizli, 0.12, () => hz), T)
     expect(sh.notalar).toHaveLength(0)
     expect(sh.atlanan).toBe(4)
+  })
+
+  it('uzun yanlış perdeli notanın sessiz kuyruğu onu kısa yapmaz: yanlış kalır', () => {
+    const olcu: MusicEvent[][] = [[nota(RAST, 'half')]]
+    const notalar = beklenenNotalar(olcu, 0, T, 60, 10, 0)
+    const yanlis = sentAt(notalar[0].hz, 300)
+    const s = degerlendir(notalar, iz(notalar, 0.12, (n, _i, t) => (t < n.bas + 0.12 + 1 ? yanlis : null)), T)
+    expect(s.notalar[0].durum).toBe('yanlis')
+  })
+
+  it('pes çalınıp erken bırakılan uzun nota kısa olur', () => {
+    const olcu: MusicEvent[][] = [[nota(RAST, 'half')]]
+    const notalar = beklenenNotalar(olcu, 0, T, 60, 10, 0)
+    const s = degerlendir(notalar, iz(notalar, 0.12, (n, _i, t) => (t < n.bas + 0.12 + 1 ? sentAt(n.hz, -40) : null)), T)
+    expect(s.notalar[0].durum).toBe('kisa')
+  })
+
+  it('kayıt notanın ortasında bittiyse (kuyrukta örnek yok) kısa sayılmaz', () => {
+    const olcu: MusicEvent[][] = [[nota(RAST, 'half')]]
+    const notalar = beklenenNotalar(olcu, 0, T, 60, 10, 0)
+    // Kuyruk penceresi 11.42 + 0.. başlar (son 12 + 0.12 - 0.7); iz 11.3'te biter.
+    const s = degerlendir(notalar, iz(notalar, 0.12, (n) => n.hz, 11.3), T)
+    expect(s.notalar[0].durum).toBe('dogru')
+  })
+
+  it('kisa sınırı 0.75 sn: 0.74 sn’lik nota kısa olmaz, 0.75 sn olur', () => {
+    const hz = soundingHz(RAST, T)
+    const yarisi = (n: BeklenenNota, t: number) => (t < n.bas + 0.12 + 0.4 ? hz : null)
+    // 0.75 sn: ikilik, ♩=160, t0=0 (0.75 tam gösterilir).
+    const olcu: MusicEvent[][] = [[nota(RAST, 'half')]]
+    const kisaNota = beklenenNotalar(olcu, 0, T, 160, 0, 0)
+    expect(kisaNota[0].son - kisaNota[0].bas).toBe(0.75)
+    expect(degerlendir(kisaNota, iz(kisaNota, 0.12, (n, _i, t) => yarisi(n, t)), T).notalar[0].durum).toBe('kisa')
+    const hafif = beklenenNotalar(olcu, 0, T, 120 / 0.74, 0, 0)
+    expect(hafif[0].son - hafif[0].bas).toBeLessThan(0.75)
+    expect(degerlendir(hafif, iz(hafif, 0.12, (n, _i, t) => yarisi(n, t)), T).notalar[0].durum).toBe('dogru')
+  })
+
+  it('yok sınırı: sesli oran 0.3 ve üstü değerlendirilir, altı yok sayılır', () => {
+    const olcu: MusicEvent[][] = [[nota(RAST)]]
+    const notalar = beklenenNotalar(olcu, 0, T, 60, 0, 0)
+    // Çekirdek pencere gecikme 120 ms ile [0.27, 1.02]; sesli örnekler 5'ten az olduğundan gecikme varsayılana düşer.
+    const hz = notalar[0].hz
+    const kos = (sesli: number, toplam: number) =>
+      degerlendir(notalar, Array.from({ length: toplam }, (_, k) => ({ t: 0.3 + 0.01 * k, hz: k < sesli ? hz : null })), T)
+    const uc = kos(3, 10)
+    expect(uc.gecikmeMs).toBe(VARSAYILAN_GECIKME_MS)
+    expect(uc.notalar[0].durum).toBe('dogru')
+    expect(kos(2, 10).notalar[0].durum).toBe('yok')
+    expect(kos(2, 7).notalar[0].durum).toBe('yok')
+    expect(kos(1, 2).notalar[0].durum).toBe('yok')
   })
 
   it('olcu ve nota indislerini sonuca taşır', () => {

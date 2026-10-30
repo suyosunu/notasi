@@ -2,7 +2,7 @@ import { soundingHz } from '../music/ahenk'
 import type { Tuning } from '../music/ahenk'
 import { beats } from '../music/notation'
 import type { MusicEvent } from '../music/notation'
-import type { WrittenPitch } from '../music/pitch'
+import { samePitch } from '../music/pitch'
 import { SHAKUHACHI_SOUND } from './shakuhachi'
 
 /** hz === null sus demektir. */
@@ -164,9 +164,6 @@ export function buildPatternCode(
     durationMs: (totalBeats * 60000) / bpm,
   }
 }
-
-const samePitch = (a: WrittenPitch, b: WrittenPitch): boolean =>
-  a.step === b.step && a.octave === b.octave && a.acc === b.acc
 
 /**
  * Bağlı nota dizisi (aynı perde, `tie`) tek ses olur; süreleri toplanır. `bag` (legato) sesleri ayrı tutar, ama

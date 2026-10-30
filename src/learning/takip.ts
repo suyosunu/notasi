@@ -2,7 +2,7 @@ import { FFT_SIZE } from '../audio/mic'
 import { NEY_PERDELER } from '../content/ney-perdeler'
 import { soundingHz, type Tuning } from '../music/ahenk'
 import { beats, type MusicEvent } from '../music/notation'
-import { centsBetween } from '../music/pitch'
+import { centsBetween, samePitch, type WrittenPitch } from '../music/pitch'
 import { median } from './smoothing'
 
 /** Hedefe uzaklığı bu kadar sentten az olan nota doğru sayılır. */
@@ -65,7 +65,8 @@ export interface TakipSonucu {
 /**
  * Seçili ölçülerin notaları (sus yok; `tie` ile bağlanan notalar ilkinde birleşir), `bas`/`son` = t0 + (girisVurus + vuruş) × 60 / bpm.
  * `olcu` indisi tüm etütteki indistir (`ilkOlcu` + dilim içi). Birleşen nota ilk notanın indislerini ve perdesini taşır;
- * bağ ölçü sınırını da aşabilir.
+ * bağ ölçü sınırını da aşabilir. Yalnız aynı perdeye bağlı `tie` birleşir (çalımla aynı kural);
+ * farklı perdeye bağ iki ayrı nota verir.
  */
 export function beklenenNotalar(
   olcu: MusicEvent[][],
@@ -79,6 +80,8 @@ export function beklenenNotalar(
   const sonuc: BeklenenNota[] = []
   /** Bağı süren (henüz kapanmamış) nota. */
   let bekleyen: BeklenenNota | null = null
+  /** `bekleyen` notanın yazılı perdesi (bağın aynı perdeye olup olmadığını denetlemek için). */
+  let bekleyenPerde: WrittenPitch | null = null
   let vurus = girisVurus
   for (let i = 0; i < olcu.length; i++) {
     for (let j = 0; j < olcu[i].length; j++) {
@@ -91,9 +94,11 @@ export function beklenenNotalar(
         bekleyen = null
         continue
       }
-      if (bekleyen) bekleyen.son = son
+      // Çalımla (`toToneEvents`) aynı kural: yalnız aynı perdeye bağlı `tie` birleşir.
+      if (bekleyen && bekleyenPerde && samePitch(bekleyenPerde, e.pitch)) bekleyen.son = son
       else {
         bekleyen = { olcu: ilkOlcu + i, nota: j, bas, son, hz: soundingHz(e.pitch, tuning) }
+        bekleyenPerde = e.pitch
         sonuc.push(bekleyen)
       }
       if (!e.tie) bekleyen = null
@@ -126,13 +131,40 @@ export function enYakinPerde(hz: number, tuning: Tuning): string {
   return ad
 }
 
+/** Zamana göre sıralı kopya (girdi değişmez; sıralı gelen izde sıralama ucuzdur). */
+function zamanaGoreSirala(ornekler: TakipOrnegi[]): TakipOrnegi[] {
+  return [...ornekler].sort((a, b) => a.t - b.t)
+}
+
+/** Sıralı izde `t >= bas` olan ilk örneğin indisi (ikili arama). */
+function ilkIndis(sirali: TakipOrnegi[], bas: number): number {
+  let lo = 0
+  let hi = sirali.length
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1
+    if (sirali[mid].t < bas) lo = mid + 1
+    else hi = mid
+  }
+  return lo
+}
+
+/** Sıralı izde `bas <= t <= son` aralığına düşen örnekler (dilim). */
+function aralik(sirali: TakipOrnegi[], bas: number, son: number): TakipOrnegi[] {
+  const i0 = ilkIndis(sirali, bas)
+  let i1 = i0
+  while (i1 < sirali.length && sirali[i1].t <= son) i1++
+  return sirali.slice(i0, i1)
+}
+
 /**
  * Çalma gecikmesini (ms) bulur: her aday gecikmede, nota aralıklarına düşen ve hedefe ±50 sent yakın
  * sesli örnekleri sayar; en çok eşleşen aday kazanır (eşitlikte varsayılana yakın olan).
  * Yeterli eşleşme yoksa (en iyi puan sesli örneklerin %20'sinden ya da 5'ten azsa) varsayılan döner.
+ * `ornekler` zamana göre sıralı olmak zorunda değildir (sıralı bir kopya üzerinde çalışılır, girdi değişmez);
+ * her aday ve nota için pencerenin başı ikili aramayla bulunur, yalnız pencere içi örnekler gezilir.
  */
 export function gecikmeBul(notalar: BeklenenNota[], ornekler: TakipOrnegi[]): number {
-  const sesli = ornekler.filter((o) => o.hz !== null)
+  const sesli = zamanaGoreSirala(ornekler.filter((o) => o.hz !== null))
   let enIyiPuan = -1
   let enIyi = VARSAYILAN_GECIKME_MS
   for (let d = GECIKME_ARALIGI_MS[0]; d <= GECIKME_ARALIGI_MS[1]; d += 10) {
@@ -141,8 +173,8 @@ export function gecikmeBul(notalar: BeklenenNota[], ornekler: TakipOrnegi[]): nu
     for (const n of notalar) {
       const bas = n.bas + kayma
       const son = n.son + kayma
-      for (const o of sesli) {
-        if (o.t >= bas && o.t <= son && Math.abs(katlanmisSent(o.hz as number, n.hz)) <= GECIKME_ESLESME_SENT) puan++
+      for (let i = ilkIndis(sesli, bas); i < sesli.length && sesli[i].t <= son; i++) {
+        if (Math.abs(katlanmisSent(sesli[i].hz as number, n.hz)) <= GECIKME_ESLESME_SENT) puan++
       }
     }
     if (puan > enIyiPuan || (puan === enIyiPuan && Math.abs(d - VARSAYILAN_GECIKME_MS) < Math.abs(enIyi - VARSAYILAN_GECIKME_MS))) {
@@ -158,10 +190,12 @@ export function gecikmeBul(notalar: BeklenenNota[], ornekler: TakipOrnegi[]): nu
  * Notaları çalınan izle karşılaştırır. Önce gecikme bulunur ve bütün nota pencerelerine uygulanır;
  * her notanın çekirdek penceresi (başı: geçiş/atak payı, sonu: nefes payı) içindeki sesli örneklerin
  * katlanmış sent medyanı notayı sınıflar. Pencere 0.04 sn'den kısaysa nota değerlendirilmez (`atlanan`).
+ * `ornekler` zamana göre sıralı olmak zorunda değildir (sıralı kopya kullanılır, girdi değişmez).
  */
 export function degerlendir(notalar: BeklenenNota[], ornekler: TakipOrnegi[], tuning: Tuning): TakipSonucu {
   const gecikmeMs = gecikmeBul(notalar, ornekler)
   const kayma = gecikmeMs / 1000
+  const sirali = zamanaGoreSirala(ornekler)
   const sonuc: NotaSonucu[] = []
   let atlanan = 0
   for (const n of notalar) {
@@ -172,26 +206,23 @@ export function degerlendir(notalar: BeklenenNota[], ornekler: TakipOrnegi[], tu
       atlanan++
       continue
     }
-    const pencere = ornekler.filter((o) => o.t >= bas && o.t <= son)
+    const pencere = aralik(sirali, bas, son)
     const sesli = pencere.filter((o): o is { t: number; hz: number } => o.hz !== null)
     if (sesli.length < 2 || sesli.length / pencere.length < EN_AZ_SESLI_ORAN) {
       sonuc.push({ olcu: n.olcu, nota: n.nota, durum: 'yok', sent: null })
       continue
     }
     const m = median(sesli.map((o) => katlanmisSent(o.hz, n.hz)))
-    const r: NotaSonucu = { olcu: n.olcu, nota: n.nota, durum: 'dogru', sent: m }
-    if (Math.abs(m) <= TAKIP_TOLERANS_SENT) r.durum = 'dogru'
-    else if (Math.abs(m) <= YANLIS_PERDE_SENT) r.durum = m < 0 ? 'pes' : 'tiz'
-    else {
-      r.durum = 'yanlis'
-      r.calinan = enYakinPerde(median(sesli.map((o) => o.hz)), tuning)
-    }
+    let r: NotaSonucu
+    if (Math.abs(m) <= TAKIP_TOLERANS_SENT) r = { olcu: n.olcu, nota: n.nota, durum: 'dogru', sent: m }
+    else if (Math.abs(m) <= YANLIS_PERDE_SENT) r = { olcu: n.olcu, nota: n.nota, durum: m < 0 ? 'pes' : 'tiz', sent: m }
+    else r = { olcu: n.olcu, nota: n.nota, durum: 'yanlis', sent: m, calinan: enYakinPerde(median(sesli.map((o) => o.hz)), tuning) }
     if (sure >= KISA_DENETIM_SURE_S && r.durum !== 'yanlis') {
-      const kBas = n.son + kayma - 0.35 * sure
-      const kSon = n.son + kayma - 0.05 * sure
-      const kuyruk = ornekler.filter((o) => o.t >= kBas && o.t <= kSon)
-      const oran = kuyruk.length ? kuyruk.filter((o) => o.hz !== null).length / kuyruk.length : 0
-      if (oran < KISA_SESLI_ORAN) r.durum = 'kisa'
+      // Kuyrukta hiç örnek yoksa (kayıt notanın ortasında bitti) nota kısa sayılmaz; yalnız örnekli ama sessiz kuyruk sayılır.
+      const kuyruk = aralik(sirali, n.son + kayma - 0.35 * sure, n.son + kayma - 0.05 * sure)
+      if (kuyruk.length > 0 && kuyruk.filter((o) => o.hz !== null).length / kuyruk.length < KISA_SESLI_ORAN) {
+        r = { ...r, durum: 'kisa' }
+      }
     }
     sonuc.push(r)
   }

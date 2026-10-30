@@ -9,6 +9,10 @@ export interface WrittenPitch {
 
 export const KOMA_PER_OCTAVE = 53
 
+/** İki yazılı perde aynı mı (adım, oktav, değiştirgeç)? */
+export const samePitch = (a: WrittenPitch, b: WrittenPitch): boolean =>
+  a.step === b.step && a.octave === b.octave && a.acc === b.acc
+
 /** Do4 = 0, La4 = 40 olacak şekilde doğal perdelerin koma konumu. */
 export const NATURAL_KOMA: Record<Step, number> = {
   C: 0,
