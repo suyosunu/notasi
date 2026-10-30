@@ -243,6 +243,36 @@ describe('buildCalismaCode: etüt', () => {
     })
   })
 
+  it("eslik:'metronom' usullü (Yürük Semâî 6/8): tık usulün biriminde bütün süre boyunca, usul sesi yok", async () => {
+    const yuruk = usulOf('yuruk-semai')
+    const olcu = [
+      [A4, A4, A4],
+      [A4, A4, A4],
+    ]
+    const r = buildCalismaCode(olcu, DEFAULT_TUNING, 60, { melodi: true, eslik: 'metronom', voice: 'mevcut', usul: yuruk, isaret: false })
+    // ölçü = 3 dörtlük; giriş + 6 = 9 dörtlük döngü ⇒ ölçü deseni 3 kez
+    expect(r.code).toContain(`${metronomeBody(6, (60 * 8) / 4)}.fast(${9 / 3})`)
+    expect(r.code).not.toContain('usul_')
+    const tik = clicks(await hits(r.code, 0, 9))
+    expect(tik.map((h) => h.at)).toEqual(Array.from({ length: 18 }, (_, i) => i / 2))
+    expect(tik.filter((h) => h.freq === 1200).map((h) => h.at)).toEqual([0, 3, 6])
+  })
+
+  it("eslik:'usul' yalnız anacrusis seçiliyse (tam ölçü yok) usul katmanı eklenmez; yalnız sayım", async () => {
+    const { code } = buildCalismaCode([[A4]], DEFAULT_TUNING, 60, {
+      melodi: true,
+      eslik: 'usul',
+      voice: 'mevcut',
+      usul: usulOf('sofyan'),
+      isaret: false,
+    })
+    expect(code).not.toContain('usul_')
+    expect(code).not.toContain('white')
+    const hs = await hits(code, 0, 5)
+    expect(clicks(hs).map((h) => h.at)).toEqual([0, 1, 2, 3])
+    expect(hs.filter((h) => isMelody(h)).map((h) => h.at)).toEqual([4])
+  })
+
   it('aksak (9/8): giriş 4.5 dörtlük, sayım metronomeBody(9, bpm × 2); durationMs = (4.5 + toplam) × 60000 / bpm', () => {
     const aksak = usulOf('aksak')
     const olcu = [[A4H, A4H]]

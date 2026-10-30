@@ -220,6 +220,16 @@ describe('ScoreView', () => {
     expect(marked[0]!.getAttribute('data-event')).toBe('1')
   })
 
+  it('vurgu satırın ikinci ölçüsündeyse satırdaki sıra ilk ölçünün olaylarından sonra gelir', () => {
+    const olcu = Array.from({ length: 6 }, measure)
+    const { container } = render(<ScoreView olcu={olcu} olcuPerSatir={2} vurgu={{ olcu: 3, nota: 1 }} />)
+    const marked = rows(container)[1]!.querySelectorAll('[data-highlight]')
+    expect(container.querySelectorAll('[data-highlight]')).toHaveLength(1)
+    expect(marked).toHaveLength(1)
+    // 2. satır = ölçü 2-3; ölçü 3'ün 1. notası = ölçü 2'nin 4 olayı + 1
+    expect(marked[0]!.getAttribute('data-event')).toBe('5')
+  })
+
   it('vurgu yoksa veya geçersizse hiçbir olay işaretlenmez', () => {
     const olcu = Array.from({ length: 4 }, measure)
     expect(render(<ScoreView olcu={olcu} />).container.querySelectorAll('[data-highlight]')).toHaveLength(0)
