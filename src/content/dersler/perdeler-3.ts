@@ -284,7 +284,7 @@ export const PERDE_3_DERSLERI: Ders[] = [
       {
         tur: 'metin',
         metin:
-          "Nerede kullanılır: Zeki Sözen (neyzenim.com, Ders 9) Re sesinin bütün delikler kapalıyken de çıktığını yazar. Kapalı Nevâ, özellikle tizden ortaya inerken kullanılır. Bu uygulamada kapalı Nevâ yalnız Nevâ dizisi etüdünde sorulur; öteki etütlerde açık Nevâ'yı çalarsın.",
+          "Nerede kullanılır: Zeki Sözen (neyzenim.com, Ders 9) Re sesinin bütün delikler kapalıyken de çıktığını yazar. Kapalı Nevâ, özellikle tizden ortaya inerken kullanılır. Bu uygulamada kapalı Nevâ, Rast–kapalı Nevâ kademe etüdünde ve Nevâ dizisi etüdünde sorulur; öteki etütlerde açık Nevâ'yı çalarsın.",
       },
       {
         tur: 'metin',
