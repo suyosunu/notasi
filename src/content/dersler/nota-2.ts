@@ -424,7 +424,7 @@ export const NOTA_3_DERSLERI: Ders[] = [
       {
         tur: 'metin',
         metin:
-          "Nevâ'yı (Re) biliyorsun. Onun üstünde dört perde daha var ve dördünün de önünde işaret yoktur: işaretsiz Mi, Fa, Sol ve La. Notaların adlarını nota derslerinden biliyorsun; bu derste onların perde adlarını öğreneceksin.",
+          "Nevâ'yı (Re) biliyorsun. Onun üstünde dört işaretsiz ana perde daha var: Mi, Fa, Sol ve La, hiçbirinin önünde işaret yok. Notaların adlarını nota derslerinden biliyorsun; bu derste onların perde adlarını öğreneceksin.",
       },
       {
         tur: 'liste',
@@ -474,7 +474,7 @@ export const NOTA_3_DERSLERI: Ders[] = [
       {
         tur: 'metin',
         metin:
-          "Üçüncü kademede iki ara ses daha var: Nim Şehnaz ve Nim Hisar. İkisi de işaretli notadır; işaretleri koma derslerinden tanıyorsun.",
+          "Seviye 3'te iki ara ses daha var: Nim Şehnaz ve Nim Hisar. İkisi de işaretli notadır; işaretleri koma derslerinden tanıyorsun.",
       },
       {
         tur: 'liste',
@@ -498,7 +498,7 @@ export const NOTA_3_DERSLERI: Ders[] = [
       {
         tur: 'metin',
         metin:
-          "İşaretler tanıdık: Nim Şehnaz'daki, Nim Hicaz'daki Do bakiye diyezi ile aynı işarettir. Nim Hisar'daki, Kürdî'deki Si küçük mücenneb bemolü ile aynı işarettir. Yalnız notalar farklı: Sol ve Mi.",
+          "İşaretler tanıdık: Nim Şehnaz'ın işareti, Nim Hicaz'daki bakiye diyeziyle aynıdır. Nim Hisar'ın işareti, Kürdî'deki küçük mücenneb bemolüyle aynıdır. Yalnız notalar farklı: Sol ve Mi.",
       },
       {
         tur: 'dene',

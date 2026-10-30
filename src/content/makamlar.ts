@@ -61,9 +61,9 @@ export const MAKAMLAR: Makam[] = [
     // TDV "Nevâ": Dügâh'ta Uşşak dörtlüsü + Nevâ'da Rast beşlisi.
     yapi: "Dügâh'ta Uşşak dörtlüsü + Nevâ'da Rast beşlisi",
     seyir:
-      "Güçlü olan Nevâ civarından başlanır. Nevâ'nın iki yanında uşşak ve rast dizilerinde dolaşılır, " +
+      "Güçlü olan Nevâ civarından başlanır. Nevâ'nın iki yanında uşşak ve rast çeşnilerinde dolaşılır, " +
       "Nevâ'da yarım karar yapılır. Sonra dizide inilip Dügâh'ta tam karar verilir. " +
-      'Eviç ve Nevâ asma karar yapılabilecek yerlerdir.',
+      "Asma karar Eviç'te segâh çeşnili yapılır; Nevâ'da ise Eviç yerine Acem kullanılarak bûselik çeşnili asma karar ya da yarım karar yapılır.",
   },
   {
     id: 'ussak',

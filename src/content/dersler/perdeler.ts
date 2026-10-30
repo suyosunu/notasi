@@ -65,16 +65,18 @@ function yediSes(belirtme: string): string {
 /**
  * Her dersin "Kendin dene" adımları: uzun ses, ▶ Dinle ile kulakla karşılaştırma, akort göstergesi.
  * `onceki.hareket` geçişte parmağın ne yaptığını söyler (öntanımlı: parmak eklenir); `ekAdimlar` ▶ Dinle'den sonra eklenir;
- * `nefes` uzun sesin nefes türüdür (öntanımlı ılık; 3. kademede daha sert).
+ * `nefes` uzun sesin nefes türüdür (öntanımlı ılık; 3. kademede daha sert); `ilkAdim` parmak yerleştirme adımının yerine
+ * geçer (yarım delikli sesler: "deliklerin tam kapandığı" söylenemez).
  */
 export function deneAdimlari(
   ad: { belirtme: string },
   onceki?: { ad: string; gecis: string; hareket?: string },
   ekAdimlar: string[] = [],
   nefes = 'Ilık',
+  ilkAdim = 'Parmaklarını şemadaki gibi yerleştir; deliklerin tam kapandığını kontrol et.',
 ): DersBlok {
   const adimlar = [
-    'Parmaklarını şemadaki gibi yerleştir; deliklerin tam kapandığını kontrol et.',
+    ilkAdim,
     `▶ Dinle ile ${ad.belirtme} dinle.`,
     ...ekAdimlar,
     `${nefes} nefesle uzun ses çal: ${ad.belirtme} nefesin bitene kadar aynı güçte, dalgalanmadan tut.`,

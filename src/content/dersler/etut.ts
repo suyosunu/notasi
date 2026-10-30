@@ -278,19 +278,21 @@ export const ETUT_3_DERSLERI: Ders[] = [
       {
         tur: 'metin',
         metin:
-          'Bir ses, ikinci kademedeki eşiyle aynı parmakla çalınır. Kademe geçiş etütleri bu iki sesi art arda çaldırır: parmak aynı kalır, yalnız nefes değişir. İkinci kademe sesini ılık nefesle, üçüncü kademe sesini daha sert nefesle çalarsın. Amaç, geçişte sesin kırılmamasıdır; nefesi değiştirirken ses ne kopar ne de başka bir perdeye kayar.',
+          'Üçüncü kademedeki bir ses, ikinci kademedeki eşiyle aynı parmakla çalınır. Kademe geçiş etütleri bu iki sesi art arda çaldırır: parmak aynı kalır, yalnız nefes değişir. İkinci kademe sesini ılık nefesle, üçüncü kademe sesini daha sert nefesle çalarsın. Amaç, geçişte sesin kırılmamasıdır; nefesi değiştirirken ses ne kopar ne de başka bir perdeye kayar.',
       },
       {
         tur: 'porte',
         olaylar: kademeOlculeri('kademe-dugah-huseyni'),
         aciklama: 'Dügâh–Hüseynî etüdünün ilk üç ölçüsü: birlik Dügâh, birlik Hüseynî, sonra ikilikler. Parmak aynı: yalnız en alttaki delik açık.',
         bpm: 60,
+        olcuCizgileri: [0, 1],
       },
       {
         tur: 'porte',
         olaylar: kademeOlculeri('kademe-rast-kapali-neva'),
         aciklama: "Rast–kapalı Nevâ etüdünün ilk üç ölçüsü: birlik Rast, birlik Nevâ, sonra ikilikler. Parmak aynı: bütün delikler kapalı.",
         bpm: 60,
+        olcuCizgileri: [0, 1],
       },
       { tur: 'metin', metin: 'Nasıl çalışılır:' },
       {

@@ -44,7 +44,7 @@ export const MAKAM_DERSLERI: Ders[] = [
           'Güçlü: dizinin ikinci önemli sesi. Ezgi bu sesin çevresinde dolaşır ve sık sık burada yarım karar yapar, yani bir an dinlenir.',
           'Yeden: durağın altındaki komşu ses.',
           'Asma karar: ezginin durakta değil, dizinin başka bir sesinde geçici olarak dinlendiği yer.',
-          'Seyir: ezginin izlediği yol; nereden başlar, nerelerde dolaşır, nerelerde dinlenir, nerede biter. Tize doğru giden seyre çıkıcı, peste doğru giden seyre inici denir.',
+          'Seyir: ezginin izlediği yol; nereden başlar, nerelerde dolaşır, nerelerde dinlenir, nerede biter. Pestten ya da durak çevresinden başlayıp tize doğru gelişen seyre çıkıcı, tizden başlayıp peste inen seyre inici denir.',
         ],
       },
       {
@@ -65,7 +65,7 @@ export const MAKAM_DERSLERI: Ders[] = [
       },
       {
         tur: 'metin',
-        metin: `Rast makamında durak ${RAST.durak}, güçlü ${RAST.guclu}, yeden ${RAST.yeden}. Rast'ın yedeni olan Irak, bu seviyede çaldığın perdeler arasında yok; yalnız adını bil. Durak, güçlü, yeden ve yapıyı makam sayfasında her makam için okuyabilirsin; seyir ve asma karar yerlerini makam derslerinde göreceksin.`,
+        metin: `Rast makamında durak ${RAST.durak}, güçlü ${RAST.guclu}, yeden ${RAST.yeden}. Rast'ın yedeni olan Irak, bu seviyede çaldığın perdeler arasında yok; yalnız adını bil. Makam bölümünde her makamın durağını, güçlüsünü ve yedenini; Rast ve Nevâ'nın yapısını görebilirsin. Rast ve Nevâ derslerinde bu makamların seyir özetini, Nevâ dersinde asma karar yerlerini göreceksin.`,
       },
       {
         tur: 'metin',

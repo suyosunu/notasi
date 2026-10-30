@@ -209,7 +209,7 @@ describe('Seviye 3 hedefleri', () => {
   })
 
   it('ölçütler, metinler ve rotalar kararlaştırıldığı gibi', () => {
-    expect(h('s3-nota')).toMatchObject({ olcut: { tur: 'konular', topicIds: ['perde-2', 'perde-5'] }, rota: '/nota' })
+    expect(h('s3-nota')).toMatchObject({ metin: "Perde adları: Hüseynî'den Muhayyer'e; Nim Şehnaz ve Nim Hisar", olcut: { tur: 'konular', topicIds: ['perde-2', 'perde-5'] }, rota: '/nota' })
     for (const p of ucuncuKademe) {
       expect(h(`s3-${p.id}-8`)).toMatchObject({
         metin: `${p.name}: 8 sn uzun ses`,
@@ -228,14 +228,19 @@ describe('Seviye 3 hedefleri', () => {
       metin: 'İkinci ve üçüncü kademe arasında sesim kırılmadan geçiyor',
       olcut: { tur: 'onay' },
     })
-    expect(h('s3-besli').olcut).toEqual({ tur: 'ders', dersId: 'dortlu:besli' })
+    expect(h('s3-besli')).toMatchObject({ metin: 'Beşli dersini okudum', olcut: { tur: 'ders', dersId: 'dortlu:besli' } })
     expect(h('s3-neva-besli').olcut).toEqual({ tur: 'etutler', etutIds: ['neva-rast-besli', 'neva-buselik-besli'] })
     expect(h('s3-makam').olcut).toEqual({ tur: 'ders', dersId: 'makam:giris' })
     expect(h('s3-rast')).toMatchObject({
       metin: 'Rast dizisi (çıkışta Eviç, inişte Acem)',
       olcut: { tur: 'etutler', etutIds: ['dizi-rast'] },
+      rota: '/etut/dizi-rast',
     })
-    expect(h('s3-neva')).toMatchObject({ metin: 'Nevâ makamı dizisi', olcut: { tur: 'etutler', etutIds: ['dizi-neva'] } })
+    expect(h('s3-neva')).toMatchObject({
+      metin: 'Nevâ makamı dizisi',
+      olcut: { tur: 'etutler', etutIds: ['dizi-neva'] },
+      rota: '/etut/dizi-neva',
+    })
     expect(h('s3-eser')).toMatchObject({
       metin:
         "Bir eseri metronomla çaldım (Yine Bağlandı Dil aranağmesi; öneri: tempo işaretinin %70'inden başla)",

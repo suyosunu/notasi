@@ -165,7 +165,7 @@ export const DORTLU_DERSLERI: Ders[] = [
         metin:
           'Beşli, birbirini izleyen beş sesten oluşan bir dizidir. Beşlide dört aralık vardır. Beşli, bir dörtlünün sonuna bir tanini aralığı (9 koma) eklenerek kurulur. Dörtlü 22 koma olduğu için beşli 22 + 9 = 31 komadır. Kademe geçişinde gördüğün 31 koma da bir beşlidir.',
       },
-      { tur: 'metin', metin: 'Altı çeşninin aralıkları (komayla; önce dörtlü, sonra beşli):' },
+      { tur: 'metin', metin: 'Çeşni, dörtlülerle beşlilerin ortak adıdır: makamın rengini veren küçük dizi parçasıdır. Altı çeşninin aralıkları (komayla; önce dörtlü, sonra beşli):' },
       {
         tur: 'liste',
         maddeler: [
@@ -173,14 +173,14 @@ export const DORTLU_DERSLERI: Ders[] = [
           'Bûselik: dörtlü 9+4+9, beşli 9+4+9+9',
           'Kürdî: dörtlü 4+9+9, beşli 4+9+9+9',
           'Rast: dörtlü 9+8+5, beşli 9+8+5+9',
-          'Uşşak: dörtlü 8+5+9; beşlisi yoktur, yalnız dörtlü olarak kullanılır',
+          "Uşşak: dörtlü 8+5+9; beşlisi yoktur, kaynaklar Uşşak'ı yalnız dörtlü olarak kullanır",
           'Hicaz: dörtlü 5+12+5, beşli 5+12+5+9',
         ],
       },
       {
         tur: 'metin',
         metin:
-          "Uşşak'ın beşlisi yoktur: kaynaklar Uşşak'ı yalnız dörtlü olarak kullanır. Uşşak dörtlüsünün sonuna tanini eklesen bile ortaya \"Uşşak beşlisi\" denen bir çeşni çıkmaz. Rakamlar aralıkların büyüklüğüdür: 9+8+5+9 demek, ilk aralık 9, ikincisi 8, üçüncüsü 5, dördüncüsü 9 komadır.",
+          "Rakamlar aralıkların büyüklüğüdür: 9+8+5+9 demek, ilk aralık 9, ikincisi 8, üçüncüsü 5, dördüncüsü 9 komadır.",
       },
       {
         tur: 'porte',

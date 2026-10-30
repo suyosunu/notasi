@@ -884,6 +884,12 @@ describe('takipOzeti', () => {
     expect(takipOzeti(sonuc([n(1, 2, 'pes')]), OLCU, 60).satirlar).toEqual(['Pes: Do (1)'])
   })
 
+  it('Re (D5) notası "Nevâ" diye adlandırılır; kapalı Nevâ aynı yazıyı paylaşsa da özet açık Nevâ der', () => {
+    expect(takipOzeti(sonuc([n(0, 3, 'pes')]), OLCU, 60).satirlar).toEqual(['Pes: Nevâ (1)'])
+    expect(takipOzeti(sonuc([n(0, 3, 'tiz')]), OLCU, 60).satirlar).toEqual(['Tiz: Nevâ (1)'])
+    expect(takipOzeti(sonuc([n(0, 2, 'yanlis', 'Nevâ')]), OLCU, 60).satirlar).toEqual(['Başka perde: Çârgâh yerine Nevâ'])
+  })
+
   it('tanılama: gecikme kestirilemediyse ya da sınırdaysa belirtilir; turun temposu', () => {
     const tani = (ek: Partial<TakipSonucu>, tempo = 60) => takipOzeti(sonuc([n(0, 0, 'dogru')], ek), OLCU, tempo).tani
     expect(tani({ gecikmeMs: 120, gecikmeKaynagi: 'varsayilan' })).toBe(TANI.replace('130 ms', '120 ms (kestirilemedi)'))

@@ -121,7 +121,7 @@ describe('Yolum', () => {
     expect(bolum.textContent).toContain('Nim Hisar: 8 sn uzun ses')
     expect(bolum.textContent).toContain('Nevâ makamı dizisi')
     const git = (ad: string | RegExp) => within(satir(ad)).getByRole('link', { name: 'Git' }).getAttribute('href')
-    expect(git('Nevâ makamı dizisi')).toBe('#/ney')
+    expect(git('Nevâ makamı dizisi')).toBe('#/etut/dizi-neva')
     expect(git(/Yine Bağlandı Dil aranağmesi/)).toBe('#/parcalar/yine-baglandi-dil-aranagme')
     expect(git("Hak Teâlâ'yı baştan sona çaldım")).toBe('#/parcalar/hak-teala')
     // Makam dersini okumak ✓ verir; okunmamış beşli dersi ○ kalır.

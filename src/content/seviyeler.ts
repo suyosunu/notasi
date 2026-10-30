@@ -192,7 +192,7 @@ const SEVIYE_2: Hedef[] = [
 const SEVIYE_3: Hedef[] = [
   {
     id: 's3-nota',
-    metin: 'Hüseynî, Acem, Gerdâniye, Muhayyer, kapalı Nevâ ve ara sesler konuları',
+    metin: "Perde adları: Hüseynî'den Muhayyer'e; Nim Şehnaz ve Nim Hisar",
     olcut: { tur: 'konular', topicIds: ['perde-2', 'perde-5'] },
     rota: '/nota',
   },
@@ -216,7 +216,7 @@ const SEVIYE_3: Hedef[] = [
   { id: 's3-gecis', metin: 'İkinci ve üçüncü kademe arasında sesim kırılmadan geçiyor', olcut: { tur: 'onay' } },
   {
     id: 's3-besli',
-    metin: 'Dörtlü ve beşli dersini okudum',
+    metin: 'Beşli dersini okudum',
     olcut: { tur: 'ders', dersId: 'dortlu:besli' },
     rota: dersRotasi('dortlu:besli'),
   },
@@ -236,9 +236,9 @@ const SEVIYE_3: Hedef[] = [
     id: 's3-rast',
     metin: 'Rast dizisi (çıkışta Eviç, inişte Acem)',
     olcut: { tur: 'etutler', etutIds: ['dizi-rast'] },
-    rota: '/ney',
+    rota: '/etut/dizi-rast',
   },
-  { id: 's3-neva', metin: 'Nevâ makamı dizisi', olcut: { tur: 'etutler', etutIds: ['dizi-neva'] }, rota: '/ney' },
+  { id: 's3-neva', metin: 'Nevâ makamı dizisi', olcut: { tur: 'etutler', etutIds: ['dizi-neva'] }, rota: '/etut/dizi-neva' },
   {
     id: 's3-eser',
     metin: "Bir eseri metronomla çaldım (Yine Bağlandı Dil aranağmesi; öneri: tempo işaretinin %70'inden başla)",

@@ -60,7 +60,7 @@ export const PERDE_3_DERSLERI: Ders[] = [
       {
         tur: 'metin',
         metin:
-          "Seviye 3'te üçüncü kademeye geçiyorsun. Kademe, neyin ses katlarından her biridir: pes sesler birinci, orta sesler ikinci, daha tiz sesler üçüncü kademedir. Şimdiye kadar çaldığın bütün sesler ikinci kademedendi ve ılık, orta güçte nefesle çıkıyordu.",
+          "Seviye 3'te üçüncü kademeye geçiyorsun. Kademe, neyin ses bölgesidir: aynı parmakla nefes güçlendikçe ses bir üst kademeye çıkar. Pes sesler birinci, orta sesler ikinci, daha tiz sesler üçüncü kademedir. Şimdiye kadar çaldığın bütün sesler ikinci kademedendi ve ılık, orta güçte nefesle çıkıyordu.",
       },
       {
         tur: 'metin',
@@ -284,7 +284,7 @@ export const PERDE_3_DERSLERI: Ders[] = [
       {
         tur: 'metin',
         metin:
-          "Nerede kullanılır: Zeki Sözen (neyzenim.com, Ders 9) Re sesinin bütün delikler kapalıyken de çıktığını yazar. Kapalı Nevâ, tiz seslerden orta seslere inerken kullanılır. Öteki yerlerde şimdiye kadar çaldığın açık Nevâ'yı çalmaya devam et.",
+          "Nerede kullanılır: Zeki Sözen (neyzenim.com, Ders 9) Re sesinin bütün delikler kapalıyken de çıktığını yazar. Kapalı Nevâ, özellikle tizden ortaya inerken kullanılır. Bu uygulamada kapalı Nevâ yalnız Nevâ dizisi etüdünde sorulur; öteki etütlerde açık Nevâ'yı çalarsın.",
       },
       {
         tur: 'metin',
@@ -432,7 +432,7 @@ export const PERDE_3_DERSLERI: Ders[] = [
       {
         tur: 'metin',
         metin:
-          "Nim Hisar da Dügâh parmağının üstündeki seslerdendir; nefes, Hüseynî'deki gibi sert olur.",
+          "Nim Hisar da Hüseynî gibi sert nefesle çalınır.",
       },
       { tur: 'metin', metin: HEDEF_3 },
       deneAdimlari(
@@ -444,6 +444,7 @@ export const PERDE_3_DERSLERI: Ders[] = [
         },
         [],
         SERT,
+        "Parmaklarını şemadaki gibi yerleştir: alttaki elin yüzük parmağı en alttaki deliğin 3/4'ünü örter; öteki delikler tam kapalıdır.",
       ),
     ],
     kaynaklar: [semaKaynagi(NIM_HISAR), meb(1232, 'ikinci ve üçüncü kademe ara sesler'), S2, S5],
