@@ -979,6 +979,32 @@ describe('Staff: takip sonuç işaretleri', () => {
     expect(olay(container, 0).querySelector('[data-durum-isaret]')!.getAttribute('fill')).toBe('var(--takip-uyari)')
   })
 
+  it('sapı aşağı kesik notada işaret, kesik noktasının üstünde kalır (çakışmaz)', () => {
+    const kesikRe5: MusicEvent = { ...(note('D', 5, 'quarter') as NoteEvent), kesik: true }
+    const { container } = render(<Staff events={[kesikRe5]} durumlar={['pes']} />)
+    const nokta = Number(container.querySelector('[data-kesik]')!.getAttribute('cy'))
+    const isaretTaban = Number(container.querySelector('[data-durum-isaret]')!.getAttribute('y'))
+    expect(isaretTaban).toBeLessThanOrEqual(nokta - 1.8) // yazının taban çizgisi noktanın üst kenarının üstünde
+  })
+
+  it('porte üstü yüksek kesik notada nokta ve işaret görünüm kutusunun içinde kalır', () => {
+    const kesikDo6: MusicEvent = { ...(note('C', 6, 'quarter') as NoteEvent), kesik: true }
+    const { container } = render(<Staff events={[kesikDo6]} durumlar={['tiz']} />)
+    const [, minY] = container.querySelector('svg')!.getAttribute('viewBox')!.split(' ').map(Number)
+    const nokta = Number(container.querySelector('[data-kesik]')!.getAttribute('cy'))
+    const isaretTaban = Number(container.querySelector('[data-durum-isaret]')!.getAttribute('y'))
+    expect(isaretTaban).toBeLessThanOrEqual(nokta - 1.8)
+    expect(isaretTaban - 10).toBeGreaterThanOrEqual(minY! - 0.001)
+  })
+
+  it('durumsuz yüksek kesik notada nokta görünüm kutusunun içinde kalır', () => {
+    const kesikDo6: MusicEvent = { ...(note('C', 6, 'quarter') as NoteEvent), kesik: true }
+    const { container } = render(<Staff events={[kesikDo6]} />)
+    const [, minY] = container.querySelector('svg')!.getAttribute('viewBox')!.split(' ').map(Number)
+    const nokta = Number(container.querySelector('[data-kesik]')!.getAttribute('cy'))
+    expect(nokta - 1.8).toBeGreaterThanOrEqual(minY! - 0.001)
+  })
+
   it('işaretler porte üstünde kalır ve görünüm kutusunun dışına taşmaz', () => {
     const yuksek = [note('A', 5, 'eighth'), note('B', 5, 'eighth'), note('C', 6, 'quarter')]
     const { container } = render(<Staff events={yuksek} beamBeats={1} durumlar={['tiz', 'yanlis', 'yok']} />)

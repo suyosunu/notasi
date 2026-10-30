@@ -90,6 +90,11 @@ const KESIK_R = 1.8
 const KESIK_CIZGI = 14
 const KESIK_ARALIK = 10
 
+/** Kesik noktasının y'si: sapın karşısında; çizgi notasında ikinci boşluğun, aralık notasında ilk boşluğun içinde. */
+function kesikYFor(pitch: NoteEvent['pitch'], down: boolean): number {
+  return noteY(pitch) + (down ? -1 : 1) * (staffIndex(pitch) % 2 === 0 ? KESIK_CIZGI : KESIK_ARALIK)
+}
+
 function flagCount(dur: DurationKind): number {
   return dur === 'eighth' ? 1 : dur === 'sixteenth' ? 2 : dur === 'thirtysecond' ? 3 : 0
 }
@@ -242,7 +247,7 @@ function NoteShape(props: { event: NoteEvent; x: number; index: number; beam?: B
   // Çizgi üzerindeki notada nokta bir sonraki boşluğa yukarı kaydırılır.
   const dotY = idx % 2 === 0 ? y - LINE_GAP / 2 : y
   // Kesik noktası sapın karşısındadır ve çizgi üstüne düşmez: çizgi notasında ikinci boşluğun, aralık notasında ilk boşluğun içinde.
-  const kesikY = y + (down ? -1 : 1) * (idx % 2 === 0 ? KESIK_CIZGI : KESIK_ARALIK)
+  const kesikY = kesikYFor(pitch, down)
 
   return (
     <g>
@@ -374,20 +379,22 @@ function ucluGroups(events: MusicEvent[], bars: Set<number>): number[][] {
   return groups
 }
 
-/** Olayın en üst noktası (px): yukarı saplı notada sap ucu, aksi halde baş; sus için üst çizgi. */
+/** Olayın en üst noktası (px): yukarı saplı notada sap ucu, aksi halde baş (sapı aşağı kesik notada kesik noktasının üstü); sus için üst çizgi. */
 function eventTop(e: MusicEvent, beam: BeamTip | undefined): number {
   if (e.kind === 'rest') return STAFF_TOP
   const y = noteY(e.pitch)
   const down = beam ? beam.down : soloDown(e)
-  if (down || e.dur === 'whole') return y - HEAD_RY
-  return Math.min(y - HEAD_RY, beam ? beam.y : y - stemLenFor(e.dur))
+  const kesikUst = e.kesik ? kesikYFor(e.pitch, down) - KESIK_R : Infinity
+  if (down || e.dur === 'whole') return Math.min(y - HEAD_RY, kesikUst)
+  return Math.min(y - HEAD_RY, beam ? beam.y : y - stemLenFor(e.dur), kesikUst)
 }
 
-/** Nota başı ve değiştirgecinin 0'ın üstüne taşan miktarı (px); taşmıyorsa 0. */
-function notaUstTasma(e: NoteEvent): number {
+/** Nota başı, değiştirgeci ve kesik noktasının 0'ın üstüne taşan miktarı (px); taşmıyorsa 0. */
+function notaUstTasma(e: NoteEvent, beam: BeamTip | undefined): number {
   const y = noteY(e.pitch)
   const ust = e.pitch.acc === 0 || Math.abs(e.pitch.acc) === 9 ? HEAD_UST : Math.max(HEAD_UST, ACC_UST)
-  return Math.max(0, ust - y)
+  const kesikUst = e.kesik ? kesikYFor(e.pitch, beam ? beam.down : soloDown(e)) - KESIK_R : Infinity
+  return Math.max(0, ust - y, -kesikUst)
 }
 
 /** Röpriz: `bas` kalın-ince çizgi ve iki nokta (`x` sol kenar); `son` aynası, iki nokta ve ince-kalın (`x` sağ kenar). */
@@ -580,7 +587,7 @@ export function Staff(props: {
   })
   const durumTasma = Math.max(0, ...isaretY.map((y) => (y === undefined ? 0 : DURUM_SIZE - y)))
   // Porte üstü yüksek notalar (Re6, Do6 bakiye diyezi): baş ve işaret kutunun üstünden taşmasın, kutu yukarı uzasın.
-  const notaTasma = Math.max(0, ...events.map((e) => (e.kind === 'note' ? notaUstTasma(e) : 0)))
+  const notaTasma = Math.max(0, ...events.map((e, i) => (e.kind === 'note' ? notaUstTasma(e, beamTips.get(i)) : 0)))
   const ustTasma = Math.max(durumTasma, notaTasma)
 
   return (
