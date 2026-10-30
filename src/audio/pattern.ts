@@ -168,18 +168,28 @@ export function buildPatternCode(
 /**
  * Bağlı nota dizisi (aynı perde, `tie`) tek ses olur; süreleri toplanır. `bag` (legato) sesleri ayrı tutar, ama
  * sonraki ses `legato` işaretlenir: dil vurulmadan geçilir (bkz. `melodyChain`).
+ *
+ * Kesik (`kesik`, staccato) nota sürenin yarısı kadar çalar, kalan yarısı sustur; toplam süre ve sonraki notanın
+ * zamanı değişmez. Bağlı zincirde yalnız son notanın payı susar (ortadaki kesik yok sayılır). Kesik notadan sonraki
+ * ses araya giren susun ardından girer; `bag` olsa da legato işaretlenmez.
  */
 export function toToneEvents(events: MusicEvent[], t: Tuning): ToneEvent[] {
   const out: ToneEvent[] = []
   for (const [i, e] of events.entries()) {
     const prev = events[i - 1]
+    const next = events[i + 1]
     const last = out.at(-1)
     if (e.kind === 'note' && prev?.kind === 'note' && prev.tie && samePitch(prev.pitch, e.pitch) && last) {
       last.beats += beats(e)
-      continue
+    } else {
+      const legato = e.kind === 'note' && prev?.kind === 'note' && prev.bag && !prev.kesik
+      out.push({ hz: e.kind === 'note' ? soundingHz(e.pitch, t) : null, beats: beats(e), ...(legato ? { legato: true } : {}) })
     }
-    const legato = e.kind === 'note' && prev?.kind === 'note' && prev.bag
-    out.push({ hz: e.kind === 'note' ? soundingHz(e.pitch, t) : null, beats: beats(e), ...(legato ? { legato: true } : {}) })
+    if (e.kind === 'note' && e.kesik && !(e.tie && next?.kind === 'note' && samePitch(e.pitch, next.pitch))) {
+      const yarim = beats(e) / 2
+      out.at(-1)!.beats -= yarim
+      out.push({ hz: null, beats: yarim })
+    }
   }
   return out
 }

@@ -28,11 +28,18 @@ export interface Etut {
   usulId?: string
 }
 
-const SURELER: Record<string, DurationKind> = { '1': 'whole', '2': 'half', '4': 'quarter', '8': 'eighth' }
+const SURELER: Record<string, DurationKind> = {
+  '1': 'whole',
+  '2': 'half',
+  '4': 'quarter',
+  '8': 'eighth',
+  '32': 'thirtysecond',
+}
 /** Uygulamanın kullandığı koma değiştirgeçleri (`Accidental`). */
 const KOMALAR: readonly number[] = [1, 4, 5, 8, 9]
-const NOTA = /^([A-G])(\d)(?:([b#])(\d+))?:([1248])(\.)?(_)?$/
-const SUS = /^r:([1248])(\.)?$/
+/** Nota sonunda noktadan sonra `_` (bağ) ve `!` (kesik) en çok birer kez, herhangi bir sırada gelebilir. */
+const NOTA = /^([A-G])(\d)(?:([b#])(\d+))?:(1|2|4|8|32)(\.)?([_!]*)$/
+const SUS = /^r:(1|2|4|8|32)(\.)?$/
 
 function parseToken(token: string): MusicEvent {
   const sus = SUS.exec(token)
@@ -47,14 +54,24 @@ function parseToken(token: string): MusicEvent {
   } else if (m[4]) {
     throw new Error(`Geçersiz etüt belirteci: "${token}"`)
   }
+  const isaretler = m[7]!
+  if (/_.*_|!.*!/.test(isaretler)) throw new Error(`Geçersiz etüt belirteci: "${token}"`)
   const pitch: WrittenPitch = { step: m[1] as Step, octave: Number(m[2]), acc: acc as Accidental }
-  return { kind: 'note', pitch, dur: SURELER[m[5]!]!, ...(m[6] ? { dotted: true } : {}), ...(m[7] ? { bag: true } : {}) }
+  return {
+    kind: 'note',
+    pitch,
+    dur: SURELER[m[5]!]!,
+    ...(m[6] ? { dotted: true } : {}),
+    ...(isaretler.includes('_') ? { bag: true } : {}),
+    ...(isaretler.includes('!') ? { kesik: true } : {}),
+  }
 }
 
 /**
  * Kısa etüt gösterimi: ölçüler `|` ile, notalar boşlukla ayrılır.
- * Nota `<Harf><Oktav>[b<koma>|#<koma>]:<1|2|4|8>[.][_]` (ör. `B4b1:4`, `D5:2.`, `G4:4_`), sus `r:<süre>`.
- * Nota sonundaki `_` sonraki notaya bağdır; tek başına `,` bir önceki olaydan sonra nefes işaretidir.
+ * Nota `<Harf><Oktav>[b<koma>|#<koma>]:<1|2|4|8|32>[.][_][!]` (ör. `B4b1:4`, `D5:2.`, `G4:4_`, `A4:32`, `A4:4!`), sus
+ * `r:<süre>`. `:32` otuzikiliktir. Nota sonundaki `_` sonraki notaya bağdır, `!` notayı kesik (staccato) yapar (susta
+ * kullanılamaz); tek başına `,` bir önceki olaydan sonra nefes işaretidir.
  * Geçersiz belirteç, boş ölçü ya da `,` ile başlayan ölçü `Error` fırlatır.
  */
 export function parseEtut(s: string): MusicEvent[][] {

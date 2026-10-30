@@ -9,7 +9,7 @@ import type { Parca, ParcaMakam } from './types'
 export type { Parca, ParcaMakam }
 
 const MAKAMLAR: readonly string[] = ['rast', 'neva', 'ussak', 'hicaz']
-const DURATIONS: readonly string[] = ['whole', 'half', 'quarter', 'eighth', 'sixteenth']
+const DURATIONS: readonly string[] = ['whole', 'half', 'quarter', 'eighth', 'sixteenth', 'thirtysecond']
 const STEPS: readonly string[] = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
 const ACCIDENTALS: readonly number[] = [0, 1, -1, 4, -4, 5, -5, 8, -8]
 

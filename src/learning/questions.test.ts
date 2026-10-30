@@ -132,6 +132,37 @@ describe('makeQuestion', () => {
     })
   })
 
+  describe('sure-5 (otuzikilik)', () => {
+    it('kartlar soru üretir: cevap adı, dört farklı seçenek, ipucu bayrakları söyler', () => {
+      const beklenen: Record<string, string> = { 'dur:thirtysecond': 'Otuzikilik', 'rest:thirtysecond': 'Otuzikilik sus' }
+      for (const [card, ad] of Object.entries(beklenen)) {
+        for (let s = 1; s <= 50; s++) {
+          const q = makeQuestion(card, seededRng(s))
+          expect(q.topicId).toBe('sure-5')
+          expect(q.answer).toBe(ad)
+          expect(q.options).toHaveLength(4)
+          expect(new Set(q.options).size).toBe(4)
+          expect(q.options).toContain(ad)
+          expect(q.hint).toMatch(/Otuzikilik/)
+        }
+      }
+    })
+    it('en yakın yanlış cevap (Onaltılık / Onaltılık sus) her tohumda seçeneklerde', () => {
+      for (let s = 1; s <= 50; s++) {
+        expect(makeQuestion('dur:thirtysecond', seededRng(s)).options).toContain('Onaltılık')
+        expect(makeQuestion('rest:thirtysecond', seededRng(s)).options).toContain('Onaltılık sus')
+      }
+    })
+    it('önceki süre konularında (sure-1..4) "Otuzikilik" seçenek olarak sızmaz', () => {
+      for (const card of ['dur:whole', 'dur:quarter', 'dur:eighth', 'rest:eighth', 'dur:half.dotted', 'dur:sixteenth', 'dur:eighth.uclu', 'rest:sixteenth']) {
+        for (let s = 1; s <= 100; s++) {
+          const q = makeQuestion(card, seededRng(s))
+          expect(q.options.some((o) => o.startsWith('Otuzikilik')), `${card} tohum ${s}`).toBe(false)
+        }
+      }
+    })
+  })
+
   describe('dizi okuma (seq:)', () => {
     it('soru metni, cevap, ipucu ve olaylar', () => {
       const q = makeQuestion('seq:D5-C5-B4-A4', seededRng(1))
@@ -409,7 +440,7 @@ describe('perde-6 soruları (tiz perdeler)', () => {
 
   it('perde-6 konusu perde-5 sonrasında gelir ve sekiz kartı vardır', () => {
     const t = NOTA_TOPICS.find((x) => x.id === 'perde-6')!
-    expect(NOTA_TOPICS.at(-1)).toBe(t)
+    expect(NOTA_TOPICS.at(-2)).toBe(t)
     expect(t.title).toBe('Tiz perdeler')
     expect(t.cards).toEqual(KARTLAR)
   })

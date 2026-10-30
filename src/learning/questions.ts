@@ -28,6 +28,7 @@ export interface Question {
 const STEP_LIST: Step[] = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
 const DURATION_HINT = 'Birlik 4, ikilik 2, dörtlük 1, sekizlik ½ vuruş; nokta yarısı kadar ekler'
 const DURATION_4_HINT = 'Onaltılık ¼ vuruş (iki bayrak); üçleme: üç nota tek vuruşa sığar, üstünde 3 yazar.'
+const DURATION_5_HINT = 'Otuzikilik ⅛ vuruş (üç bayrak ya da üç kiriş); onaltılığın yarısı kadar sürer.'
 
 function noteHint(index: number): string {
   if (index < 0) return "Portenin altındaki ilk ek çizgi Do'dur"
@@ -41,14 +42,25 @@ function namesOf(topics: typeof DURATION_TOPICS): string[] {
   return [...new Set(topics.flatMap((t) => t.cards.map((c) => durationName(cardToEvent(c)))))]
 }
 
+/** Süre konusunun sırası; sonraki konuların adları bu konuda seçenek olarak çıkmaz (henüz öğretilmedi). */
+function durationIndex(topicId: string): number {
+  return DURATION_TOPICS.findIndex((t) => t.id === topicId)
+}
+
+/** Konuya özgü çeldiriciler (sure-4, sure-5): `near` bu konunun cevabına en yakın, bir altındaki süredir. */
+const YAKIN_AD: Record<string, string> = { 'sure-4': 'Sekizlik', 'sure-5': 'Onaltılık' }
+
 /**
- * sure-4 çeldiricileri konuya özgüdür: önce konunun öbür adları, sonra en yakın yanlış cevap
- * (nota için 'Sekizlik', sus için 'Sekizlik sus'), en sonda kalan süre adları.
+ * sure-4 ve sure-5 çeldiricileri konuya özgüdür: önce konunun öbür adları, sonra en yakın yanlış cevap
+ * (nota için 'Sekizlik' / 'Onaltılık', sus için 'Sekizlik sus' / 'Onaltılık sus'), en sonda bu konuya dek öğretilen
+ * kalan süre adları.
  */
-function sure4Options(topic: (typeof DURATION_TOPICS)[number], answer: string, isRest: boolean, rng: () => number): string[] {
+function ozelOptions(topic: (typeof DURATION_TOPICS)[number], answer: string, isRest: boolean, rng: () => number): string[] {
   const own = namesOf([topic]).filter((n) => n !== answer)
-  const near = isRest ? 'Sekizlik sus' : 'Sekizlik'
-  const rest = namesOf(DURATION_TOPICS).filter((n) => n !== answer && !own.includes(n) && n !== near)
+  const near = isRest ? `${YAKIN_AD[topic.id]} sus` : YAKIN_AD[topic.id]!
+  const rest = namesOf(DURATION_TOPICS.slice(0, durationIndex(topic.id) + 1)).filter(
+    (n) => n !== answer && !own.includes(n) && n !== near,
+  )
   const distractors: string[] = []
   for (const tier of [shuffle(own, rng), near === answer ? [] : [near], shuffle(rest, rng)]) {
     for (const n of tier) if (distractors.length < 3 && !distractors.includes(n)) distractors.push(n)
@@ -56,26 +68,21 @@ function sure4Options(topic: (typeof DURATION_TOPICS)[number], answer: string, i
   return shuffle([answer, ...distractors], rng)
 }
 
-/** sure-4 adları (Sekizlik üçleme, Onaltılık, Onaltılık sus): Seviye 2'de öğretilir, önceki konuların çeldiricisi olmaz. */
-const SURE_4_ADLARI = namesOf(DURATION_TOPICS.filter((t) => t.id === 'sure-4'))
-
 /**
- * Bu konunun ve önceki süre konularının adları; yetmezse öbür süre adlarından tamamlanır. Tamamlarken sure-4 adları
- * yalnız sure-4 konusunda kullanılır: öğretilmemiş üçleme ve onaltılık erken konularda seçenek olarak çıkmaz.
+ * Bu konunun ve önceki süre konularının adları; yetmezse sure-3'e dek öbür süre adlarından tamamlanır. sure-4 ve
+ * sure-5 adları (üçleme, onaltılık, otuzikilik) Seviye 2 ve sonrasında öğretilir: erken konularda seçenek olarak çıkmaz.
  */
 function durationOptions(topicId: string, answer: string, rng: () => number): string[] {
-  const upTo = DURATION_TOPICS.slice(0, DURATION_TOPICS.findIndex((t) => t.id === topicId) + 1)
+  const idx = durationIndex(topicId)
   const distractors = shuffle(
-    namesOf(upTo).filter((n) => n !== answer),
+    namesOf(DURATION_TOPICS.slice(0, idx + 1)).filter((n) => n !== answer),
     rng,
   )
   if (distractors.length < 3) {
-    const sure4 = topicId === 'sure-4'
+    const havuz = DURATION_TOPICS.slice(0, Math.max(idx, durationIndex('sure-3')) + 1)
     distractors.push(
       ...shuffle(
-        namesOf(DURATION_TOPICS).filter(
-          (n) => n !== answer && !distractors.includes(n) && (sure4 || !SURE_4_ADLARI.includes(n)),
-        ),
+        namesOf(havuz).filter((n) => n !== answer && !distractors.includes(n)),
         rng,
       ),
     )
@@ -355,8 +362,11 @@ export function makeQuestion(cardId: string, rng: () => number): Question {
     topicId: topic.id,
     prompt: 'Bu hangi süre?',
     events,
-    options: topic.id === 'sure-4' ? sure4Options(topic, answer, event.kind === 'rest', rng) : durationOptions(topic.id, answer, rng),
+    options:
+      topic.id in YAKIN_AD
+        ? ozelOptions(topic, answer, event.kind === 'rest', rng)
+        : durationOptions(topic.id, answer, rng),
     answer,
-    hint: topic.id === 'sure-4' ? DURATION_4_HINT : DURATION_HINT,
+    hint: topic.id === 'sure-4' ? DURATION_4_HINT : topic.id === 'sure-5' ? DURATION_5_HINT : DURATION_HINT,
   }
 }

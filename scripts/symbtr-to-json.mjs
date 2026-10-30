@@ -9,7 +9,7 @@
 // Perde NotaAE/KomaAE sütunlarından, süre Pay/Payda'dan okunur. Kod 9 (nota/sus), Kod 10 (ardçarpmalı
 // nota) ve Kod 11 (sessiz çarpma) süreli nota sayılır; Kod 8 (süresiz çarpma) atlanır. Bir eserin yalnız
 // belli ölçüleri alınabilir (`olcuAraligi`), söz gösterilmeyecekse `soz: false` verilir. Temsil edilemeyen süreler
-// (üçleme, 1/32, 5/8 gibi bağ gerektiren değerler) ya da desteklenmeyen işaretler dönüştürmeyi
+// (üçleme, 1/64, 5/8 gibi bağ gerektiren değerler) ya da desteklenmeyen işaretler dönüştürmeyi
 // durdurur; yaklaştırma yapılmaz. Bir parça başarısız olursa diğerleri yine üretilir.
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
@@ -75,6 +75,7 @@ const BASES = [
   ['quarter', 4],
   ['eighth', 8],
   ['sixteenth', 16],
+  ['thirtysecond', 32],
 ]
 
 /** Sekmeyle ayrılmış SymbTr txt'yi okur. Hecedeki boşluklar korunur. */
@@ -139,7 +140,8 @@ const PARTS = [
 
 /**
  * Pay/Payda → bağlanacak süre parçaları. Tek değerle yazılabiliyorsa tek parça; değilse en az
- * parçaya, büyükten küçüğe bölünür (5/8 → ikilik + sekizlik). Tam bölünemiyorsa null (üçleme, 1/32…).
+ * parçaya, büyükten küçüğe bölünür (5/8 → ikilik + sekizlik). Tam bölünemiyorsa null (üçleme, 1/64…).
+ * Otuzikilik yalnız tek başına (1/32, 3/64) temsil edilir; bölmede parça olarak kullanılmaz.
  */
 export function splitDuration(pay, payda) {
   const single = durationOf(pay, payda)
@@ -165,7 +167,7 @@ export function cleanSyllable(soz) {
   return soz.trim().replaceAll('_', '‿')
 }
 
-const BASE_UNITS = { whole: 64, half: 32, quarter: 16, eighth: 8, sixteenth: 4 }
+const BASE_UNITS = { whole: 64, half: 32, quarter: 16, eighth: 8, sixteenth: 4, thirtysecond: 2 }
 function eventUnits(e) {
   return BASE_UNITS[e.dur] * (e.dotted ? 1.5 : 1)
 }

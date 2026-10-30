@@ -1,15 +1,18 @@
-import { beats, type MusicEvent } from '../music/notation'
+import { beats, type DurationKind, type MusicEvent } from '../music/notation'
 
 /**
- * Süreler dörtlüğün 1/48'i cinsinden tamsayıya çevrilir (noktalı onaltılık = 18, sekizlik üçleme = 16): kayan
+ * Süreler dörtlüğün 1/48'i cinsinden tamsayıya çevrilir (noktalı onaltılık = 18, noktalı otuzikilik = 9, sekizlik üçleme = 16): kayan
  * nokta hatası olmaz. Yuvarlama 1e-6'dan çok daha geniş bir pay bırakır; vuruş sınırı karşılaştırmaları tamsayıdır.
  */
 const UNIT = 48
 
+/** Kirişlenebilen süreler: sekizlik, onaltılık, otuzikilik (noktalılar dahil). */
+const isBeamDur = (dur: DurationKind) => dur === 'eighth' || dur === 'sixteenth' || dur === 'thirtysecond'
+
 /**
  * Kirişlenecek olay sıraları. Ölçü içindeki vuruş konumu izlenir (her ölçü çizgisinden sonra sıfırlanır).
- * Bir grup, aynı vuruş penceresi [k·beatBeats, (k+1)·beatBeats) içinde başlayıp biten ardışık sekizlik ve
- * onaltılık (noktalılar dahil) notalardan oluşur. Sus, daha uzun nota, ölçü çizgisi ya da vuruş sınırı grubu
+ * Bir grup, aynı vuruş penceresi [k·beatBeats, (k+1)·beatBeats) içinde başlayıp biten ardışık sekizlik,
+ * onaltılık ve otuzikilik (noktalılar dahil) notalardan oluşur. Sus, daha uzun nota, ölçü çizgisi ya da vuruş sınırı grubu
  * kapatır; en az iki notalı gruplar döner. `beatBeats` dörtlük cinsindendir (4/4: 1, 12/8: 1,5).
  */
 export function beamGroups(events: MusicEvent[], beatBeats: number, barlinesAfter?: number[]): number[][] {
@@ -27,7 +30,7 @@ export function beamGroups(events: MusicEvent[], beatBeats: number, barlinesAfte
   events.forEach((e, i) => {
     const end = pos + Math.round(beats(e) * UNIT)
     const k = Math.floor(pos / beat)
-    const beamable = e.kind === 'note' && (e.dur === 'eighth' || e.dur === 'sixteenth') && end <= (k + 1) * beat
+    const beamable = e.kind === 'note' && isBeamDur(e.dur) && end <= (k + 1) * beat
     if (beamable) {
       if (curBeat !== k) close()
       cur.push(i)
@@ -58,7 +61,7 @@ function quarterFallback(events: MusicEvent[], bars: Set<number>, taken: number[
   const eighth = UNIT / 2
   const free = (i: number) => {
     const e = events[i]!
-    return !used.has(i) && e.kind === 'note' && (e.dur === 'eighth' || e.dur === 'sixteenth')
+    return !used.has(i) && e.kind === 'note' && isBeamDur(e.dur)
   }
   const starts: number[] = []
   let pos = 0

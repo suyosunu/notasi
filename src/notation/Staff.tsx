@@ -82,11 +82,21 @@ const DURUM_AD: Record<TakipDurumu, string> = {
   kisa: 'kısa tutuldu',
 }
 
-/** Onaltılıkta iki bayrak arasındaki uzaklık (px). */
+/** Onaltılık ve otuzikilikte iki bayrak arasındaki uzaklık (px). */
 const FLAG_STEP = 7
 
+/** Kesik (staccato) noktasının yarıçapı ve nota başının merkezinden uzaklığı (px): çizgi notasında 14, aralık notasında 10. */
+const KESIK_R = 1.8
+const KESIK_CIZGI = 14
+const KESIK_ARALIK = 10
+
 function flagCount(dur: DurationKind): number {
-  return dur === 'eighth' ? 1 : dur === 'sixteenth' ? 2 : 0
+  return dur === 'eighth' ? 1 : dur === 'sixteenth' ? 2 : dur === 'thirtysecond' ? 3 : 0
+}
+
+/** Tek başına çizilen notanın sap boyu: üçüncü bayrak için bir bayrak aralığı kadar uzar. */
+function stemLenFor(dur: DurationKind): number {
+  return flagCount(dur) >= 3 ? STEM_LEN + FLAG_STEP : STEM_LEN
 }
 
 function isHollow(dur: DurationKind): boolean {
@@ -110,7 +120,7 @@ interface BeamTip {
 }
 
 interface BeamSegment {
-  level: 1 | 2
+  level: 1 | 2 | 3
   x1: number
   x2: number
 }
@@ -155,8 +165,10 @@ function layoutBeam(group: number[], events: MusicEvent[], xs: number[]): BeamLa
   const ys = notes.map((n) => noteY(n.pitch))
   const first = sxs[0]!
   const span = sxs.at(-1)! - first
-  const t0 = ys[0]! + sign * STEM_LEN
-  const t1 = ys.at(-1)! + sign * STEM_LEN
+  // Üç kirişli (otuzikilik) grupta sap, üçüncü kiriş için bir kiriş aralığı kadar uzar.
+  const extra = notes.some((n) => flagCount(n.dur) >= 3) ? BEAM_STEP : 0
+  const t0 = ys[0]! + sign * (STEM_LEN + extra)
+  const t1 = ys.at(-1)! + sign * (STEM_LEN + extra)
   // Eğim, çizilen kiriş boyunca (sap kalınlığı dahil) en fazla bir aralık yükselecek biçimde kısılır.
   const maxSlope = LINE_GAP / (span + 2 * HALF_STEM)
   const slope = span > 0 ? Math.max(-maxSlope, Math.min(maxSlope, (t1 - t0) / span)) : 0
@@ -165,44 +177,47 @@ function layoutBeam(group: number[], events: MusicEvent[], xs: number[]): BeamLa
   const lineAt = (x: number) => b + slope * (x - first)
   const stemLen = (j: number) => sign * (lineAt(sxs[j]!) - ys[j]!)
   const shortest = () => Math.min(...sxs.map((_, j) => stemLen(j)))
-  const need = MIN_BEAM_STEM - shortest()
+  const need = MIN_BEAM_STEM + extra - shortest()
   if (need > 0) b += sign * need
   const ends = [lineAt(first - HALF_STEM), lineAt(first + span + HALF_STEM)]
   const overflow = down ? Math.max(...ends) - BEAM_MAX_Y : BEAM_MIN_Y - Math.min(...ends)
-  if (overflow > 0) b -= sign * Math.min(overflow, Math.max(0, shortest() - EDGE_MIN_STEM))
+  if (overflow > 0) b -= sign * Math.min(overflow, Math.max(0, shortest() - EDGE_MIN_STEM - extra))
 
   const tips = new Map(group.map((i, j) => [i, lineAt(sxs[j]!)]))
   const segments: BeamSegment[] = [{ level: 1, x1: first - HALF_STEM, x2: first + span + HALF_STEM }]
-  // Onaltılıklar: ardışık olanlar tam ikinci kirişle, tek kalan komşusuna doğru kısa parçayla bağlanır.
-  let j = 0
-  while (j < notes.length) {
-    if (notes[j]!.dur !== 'sixteenth') {
-      j++
-      continue
+  // İkinci kiriş onaltılık ve otuzikiliklere, üçüncü kiriş yalnız otuzikiliklere gelir: ardışık olanlar tam
+  // kirişle, tek kalan komşusuna doğru kısa parçayla bağlanır.
+  for (const level of [2, 3] as const) {
+    let j = 0
+    while (j < notes.length) {
+      if (flagCount(notes[j]!.dur) < level) {
+        j++
+        continue
+      }
+      let k = j
+      while (k + 1 < notes.length && flagCount(notes[k + 1]!.dur) >= level) k++
+      if (k > j) {
+        segments.push({ level, x1: sxs[j]! - HALF_STEM, x2: sxs[k]! + HALF_STEM })
+      } else {
+        const left = j === notes.length - 1 || (j > 0 && notes[j - 1]!.dotted === true)
+        const sx = sxs[j]!
+        segments.push(
+          left
+            ? { level, x1: sx + HALF_STEM - STUB_LEN, x2: sx + HALF_STEM }
+            : { level, x1: sx - HALF_STEM, x2: sx - HALF_STEM + STUB_LEN },
+        )
+      }
+      j = k + 1
     }
-    let k = j
-    while (k + 1 < notes.length && notes[k + 1]!.dur === 'sixteenth') k++
-    if (k > j) {
-      segments.push({ level: 2, x1: sxs[j]! - HALF_STEM, x2: sxs[k]! + HALF_STEM })
-    } else {
-      const left = j === notes.length - 1 || (j > 0 && notes[j - 1]!.dotted === true)
-      const sx = sxs[j]!
-      segments.push(
-        left
-          ? { level: 2, x1: sx + HALF_STEM - STUB_LEN, x2: sx + HALF_STEM }
-          : { level: 2, x1: sx - HALF_STEM, x2: sx - HALF_STEM + STUB_LEN },
-      )
-    }
-    j = k + 1
   }
   return { down, tips, segments, lineAt }
 }
 
-/** Kiriş parçası: dış kenarı kiriş doğrusunda (ikincisi başlara doğru kaydırılmış), kalınlığı başlara doğru. */
+/** Kiriş parçası: dış kenarı kiriş doğrusunda (ikinci ve üçüncüsü başlara doğru kaydırılmış), kalınlığı başlara doğru. */
 function BeamPath(props: { layout: BeamLayout; segment: BeamSegment }) {
   const { layout, segment } = props
   const inward = layout.down ? -1 : 1
-  const off = segment.level === 2 ? inward * BEAM_STEP : 0
+  const off = inward * BEAM_STEP * (segment.level - 1)
   const ya = layout.lineAt(segment.x1) + off
   const yb = layout.lineAt(segment.x2) + off
   const t = inward * BEAM_THICK
@@ -222,9 +237,12 @@ function NoteShape(props: { event: NoteEvent; x: number; index: number; beam?: B
   const y = noteY(pitch)
   const down = beam ? beam.down : soloDown(event)
   const stemX = stemXFor(x, down)
-  const stemEnd = beam ? beam.y : down ? y + STEM_LEN : y - STEM_LEN
+  const stemLen = stemLenFor(dur)
+  const stemEnd = beam ? beam.y : down ? y + stemLen : y - stemLen
   // Çizgi üzerindeki notada nokta bir sonraki boşluğa yukarı kaydırılır.
   const dotY = idx % 2 === 0 ? y - LINE_GAP / 2 : y
+  // Kesik noktası sapın karşısındadır ve çizgi üstüne düşmez: çizgi notasında ikinci boşluğun, aralık notasında ilk boşluğun içinde.
+  const kesikY = y + (down ? -1 : 1) * (idx % 2 === 0 ? KESIK_CIZGI : KESIK_ARALIK)
 
   return (
     <g>
@@ -280,6 +298,7 @@ function NoteShape(props: { event: NoteEvent; x: number; index: number; beam?: B
         )
       })}
       {event.dotted && <circle data-dot cx={x + HEAD_RX + 5} cy={dotY} r={1.8} fill={INK} />}
+      {event.kesik && <circle data-kesik cx={x} cy={kesikY} r={KESIK_R} fill={INK} />}
     </g>
   )
 }
@@ -361,7 +380,7 @@ function eventTop(e: MusicEvent, beam: BeamTip | undefined): number {
   const y = noteY(e.pitch)
   const down = beam ? beam.down : soloDown(e)
   if (down || e.dur === 'whole') return y - HEAD_RY
-  return Math.min(y - HEAD_RY, beam ? beam.y : y - STEM_LEN)
+  return Math.min(y - HEAD_RY, beam ? beam.y : y - stemLenFor(e.dur))
 }
 
 /** Nota başı ve değiştirgecinin 0'ın üstüne taşan miktarı (px); taşmıyorsa 0. */
@@ -433,6 +452,21 @@ function RestShape(props: { event: RestEvent; x: number }) {
           <circle cx={x - 4} cy={49} r={2.5} fill={INK} />
           <path
             d={`M ${x - 2} 42 Q ${x + 2} 43 ${x + 4.5} 37 L ${x - 3} 66 M ${x - 4} 50 Q ${x} 51 ${x + 2.6} 45`}
+            fill="none"
+            stroke={INK}
+            stroke-width={1.8}
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </>
+      )}
+      {dur === 'thirtysecond' && (
+        <>
+          <circle cx={x} cy={33} r={2.5} fill={INK} />
+          <circle cx={x - 2} cy={41} r={2.5} fill={INK} />
+          <circle cx={x - 4} cy={49} r={2.5} fill={INK} />
+          <path
+            d={`M ${x} 34 Q ${x + 4} 35 ${x + 6.5} 29 L ${x - 3} 66 M ${x - 2} 42 Q ${x + 2} 43 ${x + 4.5} 37 M ${x - 4} 50 Q ${x} 51 ${x + 2.6} 45`}
             fill="none"
             stroke={INK}
             stroke-width={1.8}

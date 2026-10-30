@@ -112,6 +112,29 @@ describe('sure-4 kartları', () => {
   })
 })
 
+describe('sure-5 kartları (otuzikilik)', () => {
+  it("'dur:thirtysecond' tek otuzikilik nota, 'rest:thirtysecond' otuzikilik sus", () => {
+    expect(cardToEvents('dur:thirtysecond')).toEqual([
+      { kind: 'note', pitch: { step: 'B', octave: 4, acc: 0 }, dur: 'thirtysecond' },
+    ])
+    expect(cardToEvents('rest:thirtysecond')).toEqual([{ kind: 'rest', dur: 'thirtysecond' }])
+    expect(beats(cardToEvent('dur:thirtysecond'))).toBe(0.125)
+  })
+  it('konu tanımı: son konu perde-6, ondan hemen sonra sure-5, süre türünde', () => {
+    const ids = NOTA_TOPICS.map((t) => t.id)
+    expect(ids.indexOf('sure-5')).toBe(ids.indexOf('perde-6') + 1)
+    expect(ids.at(-1)).toBe('sure-5')
+    expect(NOTA_TOPICS.find((t) => t.id === 'sure-5')).toEqual({
+      id: 'sure-5',
+      section: 'nota',
+      title: 'Otuzikilik',
+      kind: 'duration',
+      cards: ['dur:thirtysecond', 'rest:thirtysecond'],
+    })
+    expect(topicOfCard('rest:thirtysecond').id).toBe('sure-5')
+  })
+})
+
 describe('topicOfCard', () => {
   it('kartın konusunu bulur', () => {
     expect(topicOfCard('note:A5').id).toBe('nota-5')
@@ -127,7 +150,7 @@ describe('topicOfCard', () => {
     expect(ids).toEqual([
       'nota-1', 'sure-1', 'nota-2', 'sure-2', 'nota-3', 'sure-3', 'nota-4', 'nota-5',
       'dizi-1', 'perde-1', 'dizi-2', 'koma-1', 'koma-2', 'perde-3', 'perde-4', 'sure-4', 'perde-2', 'perde-5',
-      'perde-6',
+      'perde-6', 'sure-5',
     ])
   })
   it('dizi konuları sequence türünde ve 6 karttan oluşur', () => {

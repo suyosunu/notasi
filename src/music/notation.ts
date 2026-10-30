@@ -1,6 +1,6 @@
 import type { WrittenPitch } from './pitch'
 
-export type DurationKind = 'whole' | 'half' | 'quarter' | 'eighth' | 'sixteenth'
+export type DurationKind = 'whole' | 'half' | 'quarter' | 'eighth' | 'sixteenth' | 'thirtysecond'
 export interface NoteEvent {
   kind: 'note'
   pitch: WrittenPitch
@@ -14,6 +14,8 @@ export interface NoteEvent {
   uclu?: boolean
   /** true: bu olaydan sonra nefes işareti. */
   nefes?: boolean
+  /** true: kesik (staccato). Nota başının sap karşısına nokta çizilir; çalarken sesin yarısı duyulur, kalan yarısı sustur. */
+  kesik?: boolean
 }
 export interface RestEvent {
   kind: 'rest'
@@ -26,13 +28,14 @@ export interface RestEvent {
 }
 export type MusicEvent = NoteEvent | RestEvent
 
-const BEATS: Record<DurationKind, number> = { whole: 4, half: 2, quarter: 1, eighth: 0.5, sixteenth: 0.25 }
+const BEATS: Record<DurationKind, number> = { whole: 4, half: 2, quarter: 1, eighth: 0.5, sixteenth: 0.25, thirtysecond: 0.125 }
 const NAMES: Record<DurationKind, string> = {
   whole: 'Birlik',
   half: 'İkilik',
   quarter: 'Dörtlük',
   eighth: 'Sekizlik',
   sixteenth: 'Onaltılık',
+  thirtysecond: 'Otuzikilik',
 }
 
 /** Süre (dörtlük cinsinden). Üçlemede kesirlidir (üç sekizlik üçleme = 1); karşılaştırmalar 1e-6 payıyla yapılır. */

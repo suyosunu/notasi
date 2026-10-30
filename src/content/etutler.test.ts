@@ -52,6 +52,28 @@ describe('parseEtut', () => {
     expect(parseEtut('r:4 ,')[0]![0]).toEqual({ kind: 'rest', dur: 'quarter', nefes: true })
   })
 
+  it('otuzikilik :32 ve kesik ! belirteçleri', () => {
+    const [olcu] = parseEtut('A4:32 A4:4! A4:32. r:32 G4:8._!')
+    expect(olcu![0]).toEqual({ kind: 'note', pitch: { step: 'A', octave: 4, acc: 0 }, dur: 'thirtysecond' })
+    expect(beats(olcu![0]!)).toBeCloseTo(0.125, 9)
+    expect(olcu![1]).toEqual({ kind: 'note', pitch: { step: 'A', octave: 4, acc: 0 }, dur: 'quarter', kesik: true })
+    expect(olcu![2]).toMatchObject({ dur: 'thirtysecond', dotted: true })
+    expect(olcu![3]).toEqual({ kind: 'rest', dur: 'thirtysecond' })
+    expect(olcu![4]).toMatchObject({ dur: 'eighth', dotted: true, bag: true, kesik: true })
+  })
+
+  it('kesik işareti bağdan önce de yazılabilir; yalnızca kesik olmayan notada alan yoktur', () => {
+    expect(parseEtut('G4:4!_')[0]![0]).toMatchObject({ kesik: true, bag: true })
+    expect('kesik' in parseEtut('G4:4')[0]![0]!).toBe(false)
+  })
+
+  it.each(['r:4!', 'r:32!', 'G4:4!!', 'G4:4.!!', 'G4:16', 'G4:64', 'G4:3', '!', 'G4:!'])(
+    'kesik yalnız notada ve bir kez; :32 dışında yeni süre yok: %s',
+    (s) => {
+      expect(() => parseEtut(s)).toThrow(Error)
+    },
+  )
+
   it.each([', G4:4', 'G4:4 | , A4:4', 'r:4_', 'G4:4._.'])('ölçü , ile başlayamaz; bağ yalnız notada: %s', (s) => {
     expect(() => parseEtut(s)).toThrow(Error)
   })

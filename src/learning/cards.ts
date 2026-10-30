@@ -7,7 +7,7 @@ import type { Step } from '../music/pitch'
 export type { Topic }
 
 const STEPS: readonly string[] = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
-const DURATIONS: readonly string[] = ['whole', 'half', 'quarter', 'eighth', 'sixteenth']
+const DURATIONS: readonly string[] = ['whole', 'half', 'quarter', 'eighth', 'sixteenth', 'thirtysecond']
 
 function invalid(cardId: string): never {
   throw new Error(`Geçersiz kart kimliği: ${cardId}`)

@@ -32,6 +32,26 @@ describe('beamGroups', () => {
     ])
   })
 
+  it('dört otuzikilik bir grup olur; sekiz otuzikilik iki vuruş penceresinde iki grup', () => {
+    const t = (): MusicEvent => n('thirtysecond')
+    expect(beamGroups([t(), t(), t(), t(), n('quarter')], 1)).toEqual([[0, 1, 2, 3]])
+    // Dört otuzikilik yarım vuruş eder; bir vuruş penceresine sekiz sığar.
+    expect(beamGroups([t(), t(), t(), t(), t(), t(), t(), t()], 1)).toEqual([[0, 1, 2, 3, 4, 5, 6, 7]])
+    // Sekizlik + dört otuzikilik tam bir vuruştur; sonraki sekizlik yeni pencerede tek kalır.
+    expect(beamGroups([n('eighth'), t(), t(), t(), t(), n('eighth')], 1)).toEqual([[0, 1, 2, 3, 4]])
+  })
+
+  it('noktalı onaltılık + otuzikilik bir grup olur (iki yönde); bir nota daha sonraki vuruşa geçemez', () => {
+    expect(beamGroups([n('sixteenth', true), n('thirtysecond'), n('quarter')], 1)).toEqual([[0, 1]])
+    expect(beamGroups([n('thirtysecond'), n('sixteenth', true), n('quarter')], 1)).toEqual([[0, 1]])
+    // Noktalı otuzikilik + onaltılık da bir vuruş penceresi içindedir.
+    expect(beamGroups([n('thirtysecond', true), n('thirtysecond'), n('eighth')], 1)).toEqual([[0, 1, 2]])
+  })
+
+  it('otuzikilik sus grubu böler; otuzikilik sus kirişlenmez', () => {
+    expect(beamGroups([n('thirtysecond'), r('thirtysecond'), n('thirtysecond'), n('thirtysecond')], 1)).toEqual([[2, 3]])
+  })
+
   it('sus işareti grubu böler', () => {
     // Vuruş: s r s s → sus yüzünden önceki tek onaltılık gruplanmaz.
     expect(beamGroups([n('sixteenth'), r('sixteenth'), n('sixteenth'), n('sixteenth')], 1)).toEqual([[2, 3]])

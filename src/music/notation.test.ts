@@ -16,6 +16,11 @@ describe('beats', () => {
     expect(beats(note('eighth'))).toBe(0.5)
     expect(beats(note('sixteenth'))).toBe(0.25)
   })
+  it('otuzikilik 0.125, noktalı otuzikilik 0.1875', () => {
+    expect(beats(note('thirtysecond'))).toBe(0.125)
+    expect(beats(note('thirtysecond', true))).toBe(0.1875)
+    expect(beats(rest('thirtysecond'))).toBe(0.125)
+  })
   it('noktalı onaltılık 0.375', () => {
     expect(beats(note('sixteenth', true))).toBe(0.375)
   })
@@ -55,6 +60,11 @@ describe('durationName', () => {
   it('onaltılık sus ve noktalı onaltılık', () => {
     expect(durationName(rest('sixteenth'))).toBe('Onaltılık sus')
     expect(durationName(note('sixteenth', true))).toBe('Noktalı onaltılık')
+  })
+  it('otuzikilik adları', () => {
+    expect(durationName(note('thirtysecond'))).toBe('Otuzikilik')
+    expect(durationName(note('thirtysecond', true))).toBe('Noktalı otuzikilik')
+    expect(durationName(rest('thirtysecond'))).toBe('Otuzikilik sus')
   })
   it('sus sona " sus" ekler', () => {
     expect(durationName({ kind: 'rest', dur: 'quarter' })).toBe('Dörtlük sus')

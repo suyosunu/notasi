@@ -10,7 +10,7 @@ afterEach(cleanup)
 const note = (
   step: 'C' | 'D' | 'E' | 'F' | 'G' | 'A' | 'B',
   octave: number,
-  dur: 'whole' | 'half' | 'quarter' | 'eighth' | 'sixteenth',
+  dur: DurationKind,
 ): MusicEvent => ({ kind: 'note', pitch: { step, octave, acc: 0 }, dur })
 
 describe('Staff', () => {
@@ -134,6 +134,61 @@ describe('Staff', () => {
     it('bağsız notalarda yay yok', () => {
       const { container } = render(<Staff events={[note('G', 4, 'half'), note('G', 4, 'half')]} />)
       expect(container.querySelectorAll('[data-tie]')).toHaveLength(0)
+    })
+  })
+
+  it('tek otuzikilik üç bayrak çizer (sap yukarıyken de aşağıyken de); sap onaltılıktakinden uzundur', () => {
+    const { container } = render(<Staff events={[note('G', 4, 'thirtysecond'), note('D', 5, 'thirtysecond')]} />)
+    expect(container.querySelectorAll('g[data-event="0"] [data-flag]')).toHaveLength(3)
+    expect(container.querySelectorAll('g[data-event="1"] [data-flag]')).toHaveLength(3)
+    const len = (c: Element, i: number) => {
+      const s = c.querySelector(`g[data-event="${i}"] line[data-stem]`)!
+      return Math.abs(Number(s.getAttribute('y2')) - Number(s.getAttribute('y1')))
+    }
+    const onaltilik = render(<Staff events={[note('G', 4, 'sixteenth'), note('D', 5, 'sixteenth')]} />).container
+    expect(len(container, 0)).toBeGreaterThan(len(onaltilik, 0))
+    expect(len(container, 1)).toBeGreaterThan(len(onaltilik, 1))
+  })
+
+  it('otuzikilik sus çizilir (üç top)', () => {
+    const { container } = render(<Staff events={[{ kind: 'rest', dur: 'thirtysecond' }]} />)
+    const rest = container.querySelector('[data-testid="rest"][data-dur="thirtysecond"]')
+    expect(rest).not.toBeNull()
+    expect(rest!.querySelectorAll('circle')).toHaveLength(3)
+  })
+
+  describe('kesik (staccato) işareti', () => {
+    type Harf = 'C' | 'D' | 'E' | 'F' | 'G' | 'A' | 'B'
+    const kesik = (step: Harf, octave: number, extra: object = {}): MusicEvent => ({
+      ...(note(step, octave, 'quarter') as NoteEvent),
+      kesik: true,
+      ...extra,
+    })
+    it('kesik notada bir nokta (data-kesik) çizilir; süre noktası (data-dot) değildir; kesiksiz notada yoktur', () => {
+      const { container } = render(<Staff events={[kesik('G', 4), note('G', 4, 'quarter')]} />)
+      expect(container.querySelectorAll('[data-kesik]')).toHaveLength(1)
+      expect(container.querySelectorAll('g[data-event="0"] [data-kesik]')).toHaveLength(1)
+      expect(container.querySelectorAll('[data-dot]')).toHaveLength(0)
+    })
+    it('nokta sapın karşısındadır: sap yukarıyken başın altında, aşağıyken üstünde', () => {
+      const { container } = render(<Staff events={[kesik('G', 4), kesik('D', 5)]} />)
+      const head = (i: number) => Number(container.querySelectorAll('[data-testid="notehead"]')[i]!.getAttribute('cy'))
+      const dot = (i: number) => Number(container.querySelector(`g[data-event="${i}"] [data-kesik]`)!.getAttribute('cy'))
+      expect(container.querySelector('g[data-event="0"] line[data-stem]')!.getAttribute('data-stem')).toBe('up')
+      expect(dot(0)).toBeGreaterThan(head(0))
+      expect(container.querySelector('g[data-event="1"] line[data-stem]')!.getAttribute('data-stem')).toBe('down')
+      expect(dot(1)).toBeLessThan(head(1))
+    })
+    it('kirişli kesik notada da nokta sapın karşısındadır; noktalı kesik nota hem süre hem kesik noktası çizer', () => {
+      const events: MusicEvent[] = [{ ...(note('G', 4, 'eighth') as NoteEvent), kesik: true }, note('A', 4, 'eighth')]
+      const { container } = render(<Staff events={events} beamBeats={1} />)
+      expect(container.querySelector('line[data-beamed]')!.getAttribute('data-stem')).toBe('up')
+      const head = Number(container.querySelector('[data-testid="notehead"]')!.getAttribute('cy'))
+      expect(Number(container.querySelector('[data-kesik]')!.getAttribute('cy'))).toBeGreaterThan(head)
+      cleanup()
+      const d = render(<Staff events={[kesik('G', 4, { dotted: true })]} />).container
+      expect(d.querySelectorAll('[data-kesik]')).toHaveLength(1)
+      expect(d.querySelectorAll('[data-dot]')).toHaveLength(1)
     })
   })
 
@@ -446,7 +501,7 @@ describe('Staff: ölçü çizgileri ve heceler', () => {
 
 describe('Staff: kirişler', () => {
   type Step = 'C' | 'D' | 'E' | 'F' | 'G' | 'A' | 'B'
-  const ev = (step: Step, octave: number, dur: 'eighth' | 'sixteenth' | 'quarter', extra: object = {}): MusicEvent => ({
+  const ev = (step: Step, octave: number, dur: DurationKind, extra: object = {}): MusicEvent => ({
     kind: 'note',
     pitch: { step, octave, acc: 0 },
     dur,
@@ -558,6 +613,38 @@ describe('Staff: kirişler', () => {
     expect(container.querySelectorAll('[data-flag]')).toHaveLength(1)
     expect(container.querySelectorAll('g[data-event="4"] [data-flag]')).toHaveLength(1)
     expect(container.querySelectorAll('line[data-beamed]')).toHaveLength(4)
+  })
+
+  it('dört otuzikilik: üç kiriş (3. kiriş 2. kirişin altında), bayrak yok; sap üç kirişe yetecek kadar uzun', () => {
+    const events = [ev('G', 4, 'thirtysecond'), ev('A', 4, 'thirtysecond'), ev('G', 4, 'thirtysecond'), ev('A', 4, 'thirtysecond')]
+    const { container } = render(<Staff events={events} beamBeats={1} />)
+    expect(container.querySelectorAll('[data-beam="1"]')).toHaveLength(1)
+    expect(container.querySelectorAll('[data-beam="2"]')).toHaveLength(1)
+    expect(container.querySelectorAll('[data-beam="3"]')).toHaveLength(1)
+    expect(container.querySelectorAll('[data-flag]')).toHaveLength(0)
+    const p = beamLine(container.querySelector('[data-beam="1"]')!)
+    const s2 = beamLine(container.querySelector('[data-beam="2"]')!)
+    const s3 = beamLine(container.querySelector('[data-beam="3"]')!)
+    expect(at(s2, p.x1) - at(p, p.x1)).toBeCloseTo(7.5, 5)
+    expect(at(s3, p.x1) - at(p, p.x1)).toBeCloseTo(15, 5)
+    // Üçüncü kirişin iç kenarı nota başından en az bir aralık (10 px) uzakta kalır.
+    for (const st of stems(container)) {
+      const kenar = at(s3, st.x) + 4.5
+      expect(Math.abs(kenar - st.y1)).toBeGreaterThanOrEqual(10)
+    }
+  })
+
+  it('noktalı onaltılık + otuzikilik: 2. kiriş ikisini bağlar, 3. kiriş otuzikilikte sola bakan kısa parçadır', () => {
+    const events = [ev('G', 4, 'sixteenth', { dotted: true }), ev('A', 4, 'thirtysecond')]
+    const { container } = render(<Staff events={events} beamBeats={1} />)
+    expect(container.querySelectorAll('[data-beam="2"]')).toHaveLength(1)
+    const b3 = container.querySelectorAll('[data-beam="3"]')
+    expect(b3).toHaveLength(1)
+    const [st0, st1] = stems(container)
+    const l3 = beamLine(b3[0]!)
+    expect(l3.x2).toBeGreaterThan(st1!.x)
+    expect(l3.x1).toBeLessThan(st1!.x)
+    expect(l3.x1).toBeGreaterThan(st0!.x)
   })
 
   it('onaltılık grubunda iki kiriş vardır; ikincisi nota başlarına doğru kaydırılır', () => {

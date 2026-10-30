@@ -93,11 +93,15 @@ describe('durationOf', () => {
     expect(durationOf(3, 8)).toEqual({ dur: 'quarter', dotted: true })
     expect(durationOf(3, 16)).toEqual({ dur: 'eighth', dotted: true })
     expect(durationOf(3, 32)).toEqual({ dur: 'sixteenth', dotted: true })
+    expect(durationOf(1, 32)).toEqual({ dur: 'thirtysecond' })
+    expect(durationOf(2, 64)).toEqual({ dur: 'thirtysecond' })
+    expect(durationOf(3, 64)).toEqual({ dur: 'thirtysecond', dotted: true })
   })
   it('temsil edilemeyen süreler null döner (yaklaştırma yok)', () => {
     expect(durationOf(5, 8)).toBeNull()
     expect(durationOf(1, 12)).toBeNull()
-    expect(durationOf(1, 32)).toBeNull()
+    expect(durationOf(1, 64)).toBeNull()
+    expect(durationOf(3, 128)).toBeNull()
     expect(durationOf(5, 16)).toBeNull()
     expect(durationOf(7, 16)).toBeNull()
     expect(durationOf(0, 8)).toBeNull()
@@ -123,7 +127,7 @@ describe('splitDuration', () => {
   })
   it('tam bölünemeyen süre null döner', () => {
     expect(splitDuration(1, 12)).toBeNull()
-    expect(splitDuration(1, 32)).toBeNull()
+    expect(splitDuration(1, 64)).toBeNull()
     expect(splitDuration(1, 6)).toBeNull()
     expect(splitDuration(0, 8)).toBeNull()
   })
@@ -277,11 +281,34 @@ describe('convertSymbTr', () => {
     )
   })
 
-  it('üçleme ve 1/32 de durdurur; bütün engelleyen satırlar listelenir', () => {
+  it('1/32, 3/64 ve 3/32 satırları otuzikilik, noktalı otuzikilik ve noktalı onaltılığa dönüşür', () => {
+    const KISA = { zaman: 1, mertebe: 4 }
+    const rows = [
+      [1, 51, '', '', 0, 0, 1, 4, 0, 6, 0, 'Kısa', '0.0'],
+      [2, 9, 'La4', 'A4', 305, 305, 3, 32, 100, 95, 96, '', '0.375'],
+      [3, 9, 'La4', 'A4', 305, 305, 1, 32, 100, 95, 96, '', '0.5'],
+      [4, 9, 'La4', 'A4', 305, 305, 3, 64, 100, 95, 96, '', '0.6875'],
+      [5, 9, 'Es', 'Es', -1, -1, 3, 64, 100, 100, 0, '', '0.875'],
+      [6, 9, 'La4', 'A4', 305, 305, 1, 32, 100, 95, 96, '', '1.0'],
+    ]
+    const r = convertSymbTr(txt(rows), { file: 'x.txt', usul: KISA })
+    expect(r.olcu).toEqual([
+      [
+        n('A', 4, 0, 'sixteenth', true),
+        n('A', 4, 0, 'thirtysecond'),
+        n('A', 4, 0, 'thirtysecond', true),
+        { kind: 'rest', dur: 'thirtysecond', dotted: true },
+        n('A', 4, 0, 'thirtysecond'),
+      ],
+    ])
+    expect(r.summary).toMatchObject({ notes: 4, rests: 1, tiedRows: 0 })
+  })
+
+  it('üçleme ve 1/64 de durdurur; bütün engelleyen satırlar listelenir', () => {
     const rows = [
       [1, 51, '', '', 0, 0, 4, 4, 0, 6, 0, 'Sofyan', '0.0'],
       [2, 9, 'La4', 'A4', 305, 305, 1, 12, 300, 95, 96, '', '0.0833333333333'],
-      [3, 9, 'La4', 'A4', 305, 305, 1, 32, 100, 95, 96, '', '0.1145833333333'],
+      [3, 9, 'La4', 'A4', 305, 305, 1, 64, 100, 95, 96, '', '0.1145833333333'],
     ]
     let err
     try {
@@ -291,7 +318,7 @@ describe('convertSymbTr', () => {
     }
     expect(err).toBeInstanceOf(Error)
     expect(err.message).toMatch(/Sira 2.*1\/12/s)
-    expect(err.message).toMatch(/Sira 3.*1\/32/s)
+    expect(err.message).toMatch(/Sira 3.*1\/64/s)
   })
 
   it('desteklenmeyen işaret hata verir', () => {
@@ -489,7 +516,7 @@ describe('mevcut üç parça aynı JSON üretir (bayt bayt)', () => {
   // kaynak biçiminde (Kod 9, Pay/Payda, Offset, Soz1) bir txt kurulur ve dönüştürücüden geçirilir; çıktı
   // depodaki dosyayla bayt bayt aynı olmalı. Gerçek txt'lerle karşılaştırma elle yapılır: dönüştürücü
   // çalıştırılır ve `git diff --exit-code src/content/parcalar/*.json` boş olmalı.
-  const UNITS = { whole: 64, half: 32, quarter: 16, eighth: 8, sixteenth: 4 }
+  const UNITS = { whole: 64, half: 32, quarter: 16, eighth: 8, sixteenth: 4, thirtysecond: 2 }
   const unitsOf = (e) => UNITS[e.dur] * (e.dotted ? 1.5 : 1)
   const gcd = (a, b) => (b === 0 ? a : gcd(b, a % b))
   const notaAE = ({ step, octave, acc }) => `${step}${octave}${acc === 0 ? '' : `${acc < 0 ? 'b' : '#'}${Math.abs(acc)}`}`

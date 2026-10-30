@@ -83,6 +83,73 @@ describe('toToneEvents', () => {
     expect('legato' in tones[0]!).toBe(false)
   })
 
+  describe('kesik (staccato)', () => {
+    const G4 = { step: 'G', octave: 4, acc: 0 } as const
+    const A4 = { step: 'A', octave: 4, acc: 0 } as const
+
+    it('kesik nota yarı sürede çalar, kalan yarı sustur; sonraki notanın zamanı değişmez', () => {
+      const normal: MusicEvent[] = [
+        { kind: 'note', pitch: G4, dur: 'quarter' },
+        { kind: 'note', pitch: A4, dur: 'quarter' },
+      ]
+      const kesik: MusicEvent[] = [{ ...normal[0]!, kesik: true } as MusicEvent, normal[1]!]
+      const tones = toToneEvents(kesik, DEFAULT_TUNING)
+      expect(tones.map((t) => t.hz === null)).toEqual([false, true, false])
+      expect(tones[0]!.beats).toBeCloseTo(0.5, 6)
+      expect(tones[1]!.beats).toBeCloseTo(0.5, 6)
+      expect(tones[0]!.hz).toBeCloseTo(toToneEvents(normal, DEFAULT_TUNING)[0]!.hz!, 6)
+      // Toplam süre ve sonraki notanın başlangıç zamanı değişmez.
+      const toplam = (t: { beats: number }[]) => t.reduce((s, x) => s + x.beats, 0)
+      expect(Math.abs(toplam(tones) - toplam(toToneEvents(normal, DEFAULT_TUNING)))).toBeLessThan(1e-6)
+      expect(Math.abs(tones[0]!.beats + tones[1]!.beats - 1)).toBeLessThan(1e-6)
+      expect(tones[2]!.hz).toBeCloseTo(toToneEvents(normal, DEFAULT_TUNING)[1]!.hz!, 6)
+    })
+
+    it('noktalı kesik nota da yarısı kadar çalar', () => {
+      const [ses, sus] = toToneEvents([{ kind: 'note', pitch: G4, dur: 'quarter', dotted: true, kesik: true }], DEFAULT_TUNING)
+      expect(ses!.beats).toBeCloseTo(0.75, 6)
+      expect(sus).toEqual({ hz: null, beats: expect.closeTo(0.75, 6) })
+    })
+
+    it('kesik nota bir sonrakine bağlı ya da bağsız olsa da aynı: bağ sonraki sesi legato yapmaz (araya sus girer)', () => {
+      const tones = toToneEvents(
+        [
+          { kind: 'note', pitch: G4, dur: 'quarter', kesik: true, bag: true },
+          { kind: 'note', pitch: A4, dur: 'quarter' },
+        ],
+        DEFAULT_TUNING,
+      )
+      expect(tones.map((t) => t.hz === null)).toEqual([false, true, false])
+      expect(tones.some((t) => t.legato)).toBe(false)
+    })
+
+    it('bağlı (tie) zincirin son notası kesikse yalnız o notanın yarısı susar; zincirin ortasındaki kesik yok sayılır', () => {
+      const tones = toToneEvents(
+        [
+          { kind: 'note', pitch: G4, dur: 'quarter', tie: true },
+          { kind: 'note', pitch: G4, dur: 'quarter', kesik: true },
+        ],
+        DEFAULT_TUNING,
+      )
+      expect(tones.map((t) => t.hz === null)).toEqual([false, true])
+      expect(tones[0]!.beats).toBeCloseTo(1.5, 6)
+      expect(tones[1]!.beats).toBeCloseTo(0.5, 6)
+      const ortada = toToneEvents(
+        [
+          { kind: 'note', pitch: G4, dur: 'quarter', tie: true, kesik: true },
+          { kind: 'note', pitch: G4, dur: 'quarter' },
+        ],
+        DEFAULT_TUNING,
+      )
+      expect(ortada).toHaveLength(1)
+      expect(ortada[0]!.beats).toBeCloseTo(2, 6)
+    })
+
+    it('kesiksiz notalarda çıktı bugünküyle aynıdır', () => {
+      expect(toToneEvents([{ kind: 'note', pitch: G4, dur: 'quarter' }], DEFAULT_TUNING)).toHaveLength(1)
+    })
+  })
+
   describe('bağlı notalar', () => {
     const A4 = { step: 'A', octave: 4, acc: 0 } as const
     const E5 = { step: 'E', octave: 5, acc: 0 } as const

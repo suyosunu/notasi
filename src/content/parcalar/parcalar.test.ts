@@ -233,6 +233,16 @@ describe('toParca', () => {
     const data = { ...base, olcu: [[{ kind: 'rest', dur: 'sixteenth' }]] }
     expect(toParca(data).olcu[0]![0]).toEqual({ kind: 'rest', dur: 'sixteenth' })
   })
+  it('otuzikilik ve noktalı otuzikilik süreleri kabul edilir', () => {
+    const pitch = { step: 'E', octave: 5, acc: 0 }
+    const olay = [
+      { kind: 'note', pitch, dur: 'thirtysecond' },
+      { kind: 'note', pitch, dur: 'thirtysecond', dotted: true },
+      { kind: 'rest', dur: 'thirtysecond' },
+    ]
+    expect(toParca({ ...base, olcu: [olay] }).olcu[0]).toEqual(olay)
+    expect(() => toParca({ ...base, olcu: [[{ kind: 'rest', dur: 'sixtyfourth' }]] })).toThrow()
+  })
   it('bağı korur', () => {
     const pitch = { step: 'E', octave: 5, acc: 0 }
     const data = { ...base, olcu: [[{ kind: 'note', pitch, dur: 'half', tie: true }, { kind: 'note', pitch, dur: 'half' }]] }
