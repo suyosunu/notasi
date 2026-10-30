@@ -14,7 +14,7 @@ Bu belge uygulamanın tamamı için bir sıra önerir. Her seviyede neyin öğre
 - **Seviye 0–3 tam.** Her konunun önce dersi var, sonra alıştırması. Bunların yanında etütler, usul vurma ve hedeflerin işaretlendiği "Yolum" ekranı var.
 - **Seviye 3 (2026-10-30).** Üçüncü kademe perdeleri, kademe geçiş etütleri, dörtlü ve beşliler, Rast ve Nevâ makamları ve "Yine Bağlandı Dil" aranağmesi.
 - **Ney araçları.** Kalibrasyon, akort göstergesi, uzun ses takibi, başpare koy-çek alıştırması ve nefes egzersizi.
-- **Parçalar.** 3 parça var: Dertli Dolap, Dağlar ile Taşlar ile, Hak Teâlâ. Her biri dinlenebilir; hız ayarlanabilir, usul eşliği açılabilir.
+- **Parçalar.** 4 parça var: Dertli Dolap, Dağlar ile Taşlar ile, Hak Teâlâ ve Yine Bağlandı Dil aranağmesi. Her biri dinlenebilir; hız ayarlanabilir, usul eşliği açılabilir.
 - **Makam ve usul.** 4 makam ve 8 usul.
 - **Sesler.** Varsayılan ney sesi Shakuhachi. Usul için 6 ses seçeneği var; varsayılanı Tahta. İnsan sesi seçeneği deneme aşamasında.
 
