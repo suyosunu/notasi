@@ -1170,6 +1170,21 @@ describe('Seviye 3 teori ve makam dersleri', () => {
     for (const x of [rast.durak, rast.guclu, rast.yeden]) expect(m).toContain(x)
   })
 
+  it('Eviç/Acem sırası doğru anılır: Rast dizisinde yedinci, Nevâ dizisinde altıncı ses', () => {
+    const rast = makam('rast')
+    const neva = makam('neva')
+    expect(rast.dizi[6]).toEqual({ step: 'F', octave: 5, acc: 4 }) // Eviç
+    expect(rast.inis![6]).toEqual({ step: 'F', octave: 5, acc: 0 }) // Acem
+    expect(neva.dizi[5]).toEqual({ step: 'F', octave: 5, acc: 4 }) // Eviç
+    const r = metin('makam:rast')
+    expect(r).toMatch(/Rast'tan sayınca yedinci ses Acem/)
+    expect(r).toMatch(/yedinci ses Eviç/)
+    expect(r).toMatch(/yedinci sesin değiştiğini/)
+    expect(r).not.toMatch(/altıncı/)
+    expect(metin('makam:neva')).toMatch(/altıncı/)
+    expect(metin('makam:neva')).not.toMatch(/yedinci/)
+  })
+
   it('makam:giris: durak, güçlü, yeden, asma karar, seyir; makam dörtlü ve beşliden kurulur (Rast örneği)', () => {
     const m = metin('makam:giris')
     for (const terim of ['dizi', 'durak', 'güçlü', 'yeden', 'asma karar', 'seyir', 'dörtlü', 'beşli']) expect(m, terim).toContain(terim)

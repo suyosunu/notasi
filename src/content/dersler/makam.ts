@@ -100,7 +100,7 @@ export const MAKAM_DERSLERI: Ders[] = [
       {
         tur: 'porte',
         olaylar: diziEvents(RAST.dizi, 'quarter'),
-        aciklama: "Çıkış: Rast'tan Gerdâniye'ye, her ses bir vuruş. Altıncı ses Eviç'tir: önünde bakiye diyezi vardır.",
+        aciklama: "Çıkış: Rast'tan Gerdâniye'ye, her ses bir vuruş. Rast'tan sayınca yedinci ses Eviç'tir: önünde bakiye diyezi vardır.",
         bpm: 60,
       },
       {
@@ -110,7 +110,7 @@ export const MAKAM_DERSLERI: Ders[] = [
       {
         tur: 'porte',
         olaylar: diziEvents(inisDizisi(RAST), 'quarter'),
-        aciklama: "İniş: Gerdâniye'den Rast'a, her ses bir vuruş. Altıncı ses Acem'dir: Fa, önünde işaret yok.",
+        aciklama: "İniş: Gerdâniye'den Rast'a, her ses bir vuruş. Rast'tan sayınca yedinci ses Acem'dir (Gerdâniye'den sayınca ikinci ses): Fa, önünde işaret yok.",
         bpm: 60,
       },
       {
@@ -126,9 +126,9 @@ export const MAKAM_DERSLERI: Ders[] = [
       {
         tur: 'dene',
         adimlar: [
-          'Makam bölümünde Rast\'ı aç ve "🔊 Diziyi dinle" ile çıkışı ve inişi dinle; altıncı sesin değiştiğini duy.',
+          'Makam bölümünde Rast\'ı aç ve "🔊 Diziyi dinle" ile çıkışı ve inişi dinle; yedinci sesin değiştiğini duy.',
           "Çıkışta Rast'tan Gerdâniye'ye sekiz sesi tek tek çal; Eviç'te parmağını dikkatle koy.",
-          "İnişte Gerdâniye'den Rast'a çal; altıncı sesi Acem olarak çal.",
+          "İnişte Gerdâniye'den Rast'a çal; yedinci sesi Acem olarak çal.",
           'Rast dizisi etüdünü aç ve ♩ = 60\'ta metronomla çal.',
         ],
       },
