@@ -151,7 +151,7 @@ export async function playTones(events: ToneEvent[], bpm = 60, voice: NeySesi = 
 /**
  * Tek seferlik çalma: önce çalan her şeyi durdurur (aynı anda yalnızca bir ses), kodu evaluate eder ve
  * `durationMs` + kuyruk sonra susturur; bitince ya da durdurulunca çözülür. Kod kendi tek seferlik maskesini
- * ve `.cpm()`'ini taşır (bkz. buildPatternCode, buildPieceCode).
+ * ve `.cpm()`'ini taşır (bkz. buildPatternCode, buildCalismaCode).
  * `onStart`: evaluate başarıyla bitince ve çağrı hâlâ güncelse (durdurulmadı, yenisi devralmadı) bir kez çağrılır;
  * desenin ilk sesi bundan yaklaşık zamanlayıcının ileri bakışı kadar (~0.1 sn) sonra duyulur (bkz. UsulVurma).
  */

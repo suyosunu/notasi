@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks'
-import { buildEtutCode } from '../audio/etut'
+import { buildCalismaCode } from '../audio/calisma'
 import { getNeySesi, playCode, stopAudio, unlockAudio } from '../audio/player'
 import { acquireWakeLock, releaseWakeLock } from '../audio/wakeLock'
 import { etutDersleri } from '../content/dersler'
@@ -76,11 +76,12 @@ export function EtutCalisma(props: { etut: Etut; onDone?: () => void; baslikGizl
       const unlocked = unlockAudio()
       unlocked.catch(() => {}) // kod üretimi fırlatırsa işlenmemiş ret kalmasın; hata aşağıda await ile yakalanır
       // "Metronomla çal" / "Usulle çal": yalnız eşlik; melodi kapalıyken anahtar anlamsızdır.
-      const { code, durationMs } = buildEtutCode(etut.olcu, settings.tuning, bpm, {
+      const { code, durationMs } = buildCalismaCode(etut.olcu, settings.tuning, bpm, {
         melodi,
-        metronom: melodi ? metronom : true,
+        eslik: melodi ? (metronom ? 'usul' : 'yok') : 'usul',
         voice: getNeySesi(),
         ...(usul ? { usul } : {}),
+        isaret: false,
       })
       await unlocked
       if (run !== runRef.current) return

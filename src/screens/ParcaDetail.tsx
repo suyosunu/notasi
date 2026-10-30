@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
 import { getNeySesi, playCode, stopAudio, unlockAudio } from '../audio/player'
-import { buildPieceCode } from '../audio/piece'
+import { buildCalismaCode } from '../audio/calisma'
 import { acquireWakeLock, releaseWakeLock } from '../audio/wakeLock'
 import { PARCALAR } from '../content/parcalar'
 import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
@@ -77,7 +77,13 @@ export function ParcaDetail({ parcaId }: { parcaId: string }) {
     try {
       const unlocked = unlockAudio()
       unlocked.catch(() => {}) // kod üretimi fırlatırsa işlenmemiş ret kalmasın; hata aşağıda await ile yakalanır
-      const { code, durationMs } = buildPieceCode(piece, settings.tuning, bpm, withUsul, getNeySesi())
+      const { code, durationMs } = buildCalismaCode(piece.olcu, settings.tuning, bpm, {
+        melodi: true,
+        eslik: withUsul ? 'usul' : 'yok',
+        voice: getNeySesi(),
+        ...(usul ? { usul } : {}),
+        isaret: false,
+      })
       await unlocked
       if (run !== runRef.current) return
       await playCode(code, durationMs)

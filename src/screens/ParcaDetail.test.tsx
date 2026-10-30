@@ -2,11 +2,15 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/pr
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getNeySesi, playCode, stopAudio, unlockAudio } from '../audio/player'
 import { melodyChain, toToneEvents } from '../audio/pattern'
-import { buildPieceCode } from '../audio/piece'
+import type { NeySesi } from '../audio/pattern'
+import { buildCalismaCode } from '../audio/calisma'
 import { acquireWakeLock, releaseWakeLock } from '../audio/wakeLock'
 import { PARCALAR } from '../content/parcalar'
+import type { Parca } from '../content/parcalar'
+import { USULLER } from '../content/usuller'
 import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
 import { DEFAULT_TUNING } from '../music/ahenk'
+import type { Tuning } from '../music/ahenk'
 import { getSettings, isaretEkle, resetDbForTests, saveSettings } from '../store/db'
 import { ParcaDetail } from './ParcaDetail'
 
@@ -47,6 +51,15 @@ async function renderParca(id: string) {
 }
 
 const byId = (id: string) => PARCALAR.find((p) => p.id === id)!
+/** ParcaDetail'in çalım kodu: giriş sayımı + melodi (+ usul eşliği). */
+const parcaKodu = (p: Parca, tuning: Tuning, bpm: number, withUsul: boolean, voice: NeySesi = 'shakuhachi') =>
+  buildCalismaCode(p.olcu, tuning, bpm, {
+    melodi: true,
+    eslik: withUsul ? 'usul' : 'yok',
+    voice,
+    usul: USULLER.find((u) => u.id === p.usul)!,
+    isaret: false,
+  })
 
 async function listenButton() {
   const btn = screen.getByRole('button', { name: '🔊 Dinle' }) as HTMLButtonElement
@@ -135,12 +148,12 @@ describe('ParcaDetail', () => {
     expect(unlockAudio).toHaveBeenCalledTimes(1)
     await waitFor(() => expect(playCode).toHaveBeenCalledTimes(1))
     const p = byId('hak-teala')
-    const expected = buildPieceCode(p, tuning, 60, true)
+    const expected = parcaKodu(p, tuning, 60, true)
     const [code, durationMs] = vi.mocked(playCode).mock.calls[0]!
     expect(code).toBe(expected.code)
     expect(durationMs).toBe(expected.durationMs)
     const steps = /freq\("([^"]*)"\)/.exec(code)![1]!.split(' ')
-    expect(steps).toHaveLength(toToneEvents(p.olcu.flat(), tuning).length)
+    expect(steps).toHaveLength(toToneEvents(p.olcu.flat(), tuning).length + 1) // + giriş sayımı susu
     expect(code).toContain('usul_tahta') // usul deseni (varsayılan usul sesi)
     expect(vi.mocked(unlockAudio).mock.invocationCallOrder[0]!).toBeLessThan(
       vi.mocked(playCode).mock.invocationCallOrder[0]!,
@@ -153,8 +166,8 @@ describe('ParcaDetail', () => {
     fireEvent.click(await listenButton())
     await waitFor(() => expect(playCode).toHaveBeenCalledTimes(1))
     const [code] = vi.mocked(playCode).mock.calls[0]!
-    expect(code).toBe(buildPieceCode(byId('hak-teala'), DEFAULT_TUNING, 60, true, 'nefesli').code)
-    expect(code).toContain(melodyChain('nefesli', toToneEvents(byId('hak-teala').olcu.flat(), DEFAULT_TUNING), { bpm: 60 }))
+    expect(code).toBe(parcaKodu(byId('hak-teala'), DEFAULT_TUNING, 60, true, 'nefesli').code)
+    expect(code).toContain(melodyChain('nefesli', toToneEvents(byId('hak-teala').olcu.flat(), DEFAULT_TUNING), { lead: 4, bpm: 60 }))
     vi.mocked(getNeySesi).mockReturnValue('shakuhachi')
   })
 
@@ -168,7 +181,7 @@ describe('ParcaDetail', () => {
     fireEvent.click(btn)
     await waitFor(() => expect(playCode).toHaveBeenCalledTimes(1))
     const [code] = vi.mocked(playCode).mock.calls[0]!
-    expect(code).toBe(buildPieceCode(byId('hak-teala'), DEFAULT_TUNING, 90, false).code)
+    expect(code).toBe(parcaKodu(byId('hak-teala'), DEFAULT_TUNING, 90, false).code)
     expect(code).not.toContain('usul_')
   })
 

@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/preact'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { buildEtutCode } from '../audio/etut'
+import { buildCalismaCode } from '../audio/calisma'
 import { getNeySesi, playCode, stopAudio, unlockAudio } from '../audio/player'
 import { SHAKUHACHI_SOUND } from '../audio/shakuhachi'
 import { acquireWakeLock, releaseWakeLock } from '../audio/wakeLock'
@@ -41,7 +41,7 @@ afterEach(() => cleanup())
 
 const etut = (id: string) => ETUTLER.find((e) => e.id === id)!
 const NEVA = etut('tek-neva')
-const SES = { melodi: true, metronom: true, voice: 'shakuhachi' } as const
+const SES = { melodi: true, eslik: 'usul', voice: 'shakuhachi', isaret: false } as const
 
 /** Etüt dersleri okunmuş sayılır; kapı açılır. */
 async function dersleriOku() {
@@ -142,7 +142,7 @@ describe('EtutCalisma', () => {
     fireEvent.click(await dinleBtn())
     expect(unlockAudio).toHaveBeenCalledTimes(1)
     await waitFor(() => expect(playCode).toHaveBeenCalledTimes(1))
-    const expected = buildEtutCode(NEVA.olcu, tuning, 60, SES)
+    const expected = buildCalismaCode(NEVA.olcu, tuning, 60, SES)
     const [code, durationMs] = vi.mocked(playCode).mock.calls[0]!
     expect(code).toBe(expected.code)
     expect(durationMs).toBe(expected.durationMs)
@@ -162,7 +162,7 @@ describe('EtutCalisma', () => {
     fireEvent.click(btn)
     await waitFor(() => expect(playCode).toHaveBeenCalledTimes(1))
     expect(vi.mocked(playCode).mock.calls[0]![0]).toBe(
-      buildEtutCode(NEVA.olcu, DEFAULT_TUNING, 80, { ...SES, metronom: false }).code,
+      buildCalismaCode(NEVA.olcu, DEFAULT_TUNING, 80, { ...SES, eslik: 'yok' }).code,
     )
   })
 
@@ -173,7 +173,7 @@ describe('EtutCalisma', () => {
     fireEvent.click(metronomlaBtn())
     await waitFor(() => expect(playCode).toHaveBeenCalledTimes(1))
     const [code, durationMs] = vi.mocked(playCode).mock.calls[0]!
-    const expected = buildEtutCode(NEVA.olcu, DEFAULT_TUNING, 60, { ...SES, melodi: false })
+    const expected = buildCalismaCode(NEVA.olcu, DEFAULT_TUNING, 60, { ...SES, melodi: false })
     expect(code).toBe(expected.code)
     expect(durationMs).toBe(expected.durationMs)
     expect(code).not.toContain(SHAKUHACHI_SOUND)
@@ -186,7 +186,7 @@ describe('EtutCalisma', () => {
     fireEvent.click(await dinleBtn())
     await waitFor(() => expect(playCode).toHaveBeenCalledTimes(1))
     expect(vi.mocked(playCode).mock.calls[0]![0]).toBe(
-      buildEtutCode(NEVA.olcu, DEFAULT_TUNING, 60, { ...SES, voice: 'nefesli' }).code,
+      buildCalismaCode(NEVA.olcu, DEFAULT_TUNING, 60, { ...SES, voice: 'nefesli' }).code,
     )
     vi.mocked(getNeySesi).mockReturnValue('shakuhachi')
   })
@@ -307,12 +307,12 @@ describe('EtutCalisma', () => {
     expect(screen.queryByRole('button', { name: '🎵 Metronomla çal' })).toBeNull()
     fireEvent.click(await dinleBtn())
     await waitFor(() => expect(playCode).toHaveBeenCalledTimes(1))
-    const dinle = buildEtutCode(semaiEtut.olcu, DEFAULT_TUNING, 60, { ...SES, usul: semai })
+    const dinle = buildCalismaCode(semaiEtut.olcu, DEFAULT_TUNING, 60, { ...SES, usul: semai })
     expect(vi.mocked(playCode).mock.calls[0]).toEqual([dinle.code, dinle.durationMs])
     fireEvent.click(screen.getByRole('button', { name: '⏹ Durdur' }))
     fireEvent.click(await screen.findByRole('button', { name: '🥁 Usulle çal' }))
     await waitFor(() => expect(playCode).toHaveBeenCalledTimes(2))
-    const usulle = buildEtutCode(semaiEtut.olcu, DEFAULT_TUNING, 60, { ...SES, melodi: false, usul: semai })
+    const usulle = buildCalismaCode(semaiEtut.olcu, DEFAULT_TUNING, 60, { ...SES, melodi: false, usul: semai })
     expect(vi.mocked(playCode).mock.calls[1]).toEqual([usulle.code, usulle.durationMs])
     // 3/4: satırda üç ölçü (8 ölçü → 3 satır).
     expect(document.querySelectorAll('[data-testid="score-row"]')).toHaveLength(3)
