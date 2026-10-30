@@ -57,6 +57,22 @@ describe('MakamDetail', () => {
     expect(screen.getByText(byId('rast').seyir)).toBeTruthy()
   })
 
+  it('Nevâ: Segâh koma bemolü ve Eviç bakiye diyezi işaretleri çizilir', () => {
+    render(<MakamDetail makamId="neva" />)
+    expect(accs()).toEqual(['-1', '4'])
+  })
+
+  it('yapı satırı varsa "Yapı" başlığıyla gösterilir; yoksa hiç çıkmaz', () => {
+    render(<MakamDetail makamId="neva" />)
+    expect(screen.getByText('Yapı').nextElementSibling?.textContent).toBe("Dügâh'ta Uşşak dörtlüsü + Nevâ'da Rast beşlisi")
+    cleanup()
+    render(<MakamDetail makamId="rast" />)
+    expect(screen.getByText('Yapı').nextElementSibling?.textContent).toBe("Rast'ta Rast beşlisi + Nevâ'da Rast dörtlüsü")
+    cleanup()
+    render(<MakamDetail makamId="ussak" />)
+    expect(screen.queryByText('Yapı')).toBeNull()
+  })
+
   it('Uşşak ve Hicaz donanımı', () => {
     render(<MakamDetail makamId="ussak" />)
     expect(screen.getByText('Donanım').nextElementSibling?.textContent).toBe('Si koma bemolü')

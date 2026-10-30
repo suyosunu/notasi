@@ -11,9 +11,15 @@ function makam(id: string) {
 }
 
 describe('MAKAMLAR (araştırma §2)', () => {
-  it('Rast, Uşşak, Hicaz sırasıyla', () => {
-    expect(MAKAMLAR.map((m) => m.id)).toEqual(['rast', 'ussak', 'hicaz'])
-    expect(MAKAMLAR.map((m) => m.name)).toEqual(['Rast', 'Uşşak', 'Hicaz'])
+  it('Rast, Nevâ, Uşşak, Hicaz sırasıyla', () => {
+    expect(MAKAMLAR.map((m) => m.id)).toEqual(['rast', 'neva', 'ussak', 'hicaz'])
+    expect(MAKAMLAR.map((m) => m.name)).toEqual(['Rast', 'Nevâ', 'Uşşak', 'Hicaz'])
+  })
+
+  it("Rast'ın yapı satırı Rast beşlisi ve Nevâ'da Rast dörtlüsünü söyler; Uşşak ve Hicaz'da yoktur", () => {
+    expect(makam('rast').yapi).toBe("Rast'ta Rast beşlisi + Nevâ'da Rast dörtlüsü")
+    expect(makam('ussak').yapi).toBeUndefined()
+    expect(makam('hicaz').yapi).toBeUndefined()
   })
 
   it('Rast: durak Rast, güçlü Nevâ, yeden Irak; donanım Si koma bemolü + Fa bakiye diyezi', () => {
@@ -25,6 +31,28 @@ describe('MAKAMLAR (araştırma §2)', () => {
     ])
     // Rast, Dügâh, Segâh, Çârgâh, Nevâ, Hüseynî, Eviç, Gerdâniye; Do4 = 0 koma konumları.
     expect(komalar(m.dizi)).toEqual([31, 40, 48, 53, 62, 71, 79, 84])
+  })
+
+  it('Nevâ makamı: durak Dügâh, güçlü Nevâ, yeden Rast; donanım Si koma bemolü + Fa bakiye diyezi', () => {
+    const m = makam('neva')
+    expect([m.durak, m.guclu, m.yeden]).toEqual(['Dügâh', 'Nevâ', 'Rast'])
+    expect(m.donanim.map((p) => [p.step, p.acc])).toEqual([
+      ['B', -1],
+      ['F', 4],
+    ])
+    // Dügâh, Segâh, Çârgâh, Nevâ, Hüseynî, Eviç, Gerdâniye, Muhayyer.
+    expect(komalar(m.dizi)).toEqual([40, 48, 53, 62, 71, 79, 84, 93])
+    expect(m.inis).toBeUndefined()
+    expect(m.yapi).toBe("Dügâh'ta Uşşak dörtlüsü + Nevâ'da Rast beşlisi")
+  })
+
+  it("Nevâ ile Uşşak'ın dizileri yalnız 6. seste ayrılır: Nevâ'da Eviç, Uşşak'ta Acem", () => {
+    const neva = makam('neva').dizi
+    const ussak = makam('ussak').dizi
+    const farkli = neva.map((_, i) => i).filter((i) => writtenKoma(neva[i]!) !== writtenKoma(ussak[i]!))
+    expect(farkli).toEqual([5])
+    expect(neva[5]).toEqual({ step: 'F', octave: 5, acc: 4 })
+    expect(ussak[5]).toEqual({ step: 'F', octave: 5, acc: 0 })
   })
 
   it('Uşşak: durak Dügâh, güçlü Nevâ, yeden Rast; donanım yalnızca Si koma bemolü', () => {
@@ -54,8 +82,8 @@ describe('MAKAM_TOPICS', () => {
   it('makam bölümüne aittir ve her makam için üç kart türü içerir', () => {
     expect(MAKAM_TOPICS.every((t) => t.section === 'makam')).toBe(true)
     const cards = MAKAM_TOPICS.flatMap((t) => t.cards)
-    expect(cards).toHaveLength(9)
-    for (const id of ['rast', 'ussak', 'hicaz']) {
+    expect(cards).toHaveLength(12)
+    for (const id of ['rast', 'neva', 'ussak', 'hicaz']) {
       for (const kind of ['dizi', 'durak', 'guclu']) expect(cards).toContain(`makam-${kind}:${id}`)
     }
   })

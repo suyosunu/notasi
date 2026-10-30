@@ -20,22 +20,32 @@ afterEach(() => {
 })
 
 describe('MakamSection', () => {
-  it('üç makam kartını listeler; her biri kendi sayfasına bağlanır', () => {
+  it('dört makam kartını listeler; her biri kendi sayfasına bağlanır', () => {
     render(<MakamSection />)
     expect(screen.getByRole('heading', { name: /Makam/ })).toBeTruthy()
     for (const m of MAKAMLAR) {
-      const link = screen.getByRole('link', { name: new RegExp(m.name) })
+      const link = screen.getByText(m.name, { selector: '.topic-title' }).closest('a')!
       expect(link.getAttribute('href')).toBe(`#/makam/${m.id}`)
     }
-    expect(screen.getAllByRole('listitem')).toHaveLength(3)
+    expect(screen.getAllByRole('listitem')).toHaveLength(4)
   })
 
-  it('makam kartlarında önerilen seviye etiketi: Rast 3, Uşşak 4, Hicaz 4', () => {
+  it('makam kartlarında önerilen seviye etiketi: Rast 3, Nevâ 3, Uşşak 4, Hicaz 4', () => {
     render(<MakamSection />)
     const etiket = (ad: string) => screen.getByText(ad).closest('a')!.querySelector('.seviye-etiket')?.textContent
     expect(etiket('Rast')).toBe('Seviye 3')
+    expect(etiket('Nevâ')).toBe('Seviye 3')
     expect(etiket('Uşşak')).toBe('Seviye 4')
     expect(etiket('Hicaz')).toBe('Seviye 4')
+  })
+
+  it("Nevâ kartı 'Seviye 3' etiketiyle Rast'tan sonra gelir", () => {
+    render(<MakamSection />)
+    const adlar = screen.getAllByRole('listitem').map((li) => li.querySelector('.topic-title')!.textContent ?? '')
+    const rast = adlar.indexOf('Rast')
+    const neva = adlar.indexOf('Nevâ')
+    expect(neva).toBe(rast + 1)
+    expect(screen.getByText('Nevâ').closest('a')!.querySelector('.seviye-etiket')?.textContent).toBe('Seviye 3')
   })
 
   it('sorulara ve ana ekrana bağlantı verir', () => {
@@ -50,8 +60,9 @@ describe('MakamQuiz', () => {
     render(<MakamQuiz />)
     expect(await screen.findByText(/Makam · 1\/8/)).toBeTruthy()
     const opts = document.querySelectorAll('.option')
-    expect(opts).toHaveLength(4)
-    expect(new Set([...opts].map((o) => o.textContent)).size).toBe(4)
+    // Dizi sorusunda dört makam + çeldirici (5), durak ve güçlüde 4 seçenek.
+    expect([4, 5]).toContain(opts.length)
+    expect(new Set([...opts].map((o) => o.textContent)).size).toBe(opts.length)
   })
 
   it('cevap bir deneme ve Leitner kartı yazar (makam konusu)', async () => {

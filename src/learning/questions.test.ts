@@ -407,11 +407,13 @@ describe('makam soruları', () => {
   const MAKAM_CARDS = MAKAM_TOPICS.flatMap((t) => t.cards)
 
   for (const card of MAKAM_CARDS) {
-    it(`${card}: 4 farklı seçenek, cevap içinde, aynı seed aynı soru`, () => {
+    // Dizi sorusunda dört makamın adı ve bir çeldirici vardır (5 seçenek); durak ve güçlüde 4.
+    const optionCount = card.startsWith('makam-dizi:') ? 5 : 4
+    it(`${card}: ${optionCount} farklı seçenek, cevap içinde, aynı seed aynı soru`, () => {
       for (let seed = 1; seed <= 20; seed++) {
         const q = makeQuestion(card, seededRng(seed))
-        expect(q.options).toHaveLength(4)
-        expect(new Set(q.options).size).toBe(4)
+        expect(q.options).toHaveLength(optionCount)
+        expect(new Set(q.options).size).toBe(optionCount)
         expect(q.options).toContain(q.answer)
         expect(q.cardId).toBe(card)
         expect(q.topicId).toBe('makam')
@@ -421,12 +423,26 @@ describe('makam soruları', () => {
     })
   }
 
-  it('makam-dizi: porte gösterilir, cevap makam adı, seçenekler üç makam + Hüseynî', () => {
+  it('makam-dizi: porte gösterilir, cevap makam adı, seçenekler dört makam + Hüseynî', () => {
     const q = makeQuestion('makam-dizi:hicaz', seededRng(3))
     expect(q.prompt).toBe('Bu dizi hangi makamın?')
     expect(q.answer).toBe('Hicaz')
     expect(q.events).toHaveLength(8)
-    expect([...q.options].sort()).toEqual(['Hicaz', 'Hüseynî', 'Rast', 'Uşşak'].sort())
+    expect([...q.options].sort()).toEqual(['Hicaz', 'Hüseynî', 'Nevâ', 'Rast', 'Uşşak'].sort())
+  })
+
+  it('makam-dizi:neva: seçenekler dört makamın adı ve çeldirici, birbirinden farklı', () => {
+    for (let seed = 1; seed <= 20; seed++) {
+      const q = makeQuestion('makam-dizi:neva', seededRng(seed))
+      expect(q.answer).toBe('Nevâ')
+      expect(q.events).toHaveLength(8)
+      expect(new Set(q.options).size).toBe(q.options.length)
+      expect([...q.options].sort()).toEqual(['Hicaz', 'Hüseynî', 'Nevâ', 'Rast', 'Uşşak'].sort())
+    }
+  })
+
+  it("makam-dizi ipucu Nevâ'yı da anlatır", () => {
+    expect(makeQuestion('makam-dizi:neva', seededRng(1)).hint).toContain("Nevâ: Si koma bemolü ve Fa bakiye diyezi, Dügâh'tan başlar")
   })
 
   it('makam-durak / makam-guclu: soru metni, cevap ve Irak içermeyen perde adı seçenekleri', () => {

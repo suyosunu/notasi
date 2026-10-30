@@ -182,5 +182,6 @@ describe('ONERILEN_SEVIYE', () => {
     expect(ONERILEN_SEVIYE.usul.dolap).toBeUndefined()
     expect(ONERILEN_SEVIYE.parca['hak-teala']).toBe(3)
     expect(ONERILEN_SEVIYE.makam.rast).toBe(3)
+    expect(ONERILEN_SEVIYE.makam.neva).toBe(3)
   })
 })

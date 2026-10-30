@@ -88,6 +88,12 @@ export function MakamDetail({ makamId }: { makamId: string }) {
           <dt>Donanım</dt>
           <dd>{makam.donanim.map(donanimAdi).join(', ')}</dd>
         </div>
+        {makam.yapi && (
+          <div>
+            <dt>Yapı</dt>
+            <dd>{makam.yapi}</dd>
+          </div>
+        )}
       </dl>
 
       <h2>Seyir</h2>
