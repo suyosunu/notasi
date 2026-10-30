@@ -11,7 +11,8 @@ Bu belge uygulamanın tamamı için bir sıra önerir. Her seviyede neyin öğre
 ## 1. Bugün neredeyiz
 
 **Hazır olanlar (yayında):**
-- **Seviye 0–2 tam.** Her konunun önce dersi var, sonra alıştırması. Bunların yanında etütler, usul vurma ve hedeflerin işaretlendiği "Yolum" ekranı var.
+- **Seviye 0–3 tam.** Her konunun önce dersi var, sonra alıştırması. Bunların yanında etütler, usul vurma ve hedeflerin işaretlendiği "Yolum" ekranı var.
+- **Seviye 3 (2026-10-30).** Üçüncü kademe perdeleri, kademe geçiş etütleri, dörtlü ve beşliler, Rast ve Nevâ makamları ve "Yine Bağlandı Dil" aranağmesi.
 - **Ney araçları.** Kalibrasyon, akort göstergesi, uzun ses takibi, başpare koy-çek alıştırması ve nefes egzersizi.
 - **Parçalar.** 3 parça var: Dertli Dolap, Dağlar ile Taşlar ile, Hak Teâlâ. Her biri dinlenebilir; hız ayarlanabilir, usul eşliği açılabilir.
 - **Makam ve usul.** 4 makam ve 8 usul.
@@ -35,7 +36,7 @@ Bu belge uygulamanın tamamı için bir sıra önerir. Her seviyede neyin öğre
 |---|---|---|
 | **1. Deneme ve düzeltme** | Siz iPhone'da denedikçe çıkan sorunlar | Sürekli |
 | **2. Çalışma araçları** | Satır satır çalışma, döngü, mikrofonla nota takibi | Yapılmadı |
-| **3. Müfredat** | Seviye 3–7 (Aşama C–F) | Seviye 0–2 bitti |
+| **3. Müfredat** | Seviye 3–7 (Aşama C–F) | Seviye 0–3 bitti |
 | **4. Ses** | Kendi sesinizle hece kaydı, ses dengesi | İnsan sesi deneme aşamasında |
 | **5. Ürün** | Ücretli ve çok enstrümanlı uygulama | Yalnız fizibilite konuşuldu |
 
@@ -67,15 +68,15 @@ Bu araçlar hem etütlerde hem parçalarda çalışır:
 - Akort göstergesindeki perde algılamanın üstüne kurulur.
 - **Önce küçük bir deneme yapılır:** iPhone mikrofonu neyde hızlı nota geçişlerini güvenilir yakalıyor mu? Yakalamıyorsa takip yalnızca yavaş tempoda sunulur.
 
-### Adım 4 — Aşama C: Seviye 3 (orta-büyük)
+### Adım 4 — Aşama C: Seviye 3 (orta-büyük) — yapıldı (2026-10-30)
 İçeriği müfredat belgesinde, özetle:
 - **Perdeler:** Nim Şehnaz, Nim Hisar, kapalı Nevâ.
 - **Etüt:** kademe geçiş etütleri.
 - **Teori:** dörtlü ve beşliler.
 - **Makam:** Nevâ.
-- **Eserler:** "Yine bir gülnihal" ve Rast peşrevinin 1. hanesi.
+- **Eser:** "Yine Bağlandı Dil" aranağmesi (Nevâ, Zekâî Dede). "Yine bir gülnihal" ve Rast peşrevi Aşama E'ye (Seviye 5) taşındı: Gülnihal'in notaları birinci kademe pest seslerde, peşrev ise Sakîl usulünde.
 
-perde-2 sorularındaki çeldirici havuzu da bu aşamada düzeltilir.
+perde-2 sorularındaki çeldirici havuzu da bu aşamada düzeltildi.
 
 ### Adım 5 — Aşama D: Seviye 4 (orta-büyük)
 - **Ses ve teknik:** tiz sesler, dil teknikleri.
@@ -122,7 +123,7 @@ Bu noktada neyin ilk yılı (Seviye 0–4) ve çalışma araçları sağlam olur
 ## 5. Küçük açık işler
 
 Bunlar ilgili adımın içinde yapılır:
-- **perde-2 çeldirici havuzu:** Adım 4.
+- **perde-2 çeldirici havuzu:** Adım 4 (yapıldı, 2026-10-30).
 - **Etüt ve parça ekranlarının ortak çalma kodu, ses saatine bağlı vurgu:** Adım 2.
 - **Usul vurmadaki gecikme payı:** iPhone geri bildirimine göre ayarlanır, Adım 1.
 - **GitHub'daki kırmızı Cloudflare işareti:** Yayın çalışıyor ama işaret neden kırmızı, bakılmalı (Adım 1).

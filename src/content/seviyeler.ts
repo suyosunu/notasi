@@ -1,5 +1,6 @@
 import { NEFES_HEDEF_ID } from '../learning/baspare'
 import { ETUTLER } from './etutler'
+import { NEY_PERDELER } from './ney-perdeler'
 import type { PerdeId } from './ney-perdeler'
 import { USULLER } from './usuller'
 
@@ -187,6 +188,71 @@ const SEVIYE_2: Hedef[] = [
   },
 ]
 
+// Seviye 3'te 3. kademe perdeleri NEY_PERDELER sırasıyla (Hüseynî … Nim Hisar) çalışılır.
+const SEVIYE_3: Hedef[] = [
+  {
+    id: 's3-nota',
+    metin: 'Hüseynî, Acem, Gerdâniye, Muhayyer, kapalı Nevâ ve ara sesler konuları',
+    olcut: { tur: 'konular', topicIds: ['perde-2', 'perde-5'] },
+    rota: '/nota',
+  },
+  ...NEY_PERDELER.filter((p) => p.kademe === 3).map(
+    (p): Hedef => ({
+      id: `s3-${p.id}-8`,
+      metin: `${p.name}: 8 sn uzun ses`,
+      olcut: { tur: 'uzun-ses', perdeId: p.id, ms: 8000, cent: 20 },
+      rota: `/ney/${p.id}`,
+    }),
+  ),
+  {
+    id: 's3-kademe',
+    metin: 'Kademe geçiş etütleri',
+    olcut: {
+      tur: 'etutler',
+      etutIds: ['kademe-dugah-huseyni', 'kademe-rast-kapali-neva', 'kademe-cargah-gerdaniye', 'kademe-ara', 'kademe-nim-hisar'],
+    },
+    rota: '/ney',
+  },
+  { id: 's3-gecis', metin: 'İkinci ve üçüncü kademe arasında sesim kırılmadan geçiyor', olcut: { tur: 'onay' } },
+  {
+    id: 's3-besli',
+    metin: 'Dörtlü ve beşli dersini okudum',
+    olcut: { tur: 'ders', dersId: 'dortlu:besli' },
+    rota: dersRotasi('dortlu:besli'),
+  },
+  {
+    id: 's3-neva-besli',
+    metin: "Nevâ'dan Rast ve Bûselik beşlisi etütleri",
+    olcut: { tur: 'etutler', etutIds: ['neva-rast-besli', 'neva-buselik-besli'] },
+    rota: '/ney',
+  },
+  {
+    id: 's3-makam',
+    metin: 'Makamın unsurları dersini okudum',
+    olcut: { tur: 'ders', dersId: 'makam:giris' },
+    rota: dersRotasi('makam:giris'),
+  },
+  {
+    id: 's3-rast',
+    metin: 'Rast dizisi (çıkışta Eviç, inişte Acem)',
+    olcut: { tur: 'etutler', etutIds: ['dizi-rast'] },
+    rota: '/ney',
+  },
+  { id: 's3-neva', metin: 'Nevâ makamı dizisi', olcut: { tur: 'etutler', etutIds: ['dizi-neva'] }, rota: '/ney' },
+  {
+    id: 's3-eser',
+    metin: "Bir eseri metronomla çaldım (Yine Bağlandı Dil aranağmesi; öneri: tempo işaretinin %70'inden başla)",
+    olcut: { tur: 'onay' },
+    rota: '/parcalar/yine-baglandi-dil-aranagme',
+  },
+  {
+    id: 's3-hak-teala',
+    metin: "Hak Teâlâ'yı baştan sona çaldım",
+    olcut: { tur: 'onay' },
+    rota: '/parcalar/hak-teala',
+  },
+]
+
 export const SEVIYELER: Seviye[] = [
   {
     no: 0,
@@ -213,8 +279,8 @@ export const SEVIYELER: Seviye[] = [
     no: 3,
     ad: 'Üçüncü kademe, ilk makam',
     sure: '5–9. ay',
-    ozet: 'Hüseynî, Acem, Gerdâniye, Muhayyer ve kademe geçişleri; ilk makam Rast.',
-    hedefler: [],
+    ozet: "Hüseynî'den Muhayyer'e üçüncü kademe, kapalı Nevâ, Eviç, Nim Şehnaz, Nim Hisar; kademe geçişleri; beşliler; Rast ve Nevâ makamları.",
+    hedefler: SEVIYE_3,
   },
   {
     no: 4,

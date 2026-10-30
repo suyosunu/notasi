@@ -37,7 +37,7 @@ Bütün seviyelerde geçerli kurallar (kaynakların ortak noktası):
 | **0 Hazırlık** | 1–3 hafta | Neyin bölümleri, ahenk | Duruş ve tutuş, 4-4-4 nefes, dudak (ıslık), **ilk ses açık Nevâ**, uzun ses | — | Yalnız Nevâ uzun sesi | Başpareyi koyup Nevâ'yı arayıp bulmadan çıkarmak; akort içinde 5 sn kararlı ses (öneri) |
 | **1 İlk beş ses** | 3–10. hafta | Porte, sol anahtarı, süreler, sus, ölçü çizgisi, nefes işareti; perde ↔ solfej eşlemesi | **Nevâ → Çârgâh → Segâh → Dügâh → Rast** (her ses için ≈1 hafta uzun ses) | — | Tek ve iki perde etütleri, ♩ = 60–80; rast beşlisi etüdü | Rast gür ve sağlam; beş sesin hepsi akort içinde; her seste en az 8 sn (öneri) |
 | **2 Ara sesler, ilk usuller** | 2,5–5. ay | Diyez, bemol, Türk müziği koma işaretleri; noktalı nota, onaltılık, üçleme; usul kavramı | Ara sesler: Nim Hicaz, Kürdî, Bûselik; dille başlatma ve bağlı çalma | Usuller: **Nim Sofyan → Semâî → Sofyan**. Çârgâh, Kürdî ve Hicaz dörtlüleri tanıtılır | Usul etütleri; seviye sonunda uzun seslerden oluşan basit ilahi ve türküler | Yedi perde akort içinde; üç usulde birer etüt; bir ezgi ezbere |
-| **3 Üçüncü kademe, ilk makam** | 5–9. ay | Dörtlüler ve beşliler; makamın unsurları (dizi, durak, güçlü, yeden, seyir) | Hüseynî, Acem, açık Gerdâniye, açık Muhayyer; sonra Eviç, Nim Şehnaz, Nim Hisar; kapalı Nevâ; **kademe geçiş etütleri** | **Rast → Nevâ** | Rast beşlisi etütleri; "Yine bir gülnihal" (Dede Efendi); Rast peşrevinin 1. hanesi | Rast–Muhayyer arası bütün sesler; 2. ve 3. kademe arasında kırılmadan geçiş; bir Rast eseri |
+| **3 Üçüncü kademe, ilk makam** | 5–9. ay | Dörtlüler ve beşliler; makamın unsurları (dizi, durak, güçlü, yeden, seyir) | Hüseynî, Acem, açık Gerdâniye, açık Muhayyer; sonra Eviç, Nim Şehnaz, Nim Hisar; kapalı Nevâ; **kademe geçiş etütleri** | **Rast → Nevâ** | Rast beşlisi etütleri; "Yine Bağlandı Dil" aranağmesi (Zekâî Dede); "Yine bir gülnihal" ve Rast peşrevi Aşama E'ye taşındı | Rast–Muhayyer arası bütün sesler; 2. ve 3. kademe arasında kırılmadan geçiş; bir Rast eseri |
 | **4 Tiz sesler, basit makamlar** | 9–13. ay | Çeşni; basit makamların seyri | Tiz Segâh, Çârgâh, Nim Hicaz, Nevâ; dil teknikleri (legato, staccato) | **Uşşak → Bayâtî → Hüseynî → Muhayyer; Kürdî, Hicaz**. Usuller: Türk aksağı, Yürük Semâî, Devr-i Hindî | Aziz Dede Uşşak saz semaisi; "Dağlar ile taşlar ile"; Tanburi Cemil Bey Muhayyer peşrevi; Bayâtî yürük semâî | Tiz Nevâ'ya kadar dizi; üç farklı artikülasyon; bir hane ve bir ilahi |
 | **5 Dem ve köprü perdeler** | 13–17. ay | Şed makam, transpoze, geçki | Dem sesler (Yegâh, kaba Çârgâh, kaba Dügâh, kaba Rast); köprü perdeler (Irak, Acemaşiran, Hüseynîaşiran) | **Segâh, Bûselik, Karcığar, Acemaşiran, Nihâvend**. Usuller: Düyek, Aksak | Yusuf Paşa Segâh peşrevi; Salih Dede Acemaşiran peşrevi; Segâh ilahisi | Yegâh–tiz Nevâ arası 2,5 oktav akort içinde; düyek ya da aksak usulünde bir eser |
 | **6 Süslemeler** | 17–21. ay | Nüans işaretleri | Çarpma, portamento, **vibrato**; ara perdelerin tamamı | Hüzzam, Sabâ, Mâhur, Hicazkâr, Nikriz…; Aksak Semâî | Saz semaisinin tamamı; Rauf Yekta Mâhur peşrevi | Kontrollü vibrato; bir saz semaisinin tamamı |
@@ -78,11 +78,13 @@ Aşama B ile bu seviye tamamlandı (2026-10-29).
 - ✅ **Yolum:** Seviye 2'nin hedefleri tanımlı.
 
 ### Seviye 3
-- ✅ **Üçüncü kademe perdeleri:** Hüseynî, Acem, açık Gerdâniye, açık Muhayyer ve Eviç var. Nim Şehnaz, Nim Hisar ve kapalı Nevâ yok.
-- ❌ **Kademe geçiş etütleri:** Yok.
-- 🟡 **Makamın unsurları:** Makam bölümünde durak, güçlü, yeden ve seyir anlatılıyor. Dörtlü ve beşli yapısı anlatılmıyor.
-- 🟡 **Makamlar:** Rast var, Nevâ yok.
-- ❌ **Rast eseri:** Yok. "Yine bir gülnihal" eklenecek.
+Aşama C ile bu seviye tamamlandı (2026-10-30).
+- ✅ **Üçüncü kademe perdeleri:** Hüseynî, Acem, açık Gerdâniye, açık Muhayyer, kapalı Nevâ, Eviç, Nim Şehnaz ve Nim Hisar; her birinin dersi, parmak şeması ve 8 sn uzun ses hedefi var.
+- ✅ **Kademe geçiş etütleri:** Beş etüt: Dügâh–Hüseynî, Rast–kapalı Nevâ, Çârgâh–Gerdâniye ile Nevâ–Muhayyer, Segâh–Eviç ile Nim Hicaz–Nim Şehnaz, Nim Hisar. Hepsinin ortak bir dersi var.
+- ✅ **Dörtlü ve beşliler, makamın unsurları:** Beşli dersi, Nevâ'dan Rast ve Bûselik beşlisi etütleri ve makam giriş dersi (dizi, durak, güçlü, yeden, seyir).
+- ✅ **Makamlar:** Rast ve Nevâ; ikisinin de dersi ve dizi etüdü var.
+- ✅ **Eser:** "Yine Bağlandı Dil" aranağmesi (Nevâ, Zekâî Dede) eklendi; "Hak Teâlâ" da bu seviyeye bağlı. "Yine bir gülnihal" ve Rast peşrevi Aşama E'ye taşındı.
+- ✅ **Yolum:** Seviye 3'ün hedefleri tanımlı.
 
 ### Seviye 4
 - ❌ **Tiz sesler ve dil teknikleri:** Yok.
@@ -129,12 +131,12 @@ Her aşama tamamlandığında uygulama o seviyeyi eksiksiz destekler. Kullanıc�
 5. Dil teknikleri rehberi ("tu" ile başlatma, bağlı çalma) ve buna ait etüt.
 6. "Benim Adım Dertli Dolap" bu seviyenin sonuna bağlanır.
 
-**Aşama C: Seviye 3**
+**Aşama C: Seviye 3** — **tamamlandı ve yayında (2026-10-30)**; plan: `docs/superpowers/plans/2026-10-30-asama-c.md`. Seviye 3'ün eseri "Yine Bağlandı Dil" aranağmesidir (Nevâ, Zekâî Dede; ölçü 1–20).
 1. Nim Şehnaz, Nim Hisar ve kapalı Nevâ perdeleri (parmak şemaları kaynaktan doğrulanır).
 2. Kademe geçiş etütleri.
 3. Teori: dörtlü ve beşliler, makamın unsurları.
 4. Makam: Nevâ.
-5. Eser: "Yine bir gülnihal" (Dede Efendi; arşivde var, telif sorunu yok) ve Rast peşrevinin 1. hanesi. "Hak Teâlâ" bu seviyeye bağlanır.
+5. Eser: "Yine Bağlandı Dil" aranağmesi (Zekâî Dede, Nevâ). "Hak Teâlâ" bu seviyeye bağlanır. "Yine bir gülnihal" ve Benli Hasan Ağa Rast peşrevi Aşama E'ye taşındı (aşağıya bakın).
 
 **Aşama D: Seviye 4**
 1. Tiz sesler ve dil teknikleri etütleri.
@@ -146,6 +148,9 @@ Her aşama tamamlandığında uygulama o seviyeyi eksiksiz destekler. Kullanıc�
 1. Dem sesler ve köprü perdeler, Irak dahil (parmak şeması kaynaktan doğrulanabilirse).
 2. Makamlar: Segâh, Bûselik, Karcığar, Acemaşiran, Nihâvend.
 3. Eserler: "Uyan Ey Gözlerim", "Üsküdar'a Gider İken", Yusuf Paşa Segâh peşrevi.
+4. Aşama C'den taşınan eserler:
+   - "Yine bir gülnihal" (Dede Efendi, Rast): 35 notası Yegâh, Hüseynîaşiran ve Irak gibi birinci kademe pest seslerde olduğu için dem sesler gelince eklenir.
+   - Benli Hasan Ağa Rast peşrevi: Sakîl 48/4 usulünde, ölçüsü 12 tam nota ve son ölçüsü yarım olduğu için mevcut parça modeline sığmaz; usul ve model hazır olunca eklenir.
 
 **Aşama F: Seviye 6–7**
 1. Süslemeler.

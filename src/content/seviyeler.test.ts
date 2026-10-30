@@ -23,8 +23,8 @@ describe('SEVIYELER', () => {
     expect(SEVIYELER[1]).toMatchObject({ ad: 'İlk beş ses', sure: '3–10. hafta' })
   })
 
-  it('seviye 3–7 henüz hedefsizdir', () => {
-    for (const s of SEVIYELER.slice(3)) expect(s.hedefler).toEqual([])
+  it('seviye 4–7 henüz hedefsizdir', () => {
+    for (const s of SEVIYELER.slice(4)) expect(s.hedefler).toEqual([])
     expect(SEVIYELER[0]!.hedefler).toHaveLength(7)
     expect(SEVIYELER[1]!.hedefler).toHaveLength(10)
   })
@@ -171,6 +171,95 @@ describe('SEVIYELER', () => {
       ETUTLER.filter((e) => e.tur === 'tek' || e.tur === 'iki').map((e) => e.id),
     )
     expect(h('s1-rast-besli').olcut).toEqual({ tur: 'etutler', etutIds: ['rast-besli-1', 'rast-besli-2'] })
+  })
+})
+
+describe('Seviye 3 hedefleri', () => {
+  const s3 = SEVIYELER[3]!
+  const h = (id: string) => s3.hedefler.find((x) => x.id === id)!
+  const ucuncuKademe = NEY_PERDELER.filter((p) => p.kademe === 3)
+
+  it('kimlikler kararlaştırılan sırada', () => {
+    expect(s3.hedefler.map((x) => x.id)).toEqual([
+      's3-nota',
+      ...ucuncuKademe.map((p) => `s3-${p.id}-8`),
+      's3-kademe',
+      's3-gecis',
+      's3-besli',
+      's3-neva-besli',
+      's3-makam',
+      's3-rast',
+      's3-neva',
+      's3-eser',
+      's3-hak-teala',
+    ])
+    expect(ucuncuKademe.map((p) => p.id)).toEqual([
+      'huseyni',
+      'acem',
+      'gerdaniye',
+      'muhayyer',
+      'kapali-neva',
+      'evic',
+      'nim-sehnaz',
+      'nim-hisar',
+    ])
+    expect(s3.ozet).toBe(
+      "Hüseynî'den Muhayyer'e üçüncü kademe, kapalı Nevâ, Eviç, Nim Şehnaz, Nim Hisar; kademe geçişleri; beşliler; Rast ve Nevâ makamları.",
+    )
+  })
+
+  it('ölçütler, metinler ve rotalar kararlaştırıldığı gibi', () => {
+    expect(h('s3-nota')).toMatchObject({ olcut: { tur: 'konular', topicIds: ['perde-2', 'perde-5'] }, rota: '/nota' })
+    for (const p of ucuncuKademe) {
+      expect(h(`s3-${p.id}-8`)).toMatchObject({
+        metin: `${p.name}: 8 sn uzun ses`,
+        olcut: { tur: 'uzun-ses', perdeId: p.id, ms: 8000, cent: 20 },
+        rota: `/ney/${p.id}`,
+      })
+    }
+    expect(h('s3-kademe')).toMatchObject({
+      olcut: {
+        tur: 'etutler',
+        etutIds: ['kademe-dugah-huseyni', 'kademe-rast-kapali-neva', 'kademe-cargah-gerdaniye', 'kademe-ara', 'kademe-nim-hisar'],
+      },
+      rota: '/ney',
+    })
+    expect(h('s3-gecis')).toMatchObject({
+      metin: 'İkinci ve üçüncü kademe arasında sesim kırılmadan geçiyor',
+      olcut: { tur: 'onay' },
+    })
+    expect(h('s3-besli').olcut).toEqual({ tur: 'ders', dersId: 'dortlu:besli' })
+    expect(h('s3-neva-besli').olcut).toEqual({ tur: 'etutler', etutIds: ['neva-rast-besli', 'neva-buselik-besli'] })
+    expect(h('s3-makam').olcut).toEqual({ tur: 'ders', dersId: 'makam:giris' })
+    expect(h('s3-rast')).toMatchObject({
+      metin: 'Rast dizisi (çıkışta Eviç, inişte Acem)',
+      olcut: { tur: 'etutler', etutIds: ['dizi-rast'] },
+    })
+    expect(h('s3-neva')).toMatchObject({ metin: 'Nevâ makamı dizisi', olcut: { tur: 'etutler', etutIds: ['dizi-neva'] } })
+    expect(h('s3-eser')).toMatchObject({
+      metin:
+        "Bir eseri metronomla çaldım (Yine Bağlandı Dil aranağmesi; öneri: tempo işaretinin %70'inden başla)",
+      olcut: { tur: 'onay' },
+      rota: '/parcalar/yine-baglandi-dil-aranagme',
+    })
+    expect(h('s3-hak-teala')).toMatchObject({
+      metin: "Hak Teâlâ'yı baştan sona çaldım",
+      olcut: { tur: 'onay' },
+      rota: '/parcalar/hak-teala',
+    })
+  })
+
+  it('ders hedeflerinin dersi var; etüt, konu ve perde kimlikleri var; uzun ses perdeleri 3. kademe; rotalar çözülür', () => {
+    for (const x of s3.hedefler) {
+      if (x.olcut.tur === 'ders') expect(dersById(x.olcut.dersId), x.id).toBeTruthy()
+      if (x.olcut.tur === 'etutler') for (const id of x.olcut.etutIds) expect(ETUTLER.some((e) => e.id === id), `${x.id}:${id}`).toBe(true)
+      if (x.olcut.tur === 'konular') for (const id of x.olcut.topicIds) expect(NOTA_TOPICS.some((t) => t.id === id), `${x.id}:${id}`).toBe(true)
+      if (x.olcut.tur === 'uzun-ses') {
+        const { perdeId } = x.olcut
+        expect(NEY_PERDELER.find((p) => p.id === perdeId)?.kademe, x.id).toBe(3)
+      }
+      if (x.rota) expect(rotaBilinir(x.rota), `${x.id} → ${x.rota}`).toBe(true)
+    }
   })
 })
 
