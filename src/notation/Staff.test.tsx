@@ -822,14 +822,17 @@ describe('Staff: takip sonuç işaretleri', () => {
       'var(--takip-hata)',
       'var(--takip-uyari)',
     ])
+    const isaretRengi = tum.map((_, i) => olay(container, i).querySelector('[data-durum-isaret]')!.getAttribute('fill'))
+    expect(isaretRengi).toEqual(renk)
     const ad = tum.map((_, i) => olay(container, i).querySelector('title')!.textContent)
     expect(ad).toEqual(['pes', 'tiz', 'başka perde', 'duyulmadı', 'kısa tutuldu'])
   })
 
-  it('vurgu rengi durum renginden önceliklidir', () => {
+  it('vurgu rengi durum renginden önceliklidir; üstteki işaret yine durum rengindedir', () => {
     const { container } = render(<Staff events={dort} durumlar={['pes']} highlightIndex={0} />)
     expect(olay(container, 0).style.color).toBe('var(--accent, #d9480f)')
     expect(olay(container, 0).getAttribute('data-durum')).toBe('pes')
+    expect(olay(container, 0).querySelector('[data-durum-isaret]')!.getAttribute('fill')).toBe('var(--takip-uyari)')
   })
 
   it('işaretler porte üstünde kalır ve görünüm kutusunun dışına taşmaz', () => {

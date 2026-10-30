@@ -498,7 +498,7 @@ export function Staff(props: {
   ropriz?: { bas?: boolean; son?: boolean }
   /**
    * Olaylarla hizalı takip sonuçları (`events` indisine göre; `undefined` = işaretsiz). Nota başı ve sapı durum
-   * renginde boyanır (vurgu önceliklidir), `dogru` dışındakilerin üstüne küçük işaret konur.
+   * renginde boyanır (vurgu önceliklidir), `dogru` dışındakilerin üstüne küçük işaret konur (her zaman durum renginde).
    */
   durumlar?: (TakipDurumu | undefined)[]
 }) {
@@ -616,7 +616,7 @@ export function Staff(props: {
                 font-size={DURUM_SIZE}
                 font-weight="bold"
                 text-anchor="middle"
-                fill={INK}
+                fill={DURUM_RENK[durum]}
               >
                 {DURUM_ISARET[durum]}
               </text>
