@@ -5,8 +5,9 @@ export interface Secim {
 }
 
 /**
- * Satıra dokunuş: seçim yoksa satır seçilir; tek satırlık seçim varken başka satıra dokunulursa ikisini kapsayan
- * aralık; aynı tek satıra dokunulursa seçim kalkar (null = tümü); aralık varken dokunulan satır tek başına seçilir.
+ * Satıra dokunuş: seçim yoksa satır seçilir; seçimin dışındaki satıra dokunulursa seçim o satırı da kapsayacak
+ * biçimde genişler; seçimin kendisine dokunulursa seçim kalkar (null = tümü); daha geniş bir seçimin içindeki
+ * satıra dokunulursa seçim o satıra daralır.
  *
  * Kesin kurallar: önceki seçim null → `satir`; önceki seçim `satir`'a eşit → null; `satir` önceki seçimin dışında →
  * ikisini kapsayan aralık `{ min(bas), max(son) }`; `satir` önceki seçimin içinde ve seçim ondan geniş → `satir`.

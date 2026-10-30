@@ -47,6 +47,7 @@ export function sonIsaret(): number | null {
   return son
 }
 
+/** Son işareti siler: yeni çalımda vurgu eski turun zamanıyla hesaplanmasın. */
 export function isaretiSifirla(): void {
   son = null
 }

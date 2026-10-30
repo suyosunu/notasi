@@ -324,11 +324,12 @@ describe('ParcaDetail', () => {
     )
   })
 
-  it('usulü bilinmeyen parça sessizce metronomla çalınmaz: nota ve ses uyarısı gösterilir, çalma düğmesi yoktur', async () => {
+  it('usulü bilinmeyen parça sessizce metronomla çalınmaz: nota ve neden çalınamadığı gösterilir, çalma düğmesi yoktur', async () => {
     PARCALAR.push({ ...byId('hak-teala'), id: 'usulu-yok', usul: 'bilinmeyen-usul' })
     try {
       await renderParca('usulu-yok')
-      expect(screen.getByText(SOUND_WARNING)).toBeTruthy()
+      expect(screen.getByRole('status').textContent).toBe('Bu parçanın usulü tanımlı olmadığı için çalınamıyor.')
+      expect(screen.queryByText(SOUND_WARNING)).toBeNull()
       expect(document.querySelectorAll('[data-testid="score-row"]').length).toBeGreaterThan(0)
       expect(screen.queryByRole('button', { name: '▶ Dinle' })).toBeNull()
       expect(screen.queryByRole('slider')).toBeNull()

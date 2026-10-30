@@ -121,7 +121,6 @@ export function kaydetInsanSesi(host: SampleHost, tur: SesTuru): void {
       `usul_insan_${tur}_${hece}`,
       (time, _value, onended) => {
         const ctx = host.getAudioContext()
-        // Sessiz düğüm: superdough zinciri bir ses kaynağı bekler.
         const ses = sessizSes(host, time, onended)
         if (konusmaVar()) {
           const z = setTimeout(

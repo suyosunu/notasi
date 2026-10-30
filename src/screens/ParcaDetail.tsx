@@ -1,5 +1,4 @@
 import { PARCALAR } from '../content/parcalar'
-import { SOUND_WARNING } from '../content/ses-mesajlari'
 import { USULLER } from '../content/usuller'
 import { DersKapisi } from '../ders/DersKapisi'
 import { beamBeatsFor } from '../notation/beams'
@@ -12,6 +11,8 @@ const SYMBTR_URL = 'https://github.com/MTG/SymbTr'
 const BPM_MIN = 40
 const BPM_MAX = 100
 const BPM_DEFAULT = 60
+/** Usulü `USULLER`'de bulunmayan parça: neden çalınamadığı. */
+const USUL_YOK = 'Bu parçanın usulü tanımlı olmadığı için çalınamıyor.'
 
 /** Tek parça: başlık bilgileri, çalışma paneli (nota, bölüm seçimi, hız, usul eşliği, tekrar ve hızlanma) ve kaynak. */
 export function ParcaDetail({ parcaId }: { parcaId: string }) {
@@ -64,11 +65,11 @@ export function ParcaDetail({ parcaId }: { parcaId: string }) {
             beamBeats={beamBeatsFor(usul)}
           />
         ) : (
-          // Usulü bilinmeyen parça sessizce 4/4 metronomla çalınmaz: nota gösterilir, çalım yerine ses uyarısı.
+          // Usulü bilinmeyen parça sessizce 4/4 metronomla çalınmaz: nota gösterilir, çalım yerine nedeni yazılır.
           <>
             <ScoreView olcu={piece.olcu} soz={piece.soz} beamBeats={beamBeatsFor(usul)} />
             <p class="notice" role="status">
-              {SOUND_WARNING}
+              {USUL_YOK}
             </p>
           </>
         )}
