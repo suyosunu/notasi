@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/preact'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/preact'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { buildCalismaCode } from '../audio/calisma'
 import type { CalismaSecenek } from '../audio/calisma'
@@ -123,6 +123,116 @@ describe('CalismaPaneli: bölüm seçimi', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Tümü' }))
     expect(stopAudio).toHaveBeenCalledTimes(1)
     expect(await screen.findByRole('button', { name: '▶ Dinle' })).toBeTruthy()
+  })
+})
+
+describe('CalismaPaneli: yapışkan çalma çubuğu', () => {
+  const cubuk = () => document.querySelector('.calisma-cubugu') as HTMLElement
+
+  it('notanın hemen ardından gelir; çalma düğmeleri ve bölüm satırı ("Tümü") içindedir, ipucu ve kaydırıcı dışındadır', async () => {
+    panel({ olcu: DORTLUK, usul: SOFYAN })
+    const c = cubuk()
+    expect(c.previousElementSibling!.classList.contains('score')).toBe(true)
+    await dinleBtn()
+    expect(within(c).getByRole('button', { name: '▶ Dinle' })).toBeTruthy()
+    expect(within(c).getByRole('button', { name: '🥁 Usulle çal' })).toBeTruthy()
+    expect(within(c).queryByText(/^Bölüm:/)).toBeNull()
+    fireEvent.click(satirlar()[0]!)
+    expect(within(c).getByText('Bölüm: 1–2. ölçüler')).toBeTruthy()
+    expect(within(c).getByRole('button', { name: 'Tümü' })).toBeTruthy()
+    expect(c.contains(slider())).toBe(false)
+    expect(c.contains(screen.getByText(/^Bir satıra dokun/))).toBe(false)
+    expect(c.contains(tekrarBox())).toBe(false)
+    // Kaydırıcı ve anahtarlar çubuğun ardından, normal akışta.
+    expect(c.compareDocumentPosition(slider()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('çalarken Durdur ve tur durumu çubuktadır', async () => {
+    panel()
+    fireEvent.click(tekrarBox())
+    fireEvent.click(await dinleBtn())
+    await screen.findByRole('button', { name: '⏹ Durdur' })
+    expect(within(cubuk()).getByRole('button', { name: '⏹ Durdur' })).toBeTruthy()
+    expect(within(cubuk()).getByRole('status').textContent).toBe('Tur 1 · ♩ = 60')
+  })
+})
+
+describe('CalismaPaneli: çalan satıra kaydırma', () => {
+  let saat = 1_000_000
+  const kaydirilan: Element[] = []
+  const asil = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollIntoView')
+  beforeEach(() => {
+    saat = 1_000_000
+    kaydirilan.length = 0
+    vi.spyOn(Date, 'now').mockImplementation(() => saat)
+    Element.prototype.scrollIntoView = vi.fn(function (this: Element, arg?: boolean | ScrollIntoViewOptions) {
+      expect(arg).toEqual({ block: 'nearest', behavior: 'smooth' })
+      kaydirilan.push(this)
+    })
+  })
+  afterEach(() => {
+    vi.mocked(Date.now).mockRestore()
+    if (asil) Object.defineProperty(Element.prototype, 'scrollIntoView', asil)
+    else delete (Element.prototype as Partial<Element>).scrollIntoView
+  })
+  /** DORTLUK, satır başına bir ölçü, ♩ = 60, giriş 4: `satir`. satırın ikinci olayı çalar. */
+  const calSatir = (satir: number) => vi.mocked(sesSaatiSimdi).mockReturnValue(10 + 4 + 4 * satir + 1.5)
+  const vurguSatirda = (satir: number) =>
+    waitFor(() => expect(satirlar()[satir]!.querySelector('[data-highlight]')).not.toBeNull())
+
+  it('vurgu yeni satıra geçince o satır görünüme kaydırılır; kullanıcı son 2 sn içinde kaydırdıysa kaydırılmaz', async () => {
+    panel({ olcu: DORTLUK, olcuPerSatir: 1 })
+    fireEvent.click(await dinleBtn())
+    await waitFor(() => expect(playCode).toHaveBeenCalledTimes(1))
+    vi.mocked(sonIsaret).mockReturnValue(10)
+    calSatir(0)
+    await vurguSatirda(0)
+    await waitFor(() => expect(kaydirilan).toEqual([satirlar()[0]]))
+
+    // Kendi kaydırmamızın hemen ardından gelen scroll olayı kullanıcıdan sayılmaz.
+    fireEvent.scroll(window)
+    calSatir(1)
+    await vurguSatirda(1)
+    await waitFor(() => expect(kaydirilan).toEqual([satirlar()[0], satirlar()[1]]))
+
+    // Kullanıcı kaydırdı: 2 sn boyunca otomatik kaydırma yok.
+    saat += 1500
+    fireEvent.scroll(window)
+    saat += 1000
+    calSatir(2)
+    await vurguSatirda(2)
+    await bekle()
+    expect(kaydirilan).toHaveLength(2)
+
+    // 2 sn geçti: sonraki satır yine kaydırılır.
+    saat += 1500
+    calSatir(3)
+    await vurguSatirda(3)
+    await waitFor(() => expect(kaydirilan.at(-1)).toBe(satirlar()[3]))
+
+    // Dokunarak kaydırma (touchmove) da bastırır.
+    fireEvent.touchMove(window)
+    calSatir(0)
+    await vurguSatirda(0)
+    await bekle()
+    expect(kaydirilan.map((k) => satirlar().indexOf(k as HTMLElement))).toEqual([0, 1, 3])
+  })
+
+  it('aynı satırda vurgu ilerlerken yeniden kaydırılmaz; scrollIntoView yoksa hata yok', async () => {
+    panel({ olcu: DORTLUK, olcuPerSatir: 1 })
+    fireEvent.click(await dinleBtn())
+    await waitFor(() => expect(playCode).toHaveBeenCalledTimes(1))
+    vi.mocked(sonIsaret).mockReturnValue(10)
+    calSatir(0)
+    await vurguSatirda(0)
+    vi.mocked(sesSaatiSimdi).mockReturnValue(10 + 4 + 2.5)
+    await waitFor(() => expect(satirlar()[0]!.querySelector('[data-highlight]')!.getAttribute('data-event')).toBe('2'))
+    expect(kaydirilan).toHaveLength(1)
+    delete (Element.prototype as Partial<Element>).scrollIntoView
+    calSatir(1)
+    await vurguSatirda(1)
+    await bekle()
+    expect(kaydirilan).toHaveLength(1)
   })
 })
 
@@ -308,14 +418,16 @@ describe('CalismaPaneli: çıkış', () => {
     expect(playCode).toHaveBeenCalledTimes(1)
   })
 
-  it('durdurRef: üst ekran çalmayı durdurabilir', async () => {
+  it('durdurRef: üst ekran çalmayı durdurabilir; panel kalkınca durdurRef boşalır', async () => {
     const durdurRef = { current: null as (() => void) | null }
-    panel({ durdurRef })
+    const { unmount } = panel({ durdurRef })
     fireEvent.click(await dinleBtn())
     await screen.findByRole('button', { name: '⏹ Durdur' })
     vi.mocked(stopAudio).mockClear()
     durdurRef.current!()
     expect(stopAudio).toHaveBeenCalledTimes(1)
     expect(await screen.findByRole('button', { name: '▶ Dinle' })).toBeTruthy()
+    unmount()
+    expect(durdurRef.current).toBeNull()
   })
 })

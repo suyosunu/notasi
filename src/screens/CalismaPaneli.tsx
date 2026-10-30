@@ -18,6 +18,10 @@ import type { Settings } from '../store/db'
 export const HIZ_ADIMI = 5
 const METRONOME_NOTE = 'Bu usulün vuruş kalıbı bilinmediği için eşlik metronomla yapılır.'
 const IPUCU = 'Bir satıra dokun: yalnız o bölüm çalar. Başka bir satıra da dokunursan aradaki bölüm seçilir.'
+/** Kullanıcı son bu kadar ms içinde kaydırdıysa çalan satıra otomatik kaydırılmaz. */
+const KULLANICI_KAYDIRMA_MS = 2000
+/** Kendi `scrollIntoView`'umuzdan sonra bu kadar ms içindeki scroll olayları (yumuşak kaydırma) kullanıcıdan sayılmaz. */
+const KENDI_KAYDIRMA_MS = 1000
 
 type Konum = { olcu: number; nota: number }
 
@@ -47,8 +51,9 @@ const bolumEtiketi = (s: Secim) =>
 /**
  * Etüt ve parçanın ortak çalışma paneli: dokunulabilir nota (satır seçimi → yalnız o bölüm çalar), hız, eşlik
  * (usul ya da metronom) anahtarı, tekrar ve her turda hızlanma, dinle / usulle (metronomla) çal / durdur ve çalan
- * notanın vurgusu (ses saati işaretinden). `durdurRef`: üst ekran (ör. "Çaldım") çalan sesi durdurabilsin diye
- * panelin durdurma işlevi buraya yazılır.
+ * notanın vurgusu (ses saati işaretinden; çalan satır görünüme kaydırılır). Bölüm satırı ve çalma düğmeleri notanın
+ * ardındaki yapışkan çubuktadır. `durdurRef`: üst ekran (ör. "Çaldım") çalan sesi durdurabilsin diye panelin durdurma
+ * işlevi buraya yazılır.
  */
 export function CalismaPaneli(props: {
   olcu: MusicEvent[][]
@@ -80,6 +85,12 @@ export function CalismaPaneli(props: {
   const turRef = useRef<Tur | null>(null)
   /** Vurgu döngüsünün bekleyen karesini iptal eder. */
   const vurguIptalRef = useRef<(() => void) | null>(null)
+  /** Yapışkan çalma çubuğu; hemen önündeki öğe nota (`.score`). */
+  const cubukRef = useRef<HTMLDivElement>(null)
+  /** Otomatik kaydırma: son kaydırılan satır, kullanıcının ve bizim son kaydırma anımız (Date.now). */
+  const kaydirilanSatirRef = useRef<Element | null>(null)
+  const kullaniciKaydirdiRef = useRef(-Infinity)
+  const kendiKaydirdiRef = useRef(-Infinity)
 
   useEffect(() => {
     let alive = true
@@ -104,6 +115,35 @@ export function CalismaPaneli(props: {
     },
     [],
   )
+
+  // Kullanıcı kaydırması: dokunma ve tekerlek her zaman kullanıcıdır; scroll olayı yalnız kendi yumuşak kaydırmamızın
+  // ardından gelmiyorsa.
+  useEffect(() => {
+    const kullanici = () => {
+      kullaniciKaydirdiRef.current = Date.now()
+    }
+    const kaydirma = () => {
+      if (Date.now() - kendiKaydirdiRef.current > KENDI_KAYDIRMA_MS) kullanici()
+    }
+    const secenek = { passive: true }
+    window.addEventListener('scroll', kaydirma, secenek)
+    window.addEventListener('touchmove', kullanici, secenek)
+    window.addEventListener('wheel', kullanici, secenek)
+    return () => {
+      window.removeEventListener('scroll', kaydirma)
+      window.removeEventListener('touchmove', kullanici)
+      window.removeEventListener('wheel', kullanici)
+    }
+  }, [])
+
+  // Üst ekranın durdurabilmesi için; panel kalkınca boşalır. `stop` yalnız ref ve setter kullanır, ilk çizimdeki yeter.
+  useLayoutEffect(() => {
+    if (!durdurRef) return
+    durdurRef.current = stop
+    return () => {
+      durdurRef.current = null
+    }
+  }, [durdurRef])
 
   // Vurgu: çalarken her karede `t0 = sonIsaret()` ve `sesSaatiSimdi()`'den çalan olay bulunur.
   useEffect(() => {
@@ -140,6 +180,23 @@ export function CalismaPaneli(props: {
       setVurgu(null)
     }
   }, [playing])
+
+  // Çalarken vurgu yeni satıra geçince satır görünüme kaydırılır (yapışkan çubuğun altında kalmasın: CSS
+  // `scroll-margin-bottom`); kullanıcı son 2 sn içinde kaydırdıysa dokunulmaz. Vurgulu satır DOM'a yazılır yazılmaz
+  // bakılsın diye useLayoutEffect'tedir.
+  useLayoutEffect(() => {
+    if (!playing) {
+      kaydirilanSatirRef.current = null
+      return
+    }
+    const satir = cubukRef.current?.previousElementSibling?.querySelector('[data-highlight]')?.closest('.score-row')
+    if (!satir || satir === kaydirilanSatirRef.current) return
+    kaydirilanSatirRef.current = satir
+    if (Date.now() - kullaniciKaydirdiRef.current < KULLANICI_KAYDIRMA_MS) return
+    if (typeof satir.scrollIntoView !== 'function') return
+    kendiKaydirdiRef.current = Date.now()
+    satir.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [vurgu, playing])
 
   /**
    * Dokunuş işleyicisinden çağrılır: unlockAudio eşzamanlı, ilk await'ten önce başlatılır (iOS). Her tur seçili
@@ -209,7 +266,6 @@ export function CalismaPaneli(props: {
     releaseWakeLock()
     setPlaying(false)
   }
-  if (durdurRef) durdurRef.current = stop
 
   return (
     <>
@@ -225,22 +281,51 @@ export function CalismaPaneli(props: {
         }}
         vurgu={vurgu}
       />
-      <p class="muted">{IPUCU}</p>
-      {secim && (
-        <div class="tools calisma-bolum">
-          <span>{bolumEtiketi(secim)}</span>
-          <button
-            type="button"
-            class="tool"
-            onClick={() => {
-              setSecim(null)
-              if (playing) stop()
-            }}
-          >
-            Tümü
-          </button>
+      {/* Yapışkan çalma çubuğu: nota uzunken de bölüm ve çalma düğmeleri ekranın altında elde kalır. */}
+      <div class="calisma-cubugu" ref={cubukRef}>
+        {secim && (
+          <div class="calisma-bolum">
+            <span>{bolumEtiketi(secim)}</span>
+            <button
+              type="button"
+              class="tool"
+              onClick={() => {
+                setSecim(null)
+                if (playing) stop()
+              }}
+            >
+              Tümü
+            </button>
+          </div>
+        )}
+        <div class="calisma-dugmeler">
+          {playing ? (
+            <button type="button" class="primary" onClick={stop}>
+              ⏹ Durdur
+            </button>
+          ) : (
+            <>
+              <button type="button" class="primary" disabled={!settings} onClick={() => void calis(true)}>
+                ▶ Dinle
+              </button>
+              <button type="button" class="tool" disabled={!settings} onClick={() => void calis(false)}>
+                {usul ? '🥁 Usulle çal' : '🎵 Metronomla çal'}
+              </button>
+            </>
+          )}
+          {playing && tekrar && (
+            <span class="muted" role="status">
+              {`Tur ${turNo} · ♩ = ${bpm}`}
+            </span>
+          )}
         </div>
-      )}
+        {warn && (
+          <p class="notice" role="status">
+            {warn}
+          </p>
+        )}
+      </div>
+      <p class="muted">{IPUCU}</p>
 
       <label class="usul-speed">
         <span>{`Hız: ♩ = ${bpm}`}</span>
@@ -298,32 +383,6 @@ export function CalismaPaneli(props: {
         </label>
       )}
 
-      <div class="tools">
-        {playing ? (
-          <button type="button" class="primary" onClick={stop}>
-            ⏹ Durdur
-          </button>
-        ) : (
-          <>
-            <button type="button" class="primary" disabled={!settings} onClick={() => void calis(true)}>
-              ▶ Dinle
-            </button>
-            <button type="button" class="tool" disabled={!settings} onClick={() => void calis(false)}>
-              {usul ? '🥁 Usulle çal' : '🎵 Metronomla çal'}
-            </button>
-          </>
-        )}
-      </div>
-      {playing && tekrar && (
-        <p class="muted" role="status">
-          {`Tur ${turNo} · ♩ = ${bpm}`}
-        </p>
-      )}
-      {warn && (
-        <p class="notice" role="status">
-          {warn}
-        </p>
-      )}
     </>
   )
 }
