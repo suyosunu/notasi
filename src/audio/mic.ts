@@ -31,6 +31,20 @@ export class MicError extends Error {
   }
 }
 
+/** Mikrofon hatasının kullanıcıya gösterilen Türkçe açıklamaları (ekrandan bağımsız, ortak). */
+export const MIC_HATA_METINLERI: Record<MicError['reason'], string> = {
+  'izin-yok': "Mikrofon izni verilmedi. Ayarlar › Safari › Mikrofon'dan izin verin.",
+  desteklenmiyor: 'Bu tarayıcı mikrofonu desteklemiyor.',
+  acilamadi: 'Mikrofon açılamadı. Ayarlar › Safari › Mikrofon iznini kontrol edip tekrar deneyin.',
+}
+
+/** Herhangi bir hatayı gösterilecek metne ve (varsa) küçük satırlık ayrıntıya çevirir. */
+export function micHataMetni(err: unknown): { metin: string; detay?: string } {
+  if (err instanceof MicError) return { metin: MIC_HATA_METINLERI[err.reason], detay: err.detail }
+  if (err instanceof Error) return { metin: MIC_HATA_METINLERI.acilamadi, detay: `${err.name}: ${err.message}` }
+  return { metin: MIC_HATA_METINLERI.acilamadi }
+}
+
 type AudioContextCtor = typeof AudioContext
 
 /** Mikrofon izni geldikten sonra ses bağlamının çalışmaya başlaması için beklenen en uzun süre. */

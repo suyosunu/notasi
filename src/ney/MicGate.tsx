@@ -1,25 +1,11 @@
 import type { JSX } from 'preact'
 import { useCallback, useEffect, useRef, useState } from 'preact/hooks'
-import { MicError, startPitchStream } from '../audio/mic'
+import { micHataMetni, startPitchStream } from '../audio/mic'
 import type { PitchSample } from '../audio/mic'
 
-type Reason = 'izin-yok' | 'desteklenmiyor' | 'acilamadi'
-
 interface GateError {
-  reason: Reason
-  detail?: string
-}
-
-const MESSAGES: Record<Reason, string> = {
-  'izin-yok': "Mikrofon izni verilmedi. Akort göstergesi için Ayarlar › Safari › Mikrofon'dan izin verin.",
-  desteklenmiyor: 'Bu tarayıcı mikrofonu desteklemiyor.',
-  acilamadi: 'Mikrofon açılamadı. Ayarlar › Safari › Mikrofon iznini kontrol edip tekrar deneyin.',
-}
-
-function toGateError(err: unknown): GateError {
-  if (err instanceof MicError) return { reason: err.reason, detail: err.detail }
-  if (err instanceof Error) return { reason: 'acilamadi', detail: `${err.name}: ${err.message}` }
-  return { reason: 'acilamadi' }
+  metin: string
+  detay?: string
 }
 
 /**
@@ -76,7 +62,7 @@ export function MicGate(props: {
       if (abortRef.current === controller) abortRef.current = null
       if (!mountedRef.current || gen !== generationRef.current) return
       setRunning(false)
-      setError(toGateError(err))
+      setError(micHataMetni(err))
     }
   }, [])
 
@@ -96,8 +82,8 @@ export function MicGate(props: {
       {props.children(start, stop, running)}
       {error && (
         <div role="alert" class="mic-error">
-          <p>{MESSAGES[error.reason]}</p>
-          {error.detail && <p class="mic-error-detail">Ayrıntı: {error.detail}</p>}
+          <p>{error.metin}</p>
+          {error.detay && <p class="mic-error-detail">Ayrıntı: {error.detay}</p>}
           <button type="button" onClick={() => void start()}>
             Tekrar dene
           </button>

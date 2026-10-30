@@ -7,7 +7,15 @@ vi.mock('pitchy', () => ({
   },
 }))
 
-import { FFT_SIZE, MicError, RESUME_TIMEOUT_MS, startPitchStream, toSample } from './mic'
+import {
+  FFT_SIZE,
+  MIC_HATA_METINLERI,
+  MicError,
+  RESUME_TIMEOUT_MS,
+  micHataMetni,
+  startPitchStream,
+  toSample,
+} from './mic'
 import type { PitchSample } from './mic'
 
 describe('toSample', () => {
@@ -42,6 +50,32 @@ describe('MicError', () => {
     expect(e).toBeInstanceOf(Error)
     expect(e.reason).toBe('izin-yok')
     expect(e.name).toBe('MicError')
+  })
+})
+
+describe('micHataMetni', () => {
+  it('izin-yok metni ekrana özgü değildir', () => {
+    expect(MIC_HATA_METINLERI['izin-yok']).toBe(
+      "Mikrofon izni verilmedi. Ayarlar › Safari › Mikrofon'dan izin verin.",
+    )
+  })
+  it('MicError nedeninin metnini ve ayrıntısını verir', () => {
+    expect(micHataMetni(new MicError('izin-yok', 'NotAllowedError'))).toEqual({
+      metin: MIC_HATA_METINLERI['izin-yok'],
+      detay: 'NotAllowedError',
+    })
+    expect(micHataMetni(new MicError('desteklenmiyor')).metin).toBe(MIC_HATA_METINLERI.desteklenmiyor)
+    expect(micHataMetni(new MicError('acilamadi')).metin).toBe(MIC_HATA_METINLERI.acilamadi)
+  })
+  it('başka Error acilamadi olur; ad ve mesaj ayrıntı olur', () => {
+    expect(micHataMetni(new TypeError('tuhaf'))).toEqual({
+      metin: MIC_HATA_METINLERI.acilamadi,
+      detay: 'TypeError: tuhaf',
+    })
+  })
+  it('bilinmeyen değer acilamadi olur, ayrıntısız', () => {
+    expect(micHataMetni('x')).toEqual({ metin: MIC_HATA_METINLERI.acilamadi })
+    expect(micHataMetni(undefined).detay).toBeUndefined()
   })
 })
 

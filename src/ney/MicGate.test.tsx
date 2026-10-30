@@ -108,7 +108,7 @@ describe('MicGate', () => {
     fireEvent.click(screen.getByText('Başlat'))
     expect(
       await screen.findByText(
-        "Mikrofon izni verilmedi. Akort göstergesi için Ayarlar › Safari › Mikrofon'dan izin verin.",
+        "Mikrofon izni verilmedi. Ayarlar › Safari › Mikrofon'dan izin verin.",
       ),
     ).toBeTruthy()
   })

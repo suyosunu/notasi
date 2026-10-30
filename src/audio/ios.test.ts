@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { audioSessionType, isStandalone, setPlaybackSession } from './ios'
+import { audioSessionType, isStandalone, setKayitSession, setPlaybackSession } from './ios'
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -16,6 +16,30 @@ describe('setPlaybackSession', () => {
     Object.defineProperty(navigator, 'audioSession', { value: session, configurable: true })
     setPlaybackSession()
     expect(session.type).toBe('playback')
+  })
+})
+
+describe('setKayitSession', () => {
+  it('audioSession yoksa hata vermez', () => {
+    expect(() => setKayitSession()).not.toThrow()
+  })
+  it('audioSession varsa type = play-and-record yapar', () => {
+    const session = { type: 'playback' }
+    Object.defineProperty(navigator, 'audioSession', { value: session, configurable: true })
+    setKayitSession()
+    expect(session.type).toBe('play-and-record')
+  })
+  it('atama reddedilirse hata vermez', () => {
+    const session = {
+      get type() {
+        return 'playback'
+      },
+      set type(_v: string) {
+        throw new Error('reddedildi')
+      },
+    }
+    Object.defineProperty(navigator, 'audioSession', { value: session, configurable: true })
+    expect(() => setKayitSession()).not.toThrow()
   })
 })
 

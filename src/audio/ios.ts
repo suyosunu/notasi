@@ -14,6 +14,21 @@ export function setPlaybackSession(): void {
   }
 }
 
+/**
+ * Mikrofon açıkken eşlik de çalsın diye 'play-and-record' oturumu; destek yoksa sessizce atlanır.
+ * Takip bitince `setPlaybackSession()` ile geri dönülür.
+ */
+export function setKayitSession(): void {
+  const session = (navigator as Navigator & { audioSession?: AudioSessionLike }).audioSession
+  if (session) {
+    try {
+      session.type = 'play-and-record'
+    } catch {
+      // bazı sürümlerde atama reddedilebilir; mikrofon yine denenir
+    }
+  }
+}
+
 /** Tanılama için: geçerli ses oturumu türü (destek yoksa undefined). */
 export function audioSessionType(): string | undefined {
   const session = (navigator as Navigator & { audioSession?: AudioSessionLike }).audioSession
