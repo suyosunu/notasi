@@ -868,9 +868,13 @@ describe('Usul dersleri', () => {
     for (const u of USUL_IDLERI) expect(ders(`usul:${u}`).alistirma, u).toBe(`/usul/vur/${u}`)
   })
 
-  it('etutDersleri: usul etüdünde ölçü, usul girişi ve usulün dersi; ötekilerde etüdün kendi dersi', () => {
+  it('etutDersleri: usul etüdünde ölçü, usul girişi ve usulün dersi; makam etüdünde Makam nedir? ve makamın dersi; ötekilerde etüdün kendi dersi', () => {
     for (const e of ETUTLER) {
-      const beklenen = e.usulId ? ['okuma:olcu', 'usul:giris', `usul:${e.usulId}`] : [e.dersId]
+      const beklenen = e.usulId
+        ? ['okuma:olcu', 'usul:giris', `usul:${e.usulId}`]
+        : e.dersId.startsWith('makam:')
+          ? ['makam:giris', e.dersId]
+          : [e.dersId]
       expect(etutDersleri(e), e.id).toEqual(beklenen)
       expect(etutDersleri(e).at(-1), e.id).toBe(e.dersId)
       for (const id of etutDersleri(e)) expect(dersById(id), `${e.id}: ${id}`).toBeTruthy()

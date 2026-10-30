@@ -174,6 +174,19 @@ describe('perdeStatuses', () => {
     expect(perdeStatuses(upTo([...base, 'buselik', 'kurdi', 'dik-kurdi', 'nim-hicaz']), topics()).evic).toBe('kilitli')
   })
 
+  it('Muhayyer geçilmiş, Eviç denenmiş ama geçilmemiş → Eviç acik; güncel perde kapalı Nevâ (listede önce)', () => {
+    const upTo = (ids: string[]) => ids.map((id) => tone(id, true))
+    const gecilen = ['neva', 'cargah', 'segah', 'dugah', 'rast', 'buselik', 'kurdi', 'dik-kurdi', 'nim-hicaz', 'huseyni', 'acem', 'gerdaniye', 'muhayyer']
+    const eski = [...upTo(gecilen), tone('evic', false)]
+    const s = perdeStatuses(eski, topics())
+    expect(s['kapali-neva']).toBe('acik')
+    expect(s.evic).toBe('acik')
+    // Denenmemiş Eviç, kapalı Nevâ geçilene dek kilitli kalır.
+    expect(perdeStatuses(upTo(gecilen), topics()).evic).toBe('kilitli')
+    const plan = buildEveningPlan({ ilkSesPassed: true, calibrated: true, baspareGecildi: true, calinanEtutler: HEPSI, perdeStatus: s })
+    expect(plan.find((st) => st.tries === 3)!.perdeId).toBe('kapali-neva')
+  })
+
   it('kapalı Nevâ Muhayyer geçilince, perde-2 açıkken açılır', () => {
     const upTo = (ids: string[]) => ids.map((id) => tone(id, true))
     const k3 = ['neva', 'cargah', 'segah', 'dugah', 'rast', 'huseyni', 'acem', 'gerdaniye']
@@ -489,6 +502,14 @@ describe('etüt adımı', () => {
     expect(
       etutAdimlari(buildEveningPlan(girdi({ perdeStatus: buselik, calinanEtutler: usulDil }))).map((s) => [s.etutId, s.dersId]),
     ).toEqual([['dortlu-cargah', 'dortlu:cargah']])
+  })
+
+  it('makam dizisi etüdünün adımı önce Makam nedir? dersini, sonra makamın dersini ister', () => {
+    const tum = statuses(Object.fromEntries(NEY_PERDELER.map((p) => [p.id, 'gecildi'])) as Record<PerdeId, PerdeStatus>)
+    const oncekiler = ETUTLER.filter((e) => e.id !== 'dizi-rast' && e.id !== 'dizi-neva').map((e) => e.id)
+    const adim = etutAdimlari(buildEveningPlan(girdi({ perdeStatus: tum, calinanEtutler: new Set(oncekiler) })))[0]!
+    expect(adim.etutId).toBe('dizi-rast')
+    expect(adim.dersIdler).toEqual(['makam:giris', 'makam:rast'])
   })
 
   it('Seviye 3 etüdü, alt seviye etütleri bitmeden önerilmez', () => {

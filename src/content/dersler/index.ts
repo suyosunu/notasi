@@ -57,9 +57,13 @@ export function makamDersleri(makamId: string): string[] {
 const OLCU_DERS_ID = 'okuma:olcu'
 
 /**
- * Etütten önce sırayla okunacak dersler. Usul etüdünde önce ölçü ve nefes işareti, sonra usulün giriş ve kendi dersi
- * (son ders etüdün `dersId`'sidir); öteki etütlerde yalnız kendi dersi. Okunmuş dersler `DersKapisi`'nde atlanır.
+ * Etütten önce sırayla okunacak dersler. Usul etüdünde önce ölçü ve nefes işareti, sonra usulün giriş ve kendi dersi;
+ * makam dizisi etüdünde önce "Makam nedir?", sonra makamın dersi (son ders hep etüdün `dersId`'sidir); öteki etütlerde
+ * yalnız kendi dersi. Okunmuş dersler `DersKapisi`'nde atlanır.
  */
 export function etutDersleri(e: Pick<Etut, 'dersId' | 'usulId'>): string[] {
-  return e.usulId ? [OLCU_DERS_ID, ...usulDersleri(e.usulId)] : [e.dersId]
+  if (e.usulId) return [OLCU_DERS_ID, ...usulDersleri(e.usulId)]
+  // Makam dizisi etüdü: makam ekranındaki gibi önce "Makam nedir?", sonra makamın kendi dersi.
+  if (e.dersId.startsWith('makam:')) return makamDersleri(e.dersId.slice('makam:'.length))
+  return [e.dersId]
 }

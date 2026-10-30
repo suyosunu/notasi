@@ -41,7 +41,8 @@ const KADEME_ONKOSULU: PerdeId = 'rast'
 /**
  * Bir perde şunların hepsi sağlanınca açılır: aynı kademedeki önceki perde geçilmiş (kademenin
  * ilk perdesi için: ilk kademede önkoşul yok, sonraki kademelerde Rast geçilmiş), nota konusu
- * kilitli değil, parmak şeması doğrulanmış. Geçilmiş (`passed`) kaydı olan perde geçilmiştir.
+ * kilitli değil, parmak şeması doğrulanmış. Geçilmiş (`passed`) kaydı olan perde geçilmiştir; geçilmemiş de olsa
+ * uzun ses kaydı olan perde (açıkken denenmiştir) hiç kilitlenmez.
  */
 export function perdeStatuses(
   longTones: LongToneRec[],
@@ -49,6 +50,8 @@ export function perdeStatuses(
   perdeler: NeyPerde[] = NEY_PERDELER,
 ): Record<PerdeId, PerdeStatus> {
   const passed = new Set(longTones.filter((r) => r.passed).map((r) => r.perdeId))
+  // Kaydı olan perde, bir ara açıldığı için denenmiştir: sıra değişse de bir daha kilitlenmez.
+  const denenen = new Set(longTones.map((r) => r.perdeId))
   const out = {} as Record<PerdeId, PerdeStatus>
   const prevByKademe = new Map<number, PerdeStatus>()
   const lowestKademe = Math.min(...perdeler.map((p) => p.kademe))
@@ -63,7 +66,7 @@ export function perdeStatuses(
       if (prev !== undefined) prevOk = prev === 'gecildi'
       else if (p.kademe === lowestKademe) prevOk = true
       else prevOk = out[KADEME_ONKOSULU] === 'gecildi'
-      status = prevOk && notaOpen && visibleFingering(p) !== null ? 'acik' : 'kilitli'
+      status = denenen.has(p.id) || (prevOk && notaOpen && visibleFingering(p) !== null) ? 'acik' : 'kilitli'
     }
     out[p.id] = status
     prevByKademe.set(p.kademe, status)
