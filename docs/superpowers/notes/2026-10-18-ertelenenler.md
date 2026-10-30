@@ -128,3 +128,16 @@ Görev incelemelerinde "şimdilik kalabilir" denen bulgular. Sürüm 2'ye başla
 - Deferred: `octaveCounterpart` G5#4 için "Sol"u oktav karşılığı sayıyor (makul çeldirici); evening-plan.test'te kullanılmayan `_yok`; Seviye 3 etüt testinde 7 notasyon sabitlenmedi ve "durakta biter" başlığı denetlenmiyor; `etut.ts` MEB künyelerini `meb()` yerine düz yazıyor; dönüştürücünün "bayt bayt" testi kaynağa sadakati değil biçimi koruyor, `olcuAraligi` sonunun nota ortasına düşmesi test edilmedi.
 - Deferred: SymbTr aynı komayı farklı yazıyor (A4#4/B4b5, D5#4/E5b5); ileride bu yazımlı bir eser eklenirse dönüştürücü KomaAE'ye göre uygulama yazımına çevirmeli. `Hole` kesir taşımıyor (Bûselik yarım, Nim Hisar 3/4 ikisi de `yarim`).
 - Deferred: Çanakkale İçinde (Nevâ türkü, aralık tam, Nim Hisar ×32) telif durumu belirsiz; doğrulanırsa Nim Hisar için iyi bir eser.
+
+## Aşama D — Seviye 4 (2026-10-30)
+- Ruling: Aziz Dede Uşşak saz semaisi Seviye 6'ya (Aksak Semâî 10/8, eser içinde usul değişimi, 1/32 ve üçleme); yerine Zekâî Dede "Allah Emrin Tutalım" (Uşşak, Düyek; TDV Nim Sofyan der, SymbTr Düyek) — cost if wrong: kullanıcı o saz semaisini Seviye 4'te istiyordu.
+- Ruling: güfte sahibi bulunamayan eserler sözsüz (Allah Emrin Tutalım, Hicran Oku aranağmesi, Gül Yüzlülerin 1–16) — cost if wrong: hece bandı yok.
+- Ruling: kesik (staccato) Batı notasındaki nokta ile gösterilir, derste "bu uygulamadaki gösterim" denir; çalımda yarı süre ses, yarı sus; mikrofon takibi kesik notanın yalnız ilk yarısını bekler.
+- Ruling: makam dizi sorusu yalnız dizisi tek olan makamlarda (Rast, Kürdî, Hicaz); Nevâ/Hüseynî/Muhayyer ve Uşşak/Bayâtî aynı diziyi paylaşır.
+- Ruling: tiz uzun ses hedefi 5 sn (neyzenim _8: uzun ses ağırlığı orta ve alt perdelerde); 4. kademenin önkoşulu Muhayyer.
+- Ruling: tiz (oktav) etütlerinde mikrofon takibi oktavı ayırır ("Bir oktav pes"); öteki etüt ve parçalarda oktav hatası doğru sayılmaya devam eder — cost if wrong: algılayıcının oktav hatası tiz etütlerinde yanlış "pes" gösterebilir.
+- Ruling: usul vurma hızı usulün kendi biriminde (♪ = /8 usullerde), Düyek ve Aksak gibi; tek Yürük Semâî dersi 6/8 ve 6/4'ü birlikte anlatır.
+- Deferred: `dil:tu-bag` (Seviye 2) "tu" hecesini öğretiyor; kaynaklarda doğrulanamadı — bir ney hocasına sorulmalı.
+- Deferred: Düyek usulünün dersi yok ve Seviye 5 etiketli, ama Seviye 4 "bir ilahi" hedefi Düyek'teki Allah Emrin Tutalım'a gider; Yürük Semâî (6/4) adı yanında "6/4" ikinci kez yazılıyor; takip özetinde kapalı Gerdâniye/Muhayyer "(kapalı)" eki olmadan geçiyor; portede notadaki takip işareti oktav ayrıntısını göstermiyor (yalnız özet).
+- Deferred: Staff'ta `notaTasma` sap/kirişleri saymıyor (kirişli tiz sekizlikler gelince); `BEAM_MAX_Y` sözsüz parçada da hece bandını koruyor (Çeçen Kızı'nda tek kısa sap istisnası); EtutDetail 7/8'de kiriş gruplaması 1+1+1 düm-tek-tek'i izlemiyor; `KADEME_ONKOSULU`'nda tanımsız kademe önkoşulsuz sayılır — Aşama E'de dem sesler 1. kademe olursa baştan açık olur.
+- Deferred: SymbTr Kod 4/7/12'nin süreli nota sayılması araştırma notuna dayanıyor; LISANS'ta Kod 10 notu yalnız bir eseri anıyor; birkaç test başlığı eskimiş; OgrenSection testi ders sayısı arttıkça tam takımda yük altında 5 sn zaman aşımına düşebiliyor (tek başına geçiyor).
