@@ -127,6 +127,7 @@ describe('topicOfCard', () => {
     expect(ids).toEqual([
       'nota-1', 'sure-1', 'nota-2', 'sure-2', 'nota-3', 'sure-3', 'nota-4', 'nota-5',
       'dizi-1', 'perde-1', 'dizi-2', 'koma-1', 'koma-2', 'perde-3', 'perde-4', 'sure-4', 'perde-2', 'perde-5',
+      'perde-6',
     ])
   })
   it('dizi konuları sequence türünde ve 6 karttan oluşur', () => {
@@ -148,7 +149,12 @@ describe('perde kartları', () => {
     ])
     expect(cardToEvents('perde-ters:D5')).toEqual([])
   })
-  it.each(['perde:', 'perde:H4', 'perde:C4', 'perde-ters:C6', 'perde-ters:', 'perde:D'])(
+  it('tiz perde kartları porte üstü notayı verir: perde:D6, perde:C6#4', () => {
+    expect(cardToEvents('perde:D6')).toEqual([{ kind: 'note', pitch: { step: 'D', octave: 6, acc: 0 }, dur: 'quarter' }])
+    expect(cardToEvents('perde:C6#4')).toEqual([{ kind: 'note', pitch: { step: 'C', octave: 6, acc: 4 }, dur: 'quarter' }])
+    expect(cardToEvents('perde-ters:C6#4')).toEqual([])
+  })
+  it.each(['perde:', 'perde:H4', 'perde:C4', 'perde-ters:E6', 'perde:C7', 'perde-ters:', 'perde:D'])(
     'geçersiz perde kimliği %j hata verir',
     (id) => {
       expect(() => cardToEvents(id)).toThrow(Error)

@@ -13,11 +13,13 @@ describe('NEY_PERDELER', () => {
       'neva', 'cargah', 'segah', 'dugah', 'rast',
       'buselik', 'kurdi', 'dik-kurdi', 'nim-hicaz', 'huseyni', 'acem', 'gerdaniye', 'muhayyer', 'kapali-neva', 'evic',
       'nim-sehnaz', 'nim-hisar',
+      'tiz-segah', 'tiz-cargah', 'tiz-neva', 'kapali-gerdaniye', 'kapali-muhayyer', 'tiz-nim-hicaz',
     ])
     expect(NEY_PERDELER.map((p) => p.name)).toEqual([
       'Nevâ', 'Çârgâh', 'Segâh', 'Dügâh', 'Rast',
       'Bûselik', 'Kürdî', 'Dik Kürdî', 'Nim Hicaz', 'Hüseynî', 'Acem', 'Gerdâniye (açık)', 'Muhayyer (açık)', 'Nevâ (kapalı)', 'Eviç',
       'Nim Şehnaz', 'Nim Hisar',
+      'Tiz Segâh', 'Tiz Çârgâh', 'Tiz Nevâ', 'Gerdâniye (kapalı)', 'Muhayyer (kapalı)', 'Tiz Nim Hicaz',
     ])
   })
 
@@ -68,6 +70,12 @@ describe('NEY_PERDELER', () => {
       ['evic', 'F', 5, 4, 'perde-4'],
       ['nim-sehnaz', 'G', 5, 4, 'perde-5'],
       ['nim-hisar', 'E', 5, -5, 'perde-5'],
+      ['tiz-segah', 'B', 5, -1, 'perde-6'],
+      ['tiz-cargah', 'C', 6, 0, 'perde-6'],
+      ['tiz-neva', 'D', 6, 0, 'perde-6'],
+      ['kapali-gerdaniye', 'G', 5, 0, 'perde-2'],
+      ['kapali-muhayyer', 'A', 5, 0, 'perde-2'],
+      ['tiz-nim-hicaz', 'C', 6, 4, 'perde-6'],
     ])
     const topicIds = NOTA_TOPICS.map((t) => t.id)
     for (const p of NEY_PERDELER) expect(topicIds).toContain(p.notaTopicId)
@@ -197,6 +205,77 @@ describe('NEY_PERDELER', () => {
     }
     for (const id of ['huseyni', 'acem', 'evic', 'gerdaniye', 'muhayyer', 'kapali-neva', 'nim-sehnaz', 'nim-hisar']) {
       expect(kademe[id], id).toBe(3)
+    }
+  })
+
+  it('4. kademe: altı tiz ve kapalı perde, sırası tabloyla aynı', () => {
+    expect(NEY_PERDELER.filter((p) => p.kademe === 4).map((p) => p.id)).toEqual([
+      'tiz-segah', 'tiz-cargah', 'tiz-neva', 'kapali-gerdaniye', 'kapali-muhayyer', 'tiz-nim-hicaz',
+    ])
+    expect(NEY_PERDELER.slice(-6).every((p) => p.kademe === 4)).toBe(true)
+  })
+
+  it('4. kademe şemaları araştırma D §1 ile birebir aynıdır; hepsi doğrulanmış, neyzenim _8 ya da _9 kaynaklı', () => {
+    const K = 'kapali'
+    const A = 'acik'
+    const want: Record<string, string[]> = {
+      'tiz-segah': [K, K, K, A, K, A],
+      'tiz-cargah': [K, K, A, A, K, A],
+      'tiz-neva': [A, K, A, A, K, A],
+      'kapali-gerdaniye': [K, K, K, K, K, K],
+      'kapali-muhayyer': [K, K, K, K, K, A],
+      'tiz-nim-hicaz': [K, A, A, A, K, A],
+    }
+    for (const [id, front] of Object.entries(want)) {
+      const p = NEY_PERDELER.find((x) => x.id === id)!
+      expect(p.fingering, id).toEqual({ thumb: 'kapali', front })
+      expect(p.verified, id).toBe(true)
+      expect(p.source, id).toMatch(/^https:\/\/www\.neyzenim\.com\/neydersleri_[89]\.html$/)
+    }
+  })
+
+  it('tiz perdeler aynı parmaklı alt oktav eşiyle aynı şemadadır ve tam bir oktav (53 koma) yüksektir', () => {
+    const byId = Object.fromEntries(NEY_PERDELER.map((p) => [p.id, p]))
+    const ciftler = [
+      ['segah', 'tiz-segah'],
+      ['cargah', 'tiz-cargah'],
+      ['neva', 'tiz-neva'],
+      ['rast', 'kapali-gerdaniye'],
+      ['dugah', 'kapali-muhayyer'],
+      ['nim-hicaz', 'tiz-nim-hicaz'],
+    ] as const
+    for (const [alt, ust] of ciftler) {
+      expect(byId[ust]!.fingering, ust).toEqual(byId[alt]!.fingering)
+    }
+    // Yazılı perde farkı: yalnız parmağı aynı olan çiftlerde oktav (53 koma); kapalı Gerdâniye/Muhayyer
+    // 3. kademedeki açık eşleriyle aynı yazılı perdedir.
+    for (const [alt, ust] of [['segah', 'tiz-segah'], ['cargah', 'tiz-cargah'], ['neva', 'tiz-neva'], ['nim-hicaz', 'tiz-nim-hicaz']] as const) {
+      expect(writtenKoma(byId[ust]!.written) - writtenKoma(byId[alt]!.written), ust).toBe(53)
+    }
+    expect(writtenKoma(byId['kapali-gerdaniye']!.written) - writtenKoma(byId.rast!.written)).toBe(53)
+    expect(writtenKoma(byId['kapali-muhayyer']!.written) - writtenKoma(byId.dugah!.written)).toBe(53)
+  })
+
+  it('yazılı perdeye göre arama G5 için açık Gerdâniye, A5 için açık Muhayyer verir (açık olanlar önce)', () => {
+    expect(NEY_PERDELER.find((p) => samePitch(p.written, { step: 'G', octave: 5, acc: 0 }))!.id).toBe('gerdaniye')
+    expect(NEY_PERDELER.find((p) => samePitch(p.written, { step: 'A', octave: 5, acc: 0 }))!.id).toBe('muhayyer')
+  })
+
+  it('tiz perde tarifleri: dudak büzülür, ana ses parmağı bir oktav yukarıda; kapalı olanlar nefes şiddeti söylemez', () => {
+    const byId = Object.fromEntries(NEY_PERDELER.map((p) => [p.id, p]))
+    const aile: Record<string, string> = {
+      'tiz-segah': 'Segâh', 'tiz-cargah': 'Çârgâh', 'tiz-neva': 'Nevâ', 'tiz-nim-hicaz': 'Nim Hicaz',
+      'kapali-gerdaniye': 'Rast', 'kapali-muhayyer': 'Dügâh',
+    }
+    for (const [id, ad] of Object.entries(aile)) {
+      expect(byId[id]!.tip, id).toContain(`${ad} parmağıyla, bir oktav yukarıda`)
+    }
+    for (const id of ['tiz-segah', 'tiz-cargah', 'tiz-neva', 'tiz-nim-hicaz']) {
+      expect(byId[id]!.tip, id).toContain('Daha da sert üfle; dudak biraz daha büzülür')
+    }
+    for (const id of ['kapali-gerdaniye', 'kapali-muhayyer']) {
+      expect(byId[id]!.tip, id).not.toContain('sert')
+      expect(byId[id]!.tip, id).toContain('Kaynak nefes şiddetini yazmıyor')
     }
   })
 

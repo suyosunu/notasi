@@ -403,6 +403,60 @@ describe('perde-5 soruları (Nim Şehnaz, Nim Hisar)', () => {
   })
 })
 
+describe('perde-6 soruları (tiz perdeler)', () => {
+  const H6 = 'Porte üstünde: Si koma bemolü Tiz Segâh, Do Tiz Çârgâh, Re Tiz Nevâ; Do üzerindeki bakiye diyezi Tiz Nim Hicaz.'
+  const KARTLAR = ['perde:B5b1', 'perde:C6', 'perde:D6', 'perde:C6#4', 'perde-ters:B5b1', 'perde-ters:C6', 'perde-ters:D6', 'perde-ters:C6#4']
+
+  it('perde-6 konusu perde-5 sonrasında gelir ve sekiz kartı vardır', () => {
+    const t = NOTA_TOPICS.find((x) => x.id === 'perde-6')!
+    expect(NOTA_TOPICS.at(-1)).toBe(t)
+    expect(t.title).toBe('Tiz perdeler')
+    expect(t.cards).toEqual(KARTLAR)
+  })
+
+  it('dört farklı seçenek, cevap içinde (50 tohum)', () => {
+    for (const card of KARTLAR) {
+      for (let s = 1; s <= 50; s++) {
+        const q = makeQuestion(card, seededRng(s))
+        expect(q.options, card).toHaveLength(4)
+        expect(new Set(q.options).size, card).toBe(4)
+        expect(q.options, card).toContain(q.answer)
+        expect(q.topicId).toBe('perde-6')
+      }
+    }
+  })
+
+  it('ileri soru: cevap Tiz adıdır, çeldiriciler konunun öbür üç adıdır', () => {
+    const TIZ = ['Tiz Segâh', 'Tiz Çârgâh', 'Tiz Nevâ', 'Tiz Nim Hicaz']
+    const q = makeQuestion('perde:D6', seededRng(3))
+    expect(q.prompt).toBe('Bu notanın perde adı ne?')
+    expect(q.answer).toBe('Tiz Nevâ')
+    expect([...q.options].sort()).toEqual([...TIZ].sort())
+  })
+
+  it('ters soru: cevap "tiz" önekli etikettir', () => {
+    expect(makeQuestion('perde-ters:D6', seededRng(1)).answer).toBe('tiz Re')
+    expect(makeQuestion('perde-ters:B5b1', seededRng(1)).answer).toBe('tiz Si (koma bemolü)')
+    expect(makeQuestion('perde-ters:C6#4', seededRng(1)).answer).toBe('tiz Do (bakiye diyezi)')
+    expect(makeQuestion('perde-ters:D6', seededRng(1)).prompt).toBe('Tiz Nevâ hangi nota?')
+  })
+
+  it('perde-6 ipucu Tiz Segâh, Çârgâh, Nevâ ve Nim Hicaz’ın yerini söyler', () => {
+    for (const c of KARTLAR) {
+      const hint = makeQuestion(c, seededRng(1)).hint!
+      expect(hint).toBe(H6)
+      expect(hint).toContain('Tiz Segâh')
+      expect(hint).toContain('Tiz Nim Hicaz')
+    }
+  })
+
+  it('perde-6 soruları Irak adı içermez', () => {
+    for (const card of KARTLAR) {
+      for (let s = 1; s <= 30; s++) expect(makeQuestion(card, seededRng(s)).options).not.toContain('Irak')
+    }
+  })
+})
+
 describe('makam soruları', () => {
   const MAKAM_CARDS = MAKAM_TOPICS.flatMap((t) => t.cards)
 

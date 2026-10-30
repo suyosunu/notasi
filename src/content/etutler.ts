@@ -78,7 +78,9 @@ export function parseEtut(s: string): MusicEvent[][] {
 /**
  * Perdenin etütlerde yazıldığı belirteç (Nevâ D5, Çârgâh C5, Segâh B4b1, Dügâh A4, Rast G4; ara sesler Bûselik B4,
  * Kürdî B4b5, Dik Kürdî B4b4, Nim Hicaz C5#4; 3. kademe Hüseynî E5, Acem F5, Gerdâniye G5, Muhayyer A5,
- * kapalı Nevâ D5, Eviç F5#4, Nim Şehnaz G5#4, Nim Hisar E5b5). Açık ve kapalı Nevâ aynı yazılı perdedir.
+ * kapalı Nevâ D5, Eviç F5#4, Nim Şehnaz G5#4, Nim Hisar E5b5;
+ * 4. kademe Tiz Segâh B5b1, Tiz Çârgâh C6, Tiz Nevâ D6, kapalı Gerdâniye G5, kapalı Muhayyer A5, Tiz Nim Hicaz C6#4).
+ * Açık ve kapalı Nevâ (Gerdâniye, Muhayyer) aynı yazılı perdedir.
  */
 const YAZIM: Partial<Record<PerdeId, string>> = {
   neva: 'D5',
@@ -98,6 +100,12 @@ const YAZIM: Partial<Record<PerdeId, string>> = {
   evic: 'F5#4',
   'nim-sehnaz': 'G5#4',
   'nim-hisar': 'E5b5',
+  'tiz-segah': 'B5b1',
+  'tiz-cargah': 'C6',
+  'tiz-neva': 'D6',
+  'kapali-gerdaniye': 'G5',
+  'kapali-muhayyer': 'A5',
+  'tiz-nim-hicaz': 'C6#4',
 }
 
 function perdeAdi(id: PerdeId): string {

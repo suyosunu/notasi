@@ -11,6 +11,10 @@ const RIGHT_MARGIN = 8
 const HEAD_RX = 6.5
 const HEAD_RY = 5
 const STEM_LEN = 33
+/** Nota başının merkezden yukarı en uzak ucu (px): döndürülmüş elipsin yarı yüksekliği (≈5,2) ve çizgi kalınlığı. */
+const HEAD_UST = 6
+/** Değiştirgeç şeklinin nota merkezinden yukarı en uzak ucu (px): bemol gövdesi 1,76 aralık, diyez 1,4 aralık. */
+const ACC_UST = 17.6
 const INK = 'currentColor'
 /** İşaret ile nota başı arasındaki boşluk (px); en az 2 olmalı. */
 const ACC_GAP = 3
@@ -360,6 +364,13 @@ function eventTop(e: MusicEvent, beam: BeamTip | undefined): number {
   return Math.min(y - HEAD_RY, beam ? beam.y : y - STEM_LEN)
 }
 
+/** Nota başı ve değiştirgecinin 0'ın üstüne taşan miktarı (px); taşmıyorsa 0. */
+function notaUstTasma(e: NoteEvent): number {
+  const y = noteY(e.pitch)
+  const ust = e.pitch.acc === 0 || Math.abs(e.pitch.acc) === 9 ? HEAD_UST : Math.max(HEAD_UST, ACC_UST)
+  return Math.max(0, ust - y)
+}
+
 /** Röpriz: `bas` kalın-ince çizgi ve iki nokta (`x` sol kenar); `son` aynası, iki nokta ve ince-kalın (`x` sağ kenar). */
 function RoprizSign(props: { side: 'bas' | 'son'; x: number }) {
   const { side, x } = props
@@ -533,7 +544,10 @@ export function Staff(props: {
     const d = durumlar?.[i]
     return d && DURUM_ISARET[d] !== undefined ? Math.min(STAFF_TOP, eventTop(e, beamTips.get(i))) - DURUM_GAP : undefined
   })
-  const ustTasma = Math.max(0, ...isaretY.map((y) => (y === undefined ? 0 : DURUM_SIZE - y)))
+  const durumTasma = Math.max(0, ...isaretY.map((y) => (y === undefined ? 0 : DURUM_SIZE - y)))
+  // Porte üstü yüksek notalar (Re6, Do6 bakiye diyezi): baş ve işaret kutunun üstünden taşmasın, kutu yukarı uzasın.
+  const notaTasma = Math.max(0, ...events.map((e) => (e.kind === 'note' ? notaUstTasma(e) : 0)))
+  const ustTasma = Math.max(durumTasma, notaTasma)
 
   return (
     <svg

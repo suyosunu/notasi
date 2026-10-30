@@ -35,12 +35,15 @@ const BASPARE_DERS_ID = 's0:baspare'
 
 const OTHER_PASSED_MAX = 3
 
-/** Daha yüksek kademenin ilk perdesi (Hüseynî) için geçilmesi gereken perde: MEB çekirdek beşlisinin sonu. */
-const KADEME_ONKOSULU: PerdeId = 'rast'
+/**
+ * Daha yüksek kademenin ilk perdesi için geçilmesi gereken perde: 3. kademe (Hüseynî) için MEB çekirdek beşlisinin
+ * sonu Rast; 4. kademe (Tiz Segâh) için 3. kademenin en tiz ana sesi açık Muhayyer.
+ */
+const KADEME_ONKOSULU: Partial<Record<number, PerdeId>> = { 3: 'rast', 4: 'muhayyer' }
 
 /**
  * Bir perde şunların hepsi sağlanınca açılır: aynı kademedeki önceki perde geçilmiş (kademenin
- * ilk perdesi için: ilk kademede önkoşul yok, sonraki kademelerde Rast geçilmiş), nota konusu
+ * ilk perdesi için: ilk kademede önkoşul yok, 3. kademede Rast, 4. kademede Muhayyer geçilmiş), nota konusu
  * kilitli değil, parmak şeması doğrulanmış. Geçilmiş (`passed`) kaydı olan perde geçilmiştir; geçilmemiş de olsa
  * uzun ses kaydı olan perde (açıkken denenmiştir) hiç kilitlenmez.
  */
@@ -65,7 +68,10 @@ export function perdeStatuses(
       let prevOk: boolean
       if (prev !== undefined) prevOk = prev === 'gecildi'
       else if (p.kademe === lowestKademe) prevOk = true
-      else prevOk = out[KADEME_ONKOSULU] === 'gecildi'
+      else {
+        const onkosul = KADEME_ONKOSULU[p.kademe]
+        prevOk = onkosul === undefined || out[onkosul] === 'gecildi'
+      }
       status = denenen.has(p.id) || (prevOk && notaOpen && visibleFingering(p) !== null) ? 'acik' : 'kilitli'
     }
     out[p.id] = status

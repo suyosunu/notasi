@@ -778,6 +778,63 @@ describe('Staff: üçleme, bağ, nefes işareti, röpriz', () => {
   })
 })
 
+describe('Staff: tiz perdeler (D6, C6#4) kırpılmaz', () => {
+  const tiz = (step: 'B' | 'C' | 'D', octave: number, acc: Accidental): MusicEvent => ({
+    kind: 'note',
+    pitch: { step, octave, acc },
+    dur: 'quarter',
+  })
+
+  /** Nota başı (döndürülmüş elips + çizgi kalınlığı: en çok 6 px yukarı), ek çizgiler ve işaretin (en çok `yukselis` px yukarı) üst ucu. */
+  function ustUclar(container: Element, yukselis: number): number[] {
+    const y: number[] = []
+    for (const h of container.querySelectorAll('[data-testid="notehead"]')) y.push(Number(h.getAttribute('cy')) - 6)
+    for (const l of container.querySelectorAll('[data-ledger]')) y.push(Number(l.getAttribute('y1')) - 0.6)
+    for (const a of container.querySelectorAll('[data-testid="accidental"]')) {
+      const m = /translate\([-\d.]+ ([-\d.]+)\)/.exec(a.getAttribute('transform')!)!
+      y.push(Number(m[1]) - yukselis)
+    }
+    return y
+  }
+  const minYOf = (c: Element) => Number(c.querySelector('svg')!.getAttribute('viewBox')!.split(' ')[1])
+
+  it('D6 nota başı ve ek çizgiler görünüm kutusunun içinde kalır', () => {
+    const { container } = render(<Staff events={[tiz('D', 6, 0)]} />)
+    const ust = ustUclar(container, 0)
+    expect(ust.length).toBe(1 + 2) // baş + iki ek çizgi (La5 ve Do6 çizgileri)
+    for (const y of ust) expect(y).toBeGreaterThanOrEqual(minYOf(container) - 0.001)
+  })
+
+  it('C6#4 nota başı, bakiye diyezi ve ek çizgiler görünüm kutusunun içinde kalır', () => {
+    const { container } = render(<Staff events={[tiz('C', 6, 4)]} />)
+    expect(container.querySelector('[data-testid="accidental"]')).toBeTruthy()
+    // Diyez en çok 1,4 aralık (14 px) yukarı uzanır.
+    for (const y of ustUclar(container, 14)) expect(y).toBeGreaterThanOrEqual(minYOf(container) - 0.001)
+    expect(minYOf(container)).toBeLessThan(0)
+  })
+
+  it('Tiz Segâh (Si koma bemolü) işareti de kırpılmaz; bemol 1,76 aralık (17,6 px) yukarı uzanır', () => {
+    const { container } = render(<Staff events={[tiz('B', 5, -1)]} />)
+    for (const y of ustUclar(container, 17.6)) expect(y).toBeGreaterThanOrEqual(minYOf(container) - 0.001)
+  })
+
+  it('porte içindeki ve alçak notalarda görünüm kutusu yukarı büyümez', () => {
+    const { container } = render(<Staff events={[note('A', 5, 'quarter'), tiz('C', 6, 0)]} />)
+    expect(minYOf(container)).toBeGreaterThanOrEqual(-0.001) // Do6 başı: y = 10, üst ucu 4
+    const { container: c2 } = render(<Staff events={[note('G', 4, 'quarter')]} />)
+    expect(c2.querySelector('svg')!.getAttribute('viewBox')).toBe('0 0 240 110')
+  })
+
+  it('işaretli yüksek nota için görünüm kutusu yukarı uzar, genişlik ve yükseklik toplamı bozulmaz', () => {
+    const { container } = render(<Staff events={[tiz('D', 6, 0)]} />)
+    const [x, minY, w, h] = container.querySelector('svg')!.getAttribute('viewBox')!.split(' ').map(Number)
+    expect(x).toBe(0)
+    expect(minY!).toBeLessThan(0)
+    expect(minY! + h!).toBe(110) // alt kenar sabit: yalnız yukarı büyür
+    expect(w).toBeGreaterThan(0)
+  })
+})
+
 describe('Staff: takip sonuç işaretleri', () => {
   const dort = [note('G', 4, 'quarter'), note('A', 4, 'quarter'), note('B', 4, 'quarter'), note('C', 5, 'quarter')]
   const olay = (c: Element, i: number) => c.querySelector(`[data-event="${i}"]`) as SVGGElement

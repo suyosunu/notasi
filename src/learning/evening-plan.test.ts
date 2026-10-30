@@ -27,7 +27,7 @@ function statuses(over: Partial<Record<PerdeId, PerdeStatus>>): Record<PerdeId, 
 /** Her nota konusu açık, `kilitli` verilenler dışında. */
 function topics(locked: string[] = []): Record<string, TopicStatus> {
   const out: Record<string, TopicStatus> = {}
-  for (const id of ['nota-1', 'nota-2', 'perde-2', 'perde-3', 'perde-4', 'perde-5']) out[id] = locked.includes(id) ? 'kilitli' : 'acik'
+  for (const id of ['nota-1', 'nota-2', 'perde-2', 'perde-3', 'perde-4', 'perde-5', 'perde-6']) out[id] = locked.includes(id) ? 'kilitli' : 'acik'
   return out
 }
 
@@ -238,6 +238,48 @@ describe('perdeStatuses', () => {
       expect(s['nim-sehnaz']).toBe('gecildi')
       expect(s['nim-hisar']).toBe('acik')
       expect(perdeStatuses([...eski, tone('nim-sehnaz', true)], { ...notalar, 'perde-5': 'kilitli' })['nim-hisar']).toBe('kilitli')
+    })
+  })
+
+  describe("kademe 4 Muhayyer'e bağlı", () => {
+    // 2. ve 3. kademenin bütün perdeleri geçilmiş (Muhayyer hariç tutulabilir).
+    const kademe23 = NEY_PERDELER.filter((p) => p.kademe <= 3).map((p) => p.id)
+    const hepsi = (haric: string[] = []) => kademe23.filter((id) => !haric.includes(id)).map((id) => tone(id, true))
+    const TIZ = NEY_PERDELER.filter((p) => p.kademe === 4).map((p) => p.id)
+
+    it('Muhayyer geçilmemişse bütün tiz perdeler kilitli kalır', () => {
+      const s = perdeStatuses(hepsi(['muhayyer']), topics())
+      expect(s.muhayyer).toBe('acik')
+      for (const id of TIZ) expect(s[id], id).toBe('kilitli')
+    })
+
+    it('Muhayyer geçilince ve perde-6 açıkken Tiz Segâh açılır, sonrakiler sırayla', () => {
+      const s = perdeStatuses(hepsi(), topics())
+      expect(s['tiz-segah']).toBe('acik')
+      for (const id of TIZ.slice(1)) expect(s[id], id).toBe('kilitli')
+      const s2 = perdeStatuses([...hepsi(), tone('tiz-segah', true)], topics())
+      expect(s2['tiz-segah']).toBe('gecildi')
+      expect(s2['tiz-cargah']).toBe('acik')
+      expect(s2['tiz-neva']).toBe('kilitli')
+    })
+
+    it('perde-6 konusu kayıtta yoksa ya da kilitliyse tiz perdeler kilitli kalır', () => {
+      const { 'perde-6': _yok, ...eskiKayit } = topics()
+      expect(perdeStatuses(hepsi(), eskiKayit)['tiz-segah']).toBe('kilitli')
+      expect(perdeStatuses(hepsi(), topics(['perde-6']))['tiz-segah']).toBe('kilitli')
+    })
+
+    it('kapalı Gerdâniye ve Muhayyer perde-2 konusuna bağlıdır; Tiz Nevâ geçilince açılır', () => {
+      const oncekiler = ['tiz-segah', 'tiz-cargah', 'tiz-neva'].map((id) => tone(id, true))
+      const s = perdeStatuses([...hepsi(), ...oncekiler], topics(['perde-6']))
+      // Önkoşul Muhayyer olduğu için perde-6 kilitli olsa da perde-2 açıkken kapalı Gerdâniye açılır.
+      expect(s['kapali-gerdaniye']).toBe('acik')
+      expect(s['kapali-muhayyer']).toBe('kilitli')
+    })
+
+    it('kaydı olan tiz perde (açıkken denenmiş) Muhayyer geçilmemiş olsa da kilitlenmez', () => {
+      const s = perdeStatuses([...hepsi(['muhayyer']), tone('tiz-segah', false)], topics())
+      expect(s['tiz-segah']).toBe('acik')
     })
   })
 

@@ -32,12 +32,18 @@ export type PerdeId =
   | 'kapali-neva'
   | 'nim-sehnaz'
   | 'nim-hisar'
+  | 'tiz-segah'
+  | 'tiz-cargah'
+  | 'tiz-neva'
+  | 'kapali-gerdaniye'
+  | 'kapali-muhayyer'
+  | 'tiz-nim-hicaz'
 
 export interface NeyPerde {
   id: PerdeId
   name: string
-  /** MEB kademesi: 2 = ana sesler, 3 = daha sert üflenen sesler. */
-  kademe: 2 | 3
+  /** MEB kademesi: 2 = ana sesler, 3 = daha sert üflenen sesler, 4 = tiz sesler ve kapalı pozisyonlar. */
+  kademe: 2 | 3 | 4
   written: WrittenPitch
   fingering: Fingering | null
   /** Yalnızca bir kaynak şemayı (başparmak + 6 ön delik) açıkça gösteriyorsa true. */
@@ -74,8 +80,16 @@ const SRC_HICAZ = 'https://www.neyzenim.com/neydersleri_10.html'
  * kapatıyoruz", "kafamızı hafifçe sola doğru çeviriyoruz"). Kapalı Nevâ ayrıca neydersleri_9'da da yazılıdır.
  */
 const SRC_ORTA = 'https://www.neyzenim.com/neydersleri_6.html'
+/** Ney Dersleri 8 – Tiz Sesler: Tiz Segâh, Tiz Çârgâh, Tiz Nevâ, Tiz Nim Hicaz (daha da sert üflenir, dudak biraz daha büzülür). */
+const SRC_TIZ = 'https://www.neyzenim.com/neydersleri_8.html'
+/** Ney Dersleri 9 – aynı sesleri farklı pozisyondan çıkarma: kapalı Gerdâniye ve kapalı Muhayyer (yalnız parmak yazılıdır). */
+const SRC_KAPALI = 'https://www.neyzenim.com/neydersleri_9.html'
 
 const SERT = 'Daha sert üfle: '
+/** 4. kademe tiz sesler (neyzenim _8): nefes daha da sert, dudak biraz daha büzülür. */
+const TIZ_SERT = 'Daha da sert üfle; dudak biraz daha büzülür: '
+/** Kapalı Gerdâniye ve Muhayyer için kaynak (neyzenim _9) yalnız parmağı yazar, nefes şiddetini yazmaz. */
+const KAPALI_NEFES = ' Kaynak nefes şiddetini yazmıyor; sesi kulağınla ayarla.'
 export const KOMA_FARKI = 'aradaki koma farkını dudak ve baş açısıyla verirsin.'
 
 /**
@@ -90,6 +104,12 @@ export const KOMA_FARKI = 'aradaki koma farkını dudak ve baş açısıyla veri
  * (araştırma C §1: Rast→kapalı Nevâ, Dügâh→Hüseynî, Kürdî→Acem, Segâh→Eviç, Çârgâh→Gerdâniye,
  * Nim Hicaz→Nim Şehnaz, Nevâ→Muhayyer). Nim Hisar'ın şeması Dügâh parmağının son deliğini 3/4 kapatır;
  * `Hole` kesir taşımadığı için `yarim` yazılır, 3/4 ipucundadır. MEB: tymm.meb.gov.tr ünite 1217, 1226, 1232.
+ * 4. kademe (araştırma D §1; neyzenim _8 ve _9, MEB ünite 1227) yeni parmak öğretmez: aynı ana ses parmağı, bir oktav
+ * (53 koma) yukarıda ve daha da sert üflenerek çalınır. Sıra: önce MEB 1227'nin ana sesleri (Tiz Segâh, Tiz Çârgâh,
+ * Tiz Nevâ), sonra kapalı pozisyonlar (kapalı Gerdâniye = Rast parmağı, kapalı Muhayyer = Dügâh parmağı), en sonda
+ * yalnız neyzenim'de geçen Tiz Nim Hicaz. Kapalı Gerdâniye ve Muhayyer, 3. kademedeki açık eşleriyle aynı yazılı
+ * perdedir (G5, A5); `find(samePitch)` açık olanı bulur, çünkü açıklar listede önce gelir. Kaynak kapalı olanların
+ * nefes şiddetini yazmaz; ipucu yalnız parmağı ve oktav ilişkisini söyler.
  * Perde-2 ve perde-5 konuları NOTA_TOPICS'in sonundadır, bu yüzden Hüseynî ve Nim Şehnaz, Seviye 2 nota
  * konuları öğrenilmeden açılmaz. Her perde, kendi nota konusu açılınca ve aynı kademedeki önceki perde geçilince
  * açılır (3. kademenin ilk perdesi Hüseynî için ayrıca Rast'ın geçilmesi yeter).
@@ -281,6 +301,72 @@ export const NEY_PERDELER: NeyPerde[] = [
     source: SRC_ORTA,
     tip: SERT + 'Dügâh parmağıyla çalınır, ama alttaki elin yüzük parmağı en alt deliğin 3/4’ünü kapatır; başını hafifçe sola çevir.',
     notaTopicId: 'perde-5',
+  },
+  {
+    id: 'tiz-segah',
+    name: 'Tiz Segâh',
+    kademe: 4,
+    written: { step: 'B', octave: 5, acc: -1 },
+    fingering: { thumb: 'kapali', front: ['kapali', 'kapali', 'kapali', 'acik', 'kapali', 'acik'] },
+    verified: true,
+    source: SRC_TIZ,
+    tip: TIZ_SERT + 'Segâh parmağıyla, bir oktav yukarıda (üstten ilk üç delik ve alttaki elin orta parmağı kapalı).',
+    notaTopicId: 'perde-6',
+  },
+  {
+    id: 'tiz-cargah',
+    name: 'Tiz Çârgâh',
+    kademe: 4,
+    written: { step: 'C', octave: 6, acc: 0 },
+    fingering: { thumb: 'kapali', front: ['kapali', 'kapali', 'acik', 'acik', 'kapali', 'acik'] },
+    verified: true,
+    source: SRC_TIZ,
+    tip: TIZ_SERT + 'Çârgâh parmağıyla, bir oktav yukarıda (üstten ilk iki delik ve alttaki elin orta parmağı kapalı).',
+    notaTopicId: 'perde-6',
+  },
+  {
+    id: 'tiz-neva',
+    name: 'Tiz Nevâ',
+    kademe: 4,
+    written: { step: 'D', octave: 6, acc: 0 },
+    fingering: { thumb: 'kapali', front: ['acik', 'kapali', 'acik', 'acik', 'kapali', 'acik'] },
+    verified: true,
+    source: SRC_TIZ,
+    tip: TIZ_SERT + 'Nevâ parmağıyla, bir oktav yukarıda (iki elin orta parmağı kapalı, diğer ön delikler açık).',
+    notaTopicId: 'perde-6',
+  },
+  {
+    id: 'kapali-gerdaniye',
+    name: 'Gerdâniye (kapalı)',
+    kademe: 4,
+    written: { step: 'G', octave: 5, acc: 0 },
+    fingering: { thumb: 'kapali', front: ['kapali', 'kapali', 'kapali', 'kapali', 'kapali', 'kapali'] },
+    verified: true,
+    source: SRC_KAPALI,
+    tip: 'Rast parmağıyla, bir oktav yukarıda (bütün delikler kapalı); açık Gerdâniye ile aynı sestir.' + KAPALI_NEFES,
+    notaTopicId: 'perde-2',
+  },
+  {
+    id: 'kapali-muhayyer',
+    name: 'Muhayyer (kapalı)',
+    kademe: 4,
+    written: { step: 'A', octave: 5, acc: 0 },
+    fingering: { thumb: 'kapali', front: ['kapali', 'kapali', 'kapali', 'kapali', 'kapali', 'acik'] },
+    verified: true,
+    source: SRC_KAPALI,
+    tip: 'Dügâh parmağıyla, bir oktav yukarıda (yalnızca en alt delik açık); açık Muhayyer ile aynı sestir.' + KAPALI_NEFES,
+    notaTopicId: 'perde-2',
+  },
+  {
+    id: 'tiz-nim-hicaz',
+    name: 'Tiz Nim Hicaz',
+    kademe: 4,
+    written: { step: 'C', octave: 6, acc: 4 },
+    fingering: { thumb: 'kapali', front: ['kapali', 'acik', 'acik', 'acik', 'kapali', 'acik'] },
+    verified: true,
+    source: SRC_TIZ,
+    tip: TIZ_SERT + 'Nim Hicaz parmağıyla, bir oktav yukarıda (yalnızca ilk delik ve alttaki elin orta parmağı kapalı).',
+    notaTopicId: 'perde-6',
   },
 ]
 

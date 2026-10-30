@@ -136,10 +136,14 @@ const PERDE_3_HINT = 'Si üzerindeki işaretler: işaretsiz Si Bûselik, Dik Kü
 const PERDE_4_HINT = 'Do üzerinde: Nim Hicaz bakiye diyezi, Hicaz küçük mücenneb diyezi; Fa üzerinde: Eviç bakiye diyezi.'
 const PERDE_5_HINT = 'Sol üzerinde: Nim Şehnaz bakiye diyezi; Mi üzerinde: Nim Hisar küçük mücenneb bemolü.'
 
+const PERDE_6_HINT =
+  'Porte üstünde: Si koma bemolü Tiz Segâh, Do Tiz Çârgâh, Re Tiz Nevâ; Do üzerindeki bakiye diyezi Tiz Nim Hicaz.'
+
 function perdeHint(topicId: string): string {
   if (topicId === 'perde-3') return PERDE_3_HINT
   if (topicId === 'perde-4') return PERDE_4_HINT
   if (topicId === 'perde-5') return PERDE_5_HINT
+  if (topicId === 'perde-6') return PERDE_6_HINT
   return PERDE_HINT
 }
 
