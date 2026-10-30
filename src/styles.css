@@ -685,6 +685,21 @@ h2.setting-label {
   margin: 0 auto;
 }
 
+/* Satır seçimi: dokunulabilir satırlar (alıştırma bölümü) ve seçili aralığın tonu. */
+.score-row[role='button'] {
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.score-row.secili {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.score-row[role='button']:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .toggle {
   display: flex;
   align-items: center;

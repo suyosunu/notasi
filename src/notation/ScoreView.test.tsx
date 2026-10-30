@@ -1,4 +1,4 @@
-import { cleanup, render } from '@testing-library/preact'
+import { cleanup, fireEvent, render } from '@testing-library/preact'
 import { afterEach, describe, expect, it } from 'vitest'
 import { PARCALAR } from '../content/parcalar'
 import { USULLER } from '../content/usuller'
@@ -140,6 +140,95 @@ describe('ScoreView', () => {
       cleanup()
     }
     expect(beams).toBeGreaterThan(100)
+  })
+
+  it('scoreLayout satırları ölçü aralığını taşır (tek tek bölünen gruplar dahil)', () => {
+    const s = (step: 'G' | 'A' | 'B' | 'C'): MusicEvent => ({
+      kind: 'note',
+      pitch: { step, octave: step === 'C' ? 5 : 4, acc: 0 },
+      dur: 'sixteenth',
+    })
+    const dense = (): MusicEvent[] => Array.from({ length: 16 }, (_, i) => s((['G', 'A', 'B', 'C'] as const)[i % 4]!))
+    const olcu = [measure(), measure(), dense(), dense(), measure()]
+    const { rows: rs } = scoreLayout(olcu, undefined, 2)
+    expect(rs.map((r) => [r.olcuBas, r.olcuSon])).toEqual([
+      [0, 1],
+      [2, 2],
+      [3, 3],
+      [4, 4],
+    ])
+  })
+
+  it('onSatirDokun yokken satırlar düğme değildir', () => {
+    const { container } = render(<ScoreView olcu={Array.from({ length: 4 }, measure)} />)
+    expect(container.querySelectorAll('[role="button"]')).toHaveLength(0)
+    expect(container.querySelectorAll('[tabindex]')).toHaveLength(0)
+  })
+
+  it('onSatirDokun varken satır tıklaması ve Enter/Boşluk ölçü aralığını bildirir', () => {
+    const olcu = Array.from({ length: 6 }, measure)
+    const seen: unknown[] = []
+    const { container } = render(<ScoreView olcu={olcu} onSatirDokun={(s) => seen.push(s)} />)
+    const rs = rows(container)
+    expect(rs).toHaveLength(3)
+    expect(rs.every((r) => r.getAttribute('role') === 'button' && r.getAttribute('tabindex') === '0')).toBe(true)
+    fireEvent.click(rs[1]!)
+    expect(seen).toEqual([{ bas: 2, son: 3 }])
+    fireEvent.keyDown(rs[2]!, { key: 'Enter' })
+    expect(seen[1]).toEqual({ bas: 4, son: 5 })
+    const space = fireEvent.keyDown(rs[0]!, { key: ' ' })
+    expect(space).toBe(false) // varsayılan davranış (kaydırma) engellendi
+    expect(seen[2]).toEqual({ bas: 0, son: 1 })
+    expect(fireEvent.keyDown(rs[0]!, { key: 'a' })).toBe(true)
+    expect(seen).toHaveLength(3)
+  })
+
+  it('aria-label 1 tabanlı ölçü numaralarıyla yazılır', () => {
+    const olcu = Array.from({ length: 3 }, measure)
+    const { container } = render(<ScoreView olcu={olcu} onSatirDokun={() => {}} />)
+    expect(rows(container).map((r) => r.getAttribute('aria-label'))).toEqual(['1–2. ölçüleri seç', '3. ölçüyü seç'])
+  })
+
+  it('aria-pressed ve secili sınıfı seçime göre değişir', () => {
+    const olcu = Array.from({ length: 6 }, measure)
+    const { container } = render(<ScoreView olcu={olcu} secim={{ bas: 2, son: 3 }} onSatirDokun={() => {}} />)
+    const rs = rows(container)
+    expect(rs.map((r) => r.getAttribute('aria-pressed'))).toEqual(['false', 'true', 'false'])
+    expect(rs.map((r) => r.classList.contains('secili'))).toEqual([false, true, false])
+  })
+
+  it('seçim aralığı birden çok satırı kapsayabilir; null seçimde hiçbiri seçili değildir', () => {
+    const olcu = Array.from({ length: 6 }, measure)
+    const wide = render(<ScoreView olcu={olcu} secim={{ bas: 1, son: 4 }} onSatirDokun={() => {}} />).container
+    expect(rows(wide).map((r) => r.classList.contains('secili'))).toEqual([false, true, false])
+    cleanup()
+    const all = render(<ScoreView olcu={olcu} secim={{ bas: 0, son: 5 }} onSatirDokun={() => {}} />).container
+    expect(rows(all).map((r) => r.classList.contains('secili'))).toEqual([true, true, true])
+    cleanup()
+    const none = render(<ScoreView olcu={olcu} secim={null} onSatirDokun={() => {}} />).container
+    expect(none.querySelectorAll('.secili')).toHaveLength(0)
+  })
+
+  it('vurgu, çalan olayın satırındaki Staff olayını işaretler', () => {
+    const olcu = Array.from({ length: 6 }, measure)
+    const { container } = render(<ScoreView olcu={olcu} vurgu={{ olcu: 2, nota: 1 }} />)
+    const rs = rows(container)
+    expect(container.querySelectorAll('[data-highlight]')).toHaveLength(1)
+    const marked = rs[1]!.querySelectorAll('[data-highlight]')
+    expect(marked).toHaveLength(1)
+    // 2. satır = ölçü 2-3; ölçü 2'nin 1. notası satırdaki 1. olaydır
+    expect(marked[0]!.getAttribute('data-event')).toBe('1')
+  })
+
+  it('vurgu yoksa veya geçersizse hiçbir olay işaretlenmez', () => {
+    const olcu = Array.from({ length: 4 }, measure)
+    expect(render(<ScoreView olcu={olcu} />).container.querySelectorAll('[data-highlight]')).toHaveLength(0)
+    cleanup()
+    expect(render(<ScoreView olcu={olcu} vurgu={null} />).container.querySelectorAll('[data-highlight]')).toHaveLength(0)
+    cleanup()
+    expect(
+      render(<ScoreView olcu={olcu} vurgu={{ olcu: 9, nota: 0 }} />).container.querySelectorAll('[data-highlight]'),
+    ).toHaveLength(0)
   })
 
   it('tüm olaylar çizilir (bağlı notalar dahil)', () => {

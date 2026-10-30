@@ -1,5 +1,6 @@
 import { useMemo } from 'preact/hooks'
 import type { MusicEvent } from '../music/notation'
+import type { Secim } from './secim'
 import { layoutEvents, Staff, staffWidthFor } from './Staff'
 
 /** Satırın hedef görünüm genişliği (px): 375 pt telefonda notanın kabı bu genişliktedir (375 − 2×20 ekran dolgusu − 2×4 nota dolgusu − 2×1 kenarlık). */
@@ -18,6 +19,10 @@ export interface ScoreRow {
   syllables?: string[]
   /** Staff'a verilecek temel genişlik: görünüm genişliği ortak genişliğe denk gelir. */
   baseWidth: number
+  /** Satırın ilk ölçüsünün indisi (0 tabanlı, dahil). */
+  olcuBas: number
+  /** Satırın son ölçüsünün indisi (0 tabanlı, dahil). */
+  olcuSon: number
 }
 
 /** SVG'nin ROW_WIDTH genişliğindeki kapta ölçeği. */
@@ -46,6 +51,8 @@ function fitWidth(events: MusicEvent[], syllables: string[] | undefined, target:
 }
 
 function joinMeasures(olcu: MusicEvent[][], soz: string[][] | undefined, from: number, count: number) {
+  const olcuBas = from
+  const olcuSon = Math.min(from + count, olcu.length) - 1
   const events: MusicEvent[] = []
   const barlinesAfter: number[] = []
   const syllables: string[] = []
@@ -57,7 +64,7 @@ function joinMeasures(olcu: MusicEvent[][], soz: string[][] | undefined, from: n
     })
     barlinesAfter.push(events.length - 1)
   }
-  return { events, barlinesAfter, syllables: soz ? syllables : undefined }
+  return { events, barlinesAfter, syllables: soz ? syllables : undefined, olcuBas, olcuSon }
 }
 
 /**
@@ -85,8 +92,19 @@ export function scoreLayout(
     barlinesAfter: g.barlinesAfter,
     ...(g.syllables ? { syllables: g.syllables } : {}),
     baseWidth: fitWidth(g.events, g.syllables, width),
+    olcuBas: g.olcuBas,
+    olcuSon: g.olcuSon,
   }))
   return { rows, width }
+}
+
+/** Vurgulanan olayın, kendi satırındaki sırası; olay bu satırda değilse (veya yoksa) `undefined`. */
+function vurguSirasi(olcu: MusicEvent[][], row: ScoreRow, vurgu: { olcu: number; nota: number }): number | undefined {
+  if (vurgu.olcu < row.olcuBas || vurgu.olcu > row.olcuSon) return undefined
+  if (vurgu.nota < 0 || vurgu.nota >= (olcu[vurgu.olcu]?.length ?? 0)) return undefined
+  let sira = vurgu.nota
+  for (let j = row.olcuBas; j < vurgu.olcu; j++) sira += olcu[j]!.length
+  return sira
 }
 
 /**
@@ -99,24 +117,63 @@ export function ScoreView(props: {
   olcuPerSatir?: number
   /** Kiriş vuruş birimi (dörtlük cinsinden; bkz. `beamBeatsFor`). Verilmezse kiriş çizilmez. */
   beamBeats?: number
+  /** Seçili ölçü aralığı; tümüyle bu aralığın içinde kalan satırlar seçili görünür. */
+  secim?: Secim | null
+  /** Verilirse satırlar dokunulabilir olur (role="button"); argüman satırın ölçü aralığıdır. */
+  onSatirDokun?: (satir: Secim) => void
+  /** Çalan nota: `olcu` ölçü indisi, `nota` o ölçüdeki olay sırası. İlgili olay vurgulanır. */
+  vurgu?: { olcu: number; nota: number } | null
 }) {
-  const { olcu, soz, olcuPerSatir = 2, beamBeats } = props
+  const { olcu, soz, olcuPerSatir = 2, beamBeats, secim, onSatirDokun, vurgu } = props
   const perRow = Math.max(1, Math.floor(olcuPerSatir))
   // Hız kaydırıcısı gibi üst bileşen güncellemelerinde yerleşim yeniden hesaplanmaz.
   const { rows } = useMemo(() => scoreLayout(olcu, soz, perRow), [olcu, soz, perRow])
   return (
     <div class="score">
-      {rows.map((row, i) => (
-        <div key={i} class="score-row" data-testid="score-row">
+      {rows.map((row, i) => {
+        const satir: Secim = { bas: row.olcuBas, son: row.olcuSon }
+        const secili = !!secim && row.olcuBas >= secim.bas && row.olcuSon <= secim.son
+        const staff = (
           <Staff
             events={row.events}
             width={row.baseWidth}
             barlinesAfter={row.barlinesAfter}
             syllables={row.syllables}
             beamBeats={beamBeats}
+            highlightIndex={vurgu ? vurguSirasi(olcu, row, vurgu) : undefined}
           />
-        </div>
-      ))}
+        )
+        if (!onSatirDokun) {
+          return (
+            <div key={i} class={secili ? 'score-row secili' : 'score-row'} data-testid="score-row">
+              {staff}
+            </div>
+          )
+        }
+        const etiket =
+          row.olcuBas === row.olcuSon
+            ? `${row.olcuBas + 1}. ölçüyü seç`
+            : `${row.olcuBas + 1}–${row.olcuSon + 1}. ölçüleri seç`
+        return (
+          <div
+            key={i}
+            class={secili ? 'score-row secili' : 'score-row'}
+            data-testid="score-row"
+            role="button"
+            tabIndex={0}
+            aria-pressed={secili}
+            aria-label={etiket}
+            onClick={() => onSatirDokun(satir)}
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter' && e.key !== ' ') return
+              e.preventDefault() // Boşluk sayfayı kaydırmasın
+              onSatirDokun(satir)
+            }}
+          >
+            {staff}
+          </div>
+        )
+      })}
     </div>
   )
 }
