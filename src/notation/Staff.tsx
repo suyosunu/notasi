@@ -1,3 +1,4 @@
+import type { TakipDurumu } from '../learning/takip'
 import type { DurationKind, MusicEvent, NoteEvent, RestEvent } from '../music/notation'
 import { beamGroups } from './beams'
 import { accidentalWidth, AccidentalGlyph, BREATH_GLYPH, CLEF_GLYPH, MUSIC_FONT } from './glyphs'
@@ -45,6 +46,37 @@ const ROPRIZ_THICK = 3
 const ROPRIZ_LINE_GAP = 3
 const ROPRIZ_DOT_GAP = 4.5
 const ROPRIZ_DOT_R = 1.8
+
+/** Takip sonuç işaretinin yazı boyu ve notanın en üst noktasına (ya da portenin üstüne) uzaklığı (px). */
+const DURUM_SIZE = 10
+const DURUM_GAP = 3
+
+/** Sonuç durumu → renk belirteci (bkz. `:root`); `dogru` yeşil, `pes`/`tiz`/`kisa` turuncu, `yanlis`/`yok` kırmızı. */
+const DURUM_RENK: Record<TakipDurumu, string> = {
+  dogru: 'var(--takip-dogru)',
+  pes: 'var(--takip-uyari)',
+  tiz: 'var(--takip-uyari)',
+  kisa: 'var(--takip-uyari)',
+  yanlis: 'var(--takip-hata)',
+  yok: 'var(--takip-hata)',
+}
+/** Notanın üstüne yazılan küçük işaret; `dogru` işaretsizdir. */
+const DURUM_ISARET: Partial<Record<TakipDurumu, string>> = {
+  pes: '↓',
+  tiz: '↑',
+  yanlis: '✗',
+  yok: '–',
+  kisa: '◡',
+}
+/** Ekran okuyucu ve ipucu için Türkçe ad. */
+const DURUM_AD: Record<TakipDurumu, string> = {
+  dogru: 'doğru',
+  pes: 'pes',
+  tiz: 'tiz',
+  yanlis: 'başka perde',
+  yok: 'duyulmadı',
+  kisa: 'kısa tutuldu',
+}
 
 /** Onaltılıkta iki bayrak arasındaki uzaklık (px). */
 const FLAG_STEP = 7
@@ -464,9 +496,22 @@ export function Staff(props: {
    * çizgi (satır sonu ölçü çizgisinin yerine).
    */
   ropriz?: { bas?: boolean; son?: boolean }
+  /**
+   * Olaylarla hizalı takip sonuçları (`events` indisine göre; `undefined` = işaretsiz). Nota başı ve sapı durum
+   * renginde boyanır (vurgu önceliklidir), `dogru` dışındakilerin üstüne küçük işaret konur.
+   */
+  durumlar?: (TakipDurumu | undefined)[]
 }) {
-  const { events, width: baseWidth = DEFAULT_WIDTH, highlightIndex, barlinesAfter, syllables, beamBeats, ropriz } =
-    props
+  const {
+    events,
+    width: baseWidth = DEFAULT_WIDTH,
+    highlightIndex,
+    barlinesAfter,
+    syllables,
+    beamBeats,
+    ropriz,
+    durumlar,
+  } = props
   const { xs, ends, viewWidth: width } = layoutEvents(events, baseWidth, syllables, ropriz)
   const beams =
     beamBeats === undefined
@@ -483,9 +528,16 @@ export function Staff(props: {
     return { x: (xs[g[0]!]! + xs[g.at(-1)!]!) / 2, y: Math.max(UCLU_SIZE, top - UCLU_GAP) }
   })
 
+  // İşaretler notanın (ya da portenin) üstüne konur; çok yüksek bir notada kutunun üstünden taşacaksa kutu yukarı uzar.
+  const isaretY = events.map((e, i) => {
+    const d = durumlar?.[i]
+    return d && DURUM_ISARET[d] !== undefined ? Math.min(STAFF_TOP, eventTop(e, beamTips.get(i))) - DURUM_GAP : undefined
+  })
+  const ustTasma = Math.max(0, ...isaretY.map((y) => (y === undefined ? 0 : DURUM_SIZE - y)))
+
   return (
     <svg
-      viewBox={`0 0 ${width} ${HEIGHT}`}
+      viewBox={`0 ${-ustTasma} ${width} ${HEIGHT + ustTasma}`}
       width="100%"
       role="img"
       aria-label="Porte"
@@ -545,13 +597,30 @@ export function Staff(props: {
         const x = xs[i]!
         const next = events[i + 1]
         const highlighted = i === highlightIndex
+        const durum = durumlar?.[i]
+        const renk = highlighted ? 'var(--accent, #d9480f)' : durum ? DURUM_RENK[durum] : undefined
         return (
           <g
             key={i}
             data-event={i}
             data-highlight={highlighted ? '' : undefined}
-            style={highlighted ? { color: 'var(--accent, #d9480f)' } : undefined}
+            data-durum={durum}
+            style={renk ? { color: renk } : undefined}
           >
+            {durum && <title>{DURUM_AD[durum]}</title>}
+            {durum && isaretY[i] !== undefined && (
+              <text
+                data-durum-isaret
+                x={x}
+                y={isaretY[i]}
+                font-size={DURUM_SIZE}
+                font-weight="bold"
+                text-anchor="middle"
+                fill={INK}
+              >
+                {DURUM_ISARET[durum]}
+              </text>
+            )}
             {e.kind === 'note' ? (
               <NoteShape event={e} x={x} index={i} beam={beamTips.get(i)} />
             ) : (

@@ -67,4 +67,27 @@ describe('ScoreView: satır başına yeniden çizim', () => {
     expect(cizilenSatirlar()).toEqual([1, 2])
     expect(satirlar(container).map((r) => r.classList.contains('secili'))).toEqual([false, true, true, false])
   })
+
+  it('sonuçlar değişince yalnız sonucu değişen satırlar yeniden çizilir; içerik aynıysa yeni dizi çizdirmez', () => {
+    const goster = (sonuclar: { olcu: number; nota: number; durum: 'pes' | 'tiz' | 'dogru' }[]) => (
+      <ScoreView olcu={OLCU} olcuPerSatir={1} sonuclar={sonuclar} />
+    )
+    const { container, rerender } = render(goster([{ olcu: 0, nota: 0, durum: 'dogru' }]))
+    const svgOnce = satirlar(container).map((r) => r.querySelector('svg'))
+
+    cizilen.length = 0
+    rerender(goster([{ olcu: 0, nota: 0, durum: 'dogru' }])) // yeni dizi, aynı içerik
+    expect(cizilen).toEqual([])
+
+    rerender(goster([{ olcu: 0, nota: 0, durum: 'dogru' }, { olcu: 2, nota: 1, durum: 'pes' }]))
+    expect(cizilenSatirlar()).toEqual([2])
+
+    cizilen.length = 0
+    rerender(goster([{ olcu: 0, nota: 0, durum: 'tiz' }, { olcu: 2, nota: 1, durum: 'pes' }]))
+    expect(cizilenSatirlar()).toEqual([0])
+    const svgSonra = satirlar(container).map((r) => r.querySelector('svg'))
+    expect(svgSonra[1]).toBe(svgOnce[1])
+    expect(svgSonra[3]).toBe(svgOnce[3])
+    expect(satirlar(container)[0]!.querySelector('[data-durum]')!.getAttribute('data-durum')).toBe('tiz')
+  })
 })

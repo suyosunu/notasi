@@ -777,3 +777,69 @@ describe('Staff: üçleme, bağ, nefes işareti, röpriz', () => {
     expect(container.querySelector('svg')!.getAttribute('width')).toBe('100%')
   })
 })
+
+describe('Staff: takip sonuç işaretleri', () => {
+  const dort = [note('G', 4, 'quarter'), note('A', 4, 'quarter'), note('B', 4, 'quarter'), note('C', 5, 'quarter')]
+  const olay = (c: Element, i: number) => c.querySelector(`[data-event="${i}"]`) as SVGGElement
+
+  it('durumlar verilmezse işaret ve data-durum yoktur; görünüm kutusu değişmez', () => {
+    const { container } = render(<Staff events={dort} />)
+    expect(container.querySelector('[data-durum]')).toBeNull()
+    expect(container.querySelector('[data-durum-isaret]')).toBeNull()
+    expect(container.querySelector('svg')!.getAttribute('viewBox')).toBe('0 0 240 110')
+  })
+
+  it('durumlu olaylar data-durum, renk, işaret ve erişilebilir ad taşır; doğru işaretsizdir', () => {
+    const { container } = render(
+      <Staff events={dort} durumlar={['dogru', 'pes', undefined, 'yanlis']} />,
+    )
+    expect(olay(container, 0).getAttribute('data-durum')).toBe('dogru')
+    expect(olay(container, 1).getAttribute('data-durum')).toBe('pes')
+    expect(olay(container, 2).hasAttribute('data-durum')).toBe(false)
+    expect(olay(container, 3).getAttribute('data-durum')).toBe('yanlis')
+    expect(olay(container, 0).querySelector('[data-durum-isaret]')).toBeNull()
+    expect(olay(container, 1).querySelector('[data-durum-isaret]')!.textContent).toBe('↓')
+    expect(olay(container, 3).querySelector('[data-durum-isaret]')!.textContent).toBe('✗')
+    expect(olay(container, 0).style.color).toBe('var(--takip-dogru)')
+    expect(olay(container, 1).style.color).toBe('var(--takip-uyari)')
+    expect(olay(container, 3).style.color).toBe('var(--takip-hata)')
+    expect(olay(container, 2).style.color).toBe('')
+    expect(olay(container, 0).querySelector('title')!.textContent).toBe('doğru')
+    expect(olay(container, 1).querySelector('title')!.textContent).toBe('pes')
+    expect(olay(container, 3).querySelector('title')!.textContent).toBe('başka perde')
+  })
+
+  it('her durumun işareti, rengi ve adı doğrudur', () => {
+    const tum = ['pes', 'tiz', 'yanlis', 'yok', 'kisa'] as const
+    const { container } = render(<Staff events={[...dort, note('D', 5, 'quarter')]} durumlar={[...tum]} />)
+    const isaret = tum.map((_, i) => olay(container, i).querySelector('[data-durum-isaret]')!.textContent)
+    expect(isaret).toEqual(['↓', '↑', '✗', '–', '◡'])
+    const renk = tum.map((_, i) => olay(container, i).style.color)
+    expect(renk).toEqual([
+      'var(--takip-uyari)',
+      'var(--takip-uyari)',
+      'var(--takip-hata)',
+      'var(--takip-hata)',
+      'var(--takip-uyari)',
+    ])
+    const ad = tum.map((_, i) => olay(container, i).querySelector('title')!.textContent)
+    expect(ad).toEqual(['pes', 'tiz', 'başka perde', 'duyulmadı', 'kısa tutuldu'])
+  })
+
+  it('vurgu rengi durum renginden önceliklidir', () => {
+    const { container } = render(<Staff events={dort} durumlar={['pes']} highlightIndex={0} />)
+    expect(olay(container, 0).style.color).toBe('var(--accent, #d9480f)')
+    expect(olay(container, 0).getAttribute('data-durum')).toBe('pes')
+  })
+
+  it('işaretler porte üstünde kalır ve görünüm kutusunun dışına taşmaz', () => {
+    const yuksek = [note('A', 5, 'eighth'), note('B', 5, 'eighth'), note('C', 6, 'quarter')]
+    const { container } = render(<Staff events={yuksek} beamBeats={1} durumlar={['tiz', 'yanlis', 'yok']} />)
+    const [, minY] = container.querySelector('svg')!.getAttribute('viewBox')!.split(' ').map(Number)
+    for (const t of container.querySelectorAll('[data-durum-isaret]')) {
+      const y = Number(t.getAttribute('y'))
+      expect(y).toBeLessThan(30) // porte üstünden yukarıda
+      expect(y - 10).toBeGreaterThanOrEqual(minY! - 0.001) // yazı boyu 10: üst kenar kutu içinde
+    }
+  })
+})

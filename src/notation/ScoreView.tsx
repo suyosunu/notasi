@@ -1,5 +1,6 @@
 import { Component } from 'preact'
 import { useCallback, useLayoutEffect, useMemo, useRef } from 'preact/hooks'
+import type { TakipDurumu } from '../learning/takip'
 import type { MusicEvent } from '../music/notation'
 import type { Secim } from './secim'
 import { layoutEvents, Staff, staffWidthFor } from './Staff'
@@ -108,10 +109,39 @@ function vurguSirasi(olcu: MusicEvent[][], row: ScoreRow, vurgu: { olcu: number;
   return sira
 }
 
+/** Takip sonucu: `olcu` ölçü indisi, `nota` o ölçüdeki olay sırası. */
+export interface Sonuc {
+  olcu: number
+  nota: number
+  durum: TakipDurumu
+}
+
+/** Satırın olaylarıyla hizalı durum dizisi; bu satıra düşen sonuç yoksa `undefined` (satır eskisi gibi çizilir). */
+function satirDurumlari(olcu: MusicEvent[][], row: ScoreRow, sonuclar: Sonuc[] | null | undefined) {
+  if (!sonuclar) return undefined
+  let durumlar: (TakipDurumu | undefined)[] | undefined
+  for (const s of sonuclar) {
+    const sira = vurguSirasi(olcu, row, s)
+    if (sira === undefined) continue
+    durumlar ??= new Array<TakipDurumu | undefined>(row.events.length).fill(undefined)
+    durumlar[sira] = s.durum
+  }
+  return durumlar
+}
+
+/** İki durum dizisi içerikçe eşit mi (her çizimde yeni dizi üretildiği için kimliğe bakılmaz). */
+function ayniDurumlar(a: (TakipDurumu | undefined)[] | undefined, b: (TakipDurumu | undefined)[] | undefined): boolean {
+  if (a === b) return true
+  if (!a || !b || a.length !== b.length) return false
+  return a.every((d, i) => d === b[i])
+}
+
 interface SatirProps {
   row: ScoreRow
   beamBeats: number | undefined
   highlightIndex: number | undefined
+  /** Satırın olaylarıyla hizalı takip sonuçları; içerikçe karşılaştırılır. */
+  durumlar: (TakipDurumu | undefined)[] | undefined
   secili: boolean
   /** Verilirse satır dokunulabilir; kimliği çizimden çizime sabit olmalıdır (bkz. ScoreView). */
   onDokun: ((satir: Secim) => void) | undefined
@@ -129,13 +159,14 @@ class Satir extends Component<SatirProps> {
       next.row !== p.row ||
       next.beamBeats !== p.beamBeats ||
       next.highlightIndex !== p.highlightIndex ||
+      !ayniDurumlar(next.durumlar, p.durumlar) ||
       next.secili !== p.secili ||
       next.onDokun !== p.onDokun
     )
   }
 
   render() {
-    const { row, beamBeats, highlightIndex, secili, onDokun } = this.props
+    const { row, beamBeats, highlightIndex, durumlar, secili, onDokun } = this.props
     const staff = (
       <Staff
         events={row.events}
@@ -144,6 +175,7 @@ class Satir extends Component<SatirProps> {
         syllables={row.syllables}
         beamBeats={beamBeats}
         highlightIndex={highlightIndex}
+        durumlar={durumlar}
       />
     )
     if (!onDokun) {
@@ -193,8 +225,10 @@ export function ScoreView(props: {
   onSatirDokun?: (satir: Secim) => void
   /** Çalan nota: `olcu` ölçü indisi, `nota` o ölçüdeki olay sırası. İlgili olay vurgulanır. */
   vurgu?: { olcu: number; nota: number } | null
+  /** Takip sonuçları: ilgili olaylar durum rengiyle ve işaretle çizilir (bkz. `Staff`). */
+  sonuclar?: Sonuc[] | null
 }) {
-  const { olcu, soz, olcuPerSatir = 2, beamBeats, secim, onSatirDokun, vurgu } = props
+  const { olcu, soz, olcuPerSatir = 2, beamBeats, secim, onSatirDokun, vurgu, sonuclar } = props
   const perRow = Math.max(1, Math.floor(olcuPerSatir))
   // Hız kaydırıcısı gibi üst bileşen güncellemelerinde yerleşim yeniden hesaplanmaz.
   const { rows } = useMemo(() => scoreLayout(olcu, soz, perRow), [olcu, soz, perRow])
@@ -213,6 +247,7 @@ export function ScoreView(props: {
           row={row}
           beamBeats={beamBeats}
           highlightIndex={vurgu ? vurguSirasi(olcu, row, vurgu) : undefined}
+          durumlar={satirDurumlari(olcu, row, sonuclar)}
           secili={!!secim && row.olcuBas >= secim.bas && row.olcuSon <= secim.son}
           onDokun={onSatirDokun ? dokun : undefined}
         />

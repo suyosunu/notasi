@@ -250,3 +250,37 @@ describe('ScoreView', () => {
     expect(container.querySelectorAll('[data-testid="rest"]')).toHaveLength(rests)
   })
 })
+
+describe('ScoreView: sonuçlar', () => {
+  const olay = (c: Element, satir: number, i: number) =>
+    rows(c)[satir]!.querySelector(`[data-event="${i}"]`) as SVGGElement
+
+  it('sonuçları ilgili satıra ve olaya dağıtır (iki ölçülük satırın ikinci ölçüsü dahil)', () => {
+    const olcu = Array.from({ length: 4 }, measure)
+    const { container } = render(
+      <ScoreView
+        olcu={olcu}
+        sonuclar={[
+          { olcu: 0, nota: 1, durum: 'pes' },
+          { olcu: 1, nota: 2, durum: 'tiz' }, // ilk satırın ikinci ölçüsü: olay 4 + 2 = 6
+          { olcu: 3, nota: 0, durum: 'yok' }, // ikinci satırın ikinci ölçüsü: olay 4
+        ]}
+      />,
+    )
+    expect(olay(container, 0, 1).getAttribute('data-durum')).toBe('pes')
+    expect(olay(container, 0, 6).getAttribute('data-durum')).toBe('tiz')
+    expect(olay(container, 1, 4).getAttribute('data-durum')).toBe('yok')
+    expect(container.querySelectorAll('[data-durum]')).toHaveLength(3)
+  })
+
+  it('aralık dışı ya da eksik sonuçları yok sayar; sonuclar yokken işaret çizmez', () => {
+    const olcu = Array.from({ length: 2 }, measure)
+    const { container } = render(
+      <ScoreView olcu={olcu} sonuclar={[{ olcu: 5, nota: 0, durum: 'pes' }, { olcu: 0, nota: 9, durum: 'pes' }]} />,
+    )
+    expect(container.querySelector('[data-durum]')).toBeNull()
+    cleanup()
+    const r2 = render(<ScoreView olcu={olcu} sonuclar={null} />)
+    expect(r2.container.querySelector('[data-durum]')).toBeNull()
+  })
+})
