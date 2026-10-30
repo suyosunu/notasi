@@ -513,3 +513,133 @@ export const NOTA_3_DERSLERI: Ders[] = [
     alistirma: '/nota/perde-5',
   },
 ]
+
+// Seviye 4 okuma dersleri: tiz perdelerin portedeki yeri (perde-6: ek çizgilerin çevresi) ve otuzikilik (sure-5). Perde
+// bilgileri araştırma D §1'den (neyzenim _8, MEB ünite 1227), "tiz" etiketleri perde-adlari.ts'ten, koma işaretleri
+// `nota:koma-1` ve `nota:koma-2` derslerinden gelir. Otuzikilik genel nota bilgisidir; kaynaklarda yalnız eser notalarında
+// (SymbTr) 1/32 süresi olarak geçer, bu yüzden kaynak satırı bunu açıkça söyler.
+export const NOTA_4_DERSLERI: Ders[] = [
+  {
+    id: 'nota:perde-6',
+    seviye: 4,
+    baslik: 'Tiz perdeler: ek çizgilerin çevresi',
+    bloklar: [
+      {
+        tur: 'metin',
+        metin:
+          "Seviye 4'te portenin üstüne çıkan dört yeni perde var: Tiz Segâh, Tiz Çârgâh, Tiz Nevâ ve Tiz Nim Hicaz. Hepsi ek çizgilerin çevresindedir. Ek çizgi, portenin dışına çizilen kısa yatay çizgidir. Muhayyer'i (tiz La) biliyorsun: o, portenin üstündeki ilk ek çizgidir. Yeni perdeler onun üstünde, ikinci ek çizgide ve çevresinde durur.",
+      },
+      {
+        tur: 'liste',
+        maddeler: [
+          'Tiz Segâh = Si koma bemolü: ilk ek çizginin (La) hemen üstündeki boşluk.',
+          'Tiz Çârgâh = Do: ikinci ek çizgi.',
+          'Tiz Nevâ = Re: ikinci ek çizginin hemen üstündeki boşluk.',
+          'Tiz Nim Hicaz = Do bakiye diyezi: ikinci ek çizgi, önünde bakiye diyezi.',
+        ],
+      },
+      { tur: 'porte', olaylar: [n('B5b1')], aciklama: 'Tiz Segâh: Si koma bemolü, ilk ek çizginin üstündeki boşluk.' },
+      { tur: 'porte', olaylar: [n('C6')], aciklama: 'Tiz Çârgâh: Do, ikinci ek çizgi.' },
+      { tur: 'porte', olaylar: [n('D6')], aciklama: 'Tiz Nevâ: Re, ikinci ek çizginin üstündeki boşluk.' },
+      { tur: 'porte', olaylar: [n('C6#4')], aciklama: 'Tiz Nim Hicaz: Do bakiye diyezi, ikinci ek çizgi, önünde bakiye diyezi.' },
+      {
+        tur: 'porte',
+        olaylar: [n('A5'), n('B5b1'), n('C6'), n('D6')],
+        aciklama: 'Soldan sağa: Muhayyer, Tiz Segâh, Tiz Çârgâh, Tiz Nevâ. Her adımda bir basamak yukarı.',
+      },
+      {
+        tur: 'metin',
+        metin:
+          "Tiz perde, alt eşinin tam bir oktav üstündedir. Oktav, portede yedi basamak yukarıdır ve nota adı aynı kalır: Segâh da Tiz Segâh da Si koma bemolüdür, Çârgâh da Tiz Çârgâh da Do'dur. Fark, notanın portedeki yüksekliğidir.",
+      },
+      {
+        tur: 'porte',
+        olaylar: [n('B4b1'), n('B5b1'), n('C5'), n('C6')],
+        aciklama: 'Segâh ile Tiz Segâh, Çârgâh ile Tiz Çârgâh: aynı işaret, aynı ad, bir oktav arayla.',
+      },
+      {
+        tur: 'metin',
+        metin:
+          'Soru kartlarında bu notalar "tiz" önekiyle yazılır, çünkü Si, Do ve Re portenin hem altında hem üstünde bulunur: tiz Si (koma bemolü), tiz Do, tiz Do (bakiye diyezi), tiz Re. Sol ve La da böyledir: tiz Sol (Gerdâniye), tiz La (Muhayyer). "Tiz" yazan nota, ek çizgilerin çevresindeki nota demektir.',
+      },
+      {
+        tur: 'metin',
+        metin:
+          "Tiz Nim Hicaz ile Tiz Çârgâh aynı ek çizgidedir; yalnız önündeki işaret farklıdır. Bakiye diyezi görürsen Tiz Nim Hicaz'dır; işaret yoksa Tiz Çârgâh.",
+      },
+      {
+        tur: 'dene',
+        adimlar: [
+          'Her portede notanın perde adını ve "tiz" etiketini sesli söyle; önce ek çizgiyi say, sonra işarete bak.',
+          'Beşli porteyi ▶ Dinle ile dinle; her adımda sesin bir basamak yükseldiğini duy.',
+          'Oktav portesinde Segâh ile Tiz Segâh\'ı karşılaştır: aynı işaret, aynı ad; yalnız yükseklik farklı.',
+        ],
+      },
+    ],
+    kaynaklar: [s4(8), meb(1227, 'dördüncü kademe ana sesler'), S2],
+    alistirma: '/nota/perde-6',
+  },
+  {
+    id: 'nota:sure-5',
+    seviye: 4,
+    baslik: 'Otuzikilik',
+    bloklar: [
+      {
+        tur: 'metin',
+        metin:
+          'Otuzikilik, onaltılığın yarısıdır: 1/8 vuruş sürer. İçi dolu başı ve sapı vardır; sapın ucunda üç bayrak taşır. Yan yana otuzikiliklerde bayrakların yerine üç kalın kiriş kullanılır.',
+      },
+      { tur: 'porte', olaylar: [n(SI, 'thirtysecond')], aciklama: 'Otuzikilik: 1/8 vuruş, üç bayrak.' },
+      {
+        tur: 'porte',
+        olaylar: [
+          n(SI, 'eighth'),
+          n(SI, 'sixteenth'),
+          n(SI, 'sixteenth'),
+          n(SI, 'thirtysecond'),
+          n(SI, 'thirtysecond'),
+          n(SI, 'thirtysecond'),
+          n(SI, 'thirtysecond'),
+        ],
+        aciklama: "Aynı Si'de bir sekizlik, iki onaltılık, dört otuzikilik: üç grup da yarım vuruş sürer.",
+      },
+      {
+        tur: 'metin',
+        metin:
+          'Otuzikilik susun da bir karşılığı vardır: onaltılık susa benzer, ama tepesinde iki değil üç küçük top vardır. O da 1/8 vuruş sürer.',
+      },
+      {
+        tur: 'porte',
+        olaylar: [n(SI, 'thirtysecond'), sus('thirtysecond'), n(SI, 'thirtysecond'), sus('thirtysecond'), n(SI, 'eighth')],
+        aciklama: 'Otuzikilik nota, sus, nota, sus; sonra sekizlik. Toplam 1 vuruş.',
+      },
+      {
+        tur: 'metin',
+        metin:
+          'Noktalı onaltılık, ¼ vuruşun yarısı kadar uzar: 3/8 vuruş sürer. Ardından gelen otuzikilik 1/8 vuruş ekler. İkisi birlikte bir sekizlik, yani yarım vuruş eder. Bu kalıp bazı eserlerde karşına çıkar.',
+      },
+      {
+        tur: 'porte',
+        olaylar: [n('B4b1', 'sixteenth', true), n('C5', 'thirtysecond'), n('B4b1', 'sixteenth', true), n('C5', 'thirtysecond')],
+        aciklama: 'Noktalı onaltılık ve otuzikilik, iki kez: her çift yarım vuruş, hepsi 1 vuruş. Segâh uzun, Çârgâh kısa.',
+      },
+      {
+        tur: 'metin',
+        metin:
+          'Bu kadar kısa notaları saymak zordur. Her otuzikiliği tek tek saymak yerine yarım vuruşluk gruplar olarak oku: bir sekizlik, iki onaltılık ya da dört otuzikilik aynı süreyi doldurur.',
+      },
+      {
+        tur: 'dene',
+        adimlar: [
+          'İkinci portede üç grubu ▶ Dinle ile dinle; her grubun yarım vuruş sürdüğünü, dört otuzikiliğin bir sekizliğe sığdığını duy.',
+          'Susla biten portede otuzikilik susu bul: tepesinde üç küçük top var; onaltılık susta iki.',
+          'Noktalı onaltılık portesini dinle; uzun sesin ardından kısa sesin hemen geldiğini duy ve "uzun-kısa" diye seslendir.',
+        ],
+      },
+    ],
+    kaynaklar: [
+      'Genel nota bilgisi (süre değerleri); örnek kullanım: SymbTr makam müziği notaları, 1/32 süreli notalar: https://github.com/MTG/SymbTr',
+    ],
+    alistirma: '/nota/sure-5',
+  },
+]

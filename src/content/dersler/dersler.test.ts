@@ -6,10 +6,11 @@ import { NOTA_TOPICS } from '../nota-topics'
 import { DERSLER, dersById, etutDersleri, makamDersleri, notaDersId, perdeDersId, usulDersId, usulDersleri } from './index'
 import { HAZIRLIK_DERSLERI } from './hazirlik'
 import { NOTA_DERSLERI } from './nota'
-import { NOTA_2_DERSLERI, NOTA_3_DERSLERI } from './nota-2'
-import { ETUT_3_DERSLERI, ETUT_DERSLERI } from './etut'
+import { NOTA_2_DERSLERI, NOTA_3_DERSLERI, NOTA_4_DERSLERI } from './nota-2'
+import { ETUT_3_DERSLERI, ETUT_4_DERSLERI, ETUT_DERSLERI } from './etut'
 import { PERDE_DERSLERI } from './perdeler'
 import { PERDE_3_DERSLERI } from './perdeler-3'
+import { PERDE_4_DERSLERI } from './perdeler-4'
 import { MAKAM_DERSLERI } from './makam'
 import { USUL_DERSLERI } from './usul'
 import { ETUTLER } from '../etutler'
@@ -22,9 +23,6 @@ import { ACCIDENTAL_NAMES } from '../../music/accidentals'
 import { beats } from '../../music/notation'
 import type { MusicEvent } from '../../music/notation'
 import type { Ders, DersBlok } from './types'
-
-/** Task 64'te gelecek dersler (Seviye 4 tiz etütleri ve dil teknikleri); o zamana dek etüt denetimlerinde atlanır. */
-const TASK_64_DERSLERI = ['etut:tiz', 'dil:teknikler']
 
 /** Bir dersteki tüm metinler (başlık, anlatım, açıklamalar, adımlar, kaynaklar). */
 function metinler(d: Ders): string[] {
@@ -789,16 +787,15 @@ describe('Seviye 1 etüt dersleri', () => {
 
   it('iki etüt dersi bu sırayla var; seviye 1, DERSLER içinde, alıştırması ilk etüde gider', () => {
     expect(ETUT_DERSLERI.map((d) => d.id)).toEqual(['etut:giris', 'etut:rast-besli'])
-    // etut:kademe Seviye 3'tür (ETUT_3_DERSLERI).
-    expect(DERSLER.filter((d) => d.id.startsWith('etut:')).map((d) => d.id)).toEqual(['etut:giris', 'etut:rast-besli', 'etut:kademe'])
+    // etut:kademe Seviye 3 (ETUT_3_DERSLERI), etut:tiz Seviye 4'tür (ETUT_4_DERSLERI).
+    expect(DERSLER.filter((d) => d.id.startsWith('etut:')).map((d) => d.id)).toEqual(['etut:giris', 'etut:rast-besli', 'etut:kademe', 'etut:tiz'])
     expect(ETUT_DERSLERI.every((d) => d.seviye === 1)).toBe(true)
     expect(ders('etut:giris').alistirma).toBe('/etut/tek-neva')
     expect(ders('etut:rast-besli').alistirma).toBe('/etut/rast-besli-1')
   })
 
   it('her etüdün dersi vardır', () => {
-    // etut:tiz ve dil:teknikler dersleri Task 64'te gelir; o zamana dek yalnız bu ikisi atlanır.
-    for (const e of ETUTLER.filter((x) => !TASK_64_DERSLERI.includes(x.dersId))) expect(dersById(e.dersId), e.id).toBeDefined()
+    for (const e of ETUTLER) expect(dersById(e.dersId), e.id).toBeDefined()
   })
 
   it('etut:giris: tek-neva etüdünün ilk iki ölçüsü porte olarak gösterilir', () => {
@@ -886,7 +883,7 @@ describe('Usul dersleri', () => {
           : [e.dersId]
       expect(etutDersleri(e), e.id).toEqual(beklenen)
       expect(etutDersleri(e).at(-1), e.id).toBe(e.dersId)
-      for (const id of etutDersleri(e).filter((x) => !TASK_64_DERSLERI.includes(x))) expect(dersById(id), `${e.id}: ${id}`).toBeTruthy()
+      for (const id of etutDersleri(e)) expect(dersById(id), `${e.id}: ${id}`).toBeTruthy()
     }
   })
 
@@ -1502,5 +1499,265 @@ describe('Seviye 4 makam dersleri, çeşni ve üçlüler', () => {
     expect(metin(id)).not.toMatch(/BELİRSİZ/i)
     expect(ders(id).bloklar.some((b) => b.tur === 'dene')).toBe(true)
     expect(ders(id).kaynaklar.length).toBeGreaterThan(0)
+  })
+})
+
+describe('Seviye 4 tiz perde dersleri', () => {
+  const DORDUNCU = ['tiz-segah', 'tiz-cargah', 'tiz-neva', 'kapali-gerdaniye', 'kapali-muhayyer', 'tiz-nim-hicaz'] as const
+  // Aynı parmakla çalınan, bir oktav (53 koma) aşağıdaki ses (araştırma D §1 oktav tablosu).
+  const ALT = {
+    'tiz-segah': 'segah',
+    'tiz-cargah': 'cargah',
+    'tiz-neva': 'neva',
+    'kapali-gerdaniye': 'rast',
+    'kapali-muhayyer': 'dugah',
+    'tiz-nim-hicaz': 'nim-hicaz',
+  } as const
+  const perde = (id: string) => NEY_PERDELER.find((p) => p.id === id)!
+  const ders = (id: string) => dersById(perdeDersId(id))!
+  const porteler = (id: string) => ders(id).bloklar.flatMap((b) => (b.tur === 'porte' ? [b.olaylar] : []))
+  const tumMetin = (id: string) => metinler(ders(id)).join(' ')
+  const yukseklik = (e: MusicEvent) => (e.kind === 'note' ? e.pitch : null)
+
+  it('NEY_PERDELER 4. kademe sırası ders sırasıyla aynıdır', () => {
+    expect(NEY_PERDELER.filter((p) => p.kademe === 4).map((p) => p.id)).toEqual([...DORDUNCU])
+  })
+
+  it('altı perde dersi bu sırayla var, seviye 4, DERSLER içinde; alıştırma perdeye gider; parmak bloğu doğru perdeyi gösterir', () => {
+    expect(PERDE_4_DERSLERI.map((d) => d.id)).toEqual(DORDUNCU.map(perdeDersId))
+    for (const id of DORDUNCU) {
+      const d = ders(id)
+      expect(d, id).toBeDefined()
+      expect(DERSLER, id).toContain(d)
+      expect(d.seviye, id).toBe(4)
+      expect(d.alistirma, id).toBe(`/ney/${id}`)
+      const parmaklar = d.bloklar.flatMap((b) => (b.tur === 'parmak' ? [b.perdeId] : []))
+      expect([...new Set(parmaklar)], id).toEqual([id])
+    }
+  })
+
+  it.each(DORDUNCU)('%s: yazılı notası birlik olarak tek başına, aynı parmaklı alt sesten geçiş iki ikilik portede gösterilir', (id) => {
+    expect(porteler(id)).toContainEqual([{ kind: 'note', pitch: perde(id).written, dur: 'whole' }])
+    const gecisler = porteler(id).filter((o) => o.length === 2 && o.every((e) => e.kind === 'note' && e.dur === 'half'))
+    expect(gecisler.map((o) => o.map(yukseklik))).toContainEqual([perde(ALT[id]).written, perde(id).written])
+  })
+
+  it('porte örneklerinin notaları perdelerin yazılı notalarıdır', () => {
+    const yazilar = NEY_PERDELER.map((p) => JSON.stringify(p.written))
+    for (const d of PERDE_4_DERSLERI)
+      for (const b of d.bloklar)
+        if (b.tur === 'porte')
+          for (const e of b.olaylar) {
+            expect(e.kind, d.id).toBe('note')
+            expect(yazilar, d.id).toContain(JSON.stringify(yukseklik(e)))
+          }
+  })
+
+  it.each(DORDUNCU)('%s: alt sesle aynı parmak', (id) => {
+    expect(perde(ALT[id]).fingering).toEqual(perde(id).fingering)
+  })
+
+  it.each(DORDUNCU)('%s: kaynaklar şema kaynağını ve ders numarasını içerir; uzun ses gerekçesi için Ders 8 anılır', (id) => {
+    const k = ders(id).kaynaklar
+    expect(k.some((x) => x.includes(perde(id).source!))).toBe(true)
+    const no = perde(id).source!.match(/neydersleri_(\d+)/)![1]
+    expect(k.some((x) => x.includes(`Ney Dersleri ${no}:`))).toBe(true)
+    expect(k.some((x) => x.includes('neydersleri_8.html'))).toBe(true)
+  })
+
+  it.each(DORDUNCU)('%s: oktav, daha sert üfleme, uzun sesin orta/alt perdelerde kaldığı ve 5 sn / ±20 sent öneri hedefi', (id) => {
+    const m = tumMetin(id)
+    expect(m).toMatch(/Seviye 4/)
+    expect(m).toMatch(/oktav/)
+    expect(m).toMatch(/53 koma/)
+    expect(m).toMatch(/daha da sert/i)
+    expect(m).toMatch(/orta ve alt perdeler/)
+    expect(m).toMatch(/5 sn/)
+    expect(m).toMatch(/±20 sent/)
+    expect(m).toMatch(/öneri/i)
+    const dene = ders(id).bloklar.find((b) => b.tur === 'dene')!
+    const adimlar = dene.tur === 'dene' ? dene.adimlar.join(' ') : ''
+    expect(adimlar).toMatch(/uzun ses/i)
+    expect(adimlar).toMatch(/▶ Dinle/)
+    expect(adimlar).toMatch(/kulağın/)
+    expect(adimlar).toMatch(/akort göstergesi/i)
+    expect(adimlar).toMatch(/5 sn, ±20 sent/)
+    expect(adimlar).not.toMatch(/8 sn/)
+    expect(adimlar).not.toMatch(/Ilık nefesle/)
+  })
+
+  it.each(DORDUNCU)('%s: perdenin adı derste geçer', (id) => {
+    expect(tumMetin(id)).toContain(perde(id).name.replace(' (kapalı)', ''))
+  })
+
+  it('tiz perdelerde portede ek çizgiye çıkıldığı söylenir', () => {
+    for (const id of ['tiz-segah', 'tiz-cargah', 'tiz-neva', 'tiz-nim-hicaz'] as const) expect(tumMetin(id), id).toMatch(/ek çizgi/)
+  })
+
+  it.each(['kapali-gerdaniye', 'kapali-muhayyer'] as const)(
+    '%s: açık olanla aynı yazılı nota, alt sesin parmağı ve nefes şiddetinin kaynakta yazmadığı söylenir',
+    (id) => {
+      const m = tumMetin(id)
+      const acik = perde(id === 'kapali-gerdaniye' ? 'gerdaniye' : 'muhayyer')
+      expect(perde(id).written).toEqual(acik.written)
+      expect(m).toMatch(/aynı yazılı nota/)
+      expect(m).toMatch(/nefes şiddeti[^.]*(yazılı değil|yazmaz|yazılmaz)/)
+      expect(m).toMatch(id === 'kapali-gerdaniye' ? /Rast parmağı/ : /Dügâh parmağı/)
+      expect(m).toMatch(/açık (Gerdâniye|Muhayyer)/)
+    },
+  )
+
+  it('Tiz Nevâ bütün delikleri kapalı seçeneğini anar (neyzenim Ders 9); Tiz Nim Hicaz Nim Şehnaz parmağını anar', () => {
+    expect(tumMetin('tiz-neva')).toMatch(/bütün delikler kapalı/)
+    expect(tumMetin('tiz-neva')).toContain('Ders 9')
+    expect(tumMetin('tiz-nim-hicaz')).toContain('Nim Şehnaz')
+  })
+
+  it('BELİRSİZ hiçbir tiz perde dersinde geçmez', () => {
+    for (const d of PERDE_4_DERSLERI) for (const m of metinler(d)) expect(m, d.id).not.toMatch(/BELİRSİZ/i)
+  })
+})
+
+describe('Seviye 4 okuma dersleri', () => {
+  const IDS = ['nota:perde-6', 'nota:sure-5']
+  const ders = (id: string) => dersById(id)!
+  const porteBloklari = (id: string) => ders(id).bloklar.flatMap((b) => (b.tur === 'porte' ? [b] : []))
+  const porteler = (id: string) => porteBloklari(id).map((b) => b.olaylar)
+  const metin = (id: string) => metinler(ders(id)).join(' ')
+  const anahtar = (e: MusicEvent) =>
+    e.kind === 'note'
+      ? `${e.pitch.step}${e.pitch.octave}${e.pitch.acc === 0 ? '' : `${e.pitch.acc < 0 ? 'b' : '#'}${Math.abs(e.pitch.acc)}`}`
+      : 'sus'
+
+  it('nota:perde-6 ve nota:sure-5 var, seviye 4, alıştırma rotaları doğru', () => {
+    expect(NOTA_4_DERSLERI.map((d) => d.id)).toEqual(IDS)
+    for (const id of IDS) {
+      expect(DERSLER, id).toContain(ders(id))
+      expect(ders(id).seviye, id).toBe(4)
+      expect(ders(id).alistirma, id).toBe(`/nota/${id.slice('nota:'.length)}`)
+      expect(rotaBilinir(ders(id).alistirma!), id).toBe(true)
+    }
+    // Seviye 2 listesi yedi derste kalır.
+    expect(NOTA_2_DERSLERI).toHaveLength(7)
+  })
+
+  it('nota:perde-6: konunun kartlarındaki her perde adıyla anılır ve portede gösterilir; porteler telefona sığar', () => {
+    const goster = new Set(porteler('nota:perde-6').flat().map(anahtar))
+    for (const kart of NOTA_TOPICS.find((x) => x.id === 'perde-6')!.cards) {
+      const key = perdeKey(kart)
+      expect(metin('nota:perde-6')).toContain(PERDE_ADLARI[key])
+      expect(goster).toContain(key)
+    }
+    for (const o of porteler('nota:perde-6')) expect(o.length).toBeLessThanOrEqual(8)
+  })
+
+  it('nota:perde-6: tiz etiketleri, ek çizgiler ve oktav karışıklığı anlatılır', () => {
+    const m = metin('nota:perde-6')
+    for (const s of ['tiz Si (koma bemolü)', 'tiz Do', 'tiz Do (bakiye diyezi)', 'tiz Re']) expect(m).toContain(s)
+    expect(m).toMatch(/ek çizgi/)
+    expect(m).toMatch(/ikinci ek çizgi/)
+    expect(m).toMatch(/oktav/)
+    expect(m).toContain(`Do ${ACCIDENTAL_NAMES[4]}`)
+  })
+
+  it('nota:sure-5: porteler otuzikilik nota ve sus içerir; noktalı onaltılık + otuzikilik figürü bir sekizliğe eşittir', () => {
+    const m = metin('nota:sure-5')
+    const p = porteler('nota:sure-5')
+    expect(p.some((o) => o.some((e) => e.kind === 'note' && e.dur === 'thirtysecond'))).toBe(true)
+    expect(p.some((o) => o.some((e) => e.kind === 'rest' && e.dur === 'thirtysecond'))).toBe(true)
+    // Noktalı onaltılığın hemen ardından otuzikilik gelen figür, toplam yarım vuruş.
+    const figurler = p.flatMap((o) =>
+      o.flatMap((e, i) =>
+        e.kind === 'note' && e.dur === 'sixteenth' && e.dotted === true && o[i + 1]?.kind === 'note' && o[i + 1]!.dur === 'thirtysecond'
+          ? [[e, o[i + 1]!]]
+          : [],
+      ),
+    )
+    expect(figurler.length).toBeGreaterThan(0)
+    for (const [a, b] of figurler) expect(beats(a!) + beats(b!)).toBeCloseTo(0.5, 9)
+    expect(m).toMatch(/Otuzikilik/)
+    expect(m).toMatch(/üç bayrak/)
+    expect(m).toMatch(/kiriş/)
+    expect(m).toMatch(/1\/8 vuruş/)
+    expect(m).toMatch(/[Nn]oktalı onaltılık/)
+    expect(m).toMatch(/bir sekizlik/)
+    for (const o of p) expect(o.length).toBeLessThanOrEqual(8)
+  })
+
+  it.each(IDS)('%s: ölçü çizgili portelerde her ölçü eşit dolar', (id) => {
+    for (const x of porteBloklari(id)) {
+      if (!x.olcuCizgileri) continue
+      const sinirlar = [-1, ...x.olcuCizgileri, x.olaylar.length - 1]
+      const olculer = sinirlar.slice(1).map((son, k) => x.olaylar.slice(sinirlar[k]! + 1, son + 1))
+      const vuruslar = olculer.map((o) => o.reduce((t, e) => t + beats(e), 0))
+      for (const v of vuruslar) expect(Math.abs(v - vuruslar[0]!), id).toBeLessThan(1e-6)
+    }
+  })
+
+  it.each(IDS)('%s: BELİRSİZ yazılmaz', (id) => {
+    expect(metin(id)).not.toMatch(/BELİRSİZ/i)
+  })
+})
+
+describe('Seviye 4 dil teknikleri ve tiz etüt dersleri', () => {
+  const ders = (id: string) => dersById(id)!
+  const metin = (id: string) => metinler(ders(id)).join(' ')
+  const porteler = (id: string) => ders(id).bloklar.flatMap((b) => (b.tur === 'porte' ? [b] : []))
+
+  it('iki ders var, seviye 4, DERSLER içinde; alıştırmaları etütlere gider ve etütler bu dersleri okutur', () => {
+    expect(ETUT_4_DERSLERI.map((d) => d.id)).toEqual(['etut:tiz', 'dil:teknikler'])
+    for (const d of ETUT_4_DERSLERI) {
+      expect(DERSLER).toContain(d)
+      expect(d.seviye).toBe(4)
+    }
+    expect(ders('etut:tiz').alistirma).toBe('/etut/tiz-segah-oktav')
+    expect(ders('dil:teknikler').alistirma).toBe('/etut/dil-2')
+    expect(ETUTLER.filter((e) => e.tur === 'tiz').every((e) => e.dersId === 'etut:tiz')).toBe(true)
+    expect(ETUTLER.find((e) => e.id === 'dil-2')!.dersId).toBe('dil:teknikler')
+    for (const rota of ['/etut/tiz-segah-oktav', '/etut/dil-2']) expect(rotaBilinir(rota)).toBe(true)
+  })
+
+  it('dil:teknikler üç artikülasyonu anlatır ve portede üçünü de gösterir (düz, bag, kesik)', () => {
+    const m = metin('dil:teknikler')
+    for (const s of ['bağsız', 'bağlı', 'kesik']) expect(m).toContain(s)
+    const p = porteler('dil:teknikler').map((b) => b.olaylar)
+    const notalar = (o: MusicEvent[]) => o.filter((e) => e.kind === 'note')
+    expect(p.some((o) => notalar(o).length > 0 && notalar(o).every((e) => !e.bag && !e.kesik))).toBe(true)
+    expect(p.some((o) => notalar(o).some((e) => e.bag))).toBe(true)
+    expect(p.some((o) => notalar(o).some((e) => e.kesik))).toBe(true)
+    for (const b of porteler('dil:teknikler')) expect(b.olaylar.length).toBeLessThanOrEqual(8)
+  })
+
+  it('dil:teknikler: MEB 7.1 yalnız adları verir, tanımlar genel müzik bilgisidir; kesik noktası bu uygulamanın gösterimidir', () => {
+    const d = ders('dil:teknikler')
+    const m = metin('dil:teknikler')
+    expect(m).toMatch(/MEB/)
+    expect(m).toMatch(/yalnız ad/)
+    expect(m).toMatch(/genel müzik bilgisi/)
+    expect(m).toMatch(/bu uygulamadaki gösterim/)
+    expect(m).toMatch(/dil çarpması yok|dil vurulmaz/)
+    expect(d.kaynaklar.some((k) => /tymm\.meb\.gov\.tr[^ ]*unite\/1229/.test(k))).toBe(true)
+    expect(d.kaynaklar.some((k) => k.includes('neydersleri_15.html'))).toBe(true)
+  })
+
+  it('dil:teknikler dilin hecesini söylemez ("tu" geçmez)', () => {
+    expect(metin('dil:teknikler')).not.toMatch(/\btu\b/i)
+  })
+
+  it('etut:tiz oktav etütlerinin amacını anlatır; kalıpların bu uygulamanın önerisi olduğunu söyler; etüt portesi var', () => {
+    const m = metin('etut:tiz')
+    expect(m).toMatch(/oktav/)
+    expect(m).toMatch(/aynı parmak/)
+    expect(m).toMatch(/bu uygulamanın önerisi/)
+    expect(m).toMatch(/öneri/)
+    expect(m).toMatch(/orta ve alt perdeler/)
+    const etut = ETUTLER.find((e) => e.id === 'tiz-segah-oktav')!
+    expect(porteler('etut:tiz').map((b) => b.olaylar)).toContainEqual(etut.olcu.slice(0, 3).flat())
+    // Dersin etüt listesi uygulamadaki tiz etütlerle aynıdır.
+    for (const e of ETUTLER.filter((x) => x.tur === 'tiz')) expect(m).toContain(e.baslik)
+  })
+
+  it.each(['etut:tiz', 'dil:teknikler'])('%s: BELİRSİZ yazılmaz', (id) => {
+    expect(metin(id)).not.toMatch(/BELİRSİZ/i)
   })
 })

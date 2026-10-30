@@ -1,17 +1,18 @@
 import { DORTLU_DERSLERI } from './dortlu'
-import { DIL_ESER_DERSLERI, ETUT_3_DERSLERI, ETUT_DERSLERI } from './etut'
+import { DIL_ESER_DERSLERI, ETUT_3_DERSLERI, ETUT_4_DERSLERI, ETUT_DERSLERI } from './etut'
 import { HAZIRLIK_DERSLERI } from './hazirlik'
 import { MAKAM_DERSLERI } from './makam'
 import { NOTA_DERSLERI } from './nota'
-import { NOTA_2_DERSLERI, NOTA_3_DERSLERI } from './nota-2'
+import { NOTA_2_DERSLERI, NOTA_3_DERSLERI, NOTA_4_DERSLERI } from './nota-2'
 import { PERDE_DERSLERI } from './perdeler'
 import { PERDE_3_DERSLERI } from './perdeler-3'
+import { PERDE_4_DERSLERI } from './perdeler-4'
 import { USUL_DERSLERI } from './usul'
 import type { Etut } from '../etutler'
 import type { Ders } from './types'
 
-/** Tüm dersler (Task 35–37, 39, 46, 49, 54, 55 ve 62). */
-export const DERSLER: Ders[] = [...HAZIRLIK_DERSLERI, ...NOTA_DERSLERI, ...NOTA_2_DERSLERI, ...NOTA_3_DERSLERI, ...PERDE_DERSLERI, ...PERDE_3_DERSLERI, ...ETUT_DERSLERI, ...ETUT_3_DERSLERI, ...USUL_DERSLERI, ...DORTLU_DERSLERI, ...DIL_ESER_DERSLERI, ...MAKAM_DERSLERI]
+/** Tüm dersler (Task 35–37, 39, 46, 49, 54, 55, 62 ve 64). */
+export const DERSLER: Ders[] = [...HAZIRLIK_DERSLERI, ...NOTA_DERSLERI, ...NOTA_2_DERSLERI, ...NOTA_3_DERSLERI, ...NOTA_4_DERSLERI, ...PERDE_DERSLERI, ...PERDE_3_DERSLERI, ...PERDE_4_DERSLERI, ...ETUT_DERSLERI, ...ETUT_3_DERSLERI, ...ETUT_4_DERSLERI, ...USUL_DERSLERI, ...DORTLU_DERSLERI, ...DIL_ESER_DERSLERI, ...MAKAM_DERSLERI]
 
 export function dersById(id: string): Ders | undefined {
   return DERSLER.find((d) => d.id === id)

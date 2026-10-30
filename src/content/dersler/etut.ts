@@ -2,12 +2,14 @@ import type { MusicEvent } from '../../music/notation'
 import { ETUTLER } from '../etutler'
 import { NEY_PERDELER } from '../ney-perdeler'
 import type { PerdeId } from '../ney-perdeler'
-import { n } from './nota'
+import { meb, n } from './nota'
 import type { Ders } from './types'
 
 // Seviye 1 etüt dersleri: etütlerin nasıl çalışıldığı ve rast beşlisi. Bilgiler yalnızca araştırma notundan
 // (docs/superpowers/notes/2026-10-25-ney-mufredat-arastirma.md; S1, S2 9.3.1.3, S4 ders 3–4, S5 s.054–065) ve genel
 // nota bilgisinden gelir. Sayısal hedefler (tempo, hatasız çalma) "öneri" diye anılır.
+// Seviye 4: oktav etütleri dersi (`etut:tiz`; neyzenim _8 ve _9, MEB 1227) ve dil teknikleri dersi (`dil:teknikler`; MEB 1229
+// yalnız teknik adlarını verir, tanımlar genel müzik bilgisidir; neyzenim _15 yalnız bağı tanımlar).
 // Seviye 2: dil dersi (`dil:tu-bag`; S4 d15 bağ işaretinde "dil çarpması yok", ayrıntılı dil teknikleri Seviye 4'tür) ve eser dersi
 // (`eser:giris`; S1 ve §1 ortak kuralı: eser önce dinlenir, sonra notası okunur, en son neyle çalınır; S5 s.033; S4 "ezberle").
 
@@ -330,5 +332,154 @@ export const ETUT_3_DERSLERI: Ders[] = [
     ],
     kaynaklar: [MEB_1218, MEB_1232, s4(6), s4(8), s4(9)],
     alistirma: '/etut/kademe-dugah-huseyni',
+  },
+]
+
+/** Dil teknikleri dersindeki ezgi: `dil-2` etüdünün bağsız (1.), bağlı (5.) ve kesik (9.) ölçüsü; etütle ders aynı notayı gösterir. */
+const DIL_2 = ETUTLER.find((e) => e.id === 'dil-2')!
+
+const MEB_1229 = meb(1229, 'dil teknikleri: bağsız, bağlı, kısa-kesik')
+const MEB_1227 = meb(1227, 'dördüncü kademe ana sesler')
+
+/**
+ * Seviye 4 dersleri. `etut:tiz`: oktav etütleri; kaynaklar yalnız ilkeyi söyler (aynı parmak, daha da sert nefes, uzun sesin
+ * orta ve alt perdelerde çalışılması), kalıplar bu uygulamanın önerisidir. `dil:teknikler`: bağsız, bağlı, kesik; MEB 7.1 yalnız
+ * adları verir (bağsız, bağlı, kısa-kesik), tanımlar genel müzik bilgisidir. Kesik noktası bu uygulamadaki gösterimdir.
+ */
+export const ETUT_4_DERSLERI: Ders[] = [
+  {
+    id: 'etut:tiz',
+    seviye: 4,
+    baslik: 'Oktav etütleri',
+    bloklar: [
+      {
+        tur: 'metin',
+        metin:
+          'Oktav etütleri bir sesi ve onun bir oktav üstündeki tiz eşini art arda çaldırır: örneğin Segâh ile Tiz Segâh. Parmak aynı kalır; yalnız nefes değişir (tizde daha da sert) ve dudak biraz daha büzülür. Amaç, oktav geçişinde sesin kopmaması ve tiz sesin temiz çıkmasıdır.',
+      },
+      {
+        tur: 'porte',
+        olaylar: ETUTLER.find((e) => e.id === 'tiz-segah-oktav')!.olcu.slice(0, 3).flat(),
+        aciklama:
+          'Segâh–Tiz Segâh etüdünün ilk üç ölçüsü: birlik Segâh, birlik Tiz Segâh, sonra ikilikler. Parmak aynı: üstten ilk üç delik ve alttaki elin orta parmağı kapalı.',
+        bpm: 60,
+        olcuCizgileri: [0, 1],
+      },
+      {
+        tur: 'porte',
+        olaylar: ETUTLER.find((e) => e.id === 'kapali-oktav')!.olcu.slice(0, 3).flat(),
+        aciklama:
+          'Rast–kapalı Gerdâniye etüdünün ilk üç ölçüsü: birlik Rast, birlik kapalı Gerdâniye, sonra ikilikler. Parmak aynı: bütün delikler kapalı.',
+        bpm: 60,
+        olcuCizgileri: [0, 1],
+      },
+      { tur: 'metin', metin: 'Uygulamadaki oktav etütleri şunlardır:' },
+      {
+        tur: 'liste',
+        maddeler: ETUTLER.filter((e) => e.tur === 'tiz').map((e) => e.baslik),
+      },
+      { tur: 'metin', metin: 'Nasıl çalışılır:' },
+      {
+        tur: 'liste',
+        maddeler: [
+          'Önce uzun değerlerle başla: birlikleri çal, alt sesten tiz sese geçerken parmağını oynatma, nefesini güçlendir. Tiz sesi uzun tutmaya çalışma; zorlanırsan kısa bırak.',
+          'Sonra kısa değerlere geç: ikilikler, sonra dörtlükler. İki ses ne kadar sık değişirse nefesi o kadar çabuk ayarlaman gerekir.',
+          'Tiz ses oktavın altında kalıyorsa parmağı değil nefesi değiştir; dudağın biraz daha büzülsün.',
+          'Çoğu etütte tiz ses noktalı ikilikle biter ve ardından bir dörtlük sus gelir; susta nefes al.',
+        ],
+      },
+      {
+        tur: 'metin',
+        metin:
+          "Zeki Sözen uzun uzun üflemeyi orta ve alt perdelerde önerir (neyzenim.com, Ders 8). Bu yüzden uzun ses çalışmasının ağırlığı orta ve alt perdelerde kalır; oktav etütlerinde tiz sesler kısa tutulur. Tiz perdelerde önerimiz 5 sn, ±20 sent'tir.",
+      },
+      {
+        tur: 'metin',
+        metin:
+          "Kapalı oktav etüdünde Rast parmağı ve Dügâh parmağı bir oktav yukarı çıkar. Kapalı Gerdâniye ve kapalı Muhayyer, açık olanlarla aynı yazılı notadır. Zeki Sözen'in Ders 9 sayfasında bu ikisinin nefes şiddeti yazılmaz; ne kadar sert üfleyeceğini kulağın ve akort göstergesi söyler.",
+      },
+      {
+        tur: 'metin',
+        metin:
+          'Bu etütlerin kalıpları bu uygulamanın önerisidir. Kaynaklar yalnız ilkeyi söyler: aynı parmakla daha da sert nefes, dudağın biraz büzülmesi, uzun sesin orta ve alt perdelerde çalışılması. ♩ = 60 de bir öneridir; zorlanırsan yavaşlat.',
+      },
+      {
+        tur: 'dene',
+        adimlar: [
+          'Segâh–Tiz Segâh etüdünü aç ve "▶ Dinle" ile dinle; iki sesin aynı parmaktan çıktığını düşün.',
+          "Birliklerle Segâh'tan Tiz Segâh'a geç: parmağını oynatma, nefesini güçlendir.",
+          'Tiz ses oktavın altında kalıyorsa ya da kırılıyorsa yavaşla; akort göstergesine bak.',
+          "Birlikler temizse ikiliklere, sonra dörtlüklere geç; ♩ = 60'ta metronomla çal.",
+        ],
+      },
+    ],
+    kaynaklar: [s4(8), s4(9), MEB_1227],
+    alistirma: '/etut/tiz-segah-oktav',
+  },
+  {
+    id: 'dil:teknikler',
+    seviye: 4,
+    baslik: 'Dil teknikleri: bağsız, bağlı, kesik',
+    bloklar: [
+      {
+        tur: 'metin',
+        metin:
+          "Seviye 2'de dili ve bağı öğrenmiştin. Seviye 4'te aynı ezgiyi üç farklı çalış biçimiyle çalarsın. MEB programı bunları adlarıyla sayar: bağsız (non legato), bağlı (legato) ve kısa-kesik (staccato). Biz kısaca kesik diyeceğiz.",
+      },
+      {
+        tur: 'metin',
+        metin:
+          "Kaynaklar konusunda dürüst olalım. MEB programı (ünite 1229) bu üç tekniğin yalnız adlarını verir, tanımlamaz. Burada anlatılanlar genel müzik bilgisidir. Zeki Sözen'in Ders 15'i yalnız bağı tanımlar. Kesiğin notada nota başının yanındaki bir noktayla gösterilmesi de bu uygulamadaki gösterimdir; ney kaynaklarında bu işaretin kullanımı yazılı değildir.",
+      },
+      {
+        tur: 'liste',
+        maddeler: [
+          'Bağsız: her nota ayrı dil vuruşuyla başlar. Notalar süresini doldurur, aralarında çok kısa bir ayrılık kalır. Özel bir işaret yoktur; yazılı nota öntanımlı olarak böyle çalınır.',
+          'Bağlı: bağ yayı altındaki notalarda dil vurulmaz, yalnız parmak değişir. Ses kopmadan akar. Zeki Sözen\'in ders notlarında bağ için "dil çarpması yok" denir.',
+          'Kesik: nota kısa çalınır, süresinin geri kalanı sus olur. Bu uygulamadaki gösterim: nota başının sap karşısına bir nokta konur.',
+        ],
+      },
+      {
+        tur: 'porte',
+        olaylar: DIL_2.olcu[0]!,
+        aciklama: 'Bağsız: Dügâh, Segâh, Çârgâh, Nevâ. Dört notanın her birine ayrı dil vuruşu.',
+        bpm: 60,
+      },
+      {
+        tur: 'porte',
+        olaylar: DIL_2.olcu[4]!,
+        aciklama:
+          "Bağlı: aynı dört nota ikişerli bağlı. Dügâh'a ve Çârgâh'a dil vurursun; Segâh'a ve Nevâ'ya dil vurmadan, yalnız parmak değiştirerek geçersin.",
+        bpm: 60,
+      },
+      {
+        tur: 'porte',
+        olaylar: DIL_2.olcu[8]!,
+        aciklama: 'Kesik: aynı dört nota, her birinde bir nokta. Her nota kısa çalınır, arkasından sus gelir.',
+        bpm: 60,
+      },
+      {
+        tur: 'metin',
+        metin:
+          '▶ Dinle kesik notayı gerçekten kısa çalar: ses, süresinin yarısında susar. Bağsız ile bağlı arasındaki fark ise asıl neyde, dilinde ve nefesinde yapılır; ▶ Dinle bunu yalnız hafifçe duyurur. Bu üç biçimi çalışında sen ayırt edersin.',
+      },
+      {
+        tur: 'metin',
+        metin:
+          'Ezginin ritmi üçünde de aynıdır: kesik notanın arkasındaki sus, notanın kendi süresinden gelir ve ölçü aynı kalır. Yani kesik çalmak ezgiyi hızlandırmaz, yalnız her notayı kısaltır.',
+      },
+      {
+        tur: 'dene',
+        adimlar: [
+          'Bağsız portedeki dört notayı çal; her notayı ayrı dil vuruşuyla başlat ve sesin her notada yeniden başlayışını dinle.',
+          'Bağlı portede aynı notaları çal; bağ altındaki ikinci notaya dil vurma, yalnız parmağını değiştir. Ses kesilmeden akmalı.',
+          'Kesik portede her notayı süresinin yaklaşık yarısında bırak, kalan yarısında sus; ölçüyü sayarak bir sonraki notaya tam zamanında gir.',
+          '▶ Dinle ile üç portenin farkını dinle; kesik notada sesin yarıda sustuğunu duy.',
+          "Dil etüdünü aç ve ♩ = 60'ta çal: önce bağsız, sonra bağlı, sonra kesik bölümü.",
+        ],
+      },
+    ],
+    kaynaklar: [MEB_1229, s4(15)],
+    alistirma: '/etut/dil-2',
   },
 ]

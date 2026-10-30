@@ -66,7 +66,8 @@ function yediSes(belirtme: string): string {
  * Her dersin "Kendin dene" adımları: uzun ses, ▶ Dinle ile kulakla karşılaştırma, akort göstergesi.
  * `onceki.hareket` geçişte parmağın ne yaptığını söyler (öntanımlı: parmak eklenir); `ekAdimlar` ▶ Dinle'den sonra eklenir;
  * `nefes` uzun sesin nefes türüdür (öntanımlı ılık; 3. kademede daha sert); `ilkAdim` parmak yerleştirme adımının yerine
- * geçer (yarım delikli sesler: "deliklerin tam kapandığı" söylenemez).
+ * geçer (yarım delikli sesler: "deliklerin tam kapandığı" söylenemez); `hedef` son adımdaki öneri hedefidir (4. kademede
+ * "5 sn, ±20 sent"): öntanımlıdan farklıysa uzun ses "nefesin bitene kadar" değil, hedef süre sayılarak tutulur.
  */
 export function deneAdimlari(
   ad: { belirtme: string },
@@ -74,12 +75,17 @@ export function deneAdimlari(
   ekAdimlar: string[] = [],
   nefes = 'Ilık',
   ilkAdim = 'Parmaklarını şemadaki gibi yerleştir; deliklerin tam kapandığını kontrol et.',
+  hedef = '8 sn, ±20 sent',
 ): DersBlok {
+  const tutus =
+    hedef === '8 sn, ±20 sent'
+      ? `${ad.belirtme} nefesin bitene kadar aynı güçte, dalgalanmadan tut.`
+      : `${ad.belirtme} aynı güçte, dalgalanmadan tut ve süreyi say.`
   const adimlar = [
     ilkAdim,
     `▶ Dinle ile ${ad.belirtme} dinle.`,
     ...ekAdimlar,
-    `${nefes} nefesle uzun ses çal: ${ad.belirtme} nefesin bitene kadar aynı güçte, dalgalanmadan tut.`,
+    `${nefes} nefesle uzun ses çal: ${tutus}`,
     'Kendi sesini kulağınla dinlediğin sesle karşılaştır: aynı mı, daha pes mi, daha tiz mi?',
     'Akort göstergesine bak; ibreyi yeşil bantta tut ve saniyeleri say.',
   ]
@@ -91,7 +97,7 @@ export function deneAdimlari(
       `Önce ${onceki.ad} çal, sonra ${hareket} ${onceki.gecis} geç.`,
     )
   }
-  adimlar.push('Önerilen hedef: 8 sn, ±20 sent.')
+  adimlar.push(`Önerilen hedef: ${hedef}.`)
   return { tur: 'dene', adimlar }
 }
 
