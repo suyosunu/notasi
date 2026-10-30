@@ -46,6 +46,23 @@ describe('beklenenVuruslar', () => {
     expect(b[5]!.t).toBeCloseTo(3333.333333, 3)
   })
 
+  it('Türk Aksağı (5/8): düm 0, tek 2, tek 4 birim; ♪ = 120 (≙ ♩ = 60) için 0, 1000, 2000 ms; ölçü 5 birim', () => {
+    const b = beklenenVuruslar(usul('turk-aksagi'), 120, 2)
+    expect(b.map((x) => x.t)).toEqual([0, 1000, 2000, 2500, 3500, 4500])
+    expect(b.map((x) => x.tur)).toEqual(['düm', 'tek', 'tek', 'düm', 'tek', 'tek'])
+    expect(beklenenVuruslar(usul('turk-aksagi'), 60, 1).map((x) => x.t)).toEqual([0, 2000, 4000])
+  })
+
+  it('Devr-i Hindî (7/8): düm 0 ve 3, tek 1, 2, 5 birim; ikinci ölçü 7 birim sonra başlar', () => {
+    const b = beklenenVuruslar(usul('devr-i-hindi'), 60, 2)
+    expect(b.map((x) => x.t / 1000)).toEqual([0, 1, 2, 3, 5, 7, 8, 9, 10, 12])
+    expect(b.map((x) => x.tur).slice(0, 5)).toEqual(['düm', 'tek', 'tek', 'düm', 'tek'])
+  })
+
+  it('Yürük Semâî (6/4) 6/8 ile aynı birim konumlarını verir', () => {
+    expect(beklenenVuruslar(usul('yuruk-semai-64'), 60)).toEqual(beklenenVuruslar(usul('yuruk-semai'), 60))
+  })
+
   it('vuruşsuz usul (Dolap) → boş', () => {
     expect(beklenenVuruslar(usul('dolap'), 60)).toEqual([])
   })

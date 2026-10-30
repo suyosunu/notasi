@@ -107,6 +107,14 @@ describe('measureBeats / olcuVurusu', () => {
     expect(olcuVurusu(usulOf('semai'))).toBe(3)
     expect(olcuVurusu(usulOf('yuruk-semai'))).toBe(3)
   })
+
+  it('5/8 ve 7/8 ölçüler zaman × 4 / mertebe dörtlüktür; 6/4 6 dörtlüktür', () => {
+    expect(measureBeats(usulOf('turk-aksagi'))).toBe(2.5)
+    expect(measureBeats(usulOf('devr-i-hindi'))).toBe(3.5)
+    expect(measureBeats(usulOf('yuruk-semai-64'))).toBe(6)
+    expect(olcuVurusu(usulOf('turk-aksagi'))).toBe(2.5)
+    expect(olcuVurusu(usulOf('devr-i-hindi'))).toBe(3.5)
+  })
 })
 
 describe('buildCalismaCode: etüt', () => {
@@ -306,6 +314,48 @@ describe('buildCalismaCode: etüt', () => {
       expect(r.code).toContain(`${metronomeBody(9, bpm * 2)}.compress(0, 4.5 / ${4.5 + total})`)
       expect(r.code.endsWith(`${ONE_SHOT}.cpm(${bpm / (4.5 + total)})`)).toBe(true)
     }
+  })
+
+  it('Türk Aksağı (5/8): giriş 2.5 dörtlük, sayım 5 tık sekizlik aralıkla; usul sesi sayımdan sonra düm 2, tek 2, tek 1 zamanında', async () => {
+    const turk = usulOf('turk-aksagi')
+    const A4E: MusicEvent = { ...A4, dur: 'eighth' }
+    const olcu = [[A4H, A4E]] // tam bir 5/8 ölçüsü: anacrusis sayılmaz
+    const r = buildCalismaCode(olcu, DEFAULT_TUNING, 60, { melodi: false, eslik: 'usul', voice: 'mevcut', usul: turk, usulSesi: 'oryantal', isaret: false })
+    expect(r.girisVurus).toBe(2.5)
+    expect(r.toplamVurus).toBe(2.5)
+    expect(r.durationMs).toBe(5000)
+    expect(r.code).toContain(`${metronomeBody(5, 120)}.compress(0, 2.5 / 5)`)
+    expect(r.code).toContain('.fast(1).compress(2.5 / 5, 1)')
+    expect(r.code.endsWith(`${ONE_SHOT}.cpm(12)`)).toBe(true)
+    const hs = await hits(r.code, 0, 5)
+    expect(clicks(hs).map((h) => h.at)).toEqual([0, 0.5, 1, 1.5, 2])
+    expect(hs.filter(isDum).map((h) => h.at)).toEqual([2.5])
+    expect(hs.filter(isTekClick).map((h) => h.at)).toEqual([3.5, 4.5])
+  })
+
+  it('Devr-i Hindî (7/8): giriş 3.5 dörtlük, sayım 7 tık; usul sesi düm 1, tek 1, tek 1, düm 2, tek 2 zamanında', async () => {
+    const hindi = usulOf('devr-i-hindi')
+    const A4E: MusicEvent = { ...A4, dur: 'eighth' }
+    const olcu = [[A4H, A4, A4E]] // 2 + 1 + 0.5 = 3.5
+    const r = buildCalismaCode(olcu, DEFAULT_TUNING, 60, { melodi: false, eslik: 'usul', voice: 'mevcut', usul: hindi, usulSesi: 'oryantal', isaret: false })
+    expect(r.girisVurus).toBe(3.5)
+    expect(r.toplamVurus).toBe(3.5)
+    expect(r.durationMs).toBe(7000)
+    expect(r.code).toContain(`${metronomeBody(7, 120)}.compress(0, 3.5 / 7)`)
+    expect(r.code).toContain('.fast(1).compress(3.5 / 7, 1)')
+    const hs = await hits(r.code, 0, 7)
+    expect(clicks(hs).map((h) => h.at)).toEqual([0, 0.5, 1, 1.5, 2, 2.5, 3])
+    expect(hs.filter(isDum).map((h) => h.at)).toEqual([3.5, 5])
+    expect(hs.filter(isTekClick).map((h) => h.at)).toEqual([4, 4.5, 6])
+  })
+
+  it('5/8 ve 7/8: ilk ölçü tam ölçüden kısaysa anacrusis sayılır, tam ölçüyse sayılmaz', () => {
+    const turk = usulOf('turk-aksagi')
+    const A4E: MusicEvent = { ...A4, dur: 'eighth' }
+    const tam = buildCalismaCode([[A4H, A4E]], DEFAULT_TUNING, 60, { melodi: true, eslik: 'yok', voice: 'mevcut', usul: turk, isaret: false })
+    expect(tam.girisVurus).toBe(2.5)
+    const kisa = buildCalismaCode([[A4], [A4H, A4E]], DEFAULT_TUNING, 60, { melodi: true, eslik: 'yok', voice: 'mevcut', usul: turk, isaret: false })
+    expect(kisa.girisVurus).toBe(2 * 2.5 - 1)
   })
 
   it('melodi ve eşlik kapalıyken (mikrofonla takip) yalnız giriş sayımı; süre yine seçimin tamamıdır', () => {

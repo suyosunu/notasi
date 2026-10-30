@@ -33,8 +33,11 @@ export function perdeDersleri(perdeId: string): string[] {
   return perdeId === 'neva' ? [UZUN_SES_DERS_ID, perdeDersId(perdeId)] : [perdeDersId(perdeId)]
 }
 
+/** Kendi dersi olmayıp başka bir usulün dersini okutan usuller: Yürük Semâî dersi 6/8 ve 6/4'ü birlikte anlatır. */
+const USUL_DERSI_ORTAK: Record<string, string> = { 'yuruk-semai-64': 'yuruk-semai' }
+
 export function usulDersId(usulId: string): string {
-  return `usul:${usulId}`
+  return `usul:${USUL_DERSI_ORTAK[usulId] ?? usulId}`
 }
 
 /** Usul bölümünde sırayla okunacak dersler: önce giriş, sonra (varsa) usulün kendi dersi. */

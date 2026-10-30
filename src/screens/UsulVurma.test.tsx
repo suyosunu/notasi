@@ -280,6 +280,36 @@ describe('UsulVurma', () => {
     expect(screen.getByRole('button', { name: '▶ Başla' })).toBeTruthy()
   })
 
+  it('Türk Aksağı (5/8): ♪ = 60, giriş ölçüsü 5 sn, düm 0 · tek 2 · tek 4 birim; 12 doğru vuruş geçer', async () => {
+    const TURK = USULLER.find((u) => u.id === 'turk-aksagi')!
+    await isaretEkle('okunanDersler', 'usul:turk-aksagi')
+    render(<UsulVurma usulId="turk-aksagi" />)
+    const btn = (await screen.findByRole('button', { name: '▶ Başla' })) as HTMLButtonElement
+    await waitFor(() => expect(btn.disabled).toBe(false))
+    expect(screen.getByRole('heading', { name: '👏 Türk Aksağı · 5/8' })).toBeTruthy()
+    expect(screen.getByText('Hız: ♪ = 60')).toBeTruthy()
+    expect(screen.getAllByTestId('vurus').map((b) => b.textContent)).toEqual(['düm', 'tek', 'tek'])
+    fireEvent.click(usulSesiKutusu())
+    const baslangic = now
+    await basla(btn)
+    const beklenen = buildVurmaCode(TURK, 60, { usulSesi: false })
+    expect(beklenen).toMatchObject({ girisMs: 5000, durationMs: 25_000 })
+    expect(vi.mocked(playCode).mock.calls[0]!.slice(0, 2)).toEqual([beklenen.code, 25_000])
+    const sifir = 100 + 5000 // gecikme payı + giriş ölçüsü
+    for (let olcu = 0; olcu < 4; olcu++) {
+      bas(dumBtn(), sifir + olcu * 5000, baslangic)
+      bas(tekBtn(), sifir + olcu * 5000 + 2000, baslangic)
+      bas(tekBtn(), sifir + olcu * 5000 + 4000, baslangic)
+    }
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(26_000)
+    })
+    vi.useRealTimers()
+    expect(await screen.findByText('12/12 vuruş doğru')).toBeTruthy()
+    expect(screen.getByText('✓ Geçtin')).toBeTruthy()
+    await waitFor(async () => expect((await getSettings()).vurulanUsuller).toEqual(['turk-aksagi']))
+  })
+
   it('hız kaydırıcısı tempoyu değiştirir: ♩ = 90 kodu ve süresi', async () => {
     const btn = await ac()
     const slider = screen.getByRole('slider') as HTMLInputElement

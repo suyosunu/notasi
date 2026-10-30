@@ -9,7 +9,7 @@ import { SOUND_OFF, SOUND_WARNING } from '../content/ses-mesajlari'
 import { USULLER } from '../content/usuller'
 import { DEFAULT_TUNING } from '../music/ahenk'
 import { getSettings, isaretEkle, resetDbForTests, saveSettings } from '../store/db'
-import { EtutCalisma, EtutDetail } from './EtutDetail'
+import { EtutCalisma, EtutDetail, olcuPerSatir } from './EtutDetail'
 
 vi.mock('../audio/player', () => ({
   unlockAudio: vi.fn(() => Promise.resolve()),
@@ -57,6 +57,18 @@ async function dinleBtn() {
 const metronomlaBtn = () => screen.getByRole('button', { name: '🎵 Metronomla çal' }) as HTMLButtonElement
 const metronomBox = () => screen.getByRole('checkbox', { name: '🥁 Metronom' }) as HTMLInputElement
 const slider = () => screen.getByRole('slider') as HTMLInputElement
+
+describe('olcuPerSatir (ölçü vuruşuna göre)', () => {
+  it('3 dörtlüğe dek (2/4, 3/4, 5/8, 6/8) satıra üç ölçü; daha uzunda (4/4, 7/8, 6/4) iki ölçü', () => {
+    const vurus = (id: string) => {
+      const u = USULLER.find((x) => x.id === id)!
+      return (u.zaman * 4) / u.mertebe
+    }
+    expect(olcuPerSatir(4)).toBe(2) // usulsüz 4/4
+    expect(['nim-sofyan', 'semai', 'turk-aksagi', 'yuruk-semai'].map((id) => olcuPerSatir(vurus(id)))).toEqual([3, 3, 3, 3])
+    expect(['sofyan', 'devr-i-hindi', 'yuruk-semai-64', 'aksak'].map((id) => olcuPerSatir(vurus(id)))).toEqual([2, 2, 2, 2])
+  })
+})
 
 describe('EtutDetail', () => {
   it('ders okunmamışsa önce ders gelir; "Anladım"dan sonra etüt açılır, ders yeniden gelmez', async () => {

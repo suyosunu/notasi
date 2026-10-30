@@ -259,6 +259,32 @@ describe('buildUsulPatternCode: gerçek Strudel çekirdeğiyle', () => {
     }
   })
 
+  it('Türk Aksağı (5/8): düm 0, tek 2, tek 4 (zaman birimi); bir ölçü 5 birim, yani zaman × 4 / mertebe dörtlük', async () => {
+    const turk = usul('turk-aksagi')
+    const hs = await haps(turk)
+    expect(hs.filter((h) => h.s === 'sine' && h.freq === 65).map(z)).toEqual([0])
+    expect(hs.filter((h) => h.s === 'white' && h.bandf === 3000).map(z)).toEqual([2, 4])
+    // ♪ = 120 ≙ ♩ = 60: ölçü 2.5 dörtlük = 2.5 sn
+    expect(buildUsulPatternCode(turk, 120, 'oryantal').endsWith('.cpm(24)')).toBe(true)
+    expect(buildUsulOnceCode(turk, 120, 'oryantal').durationMs).toBe((turk.zaman * 4) / turk.mertebe * 1000)
+  })
+
+  it('Devr-i Hindî (7/8): düm 0 ve 3, tek 1, 2 ve 5; ♪ = 120 ≙ ♩ = 60 ölçü 3.5 sn', async () => {
+    const hindi = usul('devr-i-hindi')
+    const hs = await haps(hindi)
+    expect(hs.filter((h) => h.s === 'sine' && h.freq === 65).map(z)).toEqual([0, 3])
+    expect(hs.filter((h) => h.s === 'white' && h.bandf === 3000).map(z)).toEqual([1, 2, 5])
+    expect(buildUsulPatternCode(hindi, 120, 'oryantal').endsWith(`.cpm(${120 / 7})`)).toBe(true)
+    expect(buildUsulOnceCode(hindi, 120, 'oryantal').durationMs).toBe((hindi.zaman * 4) / hindi.mertebe * 1000)
+  })
+
+  it('Yürük Semâî (6/4): 6/8 ile aynı vuruş konumları; ♩ = 60 ölçü 6 sn', async () => {
+    const dortluk = usul('yuruk-semai-64')
+    const ayni = (hs: UsulHit[]) => hs.map((h) => `${h.s}${h.freq ?? ''}@${z(h)}`)
+    expect(ayni(await haps(dortluk))).toEqual(ayni(await haps(usul('yuruk-semai'))))
+    expect(buildUsulOnceCode(dortluk, 60, 'oryantal').durationMs).toBe(6000)
+  })
+
   it('Dolap: 12 tık, ilki 1200 Hz ve en yüksek sesli', async () => {
     const hs = await haps(usul('dolap'))
     expect(hs).toHaveLength(12)

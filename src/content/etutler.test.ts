@@ -121,9 +121,10 @@ describe('ETUTLER', () => {
     ])
   })
 
-  it('her etüdün her ölçüsü kendi ölçü zamanını doldurur (usulsüz 4, usullü usul.zaman)', () => {
+  it('her etüdün her ölçüsü kendi ölçü vuruşunu doldurur (usulsüz 4, usullü zaman × 4 / mertebe dörtlük)', () => {
     for (const e of ETUTLER) {
-      const zaman = e.usulId ? USULLER.find((u) => u.id === e.usulId)!.zaman : 4
+      const usul = e.usulId ? USULLER.find((u) => u.id === e.usulId)! : undefined
+      const zaman = usul ? (usul.zaman * 4) / usul.mertebe : 4
       for (const [i, olcu] of e.olcu.entries()) {
         const toplam = olcu.reduce((t, n) => t + beats(n), 0)
         expect(Math.abs(toplam - zaman), `${e.id} ${i + 1}. ölçü: ${toplam}`).toBeLessThan(1e-6)

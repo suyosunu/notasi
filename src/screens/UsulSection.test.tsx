@@ -44,13 +44,18 @@ async function tapPlay() {
   await waitFor(() => expect(btn.disabled).toBe(false))
   fireEvent.click(btn)
 }
+/** Düğmenin adı "<ad><zaman>/<mertebe>" ile başlar: "Yürük Semâî" ile "Yürük Semâî (6/4)" karışmaz. */
+const usulDugmesi = (u: { name: string; zaman: number; mertebe: number }) => {
+  const kacis = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`^${kacis(u.name)}\\s*${u.zaman}/${u.mertebe}`)
+}
 const pick = (name: RegExp) => fireEvent.click(screen.getByRole('button', { name }))
 
 describe('UsulSection', () => {
   it('"Usuller" başlığı ve altı usulün listesi', async () => {
     await ilkRender()
     expect(screen.getByRole('heading', { name: /Usuller/ })).toBeTruthy()
-    for (const u of USULLER) expect(screen.getByRole('button', { name: new RegExp(`^${u.name}`) })).toBeTruthy()
+    for (const u of USULLER) expect(screen.getByRole('button', { name: usulDugmesi(u) })).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Ana ekrana dön' }).getAttribute('href')).toBe('#/')
   })
 
@@ -64,6 +69,30 @@ describe('UsulSection', () => {
     expect(etiket('Düyek')).toBe('Seviye 5')
     expect(etiket('Aksak')).toBe('Seviye 5')
     expect(etiket('Dolap')).toBeUndefined()
+  })
+
+  it('Yürük Semâî (6/4), Türk Aksağı ve Devr-i Hindî "Seviye 4" etiketli; sıra Yürük Semâî 6/8, 6/4, Türk Aksağı, Devr-i Hindî, Düyek', async () => {
+    await ilkRender()
+    for (const id of ['yuruk-semai', 'yuruk-semai-64', 'turk-aksagi', 'devr-i-hindi']) {
+      const dugme = screen.getByRole('button', { name: usulDugmesi(usul(id)) })
+      expect(dugme.querySelector('.seviye-etiket')?.textContent, id).toBe('Seviye 4')
+    }
+    const adlar = screen.getAllByRole('button').map((b) => b.textContent ?? '')
+    const sira = ['Yürük Semâî 6/8', 'Yürük Semâî (6/4) 6/4', 'Türk Aksağı 5/8', 'Devr-i Hindî 7/8', 'Düyek 8/8'].map((a) =>
+      adlar.findIndex((t) => t.startsWith(a)),
+    )
+    expect(sira.every((i) => i >= 0)).toBe(true)
+    expect(sira).toEqual([...sira].sort((a, b) => a - b))
+  })
+
+  it('Türk Aksağı: vuruş şeması düm 2, tek 2, tek 1 (40%, 40%, 20%) ve birim ♪', async () => {
+    await ilkRender()
+    pick(usulDugmesi(usul('turk-aksagi')))
+    const boxes = [...document.querySelectorAll<HTMLElement>('[data-testid="vurus"]')]
+    expect(boxes.map((b) => b.textContent)).toEqual(['düm', 'tek', 'tek'])
+    expect(boxes.map((b) => b.style.width)).toEqual(['40%', '40%', '20%'])
+    expect(screen.getByRole('heading', { name: 'Türk Aksağı · 5/8' })).toBeTruthy()
+    expect(screen.getByText('Hız: ♪ = 60')).toBeTruthy()
   })
 
   it('vuruş şeması: kutular süreyle orantılı genişlikte, etiketli, düm ve tek farklı renkte', async () => {

@@ -18,7 +18,7 @@ export interface Etut {
   tur: 'tek' | 'iki' | 'besli' | 'usul' | 'dortlu' | 'dil' | 'kademe' | 'dizi'
   /** Hepsi geçilince etüt akşam planına girer. */
   perdeler: PerdeId[]
-  /** Ölçüler: usulsüz etütte 4/4, usullü etütte `usul.zaman`/4. */
+  /** Ölçüler: usulsüz etütte 4/4, usullü etütte `usul.zaman * 4 / usul.mertebe` dörtlük (5/8 → 2.5, 7/8 → 3.5). */
   olcu: MusicEvent[][]
   bpm: number
   /** Etütten önce okunan ders. */
