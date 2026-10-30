@@ -134,11 +134,15 @@ describe('ScoreView', () => {
           if (i % 2 === 1) expect(v, `${p.id}: ${b.getAttribute('d')}`).toBeLessThan(bandTop)
         })
       }
-      // Gerçek parçalarda 2 aralıklık kenar istisnası hiç kullanılmaz: her kirişli sap en az 2,5 aralık.
+      // Gerçek parçalarda 2 aralıklık kenar istisnası yalnız Çeçen Kızı'nın ilk grubunda (A4 B4b1 C5 D5, sözsüz) kullanılır:
+      // sap aşağı ve alçak A4'ten başladığı için kiriş 88'i aşar. Başka her kirişli sap en az 2,5 aralıktır, istisna 2 aralığın altına inmez.
+      const kisa: string[] = []
       for (const s of container.querySelectorAll('line[data-beamed]')) {
         const len = Math.abs(Number(s.getAttribute('y2')) - Number(s.getAttribute('y1')))
-        expect(len, p.id).toBeGreaterThanOrEqual(25 - 1e-9)
+        expect(len, p.id).toBeGreaterThanOrEqual(20 - 1e-9)
+        if (len < 25 - 1e-9) kisa.push(s.getAttribute('x1')!)
       }
+      expect(kisa, p.id).toHaveLength(p.id === 'cecen-kizi' ? 1 : 0)
       cleanup()
     }
     expect(beams).toBeGreaterThan(100)

@@ -43,6 +43,7 @@ const BENIM_ADIM = [
 const DOLAP = { zaman: 12, mertebe: 8 }
 const SOFYAN = { zaman: 4, mertebe: 4 }
 const YURUK = { zaman: 6, mertebe: 8 }
+const YURUK_64 = { zaman: 6, mertebe: 4 }
 const n = (step, octave, acc, dur, dotted, tie) => ({
   kind: 'note',
   pitch: { step, octave, acc },
@@ -418,6 +419,39 @@ describe('Kod 10 ve 11 satırları', () => {
   })
 })
 
+describe('Kod 4, 7 ve 12 satırları', () => {
+  // Gül yüzlülerin (beyati--yuruksemai) biçimi: Kod 4 / 7 / 12 de süreli nota satırıdır (Pay > 0); Pay 0 olan Kod 8 atlanır.
+  const rows = [
+    [1, 51, '', '', 0, 0, 6, 4, 0, 87, 0, 'Yürüksemâî', '0.0'],
+    [2, 9, 'Do5', 'C5', 318, 318, 1, 4, 500, 95, 96, 'Gül', '0.166666666667'],
+    [3, 12, 'Re5', 'D5', 327, 327, 1, 4, 500, 95, 96, 'SAZ', '0.333333333333'],
+    [4, 7, 'Fa5#1', 'F5#1', 342, 341, 1, 4, 500, 95, 96, '.', '0.5'],
+    [5, 8, 'Mi5', 'E5', 336, 336, 0, 0, 0, 95, 96, '.', '0.5'],
+    [6, 4, 'Mi5', 'E5', 336, 336, 1, 2, 1000, 95, 96, '.', '0.833333333333'],
+    [7, 9, 'Es', 'Es', -1, -1, 1, 4, 500, 100, 0, '.', '1.0'],
+  ]
+
+  it('Kod 4, 7 ve 12 satırları süreli nota sayılır; Kod 8 (Pay 0) atlanır', () => {
+    const r = convertSymbTr(txt(rows), { file: 'gul.txt', usul: YURUK_64 })
+    expect(r.olcu).toEqual([
+      [
+        n('C', 5, 0, 'quarter'),
+        n('D', 5, 0, 'quarter'),
+        n('F', 5, 1, 'quarter'),
+        n('E', 5, 0, 'half'),
+        { kind: 'rest', dur: 'quarter' },
+      ],
+    ])
+    expect(r.skipped.map((s) => [s.sira, s.reason])).toEqual([[5, 'Kod 8 (nota/sus değil)']])
+    expect(r.summary).toMatchObject({ measures: 1, notes: 4, rests: 1, komaChecked: 4, events: 5, verifiedRows: 5 })
+  })
+
+  it('bu kodlar sayılmasaydı Offset zinciri tutmazdı', () => {
+    const without = rows.filter((r) => ![4, 7, 12].includes(r[1])).map((r, i) => [i + 1, ...r.slice(1)])
+    expect(() => convertSymbTr(txt(without), { file: 'gul.txt', usul: YURUK_64 })).toThrow(/Offset/)
+  })
+})
+
 describe('olcuAraligi', () => {
   // 6/8; her ölçü iki noktalı dörtlük. Ölçü k (0'dan) için satırlar.
   const m = (k, kod = 9) => [
@@ -491,12 +525,16 @@ describe('buildParca', () => {
 })
 
 describe('PIECES', () => {
-  it('kolaydan zora sıralı; aranağme Nevâ, Yürük Semâî, ölçü 1–20, söz yok', () => {
+  it('sekiz parça kolaydan zora sıralı; aranağme Nevâ, Yürük Semâî, ölçü 1–20, söz yok', () => {
     expect(PIECES.map((p) => p.id)).toEqual([
       'benim-adim-dertli-dolap',
       'yine-baglandi-dil-aranagme',
       'hak-teala',
+      'allah-emrin-tutalim',
+      'hicran-oku-aranagme',
+      'gul-yuzlulerin',
       'daglar-ile-taslar-ile',
+      'cecen-kizi',
     ])
     expect(PIECES[1]).toEqual({
       id: 'yine-baglandi-dil-aranagme',
@@ -507,6 +545,49 @@ describe('PIECES', () => {
       file: 'neva--sarki--yuruksemai_ii--yine_baglandi--zekai_dede.txt',
       olcuAraligi: [1, 20],
       soz: false,
+    })
+  })
+})
+
+describe('Aşama D eserleri', () => {
+  const piece = (id) => PIECES.find((p) => p.id === id)
+  it('tablodaki değerlerle tanımlı (usul kimliği, ölçü aralığı, söz)', () => {
+    expect(piece('allah-emrin-tutalim')).toEqual({
+      id: 'allah-emrin-tutalim',
+      title: 'Allah Emrin Tutalım',
+      makam: 'ussak',
+      usul: 'duyek',
+      composer: 'Zekâî Dede',
+      file: 'ussak--ilahi--duyek--allah_emrin--zekai_dede.txt',
+      soz: false,
+    })
+    expect(piece('hicran-oku-aranagme')).toEqual({
+      id: 'hicran-oku-aranagme',
+      title: 'Hicran Oku (aranağme)',
+      makam: 'huseyni',
+      usul: 'turk-aksagi',
+      composer: 'Şevki Bey',
+      file: 'huseyni--sarki--turkaksagi--hicran_oku--sevki_bey.txt',
+      olcuAraligi: [1, 16],
+      soz: false,
+    })
+    expect(piece('gul-yuzlulerin')).toEqual({
+      id: 'gul-yuzlulerin',
+      title: 'Gül Yüzlülerin (1–16. ölçü)',
+      makam: 'bayati',
+      usul: 'yuruk-semai-64',
+      composer: "Tab'î Mustafa Efendi",
+      file: 'beyati--yuruksemai--yuruksemai--gul_yuzlulerin--tabi_mustafa_efendi.txt',
+      olcuAraligi: [1, 16],
+      soz: false,
+    })
+    expect(piece('cecen-kizi')).toEqual({
+      id: 'cecen-kizi',
+      title: 'Çeçen Kızı',
+      makam: 'huseyni',
+      usul: 'nim-sofyan',
+      composer: 'Tanburi Cemil Bey',
+      file: 'huseyni--oyunhavasi--nimsofyan--cecen_kizi--tanburi_cemil_bey.txt',
     })
   })
 })

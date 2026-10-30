@@ -1,14 +1,18 @@
 import type { DurationKind, MusicEvent } from '../../music/notation'
 import type { Accidental, Step } from '../../music/pitch'
+import allahEmrin from './allah-emrin-tutalim.json'
 import benimAdim from './benim-adim-dertli-dolap.json'
+import cecenKizi from './cecen-kizi.json'
 import daglarIle from './daglar-ile-taslar-ile.json'
+import gulYuzlulerin from './gul-yuzlulerin.json'
 import hakTeala from './hak-teala.json'
+import hicranOku from './hicran-oku-aranagme.json'
 import yineBaglandi from './yine-baglandi-dil-aranagme.json'
 import type { Parca, ParcaMakam } from './types'
 
 export type { Parca, ParcaMakam }
 
-const MAKAMLAR: readonly string[] = ['rast', 'neva', 'ussak', 'hicaz']
+const MAKAMLAR: readonly string[] = ['rast', 'neva', 'ussak', 'bayati', 'huseyni', 'hicaz']
 const DURATIONS: readonly string[] = ['whole', 'half', 'quarter', 'eighth', 'sixteenth', 'thirtysecond']
 const STEPS: readonly string[] = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
 const ACCIDENTALS: readonly number[] = [0, 1, -1, 4, -4, 5, -5, 8, -8]
@@ -66,4 +70,4 @@ export function toParca(data: unknown): Parca {
 }
 
 /** Kolaydan zora. */
-export const PARCALAR: Parca[] = [benimAdim, yineBaglandi, hakTeala, daglarIle].map(toParca)
+export const PARCALAR: Parca[] = [benimAdim, yineBaglandi, hakTeala, allahEmrin, hicranOku, gulYuzlulerin, daglarIle, cecenKizi].map(toParca)

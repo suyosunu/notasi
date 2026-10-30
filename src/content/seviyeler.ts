@@ -314,7 +314,16 @@ export const SEVIYELER: Seviye[] = [
 
 /** Parça, makam ve usullerin önerildiği seviye (etiket olarak gösterilir; hiçbiri kilitli değildir). Dolap etiketsizdir. */
 export const ONERILEN_SEVIYE: { parca: Record<string, number>; makam: Record<string, number>; usul: Record<string, number> } = {
-  parca: { 'benim-adim-dertli-dolap': 2, 'yine-baglandi-dil-aranagme': 3, 'hak-teala': 3, 'daglar-ile-taslar-ile': 4 },
+  parca: {
+    'benim-adim-dertli-dolap': 2,
+    'yine-baglandi-dil-aranagme': 3,
+    'hak-teala': 3,
+    'allah-emrin-tutalim': 4,
+    'hicran-oku-aranagme': 4,
+    'gul-yuzlulerin': 4,
+    'daglar-ile-taslar-ile': 4,
+    'cecen-kizi': 4,
+  },
   makam: { rast: 3, neva: 3, ussak: 4, bayati: 4, huseyni: 4, muhayyer: 4, kurdi: 4, hicaz: 4 },
   usul: {
     'nim-sofyan': 2,

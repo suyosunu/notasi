@@ -103,6 +103,32 @@ describe('ParcaDetail', () => {
     expect(document.querySelectorAll('text[data-syllable]').length).toBeGreaterThan(0)
   })
 
+  it('Aşama D eserleri: Bayâtî ve Hüseynî makam adı bağlantısı, usul adı ve kesri, sözsüz nota', async () => {
+    const beklenen = [
+      ['gul-yuzlulerin', 'Bayâtî', 'bayati', 'Yürük Semâî (6/4)', '6/4'],
+      ['hicran-oku-aranagme', 'Hüseynî', 'huseyni', 'Türk Aksağı', '5/8'],
+      ['cecen-kizi', 'Hüseynî', 'huseyni', 'Nim Sofyan', '2/4'],
+      ['allah-emrin-tutalim', 'Uşşak', 'ussak', 'Düyek', '8/8'],
+    ] as const
+    for (const [id, makam, makamId, usul, kesir] of beklenen) {
+      await renderParca(id)
+      expect(screen.getByRole('heading', { level: 1 }).textContent).toContain(byId(id).title)
+      expect(screen.getByRole('link', { name: makam }).getAttribute('href'), id).toBe(`#/makam/${makamId}`)
+      const usulLink = screen.getByRole('link', { name: usul })
+      expect(usulLink.getAttribute('href')).toBe('#/usul')
+      expect(usulLink.parentElement!.textContent).toContain(kesir)
+      expect(document.querySelectorAll('[data-testid="score-row"]').length, id).toBeGreaterThan(0)
+      expect(document.querySelectorAll('text[data-syllable]'), id).toHaveLength(0)
+      cleanup()
+    }
+  })
+
+  it('Çeçen Kızı: otuzikilikler üç kirişle çizilir', async () => {
+    await renderParca('cecen-kizi')
+    // m41–47'deki altı figürde noktalı onaltılık + otuzikilik + sekizlik aynı kirişte: 3. kiriş altı kez.
+    expect(document.querySelectorAll('[data-beam="3"]')).toHaveLength(6)
+  })
+
   it('kiriş vuruş birimi usulden gelir: Dolap (12/8) üçlü, Sofyan (4/4) ikili gruplar', async () => {
     await renderParca('benim-adim-dertli-dolap')
     // Her ölçü "e e e q e q e. s q": 12/8'de ilk üç sekizlik ve (yedek geçişle) e. s birer grup olur;

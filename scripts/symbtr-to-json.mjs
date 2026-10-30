@@ -1,15 +1,16 @@
 // Yalnızca geliştiricinin çalıştırdığı araç; uygulamaya dahil edilmez.
 // SymbTr txt dosyalarını (https://github.com/MTG/SymbTr, CC BY-NC-SA 4.0, Karaosmanoğlu 2012)
 // uygulamanın parça JSON biçimine çevirir. Sütun biçimi: docs/superpowers/notes/2026-10-19-surum-2-arastirma.md §5.
+// Usul, PIECES'teki `usul` kimliğiyle seçilir; Pay/Payda aynı olan usuller (6/8 ve 6/4 Yürük Semâî gibi) kimlikle ayrılır.
 //
 // Kullanım:
 //   node scripts/symbtr-to-json.mjs                 # kaynakları SymbTr deposundan indirir
 //   node scripts/symbtr-to-json.mjs --src <klasör>  # yerel kopyaları (aynı dosya adlarıyla) okur
 //
-// Perde NotaAE/KomaAE sütunlarından, süre Pay/Payda'dan okunur. Kod 9 (nota/sus), Kod 10 (ardçarpmalı
-// nota) ve Kod 11 (sessiz çarpma) süreli nota sayılır; Kod 8 (süresiz çarpma) atlanır. Bir eserin yalnız
+// Perde NotaAE/KomaAE sütunlarından, süre Pay/Payda'dan okunur. Kod 4, 7, 9 (nota/sus), 10 (ardçarpmalı
+// nota), 11 (sessiz çarpma) ve 12 süreli nota sayılır; Kod 8 (süresiz çarpma) ve Pay 0 satırlar atlanır. Bir eserin yalnız
 // belli ölçüleri alınabilir (`olcuAraligi`), söz gösterilmeyecekse `soz: false` verilir. Temsil edilemeyen süreler
-// (üçleme, 1/64, 5/8 gibi bağ gerektiren değerler) ya da desteklenmeyen işaretler dönüştürmeyi
+// (üçleme, 1/64 gibi değerler; 5/8 gibi bağ gerektirenler bağlı notalara bölünür) ya da desteklenmeyen işaretler dönüştürmeyi
 // durdurur; yaklaştırma yapılmaz. Bir parça başarısız olursa diğerleri yine üretilir.
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
@@ -50,6 +51,38 @@ export const PIECES = [
     file: 'ussak--ilahi--sofyan--hak_taala--ali_ufki.txt',
   },
   {
+    // TDV bu ilahiyi Nim Sofyan usulünde anar; SymbTr dosyası Düyek'tir, dosyanın usulü kullanılır. Güfte sahibi bulunamadı.
+    id: 'allah-emrin-tutalim',
+    title: 'Allah Emrin Tutalım',
+    makam: 'ussak',
+    usul: 'duyek',
+    composer: 'Zekâî Dede',
+    file: 'ussak--ilahi--duyek--allah_emrin--zekai_dede.txt',
+    soz: false,
+  },
+  {
+    // Ölçü 1–16 aranağme (saz). Güfte sahibi bulunamadığı için söz yazılmaz.
+    id: 'hicran-oku-aranagme',
+    title: 'Hicran Oku (aranağme)',
+    makam: 'huseyni',
+    usul: 'turk-aksagi',
+    composer: 'Şevki Bey',
+    file: 'huseyni--sarki--turkaksagi--hicran_oku--sevki_bey.txt',
+    olcuAraligi: [1, 16],
+    soz: false,
+  },
+  {
+    // Yalnız ölçü 1–16: sonrası tiz perdelere ve uygulamada olmayan F5#1'e çıkar. Güfte sahibi bulunamadı.
+    id: 'gul-yuzlulerin',
+    title: 'Gül Yüzlülerin (1–16. ölçü)',
+    makam: 'bayati',
+    usul: 'yuruk-semai-64',
+    composer: "Tab'î Mustafa Efendi",
+    file: 'beyati--yuruksemai--yuruksemai--gul_yuzlulerin--tabi_mustafa_efendi.txt',
+    olcuAraligi: [1, 16],
+    soz: false,
+  },
+  {
     id: 'daglar-ile-taslar-ile',
     title: 'Dağlar ile Taşlar ile',
     makam: 'hicaz',
@@ -57,11 +90,23 @@ export const PIECES = [
     composer: 'Kutbî Dede',
     file: 'hicaz--ilahi--sofyan--daglar_ile--kutbi_dede.txt',
   },
+  {
+    // Sözsüz oyun havası; m41–47'deki 3/32 + 1/32 figürleri otuzikilik olarak yazılır.
+    id: 'cecen-kizi',
+    title: 'Çeçen Kızı',
+    makam: 'huseyni',
+    usul: 'nim-sofyan',
+    composer: 'Tanburi Cemil Bey',
+    file: 'huseyni--oyunhavasi--nimsofyan--cecen_kizi--tanburi_cemil_bey.txt',
+  },
 ]
 
 const COLUMNS = ['Sira', 'Kod', 'NotaAE', 'KomaAE', 'Pay', 'Payda', 'Soz1', 'Offset']
-/** Kod 9 nota/sus, Kod 10 ardçarpmalı nota, Kod 11 sessiz çarpma: üçü de süreli nota satırıdır. */
-const KOD_NOTA = [9, 10, 11]
+/**
+ * Kod 9 nota/sus, 10 ardçarpmalı nota, 11 sessiz çarpma; Gül yüzlülerin'de görülen 4, 7 ve 12 de süreli nota
+ * satırıdır. Pay 0 olan satırlar (Kod 8 süresiz çarpma) nota sayılmaz, atlanır.
+ */
+const KOD_NOTA = [4, 7, 9, 10, 11, 12]
 const KOD_USUL = 51
 /** Süreler bu birimin (tam notanın 1/64'ü) tam katı olarak hesaplanır. */
 const UNIT = 64

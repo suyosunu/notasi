@@ -19,6 +19,34 @@ describe('ParcalarSection', () => {
     expect(dolap.textContent).toContain('Uşşak · Dolap · Anonim')
   })
 
+  it('sekiz parça Global Constraints sırasıyla; dört yeni eser "Seviye 4" etiketli, makam ve usul adları doğru', () => {
+    render(<ParcalarSection />)
+    const links = screen.getAllByRole('link').filter((a) => a.getAttribute('href')?.startsWith('#/parcalar/'))
+    expect(links.map((a) => a.getAttribute('href'))).toEqual(
+      [
+        'benim-adim-dertli-dolap',
+        'yine-baglandi-dil-aranagme',
+        'hak-teala',
+        'allah-emrin-tutalim',
+        'hicran-oku-aranagme',
+        'gul-yuzlulerin',
+        'daglar-ile-taslar-ile',
+        'cecen-kizi',
+      ].map((id) => `#/parcalar/${id}`),
+    )
+    const satir = (ad: string) => screen.getByText(ad).closest('a')!
+    const beklenen: [string, string][] = [
+      ['Allah Emrin Tutalım', 'Uşşak · Düyek · Zekâî Dede'],
+      ['Hicran Oku (aranağme)', 'Hüseynî · Türk Aksağı · Şevki Bey'],
+      ['Gül Yüzlülerin (1–16. ölçü)', "Bayâtî · Yürük Semâî (6/4) · Tab'î Mustafa Efendi"],
+      ['Çeçen Kızı', 'Hüseynî · Nim Sofyan · Tanburi Cemil Bey'],
+    ]
+    for (const [ad, bilgi] of beklenen) {
+      expect(satir(ad).textContent).toContain(bilgi)
+      expect(satir(ad).querySelector('.seviye-etiket')?.textContent, ad).toBe('Seviye 4')
+    }
+  })
+
   it('aranağme "Seviye 3" etiketiyle ikinci sırada; makam Nevâ, usul Yürük Semâî', () => {
     render(<ParcalarSection />)
     const links = screen.getAllByRole('link').filter((a) => a.getAttribute('href')?.startsWith('#/parcalar/'))

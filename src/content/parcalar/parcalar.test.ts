@@ -11,20 +11,31 @@ import lisans from './LISANS.md?raw'
 const komaAE = (e: MusicEvent): number => (e.kind === 'rest' ? -1 : writtenKoma(e.pitch) + 265)
 const durKey = (e: MusicEvent): string => `${e.dur}${e.dotted ? '.' : ''}`
 const byId = (id: string) => PARCALAR.find((p) => p.id === id)!
+/** Söz alanı olmayan parçalar: aranağmeler, sözsüz eser ve güfte sahibi bulunamayanlar. */
+const SOZSUZ = ['yine-baglandi-dil-aranagme', 'allah-emrin-tutalim', 'hicran-oku-aranagme', 'gul-yuzlulerin', 'cecen-kizi']
+const YENI = ['allah-emrin-tutalim', 'hicran-oku-aranagme', 'gul-yuzlulerin', 'cecen-kizi'] as const
 
 describe('PARCALAR', () => {
-  it('dört parça kolaydan zora sıralı', () => {
+  it('sekiz parça kolaydan zora sıralı', () => {
     expect(PARCALAR.map((p) => p.id)).toEqual([
       'benim-adim-dertli-dolap',
       'yine-baglandi-dil-aranagme',
       'hak-teala',
+      'allah-emrin-tutalim',
+      'hicran-oku-aranagme',
+      'gul-yuzlulerin',
       'daglar-ile-taslar-ile',
+      'cecen-kizi',
     ])
     expect(PARCALAR.map((p) => p.title)).toEqual([
       'Benim Adım Dertli Dolap',
       'Yine Bağlandı Dil (aranağme)',
       'Hak Teâlâ',
+      'Allah Emrin Tutalım',
+      'Hicran Oku (aranağme)',
+      'Gül Yüzlülerin (1–16. ölçü)',
       'Dağlar ile Taşlar ile',
+      'Çeçen Kızı',
     ])
   })
 
@@ -38,6 +49,10 @@ describe('PARCALAR', () => {
       composer: 'Zekâî Dede',
       source: 'https://raw.githubusercontent.com/MTG/SymbTr/master/txt/neva--sarki--yuruksemai_ii--yine_baglandi--zekai_dede.txt',
     })
+    expect(byId('allah-emrin-tutalim')).toMatchObject({ makam: 'ussak', usul: 'duyek', composer: 'Zekâî Dede' })
+    expect(byId('hicran-oku-aranagme')).toMatchObject({ makam: 'huseyni', usul: 'turk-aksagi', composer: 'Şevki Bey' })
+    expect(byId('gul-yuzlulerin')).toMatchObject({ makam: 'bayati', usul: 'yuruk-semai-64', composer: "Tab'î Mustafa Efendi" })
+    expect(byId('cecen-kizi')).toMatchObject({ makam: 'huseyni', usul: 'nim-sofyan', composer: 'Tanburi Cemil Bey' })
     for (const p of PARCALAR) {
       expect(p.source).toMatch(/^https:\/\/raw\.githubusercontent\.com\/MTG\/SymbTr\/master\/txt\/.+\.txt$/)
     }
@@ -64,8 +79,12 @@ describe('PARCALAR', () => {
         })
       })
 
-      // Aranağmenin sözü yoktur (aşağıda ayrıca sınanır); diğer parçaların sözü olaylarla hizalıdır.
-      if (p.id !== 'yine-baglandi-dil-aranagme') {
+      // Aranağmelerin ve güfte sahibi bulunamayan eserlerin sözü yoktur; diğerlerinin sözü olaylarla hizalıdır.
+      if (SOZSUZ.includes(p.id)) {
+        it('söz alanı yok', () => {
+          expect(p.soz).toBeUndefined()
+        })
+      } else {
         it('söz ölçü başına olaylarla hizalı, suslarda boş', () => {
           expect(p.soz).toBeDefined()
           expect(p.soz!).toHaveLength(p.olcu.length)
@@ -180,7 +199,7 @@ describe('PARCALAR', () => {
   })
 
   it('başka parçada bağ yok', () => {
-    for (const id of ['benim-adim-dertli-dolap', 'yine-baglandi-dil-aranagme', 'hak-teala']) {
+    for (const id of ['benim-adim-dertli-dolap', 'yine-baglandi-dil-aranagme', 'hak-teala', 'hicran-oku-aranagme', 'gul-yuzlulerin', 'cecen-kizi']) {
       expect(byId(id).olcu.flat().some((e) => e.kind === 'note' && e.tie)).toBe(false)
     }
   })
@@ -227,6 +246,83 @@ describe('PARCALAR', () => {
   })
 })
 
+describe('Aşama D eserleri', () => {
+  // beats dörtlük vuruş sayar (tam nota = 4); ölçü uzunluğu zaman × 4 / mertebe vuruştur. Kayan nokta için 1e-6 payı.
+  const KESIR = {
+    'cecen-kizi': [2, 4],
+    'hicran-oku-aranagme': [5, 8],
+    'gul-yuzlulerin': [6, 4],
+    'allah-emrin-tutalim': [8, 8],
+  } as const
+  for (const id of YENI) {
+    describe(id, () => {
+      const p = byId(id)
+      const [zaman, mertebe] = KESIR[id]
+      it('usul kimliği tabloyla aynı kesre sahip', () => {
+        const usul = USULLER.find((u) => u.id === p.usul)!
+        expect([usul.zaman, usul.mertebe]).toEqual([zaman, mertebe])
+      })
+      it('her ölçü usul süresini tam doldurur (ilk ölçü dahil)', () => {
+        for (const [i, m] of p.olcu.entries()) {
+          const total = m.reduce((s, e) => s + beats(e), 0)
+          expect(Math.abs(total - (zaman * 4) / mertebe), `ölçü ${i + 1}`).toBeLessThan(1e-6)
+        }
+      })
+      it('bütün perdeler ney perdelerinde', () => {
+        for (const e of p.olcu.flat()) {
+          if (e.kind === 'note') {
+            expect(NEY_PERDELER.some((n) => samePitch(n.written, e.pitch)), JSON.stringify(e.pitch)).toBe(true)
+          }
+        }
+      })
+    })
+  }
+
+  it('Çeçen Kızı: 56 ölçü, altı otuzikilik (m41–47: noktalı onaltılık + otuzikilik)', () => {
+    const p = byId('cecen-kizi')
+    expect(p.olcu).toHaveLength(56)
+    const otuzikilik = p.olcu.flat().filter((e) => e.dur === 'thirtysecond')
+    expect(otuzikilik).toHaveLength(6)
+    expect(otuzikilik.every((e) => e.kind === 'note' && !e.dotted)).toBe(true)
+    const olcuNo = (m: MusicEvent[]) => p.olcu.indexOf(m) + 1
+    expect(p.olcu.filter((m) => m.some((e) => e.dur === 'thirtysecond')).map(olcuNo)).toEqual([41, 42, 43, 45, 46, 47])
+    // Sira 225/226 (m41): B4b1 3/32 + C5 1/32.
+    expect(p.olcu[40]!.map(komaAE).slice(0, 2)).toEqual([313, 318])
+    expect(p.olcu[40]!.map(durKey).slice(0, 2)).toEqual(['sixteenth.', 'thirtysecond'])
+    // Kod 10 sekizlikleri (Sira 33, 39, 102, 108) nota sayıldığı için ölçüler dolu; sus sayısı kaynaktaki Es satırları kadardır.
+    expect(p.olcu.flat().filter((e) => e.kind === 'rest')).toHaveLength(9)
+  })
+
+  it('Hicran Oku: 16 ölçü 5/8 (2.5 vuruş), Kod 10 satırları dahil 92 nota ve 6 sus', () => {
+    const p = byId('hicran-oku-aranagme')
+    expect(p.olcu).toHaveLength(16)
+    expect(p.olcu.flat().filter((e) => e.kind === 'note')).toHaveLength(92)
+    expect(p.olcu.flat().filter((e) => e.kind === 'rest')).toHaveLength(6)
+    expect(p.olcu[0]!.reduce((s, e) => s + beats(e), 0)).toBe(2.5)
+  })
+
+  it('Gül Yüzlülerin: 16 ölçü 6/4 (6 vuruş), SAZ satırları (Kod 4 ve 12) dahil 93 nota ve 1 sus', () => {
+    const p = byId('gul-yuzlulerin')
+    expect(p.olcu).toHaveLength(16)
+    expect(p.olcu.flat().filter((e) => e.kind === 'note')).toHaveLength(93)
+    expect(p.olcu.flat().filter((e) => e.kind === 'rest')).toHaveLength(1)
+    expect(p.olcu[0]!.reduce((s, e) => s + beats(e), 0)).toBe(6)
+  })
+
+  it('Allah Emrin Tutalım: 24 × 8/8, iki 7/8 satırı bağlı noktalı ikilik + sekizlik', () => {
+    const p = byId('allah-emrin-tutalim')
+    expect(p.olcu).toHaveLength(24)
+    expect(p.olcu.flat().filter((e) => e.kind === 'note' && e.tie)).toHaveLength(2)
+    for (const [i, m] of p.olcu.entries()) {
+      m.forEach((e, j) => {
+        if (e.kind !== 'note' || !e.tie) return
+        expect(durKey(e), `ölçü ${i + 1}`).toBe('half.')
+        expect(durKey(m[j + 1]!)).toBe('eighth')
+      })
+    }
+  })
+})
+
 describe('toParca', () => {
   const base = { id: 'x', title: 'X', makam: 'ussak', usul: 'sofyan', composer: 'Y', source: 'u' }
   it('geçerli veriyi kabul eder', () => {
@@ -252,6 +348,8 @@ describe('toParca', () => {
   })
   it('bozuk veriyi reddeder', () => {
     expect(() => toParca({ ...base, makam: 'nihavent', olcu: [] })).toThrow()
+    expect(toParca({ ...base, makam: 'bayati', olcu: [] }).makam).toBe('bayati')
+    expect(toParca({ ...base, makam: 'huseyni', olcu: [] }).makam).toBe('huseyni')
     expect(() => toParca({ ...base, olcu: [[{ kind: 'note', dur: 'quarter' }]] })).toThrow()
     expect(() => toParca({ ...base, olcu: [[{ kind: 'rest', dur: 'triplet' }]] })).toThrow()
     expect(() => toParca({ ...base, olcu: [[{ kind: 'note', dur: 'quarter', pitch: { step: 'B', octave: 4, acc: -2 } }]] })).toThrow()
@@ -271,5 +369,9 @@ describe('LISANS.md', () => {
   })
   it('her parçanın kaynak URL’sini içerir', () => {
     for (const p of PARCALAR) expect(text).toContain(p.source)
+  })
+  it('Allah Emrin Tutalım için usul farkını, sözsüz eserler için güfte notunu söyler', () => {
+    expect(text).toContain('TDV bu ilahiyi Nim Sofyan usulünde anar; SymbTr dosyası Düyek')
+    expect(text).toContain('güfte sahibi bulunamadığı için söz gösterilmez')
   })
 })
