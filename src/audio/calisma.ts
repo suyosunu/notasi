@@ -57,9 +57,12 @@ export function olcuVurusu(usul?: Usul): number {
 /**
  * Etüt ve parça çalışmasının tek kod üreticisi. Her çalım tek döngüdür: giriş sayımı (bir ölçü tık) + verilen ölçüler;
  * `.cpm(bpm / (giriş + toplam vuruş))` ile tek seferlik (`ONE_SHOT`), `bpm` dörtlük sayar.
- * - `melodi`: giriş sayımından sonra başlar (başa bir ölçülük sus).
+ * - `melodi`: giriş sayımından sonra başlar (başa giriş kadar sus).
  * - Sayım Dolap metronomuyla aynı sestir (`metronomeBody`), ilk tık vurgulu; usullüde tık usulün biriminde
  *   (`bpm · mertebe / 4`) ve `usul.zaman` tıktır, yani 9/8'de sayım 4.5 dörtlüktür.
+ * - İlk ölçü tam ölçüden kısaysa (anacrusis, `lead` vuruş) giriş `2 · ölçü − lead`'dir: sayım ölçü ızgarasında
+ *   anacrusis başına dek tıklar, anacrusis sayılan ikinci ölçünün sonunu doldurur ve ilk tam ölçü ızgaraya
+ *   (`2 · ölçü`) düşer.
  * - `eslik: 'metronom'` (ya da usulsüz `'usul'`): tık bütün süre boyunca çalar; sayım ayrıca eklenmez.
  * - `eslik: 'usul'` (usul var): sayımdan sonra usul sesi (`buildUsulBody`; ölçü deseni `.fast` ile çoğaltılıp sayımdan
  *   sonraki bölüme `.compress` edilir). İlk ölçü tam usul ölçüsünden kısaysa (anacrusis) usul ilk tam ölçüde başlar.
@@ -77,8 +80,11 @@ export function buildCalismaCode(olcu: MusicEvent[][], tuning: Tuning, bpm: numb
   const { usul } = s
   const olcuV = olcuVurusu(usul)
   if (!(olcuV > 0)) throw new RangeError('Geçerli ölçü zamanı yok')
-  /** Giriş sayımı bir ölçü; melodi bundan sonra başlar. */
-  const giris = olcuV
+  const first = (olcu[0] ?? []).reduce((sum, e) => sum + beats(e), 0)
+  /** Anacrusis: ilk ölçü tam ölçüden kısaysa onun vuruşu, değilse 0. */
+  const lead = first < olcuV - PAY ? first : 0
+  /** Giriş sayımı bir ölçü; anacrusis varsa sayım ızgarada anacrusis başına dek sürer. Melodi bundan sonra başlar. */
+  const giris = lead > 0 ? 2 * olcuV - lead : olcuV
   const cycle = giris + total
   const tempo = `${ONE_SHOT}.cpm(${bpm / cycle})`
   const durationMs = (cycle * 60000) / bpm
@@ -86,7 +92,9 @@ export function buildCalismaCode(olcu: MusicEvent[][], tuning: Tuning, bpm: numb
   // Usulün biriminde tempo: tık ve usul sesleri saniye cinsinden bu birime göre söner.
   const usulBpm = usul ? (bpm * usul.mertebe) / 4 : bpm
   const click = metronomeBody(usul ? usul.zaman : USULSUZ_OLCU_VURUSU, usulBpm)
-  const sayim = `${click}.compress(0, ${giris} / ${cycle})`
+  // Tık gövdesi bir ölçüdür; anacrusisli sayımda `.fast(giriş / ölçü)` ile ızgara bozulmadan giriş kadar sürer.
+  const sayimGovdesi = lead > 0 ? `${click}.fast(${giris / olcuV})` : click
+  const sayim = `${sayimGovdesi}.compress(0, ${giris} / ${cycle})`
 
   const layers: string[] = []
   if (s.melodi) layers.push(`freq("~@${giris} ${toneSteps(tones)}")${melodyChain(s.voice, tones, { lead: giris, bpm })}`)
@@ -94,8 +102,6 @@ export function buildCalismaCode(olcu: MusicEvent[][], tuning: Tuning, bpm: numb
   else if (s.eslik === 'metronom' || !usul) layers.push(`${click}.fast(${cycle / olcuV})`)
   else {
     layers.push(sayim)
-    const first = (olcu[0] ?? []).reduce((sum, e) => sum + beats(e), 0)
-    const lead = first < olcuV - PAY ? first : 0
     const repeats = (total - lead) / olcuV
     if (repeats > 0) {
       layers.push(

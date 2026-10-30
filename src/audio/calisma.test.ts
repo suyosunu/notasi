@@ -258,25 +258,46 @@ describe('buildCalismaCode: etüt', () => {
     expect(tik.filter((h) => h.freq === 1200).map((h) => h.at)).toEqual([0, 3, 6])
   })
 
-  it("eslik:'usul' yalnız anacrusis seçiliyse (tam ölçü yok) usul katmanı eklenmez; yalnız sayım", async () => {
-    const { code } = buildCalismaCode([[A4]], DEFAULT_TUNING, 60, {
+  it("eslik:'usul' yalnız anacrusis seçiliyse (tam ölçü yok) usul katmanı eklenmez; sayım ölçü ızgarasında sürer", async () => {
+    const { code, girisVurus } = buildCalismaCode([[A4]], DEFAULT_TUNING, 60, {
       melodi: true,
       eslik: 'usul',
       voice: 'mevcut',
       usul: usulOf('sofyan'),
       isaret: false,
     })
+    expect(girisVurus).toBe(7)
     expect(code).not.toContain('usul_')
     expect(code).not.toContain('white')
-    const hs = await hits(code, 0, 5)
-    expect(clicks(hs).map((h) => h.at)).toEqual([0, 1, 2, 3])
-    expect(hs.filter((h) => isMelody(h)).map((h) => h.at)).toEqual([4])
+    const hs = await hits(code, 0, 9)
+    expect(clicks(hs).map((h) => h.at)).toEqual([0, 1, 2, 3, 4, 5, 6])
+    expect(hs.filter((h) => isMelody(h)).map((h) => h.at)).toEqual([7])
+  })
+
+  it('anacrusis: giriş = 2 ölçü − anacrusis; sayım bir ölçülük tık gövdesinin .fast(giriş / ölçü) hâli, usul 2 ölçü sonra', () => {
+    const sofyan = usulOf('sofyan')
+    // ilk ölçü tek dörtlük, ardından iki tam ölçü: toplam 9, giriş 2 × 4 − 1 = 7, döngü 16.
+    const olcu = [[A4], [A4, A4, A4, A4], [A4, A4, A4, A4]]
+    const r = buildCalismaCode(olcu, DEFAULT_TUNING, 60, { melodi: true, eslik: 'usul', voice: 'mevcut', usul: sofyan, isaret: false })
+    expect(r.girisVurus).toBe(7)
+    expect(r.toplamVurus).toBe(9)
+    expect(r.durationMs).toBe(16000)
+    expect(r.code).toContain(`${metronomeBody(4, 60)}.fast(${7 / 4}).compress(0, 7 / 16)`)
+    expect(r.code).toContain('freq("~@7 ')
+    expect(r.code).toContain(`.compress(8 / 16, 1)`)
+    expect(r.code.endsWith(`${ONE_SHOT}.cpm(${60 / 16})`)).toBe(true)
+    // İlk ölçü tamsa her şey eskisi gibi: sayım tek ölçü, .fast yok.
+    const tam = buildCalismaCode(olcu.slice(1), DEFAULT_TUNING, 60, { melodi: true, eslik: 'usul', voice: 'mevcut', usul: sofyan, isaret: false })
+    expect(tam.girisVurus).toBe(4)
+    expect(tam.code).toContain(`${metronomeBody(4, 60)}.compress(0, 4 / 12)`)
   })
 
   it('aksak (9/8): giriş 4.5 dörtlük, sayım metronomeBody(9, bpm × 2); durationMs = (4.5 + toplam) × 60000 / bpm', () => {
     const aksak = usulOf('aksak')
-    const olcu = [[A4H, A4H]]
-    const total = 4
+    // Tam bir 9/8 ölçüsü (4.5 dörtlük): ilk ölçü kısa olsaydı anacrusis sayılırdı.
+    const A4E: MusicEvent = { ...A4, dur: 'eighth' }
+    const olcu = [[A4H, A4H, A4E]]
+    const total = 4.5
     for (const bpm of [60, 80]) {
       const r = buildCalismaCode(olcu, DEFAULT_TUNING, bpm, { melodi: true, eslik: 'yok', voice: 'mevcut', usul: aksak, isaret: false })
       expect(r.girisVurus).toBe(4.5)
@@ -442,14 +463,41 @@ describe('buildCalismaCode: parça, gerçek Strudel çekirdeğiyle', () => {
     expect(await hits(code, 54, 300)).toEqual([])
   })
 
-  it('anacrusis: usul giriş sayımı + anacrusis sonrası ilk tam ölçüde başlar, ilk ölçüde usul sesi yok', async () => {
-    const { code, durationMs } = parcaKodu(anacrusis, 60, true, 'mevcut')
-    expect(durationMs).toBe(13000)
-    const hs = await hits(code, 0, 13)
-    expect(hs.filter((h) => isMelody(h)).map((h) => h.at)).toEqual([4, 5, 6, 7, 8, 9, 10, 11, 12])
-    expect(hs.filter(isDum).map((h) => h.at)).toEqual([5, 9])
-    expect(hs.filter(isTekClick).map((h) => h.at)).toEqual([7, 8, 11, 12])
-    expect(await hits(code, 13, 100)).toEqual([])
+  it('anacrusis: sayım ölçü ızgarasında anacrusis başına dek tıklar, anacrusis sayılan 2. ölçünün sonunu doldurur, usul tam 2 ölçü sonra', async () => {
+    const { code, durationMs, girisVurus } = parcaKodu(anacrusis, 60, true, 'mevcut')
+    // giriş = 2 × 4 − 1 = 7; döngü 7 + 9 = 16 dörtlük.
+    expect(girisVurus).toBe(7)
+    expect(durationMs).toBe(16000)
+    const hs = await hits(code, 0, 16)
+    expect(clicks(hs).map((h) => h.at)).toEqual([0, 1, 2, 3, 4, 5, 6])
+    // Izgara sürer: 2. sayım ölçüsünün başı da vurgulu tıktır.
+    expect(clicks(hs).filter((h) => h.freq === 1200).map((h) => h.at)).toEqual([0, 4])
+    expect(hs.filter((h) => isMelody(h)).map((h) => h.at)).toEqual([7, 8, 9, 10, 11, 12, 13, 14, 15])
+    expect(hs.filter(isDum).map((h) => h.at)).toEqual([8, 12]) // usul düm'ü tam 2 ölçü sonra (8 = 2 × 4)
+    expect(hs.filter(isTekClick).map((h) => h.at)).toEqual([10, 11, 14, 15])
+    expect(await hits(code, 16, 100)).toEqual([])
+  })
+
+  it('anacrusis, usul eşliği kapalı: sayım yine anacrusis başına dek tıklar, melodi 7. vuruşta', async () => {
+    const { code, durationMs } = parcaKodu(anacrusis, 60, false, 'mevcut')
+    expect(durationMs).toBe(16000)
+    const hs = await hits(code, 0, 16)
+    expect(clicks(hs).map((h) => h.at)).toEqual([0, 1, 2, 3, 4, 5, 6])
+    expect(hs.filter((h) => isMelody(h))[0]!.at).toBe(7)
+  })
+
+  it("anacrusis, eslik:'metronom': ölçü başı tıkları 0, 4, 8, 12'de; anacrusis 2. ölçünün son vuruşunda", async () => {
+    const { code } = buildCalismaCode(anacrusis.olcu, DEFAULT_TUNING, 60, {
+      melodi: true,
+      eslik: 'metronom',
+      voice: 'mevcut',
+      usul: usulOf('sofyan'),
+      isaret: false,
+    })
+    const hs = await hits(code, 0, 16)
+    expect(clicks(hs).map((h) => h.at)).toEqual(Array.from({ length: 16 }, (_, i) => i))
+    expect(clicks(hs).filter((h) => h.freq === 1200).map((h) => h.at)).toEqual([0, 4, 8, 12])
+    expect(hs.filter((h) => isMelody(h))[0]!.at).toBe(7)
   })
 
   it('Yürük Semâî (6/8) anacrusis: ilk usul hap\'i giriş + anacrusis vuruşunda', async () => {
@@ -464,22 +512,25 @@ describe('buildCalismaCode: parça, gerçek Strudel çekirdeğiyle', () => {
       usulSesi: 'tahta',
       isaret: false,
     })
-    expect(girisVurus).toBe(3)
-    expect(durationMs).toBe(10000)
-    const hs = await hits(code, 0, 10)
+    // giriş = 2 × 3 − 1 = 5; döngü 5 + 7 = 12 dörtlük.
+    expect(girisVurus).toBe(5)
+    expect(durationMs).toBe(12000)
+    const hs = await hits(code, 0, 12)
     const u = usulKayit(hs)
-    expect(u[0]!.at).toBe(3 + 1)
+    expect(u[0]!.at).toBe(2 * 3) // tam 2 ölçü sonra
     expect(u[0]!.s).toBe('usul_tahta_dum')
     // Yürük Semâî: düm tek tek düm tek(2) ⇒ ikinci düm 1.5 dörtlük sonra; iki tam ölçü.
-    expect(u.filter((h) => h.s === 'usul_tahta_dum').map((h) => h.at)).toEqual([4, 5.5, 7, 8.5])
-    expect(clicks(hs).map((h) => h.at)).toEqual(Array.from({ length: 6 }, (_, i) => i / 2))
+    expect(u.filter((h) => h.s === 'usul_tahta_dum').map((h) => h.at)).toEqual([6, 7.5, 9, 10.5])
+    // Sayım: sekizlik tıklar 0'dan anacrusis başına (5) dek.
+    expect(clicks(hs).map((h) => h.at)).toEqual(Array.from({ length: 10 }, (_, i) => i / 2))
+    expect(hs.filter((h) => isMelody(h))[0]!.at).toBe(5)
   })
 
   it('tempo iki katına çıkınca her şey yarı sürede çalar', async () => {
     const { code } = parcaKodu(anacrusis, 120, true, 'mevcut')
-    const hs = await hits(code, 0, 6.5)
-    expect(hs.filter(isDum).map((h) => h.at)).toEqual([2.5, 4.5])
-    expect(await hits(code, 6.5, 50)).toEqual([])
+    const hs = await hits(code, 0, 8)
+    expect(hs.filter(isDum).map((h) => h.at)).toEqual([4, 6])
+    expect(await hits(code, 8, 50)).toEqual([])
   })
 
   it('en hızlı tempoda (♩ = 100) da usul seslerinin hiçbiri sonraki vuruşa taşmaz, ≥ 5 ms pay kalır (Dolap ve Sofyan)', async () => {
