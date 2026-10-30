@@ -495,13 +495,13 @@ describe('etüt adımı', () => {
     const bes = statuses({ neva: 'gecildi', cargah: 'gecildi', segah: 'gecildi', dugah: 'gecildi', rast: 'gecildi', huseyni: 'gecildi' })
     const s1 = ETUTLER.filter((e) => e.seviye === 1).map((e) => e.id)
     const s2 = ETUTLER.filter((e) => e.seviye === 2).map((e) => e.id)
-    // Seviye 1 çalınmış, bir Seviye 2 etüdü çalınmamış: öneri Seviye 3 olamaz.
-    const eksik = new Set([...s1, ...s2.filter((id) => id !== 'dil-1')])
     const oneri = (calinan: ReadonlySet<string>) =>
       etutAdimlari(buildEveningPlan(girdi({ perdeStatus: bes, calinanEtutler: calinan }))).map((s) => s.etutId)
-    const etut = oneri(eksik)
-    for (const id of etut) expect(ETUTLER.find((e) => e.id === id)!.seviye, id).not.toBe(3)
-    // Seviye 2'ler de çalınınca ilk Seviye 3 etüdü gelir (perdeleri Dügâh ve Hüseynî olan).
+    // Seviye 1 ve 2'den yalnız dortlu-cargah çalınmamış; perdeleri geçilmediği (Bûselik yok) için kendisi de önerilmez.
+    // Dügâh ve Hüseynî geçilmiş olsa da Seviye 3 etüdü araya girmez.
+    const eksik = new Set([...s1, ...s2.filter((id) => id !== 'dortlu-cargah')])
+    expect(oneri(eksik)).toEqual([])
+    // Seviye 2'ler de çalınınca ilk Seviye 3 etüdü gelir.
     expect(oneri(new Set([...s1, ...s2]))).toEqual(['kademe-dugah-huseyni'])
   })
 
