@@ -1,4 +1,5 @@
-import { useMemo } from 'preact/hooks'
+import { Component } from 'preact'
+import { useCallback, useLayoutEffect, useMemo, useRef } from 'preact/hooks'
 import type { MusicEvent } from '../music/notation'
 import type { Secim } from './secim'
 import { layoutEvents, Staff, staffWidthFor } from './Staff'
@@ -107,6 +108,75 @@ function vurguSirasi(olcu: MusicEvent[][], row: ScoreRow, vurgu: { olcu: number;
   return sira
 }
 
+interface SatirProps {
+  row: ScoreRow
+  beamBeats: number | undefined
+  highlightIndex: number | undefined
+  secili: boolean
+  /** Verilirse satır dokunulabilir; kimliği çizimden çizime sabit olmalıdır (bkz. ScoreView). */
+  onDokun: ((satir: Secim) => void) | undefined
+}
+
+/**
+ * Tek satır. Yalnız kendi değerleri (vurgu sırası, seçili, satır) değişince yeniden çizilir: çalarken vurgu her notada
+ * değişir, öteki satırların porteleri yeniden hesaplanmasın. (`preact/compat`'ın `memo`'su kullanılmaz: compat yüklenince
+ * girdilerin `onChange`'i `onInput`'a çevrilir, hız kaydırıcısı sürüklerken durur.)
+ */
+class Satir extends Component<SatirProps> {
+  shouldComponentUpdate(next: SatirProps): boolean {
+    const p = this.props
+    return (
+      next.row !== p.row ||
+      next.beamBeats !== p.beamBeats ||
+      next.highlightIndex !== p.highlightIndex ||
+      next.secili !== p.secili ||
+      next.onDokun !== p.onDokun
+    )
+  }
+
+  render() {
+    const { row, beamBeats, highlightIndex, secili, onDokun } = this.props
+    const staff = (
+      <Staff
+        events={row.events}
+        width={row.baseWidth}
+        barlinesAfter={row.barlinesAfter}
+        syllables={row.syllables}
+        beamBeats={beamBeats}
+        highlightIndex={highlightIndex}
+      />
+    )
+    if (!onDokun) {
+      return (
+        <div class={secili ? 'score-row secili' : 'score-row'} data-testid="score-row">
+          {staff}
+        </div>
+      )
+    }
+    const satir: Secim = { bas: row.olcuBas, son: row.olcuSon }
+    const etiket =
+      row.olcuBas === row.olcuSon ? `${row.olcuBas + 1}. ölçüyü seç` : `${row.olcuBas + 1}–${row.olcuSon + 1}. ölçüleri seç`
+    return (
+      <div
+        class={secili ? 'score-row secili' : 'score-row'}
+        data-testid="score-row"
+        role="button"
+        tabIndex={0}
+        aria-pressed={secili}
+        aria-label={etiket}
+        onClick={() => onDokun(satir)}
+        onKeyDown={(e) => {
+          if (e.key !== 'Enter' && e.key !== ' ') return
+          e.preventDefault() // Boşluk sayfayı kaydırmasın
+          onDokun(satir)
+        }}
+      >
+        {staff}
+      </div>
+    )
+  }
+}
+
 /**
  * Ölçüleri satırlara böler: her satır (genellikle) `olcuPerSatir` ölçülük bir porte, ölçüler arasında ve satır
  * sonunda ölçü çizgisi vardır. Donanım yazılmaz (işaretler nota yanında). Heceler nota altında yazılır.
@@ -128,52 +198,25 @@ export function ScoreView(props: {
   const perRow = Math.max(1, Math.floor(olcuPerSatir))
   // Hız kaydırıcısı gibi üst bileşen güncellemelerinde yerleşim yeniden hesaplanmaz.
   const { rows } = useMemo(() => scoreLayout(olcu, soz, perRow), [olcu, soz, perRow])
+  // Satırlara sabit kimlikli bir işlev verilir (üst bileşenin her çizimde yeni işlevi satırları yeniden çizdirmesin);
+  // dokunuş her zaman son verilen `onSatirDokun`'a gider.
+  const dokunRef = useRef(onSatirDokun)
+  useLayoutEffect(() => {
+    dokunRef.current = onSatirDokun
+  })
+  const dokun = useCallback((satir: Secim) => dokunRef.current?.(satir), [])
   return (
     <div class="score">
-      {rows.map((row, i) => {
-        const satir: Secim = { bas: row.olcuBas, son: row.olcuSon }
-        const secili = !!secim && row.olcuBas >= secim.bas && row.olcuSon <= secim.son
-        const staff = (
-          <Staff
-            events={row.events}
-            width={row.baseWidth}
-            barlinesAfter={row.barlinesAfter}
-            syllables={row.syllables}
-            beamBeats={beamBeats}
-            highlightIndex={vurgu ? vurguSirasi(olcu, row, vurgu) : undefined}
-          />
-        )
-        if (!onSatirDokun) {
-          return (
-            <div key={i} class={secili ? 'score-row secili' : 'score-row'} data-testid="score-row">
-              {staff}
-            </div>
-          )
-        }
-        const etiket =
-          row.olcuBas === row.olcuSon
-            ? `${row.olcuBas + 1}. ölçüyü seç`
-            : `${row.olcuBas + 1}–${row.olcuSon + 1}. ölçüleri seç`
-        return (
-          <div
-            key={i}
-            class={secili ? 'score-row secili' : 'score-row'}
-            data-testid="score-row"
-            role="button"
-            tabIndex={0}
-            aria-pressed={secili}
-            aria-label={etiket}
-            onClick={() => onSatirDokun(satir)}
-            onKeyDown={(e) => {
-              if (e.key !== 'Enter' && e.key !== ' ') return
-              e.preventDefault() // Boşluk sayfayı kaydırmasın
-              onSatirDokun(satir)
-            }}
-          >
-            {staff}
-          </div>
-        )
-      })}
+      {rows.map((row, i) => (
+        <Satir
+          key={i}
+          row={row}
+          beamBeats={beamBeats}
+          highlightIndex={vurgu ? vurguSirasi(olcu, row, vurgu) : undefined}
+          secili={!!secim && row.olcuBas >= secim.bas && row.olcuSon <= secim.son}
+          onDokun={onSatirDokun ? dokun : undefined}
+        />
+      ))}
     </div>
   )
 }
