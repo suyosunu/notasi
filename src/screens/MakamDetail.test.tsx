@@ -73,7 +73,7 @@ describe('MakamDetail', () => {
     expect(accs()).toEqual(['-1', '4'])
   })
 
-  it('yapı satırı varsa "Yapı" başlığıyla gösterilir; yoksa hiç çıkmaz', async () => {
+  it('yapı satırı "Yapı" başlığıyla gösterilir', async () => {
     render(<MakamDetail makamId="neva" />)
     await sayfa()
     expect(screen.getByText('Yapı').nextElementSibling?.textContent).toBe("Dügâh'ta Uşşak dörtlüsü + Nevâ'da Rast beşlisi")
@@ -84,7 +84,20 @@ describe('MakamDetail', () => {
     cleanup()
     render(<MakamDetail makamId="ussak" />)
     await sayfa()
-    expect(screen.queryByText('Yapı')).toBeNull()
+    expect(screen.getByText('Yapı').nextElementSibling?.textContent).toBe("Dügâh'ta Uşşak dörtlüsü + Nevâ'da Bûselik beşlisi")
+  })
+
+  it('Hüseynî: "Diziyi dinle" inişte Acem çalar (makam.inis); Kürdî donanımı küçük mücenneb bemolü', async () => {
+    const huseyni = byId('huseyni')
+    render(<MakamDetail makamId="huseyni" />)
+    await sayfa()
+    await tapListen()
+    await waitFor(() => expect(playWritten).toHaveBeenCalledTimes(1))
+    expect(vi.mocked(playWritten).mock.calls[0]![0]).toEqual(cikisInisEvents(huseyni.dizi, huseyni.inis))
+    cleanup()
+    render(<MakamDetail makamId="kurdi" />)
+    await sayfa()
+    expect(screen.getByText('Donanım').nextElementSibling?.textContent).toBe('Si küçük mücenneb bemolü')
   })
 
   it('Uşşak ve Hicaz donanımı', async () => {

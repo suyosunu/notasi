@@ -33,8 +33,8 @@ describe('makam olayları', () => {
     expect(pitches[14]).toEqual(rast.dizi[0])
   })
 
-  it('inis verilmezse iniş dizinin tersidir; yalnızca Rast inis tanımlar', () => {
-    for (const m of MAKAMLAR) expect(m.inis !== undefined).toBe(m.id === 'rast')
+  it('inis verilmezse iniş dizinin tersidir; yalnızca Rast, Hüseynî ve Muhayyer inis tanımlar', () => {
+    for (const m of MAKAMLAR) expect(m.inis !== undefined).toBe(['rast', 'huseyni', 'muhayyer'].includes(m.id))
     const ussak = MAKAMLAR.find((m) => m.id === 'ussak')!
     expect(cikisInisEvents(ussak.dizi, undefined)).toEqual(cikisInisEvents(ussak.dizi))
   })

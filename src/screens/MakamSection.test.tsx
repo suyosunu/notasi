@@ -20,23 +20,23 @@ afterEach(() => {
 })
 
 describe('MakamSection', () => {
-  it('dört makam kartını listeler; her biri kendi sayfasına bağlanır', () => {
+  it('sekiz makam kartını sırayla listeler; her biri kendi sayfasına bağlanır', () => {
     render(<MakamSection />)
     expect(screen.getByRole('heading', { name: /Makam/ })).toBeTruthy()
     for (const m of MAKAMLAR) {
       const link = screen.getByText(m.name, { selector: '.topic-title' }).closest('a')!
       expect(link.getAttribute('href')).toBe(`#/makam/${m.id}`)
     }
-    expect(screen.getAllByRole('listitem')).toHaveLength(4)
+    const adlar = screen.getAllByRole('listitem').map((li) => li.querySelector('.topic-title')!.textContent)
+    expect(adlar).toEqual(['Rast', 'Nevâ', 'Uşşak', 'Bayâtî', 'Hüseynî', 'Muhayyer', 'Kürdî', 'Hicaz'])
   })
 
-  it('makam kartlarında önerilen seviye etiketi: Rast 3, Nevâ 3, Uşşak 4, Hicaz 4', () => {
+  it('makam kartlarında önerilen seviye etiketi: Rast 3, Nevâ 3, diğerleri 4', () => {
     render(<MakamSection />)
     const etiket = (ad: string) => screen.getByText(ad).closest('a')!.querySelector('.seviye-etiket')?.textContent
     expect(etiket('Rast')).toBe('Seviye 3')
     expect(etiket('Nevâ')).toBe('Seviye 3')
-    expect(etiket('Uşşak')).toBe('Seviye 4')
-    expect(etiket('Hicaz')).toBe('Seviye 4')
+    for (const ad of ['Uşşak', 'Bayâtî', 'Hüseynî', 'Muhayyer', 'Kürdî', 'Hicaz']) expect(etiket(ad), ad).toBe('Seviye 4')
   })
 
   it("Nevâ kartı 'Seviye 3' etiketiyle Rast'tan sonra gelir", () => {
@@ -81,8 +81,7 @@ describe('MakamQuiz', () => {
     render(<MakamQuiz />)
     expect(await screen.findByText(/Makam · 1\/8/)).toBeTruthy()
     const opts = document.querySelectorAll('.option')
-    // Dizi sorusunda dört makam + çeldirici (5), durak ve güçlüde 4 seçenek.
-    expect([4, 5]).toContain(opts.length)
+    expect(opts.length).toBe(4)
     expect(new Set([...opts].map((o) => o.textContent)).size).toBe(opts.length)
   })
 

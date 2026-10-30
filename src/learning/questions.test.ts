@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { MAKAMLAR } from '../content/makamlar'
 import { MAKAM_TOPICS } from '../content/makam-topics'
 import { NOTA_TOPICS } from '../content/nota-topics'
 import { PERDE_ADLARI } from '../content/perde-adlari'
@@ -491,14 +492,16 @@ describe('perde-6 soruları (tiz perdeler)', () => {
 describe('makam soruları', () => {
   const MAKAM_CARDS = MAKAM_TOPICS.flatMap((t) => t.cards)
 
+  it('makam-dizi kartları yalnız dizisi tek olan makamlara üretilir: Rast, Kürdî, Hicaz', () => {
+    expect(MAKAM_CARDS.filter((c) => c.startsWith('makam-dizi:'))).toEqual(['makam-dizi:rast', 'makam-dizi:kurdi', 'makam-dizi:hicaz'])
+  })
+
   for (const card of MAKAM_CARDS) {
-    // Dizi sorusunda dört makamın adı ve bir çeldirici vardır (5 seçenek); durak ve güçlüde 4.
-    const optionCount = card.startsWith('makam-dizi:') ? 5 : 4
-    it(`${card}: ${optionCount} farklı seçenek, cevap içinde, aynı seed aynı soru`, () => {
-      for (let seed = 1; seed <= 20; seed++) {
+    it(`${card}: 4 farklı seçenek, cevap içinde, aynı seed aynı soru`, () => {
+      for (let seed = 1; seed <= 100; seed++) {
         const q = makeQuestion(card, seededRng(seed))
-        expect(q.options).toHaveLength(optionCount)
-        expect(new Set(q.options).size).toBe(optionCount)
+        expect(q.options).toHaveLength(4)
+        expect(new Set(q.options).size).toBe(4)
         expect(q.options).toContain(q.answer)
         expect(q.cardId).toBe(card)
         expect(q.topicId).toBe('makam')
@@ -508,26 +511,21 @@ describe('makam soruları', () => {
     })
   }
 
-  it('makam-dizi: porte gösterilir, cevap makam adı, seçenekler dört makam + Hüseynî', () => {
+  it('makam-dizi: porte gösterilir, cevap makam adı, seçenekler makam adlarından', () => {
     const q = makeQuestion('makam-dizi:hicaz', seededRng(3))
     expect(q.prompt).toBe('Bu dizi hangi makamın?')
     expect(q.answer).toBe('Hicaz')
     expect(q.events).toHaveLength(8)
-    expect([...q.options].sort()).toEqual(['Hicaz', 'Hüseynî', 'Nevâ', 'Rast', 'Uşşak'].sort())
+    const adlar = MAKAMLAR.map((m) => m.name)
+    for (const o of q.options) expect(adlar).toContain(o)
   })
 
-  it('makam-dizi:neva: seçenekler dört makamın adı ve çeldirici, birbirinden farklı', () => {
-    for (let seed = 1; seed <= 20; seed++) {
-      const q = makeQuestion('makam-dizi:neva', seededRng(seed))
-      expect(q.answer).toBe('Nevâ')
-      expect(q.events).toHaveLength(8)
-      expect(new Set(q.options).size).toBe(q.options.length)
-      expect([...q.options].sort()).toEqual(['Hicaz', 'Hüseynî', 'Nevâ', 'Rast', 'Uşşak'].sort())
-    }
-  })
-
-  it("makam-dizi ipucu Nevâ'yı da anlatır", () => {
-    expect(makeQuestion('makam-dizi:neva', seededRng(1)).hint).toContain("Nevâ: Si koma bemolü ve Fa bakiye diyezi, Dügâh'tan başlar")
+  it('makam-dizi ipucu yalnız dizi kartı olan makamları anlatır: Rast, Kürdî, Hicaz', () => {
+    const hint = makeQuestion('makam-dizi:kurdi', seededRng(1)).hint
+    expect(hint).toContain('Rast:')
+    expect(hint).toContain('Kürdî:')
+    expect(hint).toContain('Hicaz:')
+    for (const ad of ['Nevâ', 'Uşşak', 'Bayâtî', 'Hüseynî', 'Muhayyer']) expect(hint).not.toContain(ad)
   })
 
   it('makam-durak / makam-guclu: soru metni, cevap ve Irak içermeyen perde adı seçenekleri', () => {

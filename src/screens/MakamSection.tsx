@@ -12,7 +12,7 @@ const QUIZ_COUNT = 8
 const QUIZ_TITLE = '🧭 Makam'
 const BACK = { href: '#/makam', label: 'Makam bölümüne dön' }
 
-/** Makam bölümü: Rast, Nevâ, Uşşak, Hicaz kartları ve sorulara bağlantı. */
+/** Makam bölümü: sekiz makam kartı ve sorulara bağlantı. */
 export function MakamSection() {
   return (
     <main class="screen">
@@ -52,7 +52,7 @@ export function MakamQuiz() {
   )
 }
 
-/** On iki makam kartından (dizi, durak, güçlü) karıştırılıp dönülen 8 soruluk serbest tur. */
+/** Makam kartlarından (dizi, durak, güçlü) karıştırılıp dönülen 8 soruluk serbest tur. */
 function MakamSoruTuru() {
   const [questions] = useState<Question[]>(() => {
     const rng = seededRng(Date.now())

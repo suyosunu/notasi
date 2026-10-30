@@ -1,4 +1,4 @@
-import { MAKAMLAR } from '../content/makamlar'
+import { diziAnahtari, MAKAMLAR } from '../content/makamlar'
 import type { Makam } from '../content/makamlar'
 import { NOTA_TOPICS } from '../content/nota-topics'
 import { ACCIDENTAL_NAMES } from '../music/accidentals'
@@ -218,12 +218,17 @@ function forwardPerdeOptions(topicId: string, perde: string, rng: () => number):
   return shuffle([perde, ...distractors], rng)
 }
 
+// Yalnız dizi kartı olan makamlar anlatılır (DIZISI_TEK_MAKAMLAR: Rast, Kürdî, Hicaz).
 const MAKAM_DIZI_HINT =
-  "İşaretli notalara bak. Rast: Si koma bemolü, Fa bakiye diyezi. Nevâ: Si koma bemolü ve Fa bakiye diyezi, Dügâh'tan başlar. Uşşak: yalnızca Si koma bemolü. Hicaz: Si bakiye bemolü, Fa ve Do bakiye diyezi."
+  'İşaretli notalara bak. Rast: Si koma bemolü, Fa bakiye diyezi. Kürdî: yalnızca Si küçük mücenneb bemolü. Hicaz: Si bakiye bemolü, Fa ve Do bakiye diyezi.'
 const MAKAM_DURAK_HINT = 'Durak, makamın bittiği (karar verdiği) perdedir.'
 const MAKAM_GUCLU_HINT = 'Güçlü, makamda yarım karar yapılan perdedir.'
-/** Öğretilen makamların dışında, çeldirici olarak kullanılan tanınmış bir makam adı. */
-const MAKAM_DISTRACTOR = 'Hüseynî'
+
+/** Cevap + dizisi cevabınkinden farklı üç başka makam adı. */
+function makamAdiOptions(makam: Makam, rng: () => number): string[] {
+  const pool = MAKAMLAR.filter((x) => x.id !== makam.id && diziAnahtari(x) !== diziAnahtari(makam)).map((x) => x.name)
+  return shuffle([makam.name, ...shuffle(pool, rng).slice(0, 3)], rng)
+}
 
 function makamOf(cardId: string, id: string): Makam {
   const makam = MAKAMLAR.find((m) => m.id === id)
@@ -248,7 +253,7 @@ function makeMakamQuestion(cardId: string, id: string, rng: () => number): Quest
       ...base,
       prompt: 'Bu dizi hangi makamın?',
       events: diziEvents(makam.dizi, 'quarter'),
-      options: shuffle([...MAKAMLAR.map((x) => x.name), MAKAM_DISTRACTOR], rng),
+      options: makamAdiOptions(makam, rng),
       answer: makam.name,
       hint: MAKAM_DIZI_HINT,
     }
