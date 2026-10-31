@@ -97,12 +97,15 @@ export function ellePiecesFrom(liste: ElleParca[]): Parca[] {
       const kesit = olcu.slice(bas - 1, son)
       const sonOlay = kesit.at(-1)!.at(-1)!
       if (sonOlay.kind === 'note' && sonOlay.tie) hata(p.id, `bölüm "${b.id}" bağlı notayla bitiyor`)
+      // Hecesi hiç olmayan kesit (aranağme) sözsüz parça olur.
+      const kesitSoz = soz?.slice(bas - 1, son)
+      const sozlu = kesitSoz?.some((m) => m.some((h) => h !== ''))
       parcalar.push({
         ...taban,
         id: `${p.id}--${b.id}`,
         title: `${p.title} — ${b.baslik}`,
         olcu: kesit,
-        ...(soz ? { soz: soz.slice(bas - 1, son) } : {}),
+        ...(sozlu ? { soz: kesitSoz } : {}),
       })
     }
     for (const q of parcalar) {

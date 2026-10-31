@@ -108,7 +108,7 @@ describe('ParcalarSection', () => {
     )
     for (const id of hrefler()) expect(PARCALAR.find((p) => p.id === id)!.usul).toBe('sofyan')
     sec('Seviye', '3')
-    expect(hrefler()).toEqual(['hak-teala', 'bilmem-nideyim'])
+    expect(hrefler()).toEqual(['hak-teala', 'ben-melamet-hirkasini', 'bilmem-nideyim'])
     expect(screen.queryByText('Bu seçime uyan parça yok.')).toBeNull()
     sec('Seviye', '4')
     expect(satirlar()).toHaveLength(0)

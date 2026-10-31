@@ -63,3 +63,11 @@ Bu dosyaları paylaşırken ya da değiştirirken aynı lisansı ve yukarıdaki 
 | Bilmem Nideyim Aşkın Elinden | Uşşak / Sofyan (4/4) | `bilmem_nideyim_askin_elinden_ney.pdf` | elle yazıldı 2026-10-31 |
 | Ey Âşık-ı Dildâde (Rast) | Rast / Sofyan (4/4) | `ey_asiki_dildade_ney.pdf` | elle yazıldı 2026-10-31 |
 | Şol Cennetin Irmakları (Segâh) | Segâh / Yürük Semâî (6/8) | `sol_cennetin_irmaklari_munir_nureddin.pdf` | elle yazıldı 2026-10-31 |
+| Tâleal Bedru | Rast / Nim Sofyan (2/4) | `taleal_bedru_v2.pdf` | elle yazıldı 2026-10-31 |
+| Lâ İlâhe İllallah (Nûr Muhammed) | Uşşak / Sofyan (4/4) | `la_ilahe_illallah.pdf` | elle yazıldı 2026-10-31 |
+| Ganî Mevlâm Nasîb Etse | Segâh / Sofyan (4/4) | `gani_mevlam_nasib_etse.pdf` | elle yazıldı 2026-10-31 |
+| Yâ Rabbi Aşkın Ver Bana | Uşşak / Sofyan (4/4) | `ya_rabbi_askin.pdf` | elle yazıldı 2026-10-31 |
+| Ben Melâmet Hırkasını | Uşşak / Sofyan (4/4) | `ben_melamet_hirkasini.pdf` | elle yazıldı 2026-10-31 |
+| Erler Demine Destur Alalım | Rast / Sofyan (4/4) | `erler_demine_destur_alalim.pdf` | elle yazıldı 2026-10-31 |
+| Derman Arardım Derdime | Hüseynî / Sofyan (4/4) | `derman_arardim_derdime.pdf` | elle yazıldı 2026-10-31 |
+| İsm-i Sübhân Virdin mi Var | Hüseynî / Sofyan (4/4) | `ismi_subhan_huseyni.pdf` | elle yazıldı 2026-10-31 |

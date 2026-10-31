@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parcaSeviyesi } from '../../../learning/parca-seviye'
-import { samePitch } from '../../../music/pitch'
+import { samePitch, writtenKoma } from '../../../music/pitch'
 import { NEY_PERDELER } from '../../ney-perdeler'
 import { PARCALAR } from '../index'
 import { ELLE_PARCALAR } from './index'
@@ -64,6 +64,11 @@ describe('ellePiecesFrom', () => {
   it('sözsüz parçada söz alanı yok', () => {
     const [p, b] = ellePiecesFrom([kopya({ soz: undefined })])
     expect('soz' in p!).toBe(false)
+    expect('soz' in b!).toBe(false)
+  })
+
+  it('hecesi hiç olmayan bölüm (aranağme) sözsüz parça olur', () => {
+    const [, b] = ellePiecesFrom([kopya({ soz: [['a'], ['', ''], ['', '', ''], ['e']] })])
     expect('soz' in b!).toBe(false)
   })
 
@@ -148,7 +153,9 @@ describe('ELLE_PARCALAR (gönderilen eserler)', () => {
         if (e.kind === 'note') {
           // Segâh makamının Mi koma bemolü (E5b1) ney perdelerinde yoktur; 1 koma payıyla Hüseynî sayılır (parcaSeviyesi).
           if (e.pitch.step === 'E' && e.pitch.octave === 5 && e.pitch.acc === -1) continue
-          expect(NEY_PERDELER.some((n) => samePitch(n.written, e.pitch)), `${p.id} ${JSON.stringify(e.pitch)}`).toBe(true)
+          // Aynı sesin başka yazılışı (Erler Demine Ö14 La diyez = Kürdî perdesi) yazıldığı gibi kalır.
+          const koma = writtenKoma(e.pitch)
+          expect(NEY_PERDELER.some((n) => writtenKoma(n.written) === koma), `${p.id} ${JSON.stringify(e.pitch)}`).toBe(true)
         }
       }
       expect(parcaSeviyesi(p.olcu), p.id).not.toBeNull()
