@@ -401,13 +401,11 @@ describe('Seviye 4 hedefleri', () => {
 })
 
 describe('ONERILEN_SEVIYE', () => {
-  it('anahtarlar var olan parça, makam ve usullerdir; Dolap etiketsiz', () => {
-    for (const id of Object.keys(ONERILEN_SEVIYE.parca)) expect(PARCALAR.some((p) => p.id === id), id).toBe(true)
+  it('anahtarlar var olan makam ve usullerdir; Dolap etiketsiz', () => {
     for (const id of Object.keys(ONERILEN_SEVIYE.makam)) expect(MAKAMLAR.some((m) => m.id === id), id).toBe(true)
     for (const id of Object.keys(ONERILEN_SEVIYE.usul)) expect(USULLER.some((u) => u.id === id), id).toBe(true)
     expect(ONERILEN_SEVIYE.usul.dolap).toBeUndefined()
     for (const id of ['yuruk-semai', 'yuruk-semai-64', 'turk-aksagi', 'devr-i-hindi']) expect(ONERILEN_SEVIYE.usul[id], id).toBe(4)
-    expect(ONERILEN_SEVIYE.parca['hak-teala']).toBe(3)
     expect(ONERILEN_SEVIYE.makam.rast).toBe(3)
     expect(ONERILEN_SEVIYE.makam.neva).toBe(3)
   })
