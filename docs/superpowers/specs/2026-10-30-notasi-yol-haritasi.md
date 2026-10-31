@@ -15,7 +15,7 @@ Bu belge uygulamanın tamamı için bir sıra önerir. Her seviyede neyin öğre
 - **Seviye 3 (2026-10-30).** Üçüncü kademe perdeleri, kademe geçiş etütleri, dörtlü ve beşliler, Rast ve Nevâ makamları ve "Yine Bağlandı Dil" aranağmesi. Kullanıcının hocasının pratiğine göre Hüseynî Seviye 2'ye alındı (2026-10-31).
 - **Seviye 4 (2026-10-30).** Tiz sesler, otuzikilik nota, bağsız-bağlı-kesik dil etütleri, çeşni, Bayâtî, Hüseynî, Muhayyer ve Kürdî makamları, Türk Aksağı ve Devr-i Hindî usulleri ve dört yeni eser.
 - **Ney araçları.** Kalibrasyon, akort göstergesi, uzun ses takibi, başpare koy-çek alıştırması ve nefes egzersizi.
-- **Parçalar.** 8 parça var: Dertli Dolap, Dağlar ile Taşlar ile, Hak Teâlâ, Yine Bağlandı Dil aranağmesi, Allah Emrin Tutalım, Hicran Oku aranağmesi, Gül Yüzlülerin ve Çeçen Kızı. Her biri dinlenebilir; hız ayarlanabilir, usul eşliği açılabilir.
+- **Parçalar.** 13 eser ve 5 bölüm var. Sekizi SymbTr'den: Dertli Dolap, Dağlar ile Taşlar ile, Hak Teâlâ, Yine Bağlandı Dil aranağmesi, Allah Emrin Tutalım, Hicran Oku aranağmesi, Gül Yüzlülerin ve Çeçen Kızı. Beşi neyzen.com'dan elle yazılmış ilahi: Kâbe'nin Yolları, Urum'da Acem'de, Bilmem Nideyim Aşkın Elinden, Ey Âşık-ı Dildâde ve Şol Cennetin Irmakları. Her biri dinlenebilir; hız ayarlanabilir, usul eşliği açılabilir. Parçalar makam, usul ve seviyeye göre süzülür.
 - **Makam ve usul.** 8 makam ve 10 usul.
 - **Sesler.** Varsayılan ney sesi Shakuhachi. Usul için 6 ses seçeneği var; varsayılanı Tahta. İnsan sesi seçeneği deneme aşamasında.
 

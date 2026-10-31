@@ -70,7 +70,7 @@ Aşama B ile bu seviye tamamlandı (2026-10-29).
 - ✅ **Onaltılık ve üçleme:** sure-4 konusu ve dersi. Üçleme hem çiziliyor hem de çalınıyor.
 - ✅ **Ölçü, nefes işareti, röpriz, bağ:** okuma dersleri ve porte çizimi.
 - ✅ **Ara sesler:** Bûselik, Kürdî, Dik Kürdî ve Nim Hicaz, Rast'tan sonra ve üçüncü kademeden önce açılır. Her birinin dersi var.
-- ✅ **Hüseynî:** Kullanıcının hocasının pratiğine göre Hüseynî Seviye 2'ye alındı (2026-10-31). Perde-4 konusu Hüseynî'yi de öğretir, 8 sn uzun ses hedefi Seviye 2'de sayılır ve Rast geçilince açılır; kademe dersi Seviye 2'de okunur.
+- ✅ **Hüseynî:** Kullanıcının hocasının pratiğine göre Hüseynî Seviye 2'ye alındı (2026-10-31). Perde-4 konusu Hüseynî'yi de öğretir, 8 sn uzun ses hedefi Seviye 2'de sayılır ve Rast geçilip perde-4 konusu açılınca açılır; kademe dersi Seviye 2'de okunur.
 - ✅ **Usuller:** Nim Sofyan eklendi. Nim Sofyan, Semâî ve Sofyan derslerle anlatılır. Ekrana dokunarak usul vurma alıştırması var.
 - ✅ **Dörtlüler:** Çârgâh, Kürdî ve Hicaz dörtlülerinin dersleri ve etütleri.
 - ✅ **Usul ve dil etütleri:** usul sesiyle eşlik edilir. Dil ve bağ dersi de eklendi.
