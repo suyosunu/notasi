@@ -276,7 +276,7 @@ export const PERDE_4_DERSLERI: Ders[] = [
       {
         tur: 'metin',
         metin:
-          "Dügâh parmağıyla üç ses çıkar: Dügâh, Hüseynî (Seviye 3) ve kapalı Muhayyer; her biri bir öncekinden yüksektir. Zeki Sözen bu ses için bütün parmakların kapalı, yalnız sol yüzük parmağının açık olduğunu yazar (Ders 9).",
+          "Dügâh parmağıyla üç ses çıkar: Dügâh, Hüseynî (Seviye 2) ve kapalı Muhayyer; her biri bir öncekinden yüksektir. Zeki Sözen bu ses için bütün parmakların kapalı, yalnız sol yüzük parmağının açık olduğunu yazar (Ders 9).",
       },
       { tur: 'metin', metin: kapaliNefes('kapalı Muhayyer', 'parmak durumu verilir') },
       { tur: 'metin', metin: HEDEF_4 },

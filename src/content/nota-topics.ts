@@ -8,7 +8,8 @@ export interface Topic {
 
 /**
  * Sıra = açılma sırası. MEB ney sırasıyla hizalıdır: gündüz okunan perde akşam çalınır.
- * Üçüncü kademe perdeleri (perde-2: Hüseynî, Acem, Gerdâniye, Muhayyer; perde-5: Nim Şehnaz, Nim Hisar) Seviye 3'tür;
+ * Üçüncü kademe perdeleri (perde-2: Acem, Gerdâniye, Muhayyer; perde-5: Nim Şehnaz, Nim Hisar) Seviye 3'tür;
+ * Hüseynî de 3. kademedir ama hocanın pratiğine göre Seviye 2'de öğretilir (perde-4, 2026-10-31).
  * Seviye 2 konuları (koma işaretleri, perde-3, perde-4, sure-4) bitmeden açılmaz, bu yüzden perde-2 ve perde-5 sondadır.
  * perde-6 (Seviye 4, tiz perdeler: Tiz Segâh, Tiz Çârgâh, Tiz Nevâ, Tiz Nim Hicaz) hepsinden sonra gelir;
  * sure-5 (Seviye 4, otuzikilik) en sondadır.
@@ -70,20 +71,20 @@ export const NOTA_TOPICS: Topic[] = [
   {
     id: 'perde-4',
     section: 'nota',
-    title: 'Perdeler: Nim Hicaz, Hicaz, Eviç',
+    title: 'Perdeler: Nim Hicaz, Hicaz, Eviç, Hüseynî',
     kind: 'perde-name',
-    cards: ['perde:C5#4', 'perde:C5#5', 'perde:F5#4', 'perde-ters:C5#4', 'perde-ters:C5#5', 'perde-ters:F5#4'],
+    cards: [
+      'perde:C5#4', 'perde:C5#5', 'perde:F5#4', 'perde:E5',
+      'perde-ters:C5#4', 'perde-ters:C5#5', 'perde-ters:F5#4', 'perde-ters:E5',
+    ],
   },
   { id: 'sure-4', section: 'nota', title: 'Onaltılık ve üçleme', kind: 'duration', cards: ['dur:sixteenth', 'dur:eighth.uclu', 'rest:sixteenth'] },
   {
     id: 'perde-2',
     section: 'nota',
-    title: "Perde adları: Hüseynî'den Muhayyer'e",
+    title: 'Perde adları: Acem, Gerdâniye, Muhayyer',
     kind: 'perde-name',
-    cards: [
-      'perde:E5', 'perde:F5', 'perde:G5', 'perde:A5',
-      'perde-ters:E5', 'perde-ters:F5', 'perde-ters:G5', 'perde-ters:A5',
-    ],
+    cards: ['perde:F5', 'perde:G5', 'perde:A5', 'perde-ters:F5', 'perde-ters:G5', 'perde-ters:A5'],
   },
   {
     id: 'perde-5',

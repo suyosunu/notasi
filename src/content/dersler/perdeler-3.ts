@@ -10,6 +10,8 @@ import type { Ders } from './types'
 // şemalardan gelir. Sıra NEY_PERDELER'deki 3. kademe sırasıdır. Her perdenin "pest eşi" aynı parmakla çalınan
 // ikinci kademe sesidir ve 31 koma (bir beşli) aşağıdadır; Nim Hisar'ın pest eşi uygulamada olmadığından onun geçişi
 // Hüseynî'den yapılır. Sayısal hedef (8 sn, ±20 sent) "öneri" diye anılır.
+// Hüseynî üçüncü kademe sesidir ama kullanıcının hocasının pratiğine göre Seviye 2'de öğretilir (2026-10-31); dersi
+// kademe kavramını anlatır, öteki üçüncü kademe dersleri Seviye 3'tedir.
 // Kapalı Nevâ'nın nefes şiddeti Zeki Sözen'in sayfalarında yazılı değildir; ders bunu açıkça söyler.
 
 const MEB_ANA = meb(1217, 'üçüncü kademe ana sesler')
@@ -17,6 +19,9 @@ const MEB_ARA = meb(1226, 'üçüncü kademe ara sesler')
 
 const HEDEF_3 =
   "Seviye 3 için önerimiz: her perdeyi en az 8 sn, ±20 sent içinde tutmak; Seviye 1 ve 2'deki ölçüt aynen sürer. Bu sayı bir öneridir; kaynaklar kesin süre vermez. Uygulama süreyi ve bandı sen ilerledikçe sıkılaştırır; ±15 sent fazladan alıştırmadır."
+
+const HEDEF_HUSEYNI =
+  "Seviye 2 için önerimiz: Hüseynî'yi en az 8 sn, ±20 sent içinde tutmak; Seviye 1'deki ölçüt aynen sürer. Bu sayı bir öneridir; kaynaklar kesin süre vermez. Uygulama süreyi ve bandı sen ilerledikçe sıkılaştırır; ±15 sent fazladan alıştırmadır. Öteki üçüncü kademe seslerini Seviye 3'te çalışacaksın."
 
 /** Üçüncü kademe sesinin nefesi; `pest`: aynı parmakla çalınan ikinci kademe sesi (ör. "Dügâh"). */
 function sertNefes(pest: string): string {
@@ -54,13 +59,13 @@ const NIM_HISAR = perde('nim-hisar')
 export const PERDE_3_DERSLERI: Ders[] = [
   {
     id: 'perde:huseyni',
-    seviye: 3,
+    seviye: 2,
     baslik: 'Hüseynî perdesi ve kademe',
     bloklar: [
       {
         tur: 'metin',
         metin:
-          "Seviye 3'te üçüncü kademeye geçiyorsun. Kademe, neyin ses bölgesidir: aynı parmakla nefes güçlendikçe ses bir üst kademeye çıkar. Pes sesler birinci, orta sesler ikinci, daha tiz sesler üçüncü kademedir. Şimdiye kadar çaldığın bütün sesler ikinci kademedendi ve ılık, orta güçte nefesle çıkıyordu.",
+          "Seviye 2'nin sonunda üçüncü kademeye ilk adımı atıyorsun; kalan üçüncü kademe sesleri Seviye 3'te gelecek. Kademe, neyin ses bölgesidir: aynı parmakla nefes güçlendikçe ses bir üst kademeye çıkar. Pes sesler birinci, orta sesler ikinci, daha tiz sesler üçüncü kademedir. Şimdiye kadar çaldığın bütün sesler ikinci kademedendi ve ılık, orta güçte nefesle çıkıyordu.",
       },
       {
         tur: 'metin',
@@ -102,7 +107,7 @@ export const PERDE_3_DERSLERI: Ders[] = [
         metin:
           "Listede olmayan iki ses daha var. Birincisi kapalı Nevâ: Rast parmağıyla (bütün delikler kapalı) çıkan Nevâ'dır, Rast'tan bir beşli yukarıdadır. İkincisi Nim Hisar: Hüseynî'nin biraz pesidir. İkisinin de kendi dersi var.",
       },
-      { tur: 'metin', metin: HEDEF_3 },
+      { tur: 'metin', metin: HEDEF_HUSEYNI },
       deneAdimlari(
         { belirtme: "Hüseynî'yi" },
         { ad: "Dügâh'ı", gecis: "Hüseynî'ye", hareket: 'parmaklarını değiştirmeden, nefesi güçlendirip' },

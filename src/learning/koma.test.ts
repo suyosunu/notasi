@@ -55,9 +55,12 @@ describe('işaretli (NotaAE) kartlar', () => {
       cards: ['perde:B4', 'perde:B4b5', 'perde:B4b4', 'perde-ters:B4', 'perde-ters:B4b5', 'perde-ters:B4b4'],
     })
     expect(t('perde-4')).toMatchObject({
-      title: 'Perdeler: Nim Hicaz, Hicaz, Eviç',
+      title: 'Perdeler: Nim Hicaz, Hicaz, Eviç, Hüseynî',
       kind: 'perde-name',
-      cards: ['perde:C5#4', 'perde:C5#5', 'perde:F5#4', 'perde-ters:C5#4', 'perde-ters:C5#5', 'perde-ters:F5#4'],
+      cards: [
+        'perde:C5#4', 'perde:C5#5', 'perde:F5#4', 'perde:E5',
+        'perde-ters:C5#4', 'perde-ters:C5#5', 'perde-ters:F5#4', 'perde-ters:E5',
+      ],
     })
     expect(topicOfCard('note:B4b4').id).toBe('koma-1')
     expect(topicOfCard('perde-ters:F5#4').id).toBe('perde-4')
@@ -73,7 +76,7 @@ describe('koma soruları', () => {
   const SHARPS = ['koma diyezi', 'bakiye diyezi', 'küçük mücenneb diyezi', 'büyük mücenneb diyezi']
 
   it('her yeni kartta 4 farklı seçenek ve cevap seçenekler arasındadır', () => {
-    expect(NEW_CARDS).toHaveLength(4 + 4 + 6 + 6)
+    expect(NEW_CARDS).toHaveLength(4 + 4 + 6 + 8)
     for (const card of NEW_CARDS) {
       for (let s = 1; s <= 30; s++) {
         const q = makeQuestion(card, seededRng(s))

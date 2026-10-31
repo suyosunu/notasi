@@ -140,7 +140,8 @@ function sequenceOptions(answerIdx: number[], answer: string, rng: () => number)
 const ACCIDENTAL_HINT = 'Bemol sesi pesleştirir, diyez tizleştirir; çizgi ve gövde sayısı koma miktarını gösterir.'
 const PERDE_HINT = 'Sırayla: Rast (Sol), Dügâh, Segâh, Çârgâh, Nevâ, Hüseynî, Acem, Gerdâniye, Muhayyer (tiz La).'
 const PERDE_3_HINT = 'Si üzerindeki işaretler: işaretsiz Si Bûselik, Dik Kürdî bakiye bemolü, Kürdî küçük mücenneb bemolü.'
-const PERDE_4_HINT = 'Do üzerinde: Nim Hicaz bakiye diyezi, Hicaz küçük mücenneb diyezi; Fa üzerinde: Eviç bakiye diyezi.'
+const PERDE_4_HINT =
+  'Do üzerinde: Nim Hicaz bakiye diyezi, Hicaz küçük mücenneb diyezi; Fa üzerinde: Eviç bakiye diyezi; işaretsiz Mi: Hüseynî.'
 const PERDE_5_HINT = 'Sol üzerinde: Nim Şehnaz bakiye diyezi; Mi üzerinde: Nim Hisar küçük mücenneb bemolü.'
 
 const PERDE_6_HINT =
@@ -202,7 +203,7 @@ function accidentalOptions(acc: number, rng: () => number): string[] {
 /**
  * İleri soru çeldiricileri: önce konunun kendi öbür adları (karışık), sonra önceki perde konularının adları,
  * konu sırasına göre en yakın (en son) konudan başlayarak; her konu kendi içinde karışıktır. Irak hiç gelmez
- * (kartı yoktur). Perde-2 sorusunun üç çeldiricisi böylece hep Acem, Gerdâniye, Muhayyer gibi kendi konusundan gelir.
+ * (kartı yoktur). Perde-4 sorusunun üç çeldiricisi böylece hep Nim Hicaz, Hicaz, Eviç, Hüseynî gibi kendi konusundan gelir.
  */
 function forwardPerdeOptions(topicId: string, perde: string, rng: () => number): string[] {
   const at = PERDE_TOPICS.findIndex((t) => t.id === topicId)

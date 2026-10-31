@@ -38,6 +38,7 @@ describe('SEVIYELER', () => {
       's2-kurdi-8',
       's2-dik-kurdi-8',
       's2-nim-hicaz-8',
+      's2-huseyni-8',
       's2-vur-nim-sofyan',
       's2-vur-semai',
       's2-vur-sofyan',
@@ -49,7 +50,7 @@ describe('SEVIYELER', () => {
     const ids = hedefler.map((h) => h.id)
     expect(new Set(ids).size).toBe(ids.length)
     expect(s2.ozet).toBe(
-      'Koma işaretleri, onaltılık ve üçleme; Bûselik, Kürdî, Dik Kürdî, Nim Hicaz; Nim Sofyan, Semâî ve Sofyan usulleri; Çârgâh, Kürdî ve Hicaz dörtlüleri.',
+      'Koma işaretleri, onaltılık ve üçleme; Bûselik, Kürdî, Dik Kürdî, Nim Hicaz, Hüseynî; Nim Sofyan, Semâî ve Sofyan usulleri; Çârgâh, Kürdî ve Hicaz dörtlüleri.',
     )
   })
 
@@ -63,6 +64,7 @@ describe('SEVIYELER', () => {
       ['kurdi', 'Kürdî'],
       ['dik-kurdi', 'Dik Kürdî'],
       ['nim-hicaz', 'Nim Hicaz'],
+      ['huseyni', 'Hüseynî'],
     ] as const) {
       expect(h(`s2-${id}-8`).olcut).toEqual({ tur: 'uzun-ses', perdeId: id, ms: 8000, cent: 20 })
       expect(h(`s2-${id}-8`).rota).toBe(`/ney/${id}`)
@@ -177,7 +179,8 @@ describe('SEVIYELER', () => {
 describe('Seviye 3 hedefleri', () => {
   const s3 = SEVIYELER[3]!
   const h = (id: string) => s3.hedefler.find((x) => x.id === id)!
-  const ucuncuKademe = NEY_PERDELER.filter((p) => p.kademe === 3)
+  // Hüseynî 3. kademe perdesidir ama Seviye 2'de çalışılır (hocanın pratiği, 2026-10-31).
+  const ucuncuKademe = NEY_PERDELER.filter((p) => p.kademe === 3 && p.id !== 'huseyni')
 
   it('kimlikler kararlaştırılan sırada', () => {
     expect(s3.hedefler.map((x) => x.id)).toEqual([
@@ -193,8 +196,9 @@ describe('Seviye 3 hedefleri', () => {
       's3-eser',
       's3-hak-teala',
     ])
+    expect(NEY_PERDELER.filter((p) => p.kademe === 3)[0]!.id).toBe('huseyni')
+    expect(s3.hedefler.some((x) => x.id === 's3-huseyni-8')).toBe(false)
     expect(ucuncuKademe.map((p) => p.id)).toEqual([
-      'huseyni',
       'acem',
       'gerdaniye',
       'muhayyer',
@@ -204,12 +208,12 @@ describe('Seviye 3 hedefleri', () => {
       'nim-hisar',
     ])
     expect(s3.ozet).toBe(
-      "Hüseynî'den Muhayyer'e üçüncü kademe, kapalı Nevâ, Eviç, Nim Şehnaz, Nim Hisar; kademe geçişleri; beşliler; Rast ve Nevâ makamları.",
+      "Acem'den Muhayyer'e üçüncü kademe, kapalı Nevâ, Eviç, Nim Şehnaz, Nim Hisar; kademe geçişleri; beşliler; Rast ve Nevâ makamları.",
     )
   })
 
   it('ölçütler, metinler ve rotalar kararlaştırıldığı gibi', () => {
-    expect(h('s3-nota')).toMatchObject({ metin: "Perde adları: Hüseynî'den Muhayyer'e; Nim Şehnaz ve Nim Hisar", olcut: { tur: 'konular', topicIds: ['perde-2', 'perde-5'] }, rota: '/nota' })
+    expect(h('s3-nota')).toMatchObject({ metin: 'Perde adları: Acem, Gerdâniye, Muhayyer; Nim Şehnaz ve Nim Hisar', olcut: { tur: 'konular', topicIds: ['perde-2', 'perde-5'] }, rota: '/nota' })
     for (const p of ucuncuKademe) {
       expect(h(`s3-${p.id}-8`)).toMatchObject({
         metin: `${p.name}: 8 sn uzun ses`,

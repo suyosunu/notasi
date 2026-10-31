@@ -302,6 +302,11 @@ describe('Seviye 2 okuma dersleri', () => {
     }
   })
 
+  it("perde-4 Hüseynî'yi işaretsiz Mi olarak öğretir ve başlığı konu başlığıyla aynıdır", () => {
+    expect(ders('nota:perde-4').baslik).toBe(NOTA_TOPICS.find((x) => x.id === 'perde-4')!.title)
+    expect(metin('nota:perde-4')).toContain('Hüseynî = işaretsiz Mi')
+  })
+
   it("perde-3 Segâh ile karşılaştırır; perde-4 Eviç'in Seviye 3'te çalınacağını söyler", () => {
     expect(metin('nota:perde-3')).toMatch(/Segâh/)
     expect(porteler('nota:perde-3').some((o) => ['B4', 'B4b1', 'B4b4', 'B4b5'].every((k) => o.map(anahtar).includes(k)))).toBe(
@@ -612,7 +617,8 @@ describe('Seviye 3 perde dersleri', () => {
       const d = ders(id)
       expect(d, id).toBeDefined()
       expect(DERSLER, id).toContain(d)
-      expect(d.seviye, id).toBe(3)
+      // Hüseynî 3. kademe perdesidir ama hocanın pratiğine göre Seviye 2'de öğretilir (2026-10-31).
+      expect(d.seviye, id).toBe(id === 'huseyni' ? 2 : 3)
       expect(d.alistirma, id).toBe(`/ney/${id}`)
       const parmaklar = d.bloklar.flatMap((b) => (b.tur === 'parmak' ? [b.perdeId] : []))
       // Kapalı Nevâ dersi karşılaştırma için açık Nevâ şemasını da gösterir; ötekiler yalnız kendi perdesini.
@@ -656,7 +662,7 @@ describe('Seviye 3 perde dersleri', () => {
 
   it.each(UCUNCU)('%s: daha sert üfleme, "Kendin dene" ve 8 sn / ±20 sent öneri hedefi', (id) => {
     const m = tumMetin(id)
-    expect(m).toMatch(/Seviye 3/)
+    expect(m).toMatch(id === 'huseyni' ? /Seviye 2/ : /Seviye 3/)
     expect(m).toMatch(/sert/)
     expect(m).toMatch(/8 sn/)
     expect(m).toMatch(/±20 sent/)
@@ -767,10 +773,12 @@ describe('Seviye 3 okuma dersleri', () => {
     for (const o of porteler(id)) expect(o.length).toBeLessThanOrEqual(8)
   })
 
-  it('nota:perde-2: Hüseynî, Acem, Gerdâniye, Muhayyer işaretsiz Mi, Fa, Sol, La; Re hep Nevâ', () => {
+  it('nota:perde-2: Acem, Gerdâniye, Muhayyer işaretsiz Fa, Sol, La; Re hep Nevâ; Hüseynî artık bu dersin konusu değil', () => {
     const m = metinler(ders('nota:perde-2')).join(' ')
-    for (const s of ['Hüseynî = Mi', 'Acem = Fa', 'Gerdâniye = Sol', 'Muhayyer = La', 'Nevâ']) expect(m).toContain(s)
+    for (const s of ['Acem = Fa', 'Gerdâniye = Sol', 'Muhayyer = La', 'Nevâ']) expect(m).toContain(s)
+    expect(m).not.toContain('Hüseynî = Mi')
     expect(m).toMatch(/Eviç/)
+    expect(ders('nota:perde-2').baslik).toBe('Perde adları: Acem, Gerdâniye, Muhayyer')
   })
 
   it('nota:perde-5: Nim Şehnaz Sol bakiye diyezi, Nim Hisar Mi küçük mücenneb bemolü', () => {

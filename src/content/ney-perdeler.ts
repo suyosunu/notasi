@@ -96,7 +96,8 @@ export const KOMA_FARKI = 'aradaki koma farkını dudak ve baş açısıyla veri
  * İlk beş perde Nevâ, Çârgâh, Segâh, Dügâh, Rast sırasıyla öğretilir (2. kademe; araştırma §4.1,
  * S2, S4, S5, S13 Segâh der). Sonrası nota konularının açılma sırasını izler: kullanıcı perde adını
  * okumayı öğrendiği sırayla çalar. Önce Seviye 2 ara sesleri: perde-3 (Bûselik, Kürdî, Dik Kürdî),
- * perde-4 (Nim Hicaz); sonra 3. kademe: perde-2 (Hüseynî, Acem, Gerdâniye, Muhayyer), kapalı Nevâ,
+ * perde-4 (Nim Hicaz); Hüseynî 3. kademedir ama hocanın pratiğine göre Seviye 2'de öğretilir ve perde-4 konusuna
+ * bağlıdır (2026-10-31); sonra 3. kademe: perde-2 (Acem, Gerdâniye, Muhayyer), kapalı Nevâ,
  * perde-4'ün Eviç'i, en sonda perde-5 (Nim Şehnaz, Nim Hisar). Sıra MEB'i izler: önce ana sesler (ünite 1217),
  * sonra ara sesler (Eviç ve Nim Şehnaz ünite 1226; Nim Hisar ünite 1232'de en geç anılır). Kapalı Nevâ açık
  * Nevâ'dan sonra gelir: aynı yazılı perdeye göre arama "Nevâ"yı bulur. 3. kademe perdeleri 2. kademedeki
@@ -223,7 +224,7 @@ export const NEY_PERDELER: NeyPerde[] = [
     verified: true,
     source: SRC_ORTA,
     tip: SERT + 'Dügâh parmağıyla çalınır (yalnızca en alt delik açık); sesi bir beşli yukarı çıkarmak için nefesi güçlendir.',
-    notaTopicId: 'perde-2',
+    notaTopicId: 'perde-4',
   },
   {
     id: 'acem',

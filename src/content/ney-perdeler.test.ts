@@ -62,7 +62,7 @@ describe('NEY_PERDELER', () => {
       ['kurdi', 'B', 4, -5, 'perde-3'],
       ['dik-kurdi', 'B', 4, -4, 'perde-3'],
       ['nim-hicaz', 'C', 5, 4, 'perde-4'],
-      ['huseyni', 'E', 5, 0, 'perde-2'],
+      ['huseyni', 'E', 5, 0, 'perde-4'],
       ['acem', 'F', 5, 0, 'perde-2'],
       ['gerdaniye', 'G', 5, 0, 'perde-2'],
       ['muhayyer', 'A', 5, 0, 'perde-2'],

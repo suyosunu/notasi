@@ -127,6 +127,7 @@ const ARA_SESLER: { id: PerdeId; ad: string }[] = [
   { id: 'kurdi', ad: 'Kürdî' },
   { id: 'dik-kurdi', ad: 'Dik Kürdî' },
   { id: 'nim-hicaz', ad: 'Nim Hicaz' },
+  { id: 'huseyni', ad: 'Hüseynî' },
 ]
 
 // Seviye 2'nin usul sırası: Nim Sofyan → Semâî → Sofyan (kaynaklarda uzlaşı var).
@@ -188,15 +189,15 @@ const SEVIYE_2: Hedef[] = [
   },
 ]
 
-// Seviye 3'te 3. kademe perdeleri NEY_PERDELER sırasıyla (Hüseynî … Nim Hisar) çalışılır.
+// Seviye 3'te 3. kademe perdeleri NEY_PERDELER sırasıyla (Acem … Nim Hisar) çalışılır; Hüseynî Seviye 2'de çalışılır.
 const SEVIYE_3: Hedef[] = [
   {
     id: 's3-nota',
-    metin: "Perde adları: Hüseynî'den Muhayyer'e; Nim Şehnaz ve Nim Hisar",
+    metin: 'Perde adları: Acem, Gerdâniye, Muhayyer; Nim Şehnaz ve Nim Hisar',
     olcut: { tur: 'konular', topicIds: ['perde-2', 'perde-5'] },
     rota: '/nota',
   },
-  ...NEY_PERDELER.filter((p) => p.kademe === 3).map(
+  ...NEY_PERDELER.filter((p) => p.kademe === 3 && p.id !== 'huseyni').map(
     (p): Hedef => ({
       id: `s3-${p.id}-8`,
       metin: `${p.name}: 8 sn uzun ses`,
@@ -353,14 +354,14 @@ export const SEVIYELER: Seviye[] = [
     no: 2,
     ad: 'Ara sesler, ilk usuller',
     sure: '2,5–5. ay',
-    ozet: 'Koma işaretleri, onaltılık ve üçleme; Bûselik, Kürdî, Dik Kürdî, Nim Hicaz; Nim Sofyan, Semâî ve Sofyan usulleri; Çârgâh, Kürdî ve Hicaz dörtlüleri.',
+    ozet: 'Koma işaretleri, onaltılık ve üçleme; Bûselik, Kürdî, Dik Kürdî, Nim Hicaz, Hüseynî; Nim Sofyan, Semâî ve Sofyan usulleri; Çârgâh, Kürdî ve Hicaz dörtlüleri.',
     hedefler: SEVIYE_2,
   },
   {
     no: 3,
     ad: 'Üçüncü kademe, ilk makam',
     sure: '5–9. ay',
-    ozet: "Hüseynî'den Muhayyer'e üçüncü kademe, kapalı Nevâ, Eviç, Nim Şehnaz, Nim Hisar; kademe geçişleri; beşliler; Rast ve Nevâ makamları.",
+    ozet: "Acem'den Muhayyer'e üçüncü kademe, kapalı Nevâ, Eviç, Nim Şehnaz, Nim Hisar; kademe geçişleri; beşliler; Rast ve Nevâ makamları.",
     hedefler: SEVIYE_3,
   },
   {

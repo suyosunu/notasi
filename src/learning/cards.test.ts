@@ -193,17 +193,20 @@ describe('perde kartları', () => {
       'perde-ters:G4', 'perde-ters:A4', 'perde-ters:B4b1', 'perde-ters:C5', 'perde-ters:D5',
     ])
     expect(p2.kind).toBe('perde-name')
-    expect(p2.title).toBe("Perde adları: Hüseynî'den Muhayyer'e")
-    expect(p2.cards).toEqual([
-      'perde:E5', 'perde:F5', 'perde:G5', 'perde:A5',
-      'perde-ters:E5', 'perde-ters:F5', 'perde-ters:G5', 'perde-ters:A5',
-    ])
+    expect(p2.title).toBe('Perde adları: Acem, Gerdâniye, Muhayyer')
+    expect(p2.cards).toEqual(['perde:F5', 'perde:G5', 'perde:A5', 'perde-ters:F5', 'perde-ters:G5', 'perde-ters:A5'])
     expect(topicOfCard('perde-ters:A5').id).toBe('perde-2')
     const p5 = NOTA_TOPICS.find((t) => t.id === 'perde-5')!
     expect(p5.kind).toBe('perde-name')
     expect(p5.title).toBe('Perdeler: Nim Şehnaz, Nim Hisar')
     expect(p5.cards).toEqual(['perde:G5#4', 'perde:E5b5', 'perde-ters:G5#4', 'perde-ters:E5b5'])
     expect(topicOfCard('perde-ters:E5b5').id).toBe('perde-5')
+  })
+  it('Hüseynî kartları (E5) yalnız perde-4 konusundadır, perde-2 konusunda değildir', () => {
+    for (const kart of ['perde:E5', 'perde-ters:E5']) {
+      expect(topicOfCard(kart).id).toBe('perde-4')
+      expect(NOTA_TOPICS.filter((t) => t.cards.includes(kart)).map((t) => t.id)).toEqual(['perde-4'])
+    }
   })
   it("Segâh kartları perde-1'de, Bûselik kartları perde-3'tedir; hiçbir kart yetim kalmaz", () => {
     const p1 = NOTA_TOPICS.find((t) => t.id === 'perde-1')!

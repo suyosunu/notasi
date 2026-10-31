@@ -180,11 +180,11 @@ export const NOTA_2_DERSLERI: Ders[] = [
   {
     id: 'nota:perde-4',
     seviye: 2,
-    baslik: 'Perdeler: Nim Hicaz, Hicaz, Eviç',
+    baslik: 'Perdeler: Nim Hicaz, Hicaz, Eviç, Hüseynî',
     bloklar: [
       {
         tur: 'metin',
-        metin: "Çârgâh işaretsiz Do'dur. Do'nun biraz tizinde iki perde vardır: Nim Hicaz ve Hicaz. Bu derste bunları ve Fa üzerindeki Eviç'i öğreneceksin.",
+        metin: "Çârgâh işaretsiz Do'dur. Do'nun biraz tizinde iki perde vardır: Nim Hicaz ve Hicaz. Bu derste bunları, Fa üzerindeki Eviç'i ve işaretsiz Mi olan Hüseynî'yi öğreneceksin.",
       },
       {
         tur: 'liste',
@@ -192,11 +192,13 @@ export const NOTA_2_DERSLERI: Ders[] = [
           'Nim Hicaz = Do bakiye diyezi (4 koma tiz).',
           'Hicaz = Do küçük mücenneb diyezi (5 koma tiz).',
           'Eviç = Fa bakiye diyezi (5. çizgi, 4 koma tiz).',
+          'Hüseynî = işaretsiz Mi (4. aralık, 4. ile 5. çizgi arası).',
         ],
       },
       { tur: 'porte', olaylar: [n('C5#4')], aciklama: 'Nim Hicaz: Do bakiye diyezi (iki gövde, iki çubuk).' },
       { tur: 'porte', olaylar: [n('C5#5')], aciklama: 'Hicaz: Do küçük mücenneb diyezi (tek gövde, üç çubuk).' },
       { tur: 'porte', olaylar: [n('F5#4')], aciklama: 'Eviç: Fa bakiye diyezi, portenin en üst çizgisinde.' },
+      { tur: 'porte', olaylar: [n('E5')], aciklama: 'Hüseynî: işaretsiz Mi, 4. aralık. Önünde işaret yoktur.' },
       {
         tur: 'porte',
         olaylar: [n('C5'), n('C5#4'), n('C5#5')],
@@ -213,14 +215,15 @@ export const NOTA_2_DERSLERI: Ders[] = [
       },
       {
         tur: 'metin',
-        metin: "Nim Hicaz'ı bu seviyede neyle de çalacaksın. Eviç'i Seviye 3'te çalacaksın; şimdilik okumayı öğrenmen yeter.",
+        metin:
+          "Nim Hicaz'ı ve Hüseynî'yi bu seviyede neyle de çalacaksın. Hüseynî, Nevâ'nın (Re) hemen üstündeki Mi'dir; işaret taşımadığı için karışmaz. Eviç'i Seviye 3'te çalacaksın; şimdilik okumayı öğrenmen yeter.",
       },
       {
         tur: 'dene',
         adimlar: [
           'Üç notalı portede her notanın perde adını sesli söyle.',
           '▶ Dinle ile dinle; Nim Hicaz ile Hicaz arasındaki küçük farkı duy.',
-          "Eviç'in portedeki yerini göster: hangi çizgide, önünde hangi işaret var?",
+          "Eviç'in portedeki yerini göster: hangi çizgide, önünde hangi işaret var? Hüseynî'nin önünde işaret var mı?",
         ],
       },
     ],
@@ -412,30 +415,28 @@ export const NOTA_2_DERSLERI: Ders[] = [
   },
 ]
 
-// Seviye 3 okuma dersleri: üçüncü kademe perdelerinin portedeki yeri (perde-2: Hüseynî, Acem, Gerdâniye, Muhayyer;
+// Seviye 3 okuma dersleri: üçüncü kademe perdelerinin portedeki yeri (perde-2: Acem, Gerdâniye, Muhayyer;
 // perde-5: Nim Şehnaz, Nim Hisar). Bilgiler araştırma C §1'den (neyzenim _6, MEB ünite 1217, 1226, 1232), koma
 // işaretleri `nota:koma-1` ve `nota:koma-2` derslerinden gelir. Perde adları PERDE_ADLARI ile aynı yazılır.
 export const NOTA_3_DERSLERI: Ders[] = [
   {
     id: 'nota:perde-2',
     seviye: 3,
-    baslik: "Perde adları: Hüseynî'den Muhayyer'e",
+    baslik: 'Perde adları: Acem, Gerdâniye, Muhayyer',
     bloklar: [
       {
         tur: 'metin',
         metin:
-          "Nevâ'yı (Re) biliyorsun. Onun üstünde dört işaretsiz ana perde daha var: Mi, Fa, Sol ve La, hiçbirinin önünde işaret yok. Notaların adlarını nota derslerinden biliyorsun; bu derste onların perde adlarını öğreneceksin.",
+          "Nevâ'yı (Re) ve onun üstündeki Hüseynî'yi (Mi) biliyorsun. Hüseynî'nin üstünde üç işaretsiz ana perde daha var: Fa, Sol ve La, hiçbirinin önünde işaret yok. Notaların adlarını nota derslerinden biliyorsun; bu derste onların perde adlarını öğreneceksin.",
       },
       {
         tur: 'liste',
         maddeler: [
-          'Hüseynî = Mi (4. aralık, 4. ile 5. çizgi arası).',
           'Acem = Fa (5. çizgi, portenin en üst çizgisi).',
           'Gerdâniye = Sol (5. çizginin hemen üstündeki boşluk, tiz Sol).',
           'Muhayyer = La (portenin üstündeki ilk ek çizgi, tiz La).',
         ],
       },
-      { tur: 'porte', olaylar: [n('E5')], aciklama: 'Hüseynî: Mi, 4. aralık.' },
       { tur: 'porte', olaylar: [n('F5')], aciklama: 'Acem: Fa, 5. çizgi.' },
       { tur: 'porte', olaylar: [n('G5')], aciklama: 'Gerdâniye: tiz Sol, portenin üstündeki boşluk.' },
       { tur: 'porte', olaylar: [n('A5')], aciklama: 'Muhayyer: tiz La, üstteki ilk ek çizgi.' },
@@ -457,7 +458,7 @@ export const NOTA_3_DERSLERI: Ders[] = [
       {
         tur: 'dene',
         adimlar: [
-          'Her portede notanın perde adını sesli söyle: Hüseynî, Acem, Gerdâniye, Muhayyer.',
+          'Her portede notanın perde adını sesli söyle: Acem, Gerdâniye, Muhayyer.',
           '▶ Dinle ile beşli porteyi dinle; her adımda sesin bir basamak yükseldiğini duy.',
           "Gözünü porteden ayır ve ezberden say: Hüseynî 4. aralıkta, Acem 5. çizgide, Gerdâniye portenin üstünde, Muhayyer ek çizgide.",
         ],

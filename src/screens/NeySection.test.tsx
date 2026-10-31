@@ -94,12 +94,12 @@ describe('NeySection', () => {
     expect(within(row('Hüseynî')).getByText('🔒')).toBeTruthy()
   })
 
-  it('perde-2 açılınca Hüseynî açılır ve /ney/huseyni yönlenir', async () => {
+  it('perde-4 açılınca Hüseynî açılır ve /ney/huseyni yönlenir', async () => {
     for (const id of ['neva', 'cargah', 'buselik', 'dugah', 'rast']) {
       await addLongTone({ perdeId: id, durationMs: 4000, passed: true, toleranceCents: 25 })
     }
-    // perde-2 en sondadır: açılması için önündeki bütün konular öğrenilmiş olmalıdır.
-    for (const id of NOTA_TOPICS.map((t) => t.id)) if (id !== 'perde-2') await setPlacedOut(id)
+    // Hüseynî perde-4 konusuna bağlıdır (Seviye 2): açılması için önündeki bütün konular öğrenilmiş olmalıdır.
+    for (const id of NOTA_TOPICS.map((t) => t.id)) if (id !== 'perde-4') await setPlacedOut(id)
     render(<NeySection />)
     await screen.findByText('Hüseynî')
     expect(within(row('Hüseynî')).getByText('▶')).toBeTruthy()

@@ -268,9 +268,21 @@ describe('perde isimleri (perde: / perde-ters:)', () => {
   it('perde-2 ileri soru çeldiricileri önce kendi konusundan: Acem, Gerdâniye, Muhayyer', () => {
     const KENDI = ['Acem', 'Gerdâniye', 'Muhayyer']
     for (let s = 1; s <= 200; s++) {
+      const q = makeQuestion('perde:F5', seededRng(s))
+      expect(q.answer).toBe('Acem')
+      expect(q.options).toHaveLength(4)
+      for (const k of KENDI) expect(q.options).toContain(k)
+      // Dördüncü seçenek en yakın önceki perde konusundan (perde-4: Nim Hicaz, Hicaz, Eviç, Hüseynî).
+      expect(['Nim Hicaz', 'Hicaz', 'Eviç', 'Hüseynî']).toContain(q.options.find((x) => !KENDI.includes(x)))
+    }
+  })
+
+  it('perde:E5 (Hüseynî) perde-4 konusundadır; çeldiricileri önce o konudandır: Nim Hicaz, Hicaz, Eviç', () => {
+    for (let s = 1; s <= 200; s++) {
       const q = makeQuestion('perde:E5', seededRng(s))
+      expect(q.topicId).toBe('perde-4')
       expect(q.answer).toBe('Hüseynî')
-      expect([...q.options].sort()).toEqual(['Hüseynî', ...KENDI].sort())
+      expect([...q.options].sort()).toEqual(['Hüseynî', 'Nim Hicaz', 'Hicaz', 'Eviç'].sort())
     }
   })
 
@@ -285,13 +297,10 @@ describe('perde isimleri (perde: / perde-ters:)', () => {
     }
   })
 
-  it('perde-4 ileri soruda konunun iki öbür adı çeldiricidir, üçüncüsü perde-3 adlarından gelir', () => {
-    const PERDE_3 = ['Bûselik', 'Kürdî', 'Dik Kürdî']
+  it('perde-4 ileri soruda konunun üç öbür adı çeldiricidir: Hicaz, Eviç, Hüseynî', () => {
     for (let s = 1; s <= 100; s++) {
       const q = makeQuestion('perde:C5#4', seededRng(s))
-      expect(q.options).toContain('Hicaz')
-      expect(q.options).toContain('Eviç')
-      expect(PERDE_3).toContain(q.options.find((x) => !['Nim Hicaz', 'Hicaz', 'Eviç'].includes(x)))
+      expect([...q.options].sort()).toEqual(['Nim Hicaz', 'Hicaz', 'Eviç', 'Hüseynî'].sort())
     }
   })
 
@@ -354,12 +363,13 @@ describe('perde isimleri (perde: / perde-ters:)', () => {
 describe('perde-3 / perde-4 ipuçları ve Irak', () => {
   const OLD = 'Sırayla: Rast (Sol), Dügâh, Segâh, Çârgâh, Nevâ, Hüseynî, Acem, Gerdâniye, Muhayyer (tiz La).'
   const H3 = 'Si üzerindeki işaretler: işaretsiz Si Bûselik, Dik Kürdî bakiye bemolü, Kürdî küçük mücenneb bemolü.'
-  const H4 = 'Do üzerinde: Nim Hicaz bakiye diyezi, Hicaz küçük mücenneb diyezi; Fa üzerinde: Eviç bakiye diyezi.'
+  const H4 =
+    'Do üzerinde: Nim Hicaz bakiye diyezi, Hicaz küçük mücenneb diyezi; Fa üzerinde: Eviç bakiye diyezi; işaretsiz Mi: Hüseynî.'
 
   it('perde-3 ve perde-4 kendi ipucunu kullanır; perde-1/2 eskisini korur', () => {
     for (const c of ['perde:B4', 'perde-ters:B4b5']) expect(makeQuestion(c, seededRng(1)).hint).toBe(H3)
-    for (const c of ['perde:C5#4', 'perde-ters:F5#4']) expect(makeQuestion(c, seededRng(1)).hint).toBe(H4)
-    for (const c of ['perde:G4', 'perde-ters:D5', 'perde:E5', 'perde-ters:A5', 'perde:B4b1', 'perde-ters:B4b1']) {
+    for (const c of ['perde:C5#4', 'perde-ters:F5#4', 'perde:E5', 'perde-ters:E5']) expect(makeQuestion(c, seededRng(1)).hint).toBe(H4)
+    for (const c of ['perde:G4', 'perde-ters:D5', 'perde:F5', 'perde-ters:A5', 'perde:B4b1', 'perde-ters:B4b1']) {
       expect(makeQuestion(c, seededRng(1)).hint).toBe(OLD)
     }
   })
