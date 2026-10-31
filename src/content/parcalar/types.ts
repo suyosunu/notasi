@@ -1,6 +1,6 @@
 import type { MusicEvent } from '../../music/notation'
 
-export const MAKAMLAR = ['rast', 'neva', 'ussak', 'bayati', 'huseyni', 'hicaz'] as const
+export const MAKAMLAR = ['rast', 'neva', 'ussak', 'bayati', 'huseyni', 'hicaz', 'segah'] as const
 export type ParcaMakam = (typeof MAKAMLAR)[number]
 
 /**

@@ -123,6 +123,14 @@ describe('ParcaDetail', () => {
     }
   })
 
+  it('Segâh parçasında makam adı düz yazıdır (Segâh makam sayfası yok); neyzen.com bağlantısı verilir', async () => {
+    await renderParca('sol-cennetin-irmaklari-segah')
+    expect(screen.queryByRole('link', { name: 'Segâh' })).toBeNull()
+    expect(screen.getByText('Segâh')).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'neyzen.com' }).getAttribute('href')).toMatch(/082_segah\/sol_cennetin_irmaklari_munir_nureddin\.pdf$/)
+    expect(document.querySelectorAll('text[data-syllable]').length).toBeGreaterThan(0)
+  })
+
   it('Çeçen Kızı: otuzikilikler üç kirişle çizilir', async () => {
     await renderParca('cecen-kizi')
     // m41–47'deki altı figürde noktalı onaltılık + otuzikilik + sekizlik aynı kirişte: 3. kiriş altı kez.

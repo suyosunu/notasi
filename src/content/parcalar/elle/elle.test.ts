@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { parcaSeviyesi } from '../../../learning/parca-seviye'
 import { samePitch } from '../../../music/pitch'
 import { NEY_PERDELER } from '../../ney-perdeler'
 import { PARCALAR } from '../index'
@@ -136,9 +137,12 @@ describe('ELLE_PARCALAR (gönderilen eserler)', () => {
       expect(p.source, p.id).toMatch(/^https:\/\/www\.neyzen\.com\//)
       for (const e of p.olcu.flat()) {
         if (e.kind === 'note') {
+          // Segâh makamının Mi koma bemolü (E5b1) ney perdelerinde yoktur; 1 koma payıyla Hüseynî sayılır (parcaSeviyesi).
+          if (e.pitch.step === 'E' && e.pitch.octave === 5 && e.pitch.acc === -1) continue
           expect(NEY_PERDELER.some((n) => samePitch(n.written, e.pitch)), `${p.id} ${JSON.stringify(e.pitch)}`).toBe(true)
         }
       }
+      expect(parcaSeviyesi(p.olcu), p.id).not.toBeNull()
     }
   })
 

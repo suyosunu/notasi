@@ -43,6 +43,14 @@ describe('ParcalarSection', () => {
     for (const [ad, bilgi] of beklenen) expect(satir(ad).textContent).toContain(bilgi)
   })
 
+  it('neyzen.com eserleri: Segâh adı makam sayfası olmasa da yazılır; Uşşak ve Rast adı korunur', () => {
+    render(<ParcalarSection />)
+    const satir = (ad: string) => screen.getByText(ad).closest('a')!
+    expect(satir('Şol Cennetin Irmakları (Segâh)').textContent).toContain('Segâh · Yürük Semâî · Münir Nüreddin Selçuk')
+    expect(satir("Kâbe'nin Yolları").textContent).toContain('Rast · Sofyan · Bilinmiyor')
+    expect(satir('Bilmem Nideyim Aşkın Elinden').textContent).toContain('Uşşak · Sofyan · Hâfız Mehmet Nezih Tolan')
+  })
+
   it('seviye etiketi parçanın notasından hesaplanan değeri gösterir', () => {
     render(<ParcalarSection />)
     for (const p of PARCALAR) expect(etiket(p.title), p.id).toBe(`Seviye ${parcaSeviyesi(p.olcu) ?? '?'}`)
@@ -62,7 +70,7 @@ describe('ParcalarSection', () => {
       expect(sayi(onceki)).toBeLessThanOrEqual(sayi(sonraki))
       if (sayi(onceki) === sayi(sonraki)) expect(hepsi.indexOf(onceki)).toBeLessThan(hepsi.indexOf(sonraki))
     }
-    expect(sira[0]).toBe('benim-adim-dertli-dolap')
+    expect(seviyeOf(sira[0]!)).toBe(1)
     expect(sira[sira.length - 1]).toBe('daglar-ile-taslar-ile')
   })
 
@@ -72,7 +80,9 @@ describe('ParcalarSection', () => {
     expect(secenekler('Seviye')).toEqual(['Tümü', '1', '2', '3', '4', '?'])
     expect(secenekler('Makam')).toContain('Uşşak')
     expect(secenekler('Makam')).toContain('Hüseynî')
-    expect(secenekler('Makam')).not.toContain('Rast')
+    expect(secenekler('Makam')).toContain('Rast')
+    expect(secenekler('Makam')).toContain('Segâh')
+    expect(secenekler('Makam')).not.toContain('Muhayyer')
     expect(secenekler('Usul')).toContain('Düyek')
     expect(secenekler('Usul')).not.toContain('Devr-i Hindî')
   })
@@ -93,11 +103,14 @@ describe('ParcalarSection', () => {
     expect(hrefler()).toEqual(expect.arrayContaining(['hak-teala', 'allah-emrin-tutalim', 'benim-adim-dertli-dolap']))
     for (const id of hrefler()) expect(PARCALAR.find((p) => p.id === id)!.makam).toBe('ussak')
     sec('Usul', 'sofyan')
-    expect(hrefler()).toEqual(['hak-teala'])
+    expect(hrefler()).toEqual(
+      expect.arrayContaining(['hak-teala', 'urumda-acemde', 'urumda-acemde--yemen-ellerinde', 'bilmem-nideyim']),
+    )
+    for (const id of hrefler()) expect(PARCALAR.find((p) => p.id === id)!.usul).toBe('sofyan')
     sec('Seviye', '3')
-    expect(hrefler()).toEqual(['hak-teala'])
+    expect(hrefler()).toEqual(['hak-teala', 'bilmem-nideyim'])
     expect(screen.queryByText('Bu seçime uyan parça yok.')).toBeNull()
-    sec('Seviye', '2')
+    sec('Seviye', '4')
     expect(satirlar()).toHaveLength(0)
     expect(screen.getByText('Bu seçime uyan parça yok.')).toBeTruthy()
   })

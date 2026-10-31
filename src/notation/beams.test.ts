@@ -165,7 +165,7 @@ describe('beamGroups', () => {
 
 describe('beamGroups: gerçek parçalar', () => {
   it('gerçek parçalarda hiçbir kiriş vuruş sınırını (12/8 yedek dörtlük grupları dışında), ölçü çizgisini ya da susu aşmaz', () => {
-    expect(PARCALAR).toHaveLength(8)
+    expect(PARCALAR.length).toBeGreaterThanOrEqual(8)
     let total = 0
     for (const p of PARCALAR) {
       const beat = beamBeatsFor(USULLER.find((u) => u.id === p.usul))

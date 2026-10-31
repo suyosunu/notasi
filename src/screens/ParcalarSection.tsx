@@ -5,7 +5,13 @@ import type { Parca } from '../content/parcalar'
 import { USULLER } from '../content/usuller'
 import { parcaSeviyesi } from '../learning/parca-seviye'
 
-export const makamAdi = (p: Parca): string => MAKAMLAR.find((m) => m.id === p.makam)?.name ?? p.makam
+/** Makam sayfası olmayan parça makamlarının adı (makam sayfası olanlar `MAKAMLAR`'dan gelir). */
+const SAYFASIZ_MAKAM_ADLARI: Record<string, string> = { segah: 'Segâh' }
+
+/** Parçanın makamının makam sayfası var mı (ParcaDetail bağlantı mı düz yazı mı gösterecek). */
+export const makamSayfasiVar = (p: Parca): boolean => MAKAMLAR.some((m) => m.id === p.makam)
+export const makamAdi = (p: Parca): string =>
+  MAKAMLAR.find((m) => m.id === p.makam)?.name ?? SAYFASIZ_MAKAM_ADLARI[p.makam] ?? p.makam
 export const usulAdi = (p: Parca): string => USULLER.find((u) => u.id === p.usul)?.name ?? p.usul
 
 const FILTRE_ANAHTAR = 'notasi.parcaFiltre'

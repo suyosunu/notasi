@@ -55,3 +55,11 @@ Bu dosyaları paylaşırken ya da değiştirirken aynı lisansı ve yukarıdaki 
 - Her parçanın kaynağı (neyzen.com PDF adresi) kendi dosyasında `kaynak` alanında yazılıdır.
 - Çarpmalar (süs notaları) yazılmadı, tekrar işaretleri açılmadı; uygulama bunu parça sayfasında "Çarpmalar gösterilmez" diye söyler.
 - Yukarıdaki CC BY-NC-SA 4.0 atfı bu parçalar için geçerli değildir.
+
+| Parça | Makam / usul | PDF (neyzen.com) | Yazım |
+|---|---|---|---|
+| Kâbe'nin Yolları | Rast / Sofyan (4/4) | `kabenin_yollari_ney_v2.pdf` | elle yazıldı 2026-10-31 |
+| Urum'da Acem'de | Uşşak / Sofyan (4/4) | `urumda_acemde.pdf` | elle yazıldı 2026-10-31 |
+| Bilmem Nideyim Aşkın Elinden | Uşşak / Sofyan (4/4) | `bilmem_nideyim_askin_elinden_ney.pdf` | elle yazıldı 2026-10-31 |
+| Ey Âşık-ı Dildâde (Rast) | Rast / Sofyan (4/4) | `ey_asiki_dildade_ney.pdf` | elle yazıldı 2026-10-31 |
+| Şol Cennetin Irmakları (Segâh) | Segâh / Yürük Semâî (6/8) | `sol_cennetin_irmaklari_munir_nureddin.pdf` | elle yazıldı 2026-10-31 |

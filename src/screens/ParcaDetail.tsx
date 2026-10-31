@@ -4,7 +4,7 @@ import { DersKapisi } from '../ders/DersKapisi'
 import { beamBeatsFor } from '../notation/beams'
 import { ScoreView } from '../notation/ScoreView'
 import { CalismaPaneli } from './CalismaPaneli'
-import { makamAdi, usulAdi } from './ParcalarSection'
+import { makamAdi, makamSayfasiVar, usulAdi } from './ParcalarSection'
 
 /** SymbTr deposunun sayfası; ham TSV bağlantısı (`piece.source`) kaynak olarak veri dosyasında kalır. */
 const SYMBTR_URL = 'https://github.com/MTG/SymbTr'
@@ -40,7 +40,7 @@ export function ParcaDetail({ parcaId }: { parcaId: string }) {
           <div>
             <dt>Makam</dt>
             <dd>
-              <a href={`#/makam/${piece.makam}`}>{makamAdi(piece)}</a>
+              {makamSayfasiVar(piece) ? <a href={`#/makam/${piece.makam}`}>{makamAdi(piece)}</a> : makamAdi(piece)}
             </dd>
           </div>
           <div>
