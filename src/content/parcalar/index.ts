@@ -8,11 +8,12 @@ import gulYuzlulerin from './gul-yuzlulerin.json'
 import hakTeala from './hak-teala.json'
 import hicranOku from './hicran-oku-aranagme.json'
 import yineBaglandi from './yine-baglandi-dil-aranagme.json'
+import { ELLE_PARCALAR } from './elle'
+import { MAKAMLAR } from './types'
 import type { Parca, ParcaMakam } from './types'
 
 export type { Parca, ParcaMakam }
 
-const MAKAMLAR: readonly string[] = ['rast', 'neva', 'ussak', 'bayati', 'huseyni', 'hicaz']
 const DURATIONS: readonly string[] = ['whole', 'half', 'quarter', 'eighth', 'sixteenth', 'thirtysecond']
 const STEPS: readonly string[] = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
 const ACCIDENTALS: readonly number[] = [0, 1, -1, 4, -4, 5, -5, 8, -8]
@@ -43,7 +44,7 @@ function toEvent(v: unknown, where: string): MusicEvent {
 export function toParca(data: unknown): Parca {
   if (!isObj(data)) return bad('nesne değil')
   const makam = str(data, 'makam')
-  if (!MAKAMLAR.includes(makam)) bad('makam')
+  if (!(MAKAMLAR as readonly string[]).includes(makam)) bad('makam')
   if (!Array.isArray(data.olcu)) return bad('olcu')
   const olcu = data.olcu.map((m: unknown, i) =>
     Array.isArray(m) ? m.map((e: unknown, j) => toEvent(e, `ölçü ${i + 1} olay ${j + 1}`)) : bad(`ölçü ${i + 1}`),
@@ -69,5 +70,8 @@ export function toParca(data: unknown): Parca {
   return parca
 }
 
-/** Kolaydan zora. */
-export const PARCALAR: Parca[] = [benimAdim, yineBaglandi, hakTeala, allahEmrin, hicranOku, gulYuzlulerin, daglarIle, cecenKizi].map(toParca)
+/** SymbTr parçaları, kolaydan zora. */
+const SYMBTR_PARCALAR: Parca[] = [benimAdim, yineBaglandi, hakTeala, allahEmrin, hicranOku, gulYuzlulerin, daglarIle, cecenKizi].map(toParca)
+
+/** SymbTr parçaları, sonra elle yazılmış parçalar (başlığa göre; bölümler ana parçanın hemen arkasında). */
+export const PARCALAR: Parca[] = [...SYMBTR_PARCALAR, ...ELLE_PARCALAR]

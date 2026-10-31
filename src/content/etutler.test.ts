@@ -67,18 +67,63 @@ describe('parseEtut', () => {
     expect('kesik' in parseEtut('G4:4')[0]![0]!).toBe(false)
   })
 
-  it.each(['r:4!', 'r:32!', 'G4:4!!', 'G4:4.!!', 'G4:16', 'G4:64', 'G4:3', '!', 'G4:!'])(
-    'kesik yalnız notada ve bir kez; :32 dışında yeni süre yok: %s',
+  it.each(['r:4!', 'r:32!', 'G4:4!!', 'G4:4.!!', 'G4:64', 'G4:3', '!', 'G4:!'])(
+    'kesik yalnız notada ve bir kez; :16 ve :32 dışında yeni süre yok: %s',
     (s) => {
       expect(() => parseEtut(s)).toThrow(Error)
     },
   )
 
+  it('onaltılık :16, noktalısı ve susu', () => {
+    const [olcu] = parseEtut('A4:16 A4:16. r:16 r:16. G4:16!')
+    expect(olcu![0]).toEqual({ kind: 'note', pitch: { step: 'A', octave: 4, acc: 0 }, dur: 'sixteenth' })
+    expect(beats(olcu![0]!)).toBe(0.25)
+    expect(olcu![1]).toMatchObject({ dur: 'sixteenth', dotted: true })
+    expect(olcu![2]).toEqual({ kind: 'rest', dur: 'sixteenth' })
+    expect(olcu![3]).toEqual({ kind: 'rest', dur: 'sixteenth', dotted: true })
+    expect(olcu![4]).toMatchObject({ dur: 'sixteenth', kesik: true })
+  })
+
+  it('bağ ~: aynı perdeye, ölçü içinde ve ölçü aşarak; tie alanı yazılır', () => {
+    const [m1, m2] = parseEtut('G4:4~ G4:4 D5:2~ | D5:2. G4:4')
+    expect(m1![0]).toEqual({ kind: 'note', pitch: { step: 'G', octave: 4, acc: 0 }, dur: 'quarter', tie: true })
+    expect('tie' in m1![1]!).toBe(false)
+    expect(m1![2]).toMatchObject({ dur: 'half', tie: true })
+    expect(m2![0]).toMatchObject({ dur: 'half', dotted: true })
+    expect(parseEtut('C5#4:8.~ C5#4:8')[0]![0]).toMatchObject({ dotted: true, tie: true })
+  })
+
+  it('~ kesik ile birlikte yazılabilir; tie ve kesik birlikte kalır', () => {
+    expect(parseEtut('G4:4~! G4:4')[0]![0]).toMatchObject({ tie: true, kesik: true })
+    expect(parseEtut('G4:4!~ G4:4')[0]![0]).toMatchObject({ tie: true, kesik: true })
+  })
+
+  it.each([
+    'G4:4~',
+    'G4:4~ A4:4',
+    'G4:4~ r:4',
+    'G4:4~ | A4:4',
+    'G4:4~ ,  G4:4~',
+    'r:4~',
+    'G4:4~~ G4:4',
+    'G4:4~_ G4:4',
+    'G4:4_~ G4:4',
+    '~',
+    'G4:~ G4:4',
+    'G4:4~. G4:4',
+  ])('geçersiz bağ Error fırlatır: %s', (s) => {
+    expect(() => parseEtut(s)).toThrow(Error)
+  })
+
+  it('~ ve , birlikte: nefes bağlı notanın sonrasında da yazılabilir', () => {
+    expect(() => parseEtut('G4:4~ , G4:4')).not.toThrow()
+  })
+
   it.each([', G4:4', 'G4:4 | , A4:4', 'r:4_', 'G4:4._.'])('ölçü , ile başlayamaz; bağ yalnız notada: %s', (s) => {
     expect(() => parseEtut(s)).toThrow(Error)
   })
 
-  it.each(['X4:4', 'D:4', 'D5', 'D5:3', 'D5:16', 'D5:4:', 'D5b2:4', 'r', 'r:5', 'D5:4 | | D5:4', '', 'd5:4', 'D5:4,'])(
+  it.each(['X4:4', 'D:4', 'D5', 'D5:3', 'D5:64', 'D5:4:', 'D5b2:4', 'r', 'r:5', 'D5:4 | | D5:4', '', 'd5:4', 'D5:4,'])(
     'geçersiz belirteç Error fırlatır: %s',
     (s) => {
       expect(() => parseEtut(s)).toThrow(Error)

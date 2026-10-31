@@ -35,6 +35,9 @@ export default defineConfig({
   build: { chunkSizeWarningLimit: 800 },
   test: {
     environment: 'jsdom',
+    // Kalıcı modül önbelleği `import.meta.glob` sonucunu da saklar: elle yazılan parçalar klasörüne yeni dosya eklenince
+    // (src/content/parcalar/elle/eserler) eski liste kalır ve yeni eser testlerde görünmez.
+    fsModuleCache: false,
     setupFiles: ['./vitest.setup.ts'],
     // Strudel paketleri ham .mjs; inline edilince vi.mock bağımlılıklarına da uygulanır.
     server: { deps: { inline: [/@strudel\//] } },

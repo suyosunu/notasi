@@ -1,6 +1,7 @@
 import type { MusicEvent } from '../../music/notation'
 
-export type ParcaMakam = 'rast' | 'neva' | 'ussak' | 'bayati' | 'huseyni' | 'hicaz'
+export const MAKAMLAR = ['rast', 'neva', 'ussak', 'bayati', 'huseyni', 'hicaz'] as const
+export type ParcaMakam = (typeof MAKAMLAR)[number]
 
 /**
  * SymbTr'den `scripts/symbtr-to-json.mjs` ile üretilmiş parça (CC BY-NC-SA 4.0, bkz. LISANS.md).
@@ -13,7 +14,7 @@ export interface Parca {
   /** USULLER kimliği. */
   usul: string
   composer: string
-  /** SymbTr txt URL'si. */
+  /** SymbTr txt URL'si; elle yazılan parçalarda neyzen.com PDF adresi. */
   source: string
   /** Ölçüler; ilk ölçü anacrusis olabilir, diğerleri tam usul zamanıdır. */
   olcu: MusicEvent[][]

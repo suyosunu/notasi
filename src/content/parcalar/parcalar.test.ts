@@ -11,13 +11,15 @@ import lisans from './LISANS.md?raw'
 const komaAE = (e: MusicEvent): number => (e.kind === 'rest' ? -1 : writtenKoma(e.pitch) + 265)
 const durKey = (e: MusicEvent): string => `${e.dur}${e.dotted ? '.' : ''}`
 const byId = (id: string) => PARCALAR.find((p) => p.id === id)!
+/** SymbTr'den üretilen parçalar; elle yazılanlar (neyzen.com) `elle/elle.test.ts`'te sınanır. */
+const SYMBTR = PARCALAR.filter((p) => p.source.startsWith('https://raw.githubusercontent.com/MTG/SymbTr/'))
 /** Söz alanı olmayan parçalar: aranağmeler, sözsüz eser ve güfte sahibi bulunamayanlar. */
 const SOZSUZ = ['yine-baglandi-dil-aranagme', 'allah-emrin-tutalim', 'hicran-oku-aranagme', 'gul-yuzlulerin', 'cecen-kizi']
 const YENI = ['allah-emrin-tutalim', 'hicran-oku-aranagme', 'gul-yuzlulerin', 'cecen-kizi'] as const
 
 describe('PARCALAR', () => {
   it('sekiz parça kolaydan zora sıralı', () => {
-    expect(PARCALAR.map((p) => p.id)).toEqual([
+    expect(SYMBTR.map((p) => p.id)).toEqual([
       'benim-adim-dertli-dolap',
       'yine-baglandi-dil-aranagme',
       'hak-teala',
@@ -27,7 +29,7 @@ describe('PARCALAR', () => {
       'daglar-ile-taslar-ile',
       'cecen-kizi',
     ])
-    expect(PARCALAR.map((p) => p.title)).toEqual([
+    expect(SYMBTR.map((p) => p.title)).toEqual([
       'Benim Adım Dertli Dolap',
       'Yine Bağlandı Dil (aranağme)',
       'Hak Teâlâ',
@@ -53,12 +55,12 @@ describe('PARCALAR', () => {
     expect(byId('hicran-oku-aranagme')).toMatchObject({ makam: 'huseyni', usul: 'turk-aksagi', composer: 'Şevki Bey' })
     expect(byId('gul-yuzlulerin')).toMatchObject({ makam: 'bayati', usul: 'yuruk-semai-64', composer: "Tab'î Mustafa Efendi" })
     expect(byId('cecen-kizi')).toMatchObject({ makam: 'huseyni', usul: 'nim-sofyan', composer: 'Tanburi Cemil Bey' })
-    for (const p of PARCALAR) {
+    for (const p of SYMBTR) {
       expect(p.source).toMatch(/^https:\/\/raw\.githubusercontent\.com\/MTG\/SymbTr\/master\/txt\/.+\.txt$/)
     }
   })
 
-  for (const p of PARCALAR) {
+  for (const p of SYMBTR) {
     describe(p.id, () => {
       const usul = USULLER.find((u) => u.id === p.usul)!
       const measureBeats = (usul.zaman * 4) / usul.mertebe
@@ -368,7 +370,11 @@ describe('LISANS.md', () => {
     expect(text).toContain('https://github.com/MTG/SymbTr')
   })
   it('her parçanın kaynak URL’sini içerir', () => {
-    for (const p of PARCALAR) expect(text).toContain(p.source)
+    for (const p of SYMBTR) expect(text).toContain(p.source)
+  })
+  it('neyzen.com notalarından elle yazılan parçalar için telif kararını söyler', () => {
+    expect(text).toContain('neyzen.com notalarından elle yazıldı')
+    expect(text).toContain('telif kontrolü kullanıcı kararıyla sonraya bırakıldı (2026-10-31)')
   })
   it('Allah Emrin Tutalım için usul farkını, sözsüz eserler için güfte notunu söyler', () => {
     expect(text).toContain('TDV bu ilahiyi Nim Sofyan usulünde anar; SymbTr dosyası Düyek')

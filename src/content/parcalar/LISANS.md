@@ -46,3 +46,12 @@ Depo: https://github.com/MTG/SymbTr (CC BY-NC-SA 4.0)
 - Ms, LNS, Bas ve Nota53/Koma53 sütunları alınmadı.
 
 Bu dosyaları paylaşırken ya da değiştirirken aynı lisansı ve yukarıdaki atfı koruyun.
+
+## Elle yazılan parçalar (neyzen.com)
+
+`elle/eserler/*.ts` dosyalarındaki parçalar SymbTr'den değildir. Kaynak sayfa: https://www.neyzen.com/ney_ilahiler.html
+
+- neyzen.com notalarından elle yazıldı; telif kontrolü kullanıcı kararıyla sonraya bırakıldı (2026-10-31).
+- Her parçanın kaynağı (neyzen.com PDF adresi) kendi dosyasında `kaynak` alanında yazılıdır.
+- Çarpmalar (süs notaları) yazılmadı, tekrar işaretleri açılmadı; uygulama bunu parça sayfasında "Çarpmalar gösterilmez" diye söyler.
+- Yukarıdaki CC BY-NC-SA 4.0 atfı bu parçalar için geçerli değildir.

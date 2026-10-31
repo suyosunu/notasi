@@ -1,4 +1,5 @@
 import type { DurationKind, MusicEvent } from '../music/notation'
+import { samePitch } from '../music/pitch'
 import type { Accidental, Step, WrittenPitch } from '../music/pitch'
 import { NEY_PERDELER } from './ney-perdeler'
 import type { PerdeId } from './ney-perdeler'
@@ -36,13 +37,14 @@ const SURELER: Record<string, DurationKind> = {
   '2': 'half',
   '4': 'quarter',
   '8': 'eighth',
+  '16': 'sixteenth',
   '32': 'thirtysecond',
 }
 /** Uygulamanın kullandığı koma değiştirgeçleri (`Accidental`). */
 const KOMALAR: readonly number[] = [1, 4, 5, 8, 9]
-/** Nota sonunda noktadan sonra `_` (bağ) ve `!` (kesik) en çok birer kez, herhangi bir sırada gelebilir. */
-const NOTA = /^([A-G])(\d)(?:([b#])(\d+))?:(1|2|4|8|32)(\.)?([_!]*)$/
-const SUS = /^r:(1|2|4|8|32)(\.)?$/
+/** Nota sonunda noktadan sonra `_` (legato bağı), `~` (aynı perdeye bağ) ve `!` (kesik) en çok birer kez, herhangi bir sırada gelebilir. */
+const NOTA = /^([A-G])(\d)(?:([b#])(\d+))?:(1|2|4|8|16|32)(\.)?([_~!]*)$/
+const SUS = /^r:(1|2|4|8|16|32)(\.)?$/
 
 function parseToken(token: string): MusicEvent {
   const sus = SUS.exec(token)
@@ -58,7 +60,10 @@ function parseToken(token: string): MusicEvent {
     throw new Error(`Geçersiz etüt belirteci: "${token}"`)
   }
   const isaretler = m[7]!
-  if (/_.*_|!.*!/.test(isaretler)) throw new Error(`Geçersiz etüt belirteci: "${token}"`)
+  // Her işaret en çok bir kez; legato (_) ile aynı perde bağı (~) birlikte olmaz.
+  if (/_.*_|~.*~|!.*!/.test(isaretler) || (isaretler.includes('_') && isaretler.includes('~'))) {
+    throw new Error(`Geçersiz etüt belirteci: "${token}"`)
+  }
   const pitch: WrittenPitch = { step: m[1] as Step, octave: Number(m[2]), acc: acc as Accidental }
   return {
     kind: 'note',
@@ -66,19 +71,22 @@ function parseToken(token: string): MusicEvent {
     dur: SURELER[m[5]!]!,
     ...(m[6] ? { dotted: true } : {}),
     ...(isaretler.includes('_') ? { bag: true } : {}),
+    ...(isaretler.includes('~') ? { tie: true } : {}),
     ...(isaretler.includes('!') ? { kesik: true } : {}),
   }
 }
 
 /**
  * Kısa etüt gösterimi: ölçüler `|` ile, notalar boşlukla ayrılır.
- * Nota `<Harf><Oktav>[b<koma>|#<koma>]:<1|2|4|8|32>[.][_][!]` (ör. `B4b1:4`, `D5:2.`, `G4:4_`, `A4:32`, `A4:4!`), sus
- * `r:<süre>`. `:32` otuzikiliktir. Nota sonundaki `_` sonraki notaya bağdır, `!` notayı kesik (staccato) yapar (susta
- * kullanılamaz); tek başına `,` bir önceki olaydan sonra nefes işaretidir.
- * Geçersiz belirteç, boş ölçü ya da `,` ile başlayan ölçü `Error` fırlatır.
+ * Nota `<Harf><Oktav>[b<koma>|#<koma>]:<1|2|4|8|16|32>[.][_|~][!]` (ör. `B4b1:4`, `D5:2.`, `G4:4_`, `A4:16`, `A4:32`,
+ * `A4:4!`, `D5:2~`), sus `r:<süre>`. `:16` onaltılık, `:32` otuzikiliktir. Nota sonundaki `_` sonraki notaya legato
+ * bağıdır (perde farklı olabilir), `~` aynı perdedeki sonraki notaya bağdır (süreler birleşir; sonraki olay ölçü
+ * aşsa da aynı perdeden nota olmalı; `_` ile birlikte yazılmaz), `!` notayı kesik (staccato) yapar (susta kullanılamaz);
+ * tek başına `,` bir önceki olaydan sonra nefes işaretidir.
+ * Geçersiz belirteç, boş ölçü, `,` ile başlayan ölçü ya da aynı perdeye gitmeyen bağ `Error` fırlatır.
  */
 export function parseEtut(s: string): MusicEvent[][] {
-  return s.split('|').map((olcu) => {
+  const olcular = s.split('|').map((olcu) => {
     const tokens = olcu.trim().split(/\s+/).filter(Boolean)
     if (tokens.length === 0) throw new Error('Boş ölçü')
     const olaylar: MusicEvent[] = []
@@ -93,6 +101,16 @@ export function parseEtut(s: string): MusicEvent[][] {
     }
     return olaylar
   })
+  // Bağın karşılığı: sonraki olay (ölçü aşsa da) aynı perdeden nota olmalı.
+  const hepsi = olcular.flat()
+  hepsi.forEach((e, i) => {
+    if (e.kind !== 'note' || !e.tie) return
+    const sonraki = hepsi[i + 1]
+    if (sonraki?.kind !== 'note' || !samePitch(e.pitch, sonraki.pitch)) {
+      throw new Error('Bağ (~) aynı perdedeki sonraki notaya gitmeli')
+    }
+  })
+  return olcular
 }
 
 /**
