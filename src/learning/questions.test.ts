@@ -287,7 +287,7 @@ describe('perde isimleri (perde: / perde-ters:)', () => {
   })
 
   it('perde-5 ileri soruda konunun öbür adı her zaman çeldiricidir; kalanlar en yakın önceki konudan (perde-2)', () => {
-    const PERDE_2 = ['Hüseynî', 'Acem', 'Gerdâniye', 'Muhayyer']
+    const PERDE_2 = ['Acem', 'Gerdâniye', 'Muhayyer']
     for (let s = 1; s <= 200; s++) {
       for (const [card, other] of [['perde:G5#4', 'Nim Hisar'], ['perde:E5b5', 'Nim Şehnaz']] as const) {
         const q = makeQuestion(card, seededRng(s))

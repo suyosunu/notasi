@@ -15,7 +15,7 @@ vi.mock('../audio/wakeLock', () => ({
   acquireWakeLock: vi.fn(() => Promise.resolve()),
   releaseWakeLock: vi.fn(),
 }))
-// Gönderilen elle yazılmış parça yok: yalnız bu dosyada örnek bir parça PARCALAR'a eklenir.
+// Örnek parçalar yalnız bu dosyada PARCALAR'a eklenir: biri güfteli, biri güftesiz.
 vi.mock('../content/parcalar', async (orijinal) => {
   const m = await orijinal<typeof import('../content/parcalar')>()
   const { ellePiecesFrom } = await import('../content/parcalar/elle/tur')
@@ -26,7 +26,17 @@ vi.mock('../content/parcalar', async (orijinal) => {
       makam: 'ussak',
       usul: 'sofyan',
       composer: 'Anonim',
+      lyricist: 'Yunus Emre',
       kaynak: 'https://www.neyzen.com/ornek.pdf',
+      notasyon: 'G4:1 | A4:1',
+    },
+    {
+      id: 'guftesiz',
+      title: 'Güftesiz Eser',
+      makam: 'ussak',
+      usul: 'sofyan',
+      composer: 'Anonim',
+      kaynak: 'https://www.neyzen.com/guftesiz.pdf',
       notasyon: 'G4:1 | A4:1',
     },
   ])
@@ -39,6 +49,25 @@ beforeEach(async () => {
 })
 afterEach(() => cleanup())
 
+describe('ParcaDetail güfte', () => {
+  it('güfteli parçada besteci satırının yanında "Güfte: <ad>" gösterilir', async () => {
+    render(<ParcaDetail parcaId="ornek" />)
+    await screen.findByRole('heading', { level: 1 })
+    expect(screen.getByText('Güfte').nextElementSibling!.textContent).toBe('Yunus Emre')
+    expect(screen.getByText('Besteci').nextElementSibling!.textContent).toBe('Anonim')
+  })
+
+  it('güftesiz parçada (ve SymbTr parçasında) güfte satırı yoktur', async () => {
+    render(<ParcaDetail parcaId="guftesiz" />)
+    await screen.findByRole('heading', { level: 1 })
+    expect(screen.queryByText('Güfte')).toBeNull()
+    cleanup()
+    render(<ParcaDetail parcaId="hak-teala" />)
+    await screen.findByRole('heading', { level: 1 })
+    expect(screen.queryByText('Güfte')).toBeNull()
+  })
+})
+
 describe('ParcaDetail kaynak notu', () => {
   it('neyzen.com kaynaklı parçada "Nota: neyzen.com" bağlantısı ve çarpma notu; SymbTr notu yok', async () => {
     render(<ParcaDetail parcaId="ornek" />)
@@ -48,7 +77,7 @@ describe('ParcaDetail kaynak notu', () => {
     expect(link.getAttribute('target')).toBe('_blank')
     expect(link.getAttribute('rel')).toBe('noopener')
     expect(screen.getByText(/Nota:/).textContent).toContain('Nota: neyzen.com')
-    expect(screen.getByText(/Çarpmalar gösterilmez\./)).toBeTruthy()
+    expect(screen.getByText(/Çarpmalar gösterilmez, tekrarlar açılmaz\./)).toBeTruthy()
     expect(screen.queryByRole('link', { name: 'SymbTr' })).toBeNull()
   })
 

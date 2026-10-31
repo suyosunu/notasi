@@ -14,6 +14,7 @@ const ORNEK: ElleParca = {
   makam: 'ussak',
   usul: 'sofyan',
   composer: 'Anonim',
+  lyricist: 'Yunus Emre',
   kaynak: 'https://www.neyzen.com/ornek.pdf',
   notasyon: 'G4:4 | A4:2 B4b1:2 | C5:2~ C5:4 r:4 | D5:1',
   soz: [['a'], ['b', 'c'], ['d', '', ''], ['e']],
@@ -30,6 +31,7 @@ describe('ellePiecesFrom', () => {
       makam: 'ussak',
       usul: 'sofyan',
       composer: 'Anonim',
+      lyricist: 'Yunus Emre',
       source: 'https://www.neyzen.com/ornek.pdf',
     })
     expect(p!.olcu).toHaveLength(4)
@@ -42,14 +44,21 @@ describe('ellePiecesFrom', () => {
     expect(geri).toEqual([])
     expect(bolum).toMatchObject({
       id: 'ornek--giris',
-      title: 'Örnek Eser (giriş)',
+      title: 'Örnek Eser — giriş',
       makam: 'ussak',
       usul: 'sofyan',
       composer: 'Anonim',
+      lyricist: 'Yunus Emre',
       source: 'https://www.neyzen.com/ornek.pdf',
     })
     expect(bolum!.olcu).toEqual(ana!.olcu.slice(1, 3))
     expect(bolum!.soz).toEqual([['b', 'c'], ['d', '', '']])
+  })
+
+  it('güftesiz parçada lyricist alanı yok', () => {
+    const [p, b] = ellePiecesFrom([kopya({ lyricist: undefined })])
+    expect('lyricist' in p!).toBe(false)
+    expect('lyricist' in b!).toBe(false)
   })
 
   it('sözsüz parçada söz alanı yok', () => {

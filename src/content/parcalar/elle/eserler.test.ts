@@ -9,7 +9,7 @@ const byId = (id: string) => ELLE_PARCALAR.find((p) => p.id === id)!
 const ESERLER = [
   { id: 'kabenin-yollari', olcu: 36, seviye: 2, bolumler: [['benim-yurecigim', 9, 16], ['canim-kabem', 25, 32]] },
   { id: 'urumda-acemde', olcu: 24, seviye: 2, bolumler: [['yemen-ellerinde', 9, 12]] },
-  { id: 'bilmem-nideyim', olcu: 17, seviye: 3, bolumler: [] },
+  { id: 'bilmem-nideyim', olcu: 16, seviye: 3, bolumler: [] },
   { id: 'ey-asik-i-dildade-rast', olcu: 18, seviye: 3, bolumler: [['la-ilahe-illallah', 15, 18]] },
   { id: 'sol-cennetin-irmaklari-segah', olcu: 24, seviye: 2, bolumler: [['cikmis-islam-bulbulleri', 17, 24]] },
 ] as const

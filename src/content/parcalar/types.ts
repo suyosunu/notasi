@@ -14,6 +14,8 @@ export interface Parca {
   /** USULLER kimliği. */
   usul: string
   composer: string
+  /** Güfte sahibi; yalnız elle yazılan parçalarda ve PDF'te belirtilmişse. */
+  lyricist?: string
   /** SymbTr txt URL'si; elle yazılan parçalarda neyzen.com PDF adresi. */
   source: string
   /** Ölçüler; ilk ölçü anacrusis olabilir, diğerleri tam usul zamanıdır. */

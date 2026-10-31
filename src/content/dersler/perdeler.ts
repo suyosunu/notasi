@@ -316,7 +316,7 @@ export const PERDE_DERSLERI: Ders[] = [
       {
         tur: 'metin',
         metin:
-          "Seviye 2'de dört ara ses öğreneceksin: Bûselik, Kürdî, Dik Kürdî ve Nim Hicaz. Ara sesler iki ana sesin arasında kalan seslerdir; aralarındaki farklar komayla ölçülür. Önce Bûselik gelir.",
+          "Seviye 2'de dört ara ses öğreneceksin: Bûselik, Kürdî, Dik Kürdî ve Nim Hicaz. Seviyenin sonunda üçüncü kademenin ilk sesi Hüseynî'yi de çalacaksın. Ara sesler iki ana sesin arasında kalan seslerdir; aralarındaki farklar komayla ölçülür. Önce Bûselik gelir.",
       },
       {
         tur: 'metin',

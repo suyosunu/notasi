@@ -7,7 +7,7 @@ import type { Parca, ParcaMakam } from '../types'
 export interface ElleBolum {
   /** Parça kimliğine `--` ile eklenir (`<id>--<bolum.id>`). */
   id: string
-  /** Başlığa parantez içinde eklenir (`<title> (<baslik>)`). */
+  /** Başlığa tireyle eklenir (`<title> — <baslik>`). */
   baslik: string
   /** Ana parçanın ölçülerinden 1'den başlayarak, iki ucu dahil: `[1, 3]` ilk üç ölçüdür. */
   olcuAraligi: [number, number]
@@ -81,7 +81,13 @@ export function ellePiecesFrom(liste: ElleParca[]): Parca[] {
   const sirali = [...liste].sort((a, b) => a.title.localeCompare(b.title, 'tr'))
   return sirali.flatMap((p) => {
     const { olcu, soz } = dogrula(p)
-    const taban = { makam: p.makam, usul: p.usul, composer: p.composer, source: p.kaynak }
+    const taban = {
+      makam: p.makam,
+      usul: p.usul,
+      composer: p.composer,
+      ...(p.lyricist ? { lyricist: p.lyricist } : {}),
+      source: p.kaynak,
+    }
     const parcalar: Parca[] = [{ ...taban, id: p.id, title: p.title, olcu, ...(soz ? { soz } : {}) }]
     for (const b of p.bolumler ?? []) {
       const [bas, son] = b.olcuAraligi
@@ -94,7 +100,7 @@ export function ellePiecesFrom(liste: ElleParca[]): Parca[] {
       parcalar.push({
         ...taban,
         id: `${p.id}--${b.id}`,
-        title: `${p.title} (${b.baslik})`,
+        title: `${p.title} — ${b.baslik}`,
         olcu: kesit,
         ...(soz ? { soz: soz.slice(bas - 1, son) } : {}),
       })

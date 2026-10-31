@@ -54,6 +54,12 @@ export function ParcaDetail({ parcaId }: { parcaId: string }) {
             <dt>Besteci</dt>
             <dd>{piece.composer}</dd>
           </div>
+          {piece.lyricist && (
+            <div>
+              <dt>Güfte</dt>
+              <dd>{piece.lyricist}</dd>
+            </div>
+          )}
         </dl>
 
         {usul ? (
@@ -82,7 +88,7 @@ export function ParcaDetail({ parcaId }: { parcaId: string }) {
             <a href={piece.source} target="_blank" rel="noopener">
               neyzen.com
             </a>
-            . Çarpmalar gösterilmez.
+            . Çarpmalar gösterilmez, tekrarlar açılmaz.
           </p>
         ) : (
           <p class="muted">

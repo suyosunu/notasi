@@ -58,7 +58,8 @@ export interface NeyPerde {
 // pozisyonunu yazılı vermez ("öğretmen uygulamalı gösterir"). Uygulamanın ilk beşi Nevâ, Çârgâh,
 // Segâh, Dügâh, Rast'tır; Bûselik sonra gelir.
 // Sonraki perdeler (ikinci kademe Bûselik, Kürdî, Dik Kürdî, Nim Hicaz ve üçüncü kademe Hüseynî, Acem,
-// Eviç, açık Gerdâniye, açık Muhayyer; MEB ünite 1217) nota konularının açılma sırasını izler.
+// Eviç, açık Gerdâniye, açık Muhayyer; MEB ünite 1217) nota konularının açılma sırasını izler. Hüseynî Rast'tan
+// hemen sonra, perde-4 (Seviye 2) konusuyla açılır; Acem, Gerdâniye ve Muhayyer perde-2 konusuna bağlıdır.
 // Şemalar Neyzenim ney derslerinden alınmıştır: sağ el üstte, sağ başparmak aşîrân deliğinde;
 // iki elin orta parmağı (2. ve 5. delik) destek için kapalı tutulur.
 // `source`, o perdenin şemasını açıkça yazan tek sayfadır.
@@ -111,9 +112,9 @@ export const KOMA_FARKI = 'aradaki koma farkını dudak ve baş açısıyla veri
  * yalnız neyzenim'de geçen Tiz Nim Hicaz. Kapalı Gerdâniye ve Muhayyer, 3. kademedeki açık eşleriyle aynı yazılı
  * perdedir (G5, A5); `find(samePitch)` açık olanı bulur, çünkü açıklar listede önce gelir. Kaynak kapalı olanların
  * nefes şiddetini yazmaz; ipucu yalnız parmağı ve oktav ilişkisini söyler.
- * Perde-2 ve perde-5 konuları NOTA_TOPICS'in sonundadır, bu yüzden Hüseynî ve Nim Şehnaz, Seviye 2 nota
- * konuları öğrenilmeden açılmaz. Her perde, kendi nota konusu açılınca ve aynı kademedeki önceki perde geçilince
- * açılır (3. kademenin ilk perdesi Hüseynî için ayrıca Rast'ın geçilmesi yeter).
+ * Perde-2 ve perde-5 konuları NOTA_TOPICS'in sonundadır, bu yüzden Acem, Gerdâniye, Muhayyer ve Nim Şehnaz, Seviye 2
+ * nota konuları öğrenilmeden açılmaz. Hüseynî perde-4 konusuna bağlıdır, perde-2'ye değil. Her perde, kendi nota
+ * konusu açılınca ve aynı kademedeki önceki perde geçilince açılır (Hüseynî Rast'tan sonra açılır).
  */
 export const NEY_PERDELER: NeyPerde[] = [
   {

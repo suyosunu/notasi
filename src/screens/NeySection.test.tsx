@@ -279,7 +279,7 @@ describe('NeyPerdePractice ders kapısı', () => {
     expect(screen.queryByRole('heading', { name: /Rast perdesi/ })).toBeNull()
   })
 
-  it('Seviye 3 perdesi (Hüseynî) açıkken okunmamış dersi önce gelir, okunmuşsa trainer görünür', async () => {
+  it('Seviye 2 sonu perdesi (Hüseynî) açıkken okunmamış dersi önce gelir, okunmuşsa trainer görünür', async () => {
     await saveSettings({ calibrated: true })
     for (const id of ['neva', 'cargah', 'segah', 'dugah', 'rast']) {
       await addLongTone({ perdeId: id, durationMs: 4000, passed: true, toleranceCents: 25 })

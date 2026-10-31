@@ -127,7 +127,7 @@ describe('perdeStatuses', () => {
   it('yeni perdeler nota konusu sırasıyla ve kendi konusuna bağlı açılır', () => {
     const upTo = (ids: string[]) => ids.map((id) => tone(id, true))
     const base = ['neva', 'cargah', 'segah', 'dugah', 'rast']
-    // perde-2: Hüseynî, Acem, Gerdâniye, Muhayyer
+    // 3. kademe: Hüseynî (perde-4 konusu), Acem, Gerdâniye, Muhayyer (perde-2 konusu)
     const p2 = [...base, 'huseyni', 'acem', 'gerdaniye', 'muhayyer']
     expect(perdeStatuses(upTo([...base, 'huseyni']), topics()).acem).toBe('acik')
     expect(perdeStatuses(upTo([...base, 'huseyni', 'acem']), topics()).gerdaniye).toBe('acik')
