@@ -344,3 +344,84 @@ Sitede olmayanlar: "Tevhid edip sual ettim" ve "Hak yarattı âlemi". Canım kur
 İlk beşi hocanın listesinden geliyor. Öteki beşi Seviye 1–2 olma olasılığı en yüksek, en bilinen eserler; böylece Rast, Segâh, Uşşak, Hüseynî, Hicaz ve Bayâtî'nin her birinde en az bir eser olur. İkinci dalgada B ve C'nin kalanları gelir. Seviye tahmini nota görülünce düzelir. Seviye 3 ve üstü çıkanlar yine eklenir, ama Seviye 1–2 hedefi için yerine başka eser seçilir.
 
 Gereken: kısa listedeki PDF'lerin indirilmesi. Ya kullanıcı indirip `ignore/notalar/` klasörüne koyar, ya da Claude izinle indirir.
+
+## 8. Seçim 2: notalara bakıldıktan sonra (2026-10-31)
+
+Kullanıcı izin verdi, §7'deki kısa listenin **57 PDF'i** indirildi (`ignore/notalar/secim-2/`, git dışı). Dört ayrı inceleyici okudu. Tek tek kayıtlar `2026-10-31-neyzen-secim-2-kayitlar.md` dosyasında.
+
+Ölçü: uygulamadaki güncel perde seviyeleri.
+- S1: G4 A4 B4b1 C5 D5
+- S2: B4 B4b5 B4b4 C5#4 E5
+- S3: F5 F5#4 G5 G5#4 A5 E5b5
+- S4: B5b1 C6 C6#4 D6
+
+±1 koma kuralı geçerli. Ritim: 16'lık 2, 32'lik 4.
+
+### Tüm parçası Seviye 2 olanlar
+
+| Eser | Dosya | Ölçü | Not |
+|---|---|---|---|
+| Tâleal bedru v2 (Rast) | `075_rast-taleal_bedru_v2` | 22 | S1 bölümleri: Ö1–8, Ö16–22 |
+| Tâleal bedru v1 (Rast) | `075_rast-talealbedru` | 22 | yalnız G4–D5, noktalı 8'lik + 16'lık |
+| Lâ ilâhe illallah (Uşşak, Kenan Rifâî) | `096_ussak-la_ilahe_illallah` | 8 | G4–D5 |
+| Lâ ilâhe illallah v2 | `096_ussak-la_ilahe_illallah_v2` | 8 | anahtar işareti yok; B naturel mi B4b1 mi BELİRSİZ |
+| Ganî Mevlâm nasîb etse (Segâh) | `082_segah-gani_mevlam_nasib_etse` | — | ritim S1; tek S2 sesi E5b1; S1 bölümleri: Ö1–6, Ö10–13 |
+| Yâ Rabbi aşkın ver bana (Uşşak, Yakup Gören) | `096_ussak-ya_rabbi_askin` | — | G4–E5 |
+
+### Seviye 3, ama içinde Seviye 1–2 bölümü olanlar
+
+| Eser | Seviye | S1/S2 bölümü |
+|---|---|---|
+| **Ben melâmet hırkasını** (Uşşak; hocanın listesi) | S3; yalnız Ö2 ve Ö13'teki tek bir G5 yüzünden | S2: Ö3–7 (aranağme), Ö8–11, Ö14–18 |
+| Derman arardım derdime (Hüseynî) | S3; F5 ve G5 yalnız Ö4'te | S2: Ö5–9 "Bürhan sorardım aslıma" |
+| İsm-i Sübhân virdin mi var (Hüseynî, iki sürüm) | S3 | S2: Ö9–16 (`ismi_subhan_huseyni`); Ö5–9 (`ismi_subhan`) "Bencileyin derdin mi var" |
+| İsm-i Sübhân (Uşşak, Şanlıtürk) | S3; ritim S1 | S1: Ö13–21, Ö32–46; S2: Ö1–4, Ö22–25 |
+| Allah bize lutfetti (Segâh, v1) | S3 | S2: Ö4–9 "hay hay şükür elhamdülillah" |
+| Ganî Mevlâm (Hüseynî, iki sürüm) | S3 | S2: Ö12–16 |
+| Tövbe edelim zenbimize v3 (Rast, Dede Efendi) | S3; E5b? BELİRSİZ | S2: Ö1–9 |
+| Severim ben seni (Hüseynî) | S3 | yalnız 3 ölçülük parçalar |
+
+### Tüm parçası "dışı" (uygulamada olmayan ses), ama Seviye 2 bölümü olanlar
+
+| Eser | Neden dışı | S2 bölümü |
+|---|---|---|
+| **Erler demine destur alalım** (Rast; hocanın listesi) | Ö16'da A4# | Ö1–5, Ö8–14, Ö21–24 |
+| İlim ilim bilmektir (Rast, üç sürüm) | Ö2 ve Ö6'daki koşuda D4, E4, F4# | "Sen kendini bilmezsin" (v1: Ö5–8, v2/v3: Ö9–12) |
+| Tövbe edelim v1, v2, v4 | E5 üzerinde çizgili bemol (E5b4?) | Ö1–8 / Ö1–9, Ö12–16 |
+| Tende cânım (Segâh, iki sürüm) | A4# | Ö1–4 "Tende cânım canda cânânımdır"; v1'de Ö14–17 da var |
+
+### Uygun değil
+
+Bunlarda hem tüm parça S4 ya da dışı, hem de 4 ölçülük bir S1–S2 bölümü yok.
+- **Buyruğun tut** (hocanın listesi): D4, E4, F4#.
+- **Aşkın aldı benden beni** (hocanın listesi): S3; yalnız 2 ölçülük S1 parçaları var.
+- Mecnun'a sordular (üç sürüm): çizgili bemol ve 32'lik.
+- Uyan ey gözlerim: B5b5; A5–D6 aralığı.
+- Yâ Resûlallah şefaat eyle (iki sürüm): 32'lik, C6 ve çizgili bemol.
+- Gelin gidelim (dört sürüm).
+- Mâil oldum (üç sürüm).
+- Ey garip bülbül (iki sürüm). v2'de Ö12–16 S2 var, ama tam bir dize değil.
+- Yâ Rabbi şükür doğdu.
+- Aşkın ile âşıklar: S4. Ö9–12 ve Ö21–24'teki "Lâ ilâhe illallah" S2, yalnız 4 ölçü.
+- Yâ Rabbenâ: S4. Ö1–4 S2.
+- Bu aşk bir bahr-i ummândır.
+- Dervişlik baştadır.
+- Sordum sarı çiçeğe.
+- Esselâmu aleyke.
+
+### Ortak belirsizlik
+
+Beyâtî ve Rast notalarında Mi (bir yerde La) üzerindeki **gövdesi çizgili bemol**, anahtardaki koma bemolünden farklı bir işaret. Bu E5b4 olabilir, ya da yalnız dizgi farkı olabilir. Bir neyzene sorulmalı. E5b1 çıkarsa Tövbe edelim ve Mecnun'a sordular Seviye 3'e iner. Segâh notalarında anahtardaki Mi işareti aynı küçük koma bemolü; E5b1 okundu, Seviye 2 sayıldı.
+
+### Önerilen ilk dalga (yazılacak 8 eser)
+
+1. Tâleal bedru v2: tüm S2; S1 bölümleri var.
+2. Lâ ilâhe illallah (Uşşak, v1): tüm S2; 8 ölçü.
+3. Ganî Mevlâm nasîb etse (Segâh): tüm S2; S1 bölümleri var.
+4. Yâ Rabbi aşkın ver bana (Uşşak): tüm S2.
+5. Ben melâmet hırkasını: S3; üç S2 bölümü. Hocanın listesinden.
+6. Erler demine destur alalım: üç S2 bölümü. Hocanın listesinden.
+7. Derman arardım derdime: S3; S2 bölümü var.
+8. İsm-i Sübhân virdin mi var (Hüseynî, `ismi_subhan_huseyni`): S3; S2 bölümü ve 4 ölçülük S1 bölümü var.
+
+Bu sekiz eserle Seviye 2'de dört tam parça ve birçok bölüm eklenmiş olur. Makam dağılımı: Rast 2, Uşşak 3, Segâh 1, Hüseynî 2. İkinci dalgada Allah bize lutfetti, Tövbe edelim v3 (önce çizgili bemol sorusu), Tende cânım ve İlim ilim'in S2 bölümleri yazılabilir.
