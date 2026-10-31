@@ -62,6 +62,15 @@ describe('parseEtut', () => {
     expect(olcu![4]).toMatchObject({ dur: 'eighth', dotted: true, bag: true, kesik: true })
   })
 
+  it('süreden sonraki t üçleme üyesidir: üç :8t bir dörtlük eder', () => {
+    const [olcu] = parseEtut('B4b1:8t A4:8t B4b1:8t~ B4b1:4')
+    expect(olcu![0]).toEqual({ kind: 'note', pitch: { step: 'B', octave: 4, acc: -1 }, dur: 'eighth', uclu: true })
+    expect(olcu!.slice(0, 3).reduce((s, e) => s + beats(e), 0)).toBeCloseTo(1, 9)
+    expect(olcu![2]).toMatchObject({ uclu: true, tie: true })
+    expect('uclu' in olcu![3]!).toBe(false)
+    expect(() => parseEtut('r:8t')).toThrow(Error)
+  })
+
   it('kesik işareti bağdan önce de yazılabilir; yalnızca kesik olmayan notada alan yoktur', () => {
     expect(parseEtut('G4:4!_')[0]![0]).toMatchObject({ kesik: true, bag: true })
     expect('kesik' in parseEtut('G4:4')[0]![0]!).toBe(false)

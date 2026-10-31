@@ -43,7 +43,7 @@ const SURELER: Record<string, DurationKind> = {
 /** Uygulamanın kullandığı koma değiştirgeçleri (`Accidental`). */
 const KOMALAR: readonly number[] = [1, 4, 5, 8, 9]
 /** Nota sonunda noktadan sonra `_` (legato bağı), `~` (aynı perdeye bağ) ve `!` (kesik) en çok birer kez, herhangi bir sırada gelebilir. */
-const NOTA = /^([A-G])(\d)(?:([b#])(\d+))?:(1|2|4|8|16|32)(\.)?([_~!]*)$/
+const NOTA = /^([A-G])(\d)(?:([b#])(\d+))?:(1|2|4|8|16|32)(t)?(\.)?([_~!]*)$/
 const SUS = /^r:(1|2|4|8|16|32)(\.)?$/
 
 function parseToken(token: string): MusicEvent {
@@ -59,7 +59,7 @@ function parseToken(token: string): MusicEvent {
   } else if (m[4]) {
     throw new Error(`Geçersiz etüt belirteci: "${token}"`)
   }
-  const isaretler = m[7]!
+  const isaretler = m[8]!
   // Her işaret en çok bir kez; legato (_) ile aynı perde bağı (~) birlikte olmaz.
   if (/_.*_|~.*~|!.*!/.test(isaretler) || (isaretler.includes('_') && isaretler.includes('~'))) {
     throw new Error(`Geçersiz etüt belirteci: "${token}"`)
@@ -69,7 +69,8 @@ function parseToken(token: string): MusicEvent {
     kind: 'note',
     pitch,
     dur: SURELER[m[5]!]!,
-    ...(m[6] ? { dotted: true } : {}),
+    ...(m[6] ? { uclu: true } : {}),
+    ...(m[7] ? { dotted: true } : {}),
     ...(isaretler.includes('_') ? { bag: true } : {}),
     ...(isaretler.includes('~') ? { tie: true } : {}),
     ...(isaretler.includes('!') ? { kesik: true } : {}),
@@ -78,8 +79,9 @@ function parseToken(token: string): MusicEvent {
 
 /**
  * Kısa etüt gösterimi: ölçüler `|` ile, notalar boşlukla ayrılır.
- * Nota `<Harf><Oktav>[b<koma>|#<koma>]:<1|2|4|8|16|32>[.][_|~][!]` (ör. `B4b1:4`, `D5:2.`, `G4:4_`, `A4:16`, `A4:32`,
- * `A4:4!`, `D5:2~`), sus `r:<süre>`. `:16` onaltılık, `:32` otuzikiliktir. Nota sonundaki `_` sonraki notaya legato
+ * Nota `<Harf><Oktav>[b<koma>|#<koma>]:<1|2|4|8|16|32>[t][.][_|~][!]` (ör. `B4b1:4`, `D5:2.`, `G4:4_`, `A4:16`, `A4:32`,
+ * `A4:4!`, `D5:2~`, `A4:8t`), sus `r:<süre>`. `:16` onaltılık, `:32` otuzikiliktir; süreden sonraki `t` üçleme üyesidir
+ * (süre × 2/3; üç `:8t` bir dörtlük eder). Nota sonundaki `_` sonraki notaya legato
  * bağıdır (perde farklı olabilir), `~` aynı perdedeki sonraki notaya bağdır (süreler birleşir; sonraki olay ölçü
  * aşsa da aynı perdeden nota olmalı; `_` ile birlikte yazılmaz), `!` notayı kesik (staccato) yapar (susta kullanılamaz);
  * tek başına `,` bir önceki olaydan sonra nefes işaretidir.
