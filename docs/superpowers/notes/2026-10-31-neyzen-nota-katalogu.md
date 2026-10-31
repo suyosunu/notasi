@@ -270,3 +270,77 @@ Seviye sütunu: perde ve ritimden doğan en düşük sığma; "dışı" = setler
 - 28 Salât-ı Ümmiye'de ölçü çizgisi yok; uygulamada serbest-ritimli (ölçü başına değil satır başına) bir veri şeması gerekir.
 - 27'de satır sonundaki "G4~B4" yay/kayma (ilk bitiş) anlamı net değil; 14/22/36/33 temiz.
 - Ölçü içi süre toplamları 22, 14, 36, 27, 33, 32, 06 için elle kontrol edildi (tutarlı). Diğerlerinde kontrol yapılmadı.
+
+## 7. Sıradaki eserler için seçim (2026-10-31, neyzen.com tam liste)
+
+Kaynak: `https://www.neyzen.com/ney_ilahiler.html` (son güncelleme 05.03.2026). Sayfada 73 makam klasöründe **806 PDF** var. Uygulamada makamı olan klasörler: Rast 86, Segâh 69, Uşşak 63, Hüseynî 57, Hicaz 72, Bayâtî 15, Nevâ 12, Muhayyer 6, Kürdî 2. PDF'ler tarayıcıda açılmıyor, indirme olarak geliyor; bu yüzden aşağıdaki seçim **yalnız sayfadaki bilgilere** dayanıyor: eser adı, bestekâr, makam ve sürüm sayısı. Notalara henüz bakılmadı, seviyeler **tahmin**.
+
+Seviye tahmininde güncel kural: Hüseynî (E5) artık Seviye 2. Bu yüzden G4–E5 arasında kalan, 16'lığı olan bir ilahi Seviye 2, E5'i ve 16'lığı olmayan bir ilahi Seviye 1 olur. Hicaz dörtlüsü (A4 B4b4 C5#4 D5) de Seviye 2 perdeleriyle çalınır.
+
+Seçim ölçütü:
+1. Hocanın listesindeki eserler önce gelir.
+2. Sonra sitede birden çok sürümü olan eserler gelir; bu, yaygın okunduklarının işaretidir.
+3. Bestesi meçhul, tekke ve halk ilahileri genellikle daha yalındır. Dede Efendi ve Zekâî Dede besteleri daha süslüdür; bunlar büyük olasılıkla Seviye 3–4.
+
+### A. Hocanın listesinden, sitede bulunanlar
+
+| Eser | Makam | Dosya | Bestekâr | Tahmin |
+|---|---|---|---|---|
+| Ben melâmet hırkasını (Haydar Haydar) | Uşşak | `096_ussak/ben_melamet_hirkasini` | Meçhûl | S2–3 |
+| Buyruğun tut Rahmân'ın | Hicaz | `034_hicaz/buyrugun_tut_rahmanin_ney` | Şeyh Şahabettin Ef. | S2–3 |
+| Erler demine destur alalım | Rast | `075_rast/erler_demine_destur_alalim` | Tahsîne Hanım | S2 |
+| Tâleal bedru aleynâ (2 sürüm) | Rast | `075_rast/talealbedru`, `taleal_bedru_v2` | Meçhûl | S1–2 |
+| Aşkın aldı benden beni | Segâh | `082_segah/askin_aldi_benden_beni_bana_seni_gerek_seni` | Meçhûl | S2 (Segâh'ta E5b1 çıkarsa ±1 koma kuralıyla Hüseynî sayılır) |
+
+Sitede olmayanlar: "Tevhid edip sual ettim" ve "Hak yarattı âlemi". Canım kurban olsun, Geydim hırkayı ve Ben yürürüm sürümleri §2'de zaten incelendi; en kolayları Seviye 3.
+
+### B. Çok bilinen, birden çok sürümü olan eserler
+
+| Eser | Makam (sürüm) | Bestekâr | Tahmin |
+|---|---|---|---|
+| Tövbe edelim zenbimize | Rast (4) | Dede Efendi | S3 |
+| İlim ilim bilmektir | Rast (3) | Tahir Karagöz | S2 |
+| Yâ Resûlallah şefaat eyle | Rast (2) | Meçhûl | S2 |
+| Allah bize lutfetti | Segâh (3) | Meçhûl | S2 |
+| Tende cânım cânda cânânımdır | Segâh (2) | Meçhûl | S2 |
+| Dervişlik baştadır | Segâh (2), Dügâh (1) | Meçhûl / Altınbilek | S2 |
+| Gelin gidelim Allah yoluna | Hicaz (3), Segâh (1) | Dede Efendi / Şeyh Mustafa / Nuri Sesören | S3 |
+| Mâil oldum bahçesinde hurmaya | Hicaz (3) | Meçhûl | S2–3 |
+| Mecnun'a sordular | Bayâtî (3) | Meçhûl | S2 |
+| Ganî Mevlâm nasîb etse | Hüseynî (2), Rast, Segâh | Meçhûl | S2 |
+| Lâ ilâhe illallah | Uşşak (2) | Kenan Rifâî | S2 |
+| Yâ Rabbenâ yâ Rabbenâ | Uşşak (2) | Kemal Gürses | S2 |
+| İsm-i Sübhân virdin mi var | Hüseynî (2), Uşşak | Meçhûl / Şanlıtürk | S2 |
+| Bu aşk bir bahr-i ummândır | Segâh (2) | Meçhûl | S2 |
+| Sordum sarı çiçeğe | Segâh (2), Acem | Meçhûl | S2 |
+| Ey garip bülbül | Hicaz (2) | Ali Şirügânî Dede | S3 |
+
+### C. Tek sürümü olan ama çok bilinen eserler
+
+| Eser | Makam | Bestekâr | Tahmin |
+|---|---|---|---|
+| Uyan ey gözlerim gafletten uyan | Kürdî | Sultan III. Murad | S2–3 (yeni makam etiketi gerekir) |
+| Derman arardım derdime | Hüseynî | Meçhûl | S2 |
+| Severim ben seni candan içeri | Hüseynî | Meçhûl | S2 |
+| Aşkın ile âşıklar | Hüseynî; Segâh (Sami Özer) | Meçhûl | S2 |
+| Yâ Rabbi şükür doğdu Muhammed | Hüseynî | Meçhûl | S2 |
+| Esselâmu aleyke | Segâh | Meçhûl | S2 |
+| Yâ Rabbi aşkın ver bana | Muhayyer; Uşşak (Yakup Gören) | Dede Efendi | S3 (Muhayyer etiketi gerekir) |
+
+### Önerilen sıra
+
+İlk dalga 10 eser:
+1. Tâleal bedru
+2. Erler demine
+3. Ben melâmet
+4. Buyruğun tut
+5. Aşkın aldı benden beni
+6. Yâ Resûlallah şefaat eyle
+7. Mecnun'a sordular
+8. Derman arardım derdime
+9. Allah bize lutfetti
+10. Lâ ilâhe illallah (Uşşak)
+
+İlk beşi hocanın listesinden geliyor. Öteki beşi Seviye 1–2 olma olasılığı en yüksek, en bilinen eserler; böylece Rast, Segâh, Uşşak, Hüseynî, Hicaz ve Bayâtî'nin her birinde en az bir eser olur. İkinci dalgada B ve C'nin kalanları gelir. Seviye tahmini nota görülünce düzelir. Seviye 3 ve üstü çıkanlar yine eklenir, ama Seviye 1–2 hedefi için yerine başka eser seçilir.
+
+Gereken: kısa listedeki PDF'lerin indirilmesi. Ya kullanıcı indirip `ignore/notalar/` klasörüne koyar, ya da Claude izinle indirir.
